@@ -1,8 +1,8 @@
-import { Routes, Route } from "react-router-dom";
-import Login from "@/features/auth/Login";
-import Register from "@/features/auth/Register";
-import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
-import NotFound from "@/features/common/NotFound";
+import { Routes, Route } from 'react-router-dom'
+import Login from '@/features/auth/Login'
+import Register from '@/features/auth/Register'
+import { ProtectedRoute } from '@/features/auth/ProtectedRoute'
+import NotFound from '@/features/common/NotFound'
 
 export const AppRouter = () => {
   return (
@@ -19,5 +19,5 @@ export const AppRouter = () => {
         }
       />
     </Routes>
-  );
-};
+  )
+}

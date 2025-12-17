@@ -1,4 +1,4 @@
-import { AuthProvider } from "@/features/auth/AuthProvider";
+import { AuthProvider } from '@/features/auth/AuthProvider'
 
 export const AppProviders = ({ children }) => {
   return <AuthProvider>{children}</AuthProvider>

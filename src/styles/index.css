@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -118,14 +118,11 @@
   body {
     @apply bg-background text-foreground;
   }
- 
 }
 
-@layer components{
+@layer components {
   .primary-btn {
-  @apply 
-  
-    bg-[#41AD33] 
+    @apply bg-[#41AD33] 
     hover:bg-[#49bc3a] 
     text-white 
     px-4 py-2.5            
@@ -134,11 +131,10 @@
     hover:shadow 
     transition-all duration-200
     active:scale-[0.98];
-}
+  }
 
-.secondary-btn {
-  @apply 
-    bg-[#F3F4F6] 
+  .secondary-btn {
+    @apply bg-[#F3F4F6] 
     hover:bg-[#e5e7eb] 
     text-black 
     px-4 py-2.5            
@@ -147,26 +143,21 @@
     hover:shadow 
     transition-all duration-200
     active:scale-[0.98];
-}
-
-
-  
-  .error-alert{
-    @apply bg-red-100 text-red-800 border-red-200
   }
 
-  .warning-alert{
-    @apply bg-yellow-100 text-yellow-800 border-yellow-200 shadow-md rounded-xl
+  .error-alert {
+    @apply bg-red-100 text-red-800 border-red-200;
   }
 
-  .sucess-alert{
-    @apply  bg-green-100 text-green-800 border-green-200 shadow-md rounded-xl
-
+  .warning-alert {
+    @apply bg-yellow-100 text-yellow-800 border-yellow-200 shadow-md rounded-xl;
   }
 
-  .warning{
-    @apply border-yellow-300 bg-yellow-50 text-yellow-800 shadow-md rounded-xl
+  .sucess-alert {
+    @apply bg-green-100 text-green-800 border-green-200 shadow-md rounded-xl;
+  }
 
+  .warning {
+    @apply border-yellow-300 bg-yellow-50 text-yellow-800 shadow-md rounded-xl;
   }
 }
- 

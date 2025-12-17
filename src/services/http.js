@@ -1,4 +1,4 @@
-import axios from "axios"
+import axios from 'axios'
 
 export const http = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -7,10 +7,10 @@ export const http = axios.create({
 })
 
 http.interceptors.response.use(
-  res => res,
-  err => {
+  (res) => res,
+  (err) => {
     if (err.response?.status === 401) {
-      window.dispatchEvent(new Event("unauthorized"))
+      window.dispatchEvent(new Event('unauthorized'))
     }
     return Promise.reject(err)
   }

@@ -8,10 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "husky",
-    "lint:eslint": "eslint",
+    "lint:eslint": "eslint .",
     "lint:stylelint": "stylelint '**/*.css'",
-    "formate:fix": "prettier --write .",
-    "formate:check": "prettier --check ."
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@radix-ui/react-navigation-menu": "^1.2.14",
@@ -42,6 +41,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "3.7.4",
     "stylelint": "^16.26.1",
     "stylelint-config-standard": "^39.0.1",

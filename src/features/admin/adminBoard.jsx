@@ -1,7 +1,7 @@
-import React from "react";
+import React from 'react'
 
 const adminBoard = () => {
-  return <div>adminBoard</div>;
-};
+  return <div>adminBoard</div>
+}
 
-export default adminBoard;
+export default adminBoard
