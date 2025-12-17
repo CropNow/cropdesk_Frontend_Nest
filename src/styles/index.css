@@ -114,14 +114,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
  
 }
+
 @layer components{
-  .primary_btn {
+  .primary-btn {
   @apply 
+  
     bg-[#41AD33] 
     hover:bg-[#49bc3a] 
     text-white 
@@ -133,7 +136,7 @@
     active:scale-[0.98];
 }
 
-.secondary_btn {
+.secondary-btn {
   @apply 
     bg-[#F3F4F6] 
     hover:bg-[#e5e7eb] 
@@ -148,17 +151,19 @@
 
 
   
-  .error_alert{
+  .error-alert{
     @apply bg-red-100 text-red-800 border-red-200
   }
-  .warning_alert{
-    @apply bg-yellow-100 text-yellow-800 border-yellow-200 shadow-md rounded-xl
 
+  .warning-alert{
+    @apply bg-yellow-100 text-yellow-800 border-yellow-200 shadow-md rounded-xl
   }
-  .sucess_alert{
+
+  .sucess-alert{
     @apply  bg-green-100 text-green-800 border-green-200 shadow-md rounded-xl
 
   }
+
   .warning{
     @apply border-yellow-300 bg-yellow-50 text-yellow-800 shadow-md rounded-xl
 

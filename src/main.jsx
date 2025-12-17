@@ -10,13 +10,13 @@ import { queryClient } from '@/services/queryClient'
 import '@/styles/index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-    <React.StrictMode>
-        <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
-                <AppProviders>
-                    <App />
-                </AppProviders>
-            </BrowserRouter>
-        </QueryClientProvider>
-    </React.StrictMode>
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AppProviders>
+          <App />
+        </AppProviders>
+      </BrowserRouter>
+    </QueryClientProvider>
+  </React.StrictMode>
 )

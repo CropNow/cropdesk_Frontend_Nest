@@ -11,6 +11,7 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error) {
+    /* eslint-disable no-console -- ErrorBoundary needs logging */
     console.error("App Error:", error);
   }
 
