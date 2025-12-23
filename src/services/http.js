@@ -7,7 +7,7 @@ export const http = axios.create({
 })
 
 http.interceptors.response.use(
-  (res) => res,
+  (res) => res.data,
   (err) => {
     if (err.response?.status === 401) {
       window.dispatchEvent(new Event('unauthorized'))
