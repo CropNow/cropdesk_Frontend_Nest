@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -49,7 +49,7 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.627 0.194 149.2);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -114,15 +114,33 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
- 
 }
-@layer components{
-  .primary_btn {
-  @apply 
-    bg-[#41AD33] 
+
+@layer utilities {
+  .flex-center {
+    @apply flex justify-center items-center;
+  }
+
+  .col-center {
+    @apply flex flex-col justify-center items-center;
+  }
+
+  .abs-center {
+    @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2;
+  }
+
+  .general-title {
+    @apply 2xl:text-[8.5rem] md:text-8xl text-5xl font-bold uppercase leading-[9vw] tracking-[-.35vw];
+  }
+}
+
+@layer components {
+  .primary-btn {
+    @apply bg-[#41AD33] 
     hover:bg-[#49bc3a] 
     text-white 
     px-4 py-2.5            
@@ -131,11 +149,10 @@
     hover:shadow 
     transition-all duration-200
     active:scale-[0.98];
-}
+  }
 
-.secondary_btn {
-  @apply 
-    bg-[#F3F4F6] 
+  .secondary-btn {
+    @apply bg-[#F3F4F6] 
     hover:bg-[#e5e7eb] 
     text-black 
     px-4 py-2.5            
@@ -144,24 +161,21 @@
     hover:shadow 
     transition-all duration-200
     active:scale-[0.98];
-}
-
-
-  
-  .error_alert{
-    @apply bg-red-100 text-red-800 border-red-200
   }
-  .warning_alert{
-    @apply bg-yellow-100 text-yellow-800 border-yellow-200 shadow-md rounded-xl
 
+  .error-alert {
+    @apply bg-red-100 text-red-800 border-red-200;
   }
-  .sucess_alert{
-    @apply  bg-green-100 text-green-800 border-green-200 shadow-md rounded-xl
 
+  .warning-alert {
+    @apply bg-yellow-100 text-yellow-800 border-yellow-200 shadow-md rounded-xl;
   }
-  .warning{
-    @apply border-yellow-300 bg-yellow-50 text-yellow-800 shadow-md rounded-xl
 
+  .sucess-alert {
+    @apply bg-green-100 text-green-800 border-green-200 shadow-md rounded-xl;
+  }
+
+  .warning {
+    @apply border-yellow-300 bg-yellow-50 text-yellow-800 shadow-md rounded-xl;
   }
 }
- 
