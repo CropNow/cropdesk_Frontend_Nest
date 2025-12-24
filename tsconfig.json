@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    /* Environment */
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+
+    /* Module system (CRITICAL) */
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+
+    /* React */
+    "jsx": "react-jsx",
+
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    /* Migration support */
+    "allowJs": true,
+    "checkJs": false,
+
+    /* Build */
+    "noEmit": true,
+    "isolatedModules": true,
+
+    /* Interop */
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+
+    /* Paths */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+
+    /* Vite */
+    "types": ["vite/client"],
+
+    /* Performance */
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}

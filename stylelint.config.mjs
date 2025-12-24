@@ -8,4 +8,4 @@ export default {
     'hue-degree-notation': null,
     'lightness-notation': null,
   },
-}
+};
