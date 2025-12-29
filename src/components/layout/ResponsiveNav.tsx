@@ -1,5 +1,5 @@
-import DesktopNavbar from './DesktopNavbar.jsx';
-import MobileCTA from './MobileCTA.jsx';
+import DesktopNavbar from './DesktopNavbar';
+import MobileCTA from './MobileCTA';
 const ResponsiveNav = () => {
   return (
     <>

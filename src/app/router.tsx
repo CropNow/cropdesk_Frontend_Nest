@@ -16,6 +16,7 @@ const ResetPassword = lazy(() => import('@/features/auth/ResetPassword'));
 const Dashboard = lazy(() => import('@/features/user/Dashboard'));
 const Profile = lazy(() => import('@/features/user/Profile'));
 const SmartInfo = lazy(() => import('@/features/user/SmartInfo'));
+const SensorDetails = lazy(() => import('@/features/user/SensorDetails'));
 
 export const AppRouter = () => {
   return (
@@ -59,14 +60,7 @@ export const AppRouter = () => {
         />
 
         {/* Protected routes */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<Dashboard />} />
 
         <Route
           path="/profile"
@@ -85,6 +79,7 @@ export const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+        <Route path="/sensor-details" element={<SensorDetails />} />
 
         {/* Fallback */}
         <Route path="*" element={<NotFound />} />
