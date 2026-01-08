@@ -14,7 +14,14 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -26,7 +33,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(null);
         }
       })
-      .catch(() => setUser(null))
+      .catch((error: any) => {
+        console.error('Auth verification failed:', error);
+        // Only clear user if explicitly unauthorized
+        if (error.response?.status === 401) {
+          setUser(null);
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 

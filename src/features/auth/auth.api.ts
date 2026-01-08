@@ -1,72 +1,57 @@
 import { http } from '@/services/http';
-import type { LoginRequest, LoginResponse, User } from './auth.types';
+import type {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  User,
+} from './auth.types';
 
-/**
- * Authenticate a user with email and password.
- *
- * @param data - Login payload containing user credentials
- * @param data.email - User's email address
- * @param data.password - User's password
- *
- * @returns A promise that resolves to:
- * - accessToken: JWT or session token
- * - user: authenticated user object
- *
- * @example
- * ```ts
- * const response = await login({
- *   email: 'user@example.com',
- *   password: 'secret'
- * })
- *
- * console.log(response.user.email)
- * ```
- */
-export const login = (data: LoginRequest): Promise<LoginResponse> => {
-  return http.post('/auth/login', data);
+// Mock User Data (Still used for fallback/mock structure if needed, but primary is API)
+const MOCK_USER: User = {
+  id: 'mock-user-123',
+  email: 'farmer@cropdesk.local',
+  firstName: 'John',
+  lastName: 'Doe',
+  role: 'farmer',
+  username: 'Farmer John',
+  farmDetails: {
+    farmName: 'Green Valley Farm',
+    location: {
+      latitude: '28.61',
+      longitude: '77.20',
+      address: '123 Farm Road',
+      city: 'New Delhi',
+      country: 'India',
+    },
+  },
 };
 
-/**
- * Register a new user.
- *
- * @param data - Registration payload
- * @param data.email - User's email address
- * @param data.password - User's password
- *
- * @returns A promise that resolves to:
- * - accessToken: JWT or session token
- * - user: newly created user object
- */
-export const register = (data: LoginRequest): Promise<LoginResponse> => {
-  return http.post('/auth/register', data);
+export const login = async (data: LoginRequest): Promise<LoginResponse> => {
+  const response = await http.post<LoginResponse>('/auth/login', data);
+  console.log('Login Response from the auth.api.ts', response);
+  return response.data;
 };
 
-/**
- * Logout the currently authenticated user.
- *
- * This endpoint typically clears the session or authentication cookies.
- *
- * @returns A promise that resolves when logout is successful
- */
-export const logout = (): Promise<void> => {
-  return http.post('/auth/logout');
+export const register = async (
+  data: RegisterRequest
+): Promise<LoginResponse> => {
+  const response = await http.post<LoginResponse>('/auth/register', data);
+  return response.data;
 };
 
-/**
- * Fetch the currently authenticated user's profile.
- *
- * Used to:
- * - restore auth state on page refresh
- * - verify active session
- *
- * @returns A promise that resolves to the authenticated user object
- *
- * @example
- * ```ts
- * const user = await getMe()
- * console.log(user.name)
- * ```
- */
-export const getMe = (): Promise<User> => {
-  return http.get('/auth/me');
+export const logout = async (): Promise<void> => {
+  // If backend has a logout endpoint:
+  // await http.post('/auth/logout');
+  localStorage.clear();
+  return;
+};
+
+export const resetPassword = async (data: any): Promise<void> => {
+  await http.post('/auth/reset-password', data);
+};
+
+export const getMe = async (): Promise<User> => {
+  console.log('[Mock Auth] Getting current user');
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  return MOCK_USER;
 };

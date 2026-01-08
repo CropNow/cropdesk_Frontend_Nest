@@ -1,6 +1,12 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* Remove default eye icon in Edge/IE */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
