@@ -272,21 +272,23 @@ const WeatherSection = ({
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center flex-1 pr-2">
+        <div className="grid grid-cols-2 lg:grid-cols-2 gap-2 lg:gap-8 items-center flex-1 pr-1 lg:pr-2">
           {/* Left Column: Temperature & Main State */}
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-4">
-              {getWeatherIcon(current.weather_code)}
+          <div className="flex flex-col gap-0.5 lg:gap-1">
+            <div className="flex items-center gap-1.5 lg:gap-4">
+              <div className="scale-50 lg:scale-100 origin-left -ml-2 lg:ml-0">
+                {getWeatherIcon(current.weather_code)}
+              </div>
               <div>
                 <div className="flex items-start text-foreground leading-none">
-                  <span className="text-6xl font-bold tracking-tighter">
+                  <span className="text-3xl lg:text-6xl font-bold tracking-tighter">
                     {Math.round(current.temperature_2m)}
                   </span>
-                  <span className="text-2xl font-bold mt-1 text-muted-foreground">
+                  <span className="text-lg lg:text-2xl font-bold mt-0.5 lg:mt-1 text-muted-foreground">
                     °C
                   </span>
                 </div>
-                <div className="text-xs font-medium text-muted-foreground mt-1">
+                <div className="text-[9px] lg:text-xs font-medium text-muted-foreground mt-0.5 lg:mt-1">
                   Feels Like{' '}
                   <span className="text-foreground font-bold">
                     {Math.round(current.apparent_temperature)}°
@@ -295,56 +297,58 @@ const WeatherSection = ({
               </div>
             </div>
 
-            <div className="mt-2 pl-1">
-              <div className="text-lg font-bold text-foreground">
+            <div className="mt-0 lg:mt-2 pl-0.5 lg:pl-1">
+              <div className="text-xs lg:text-lg font-bold text-foreground truncate max-w-[100px] lg:max-w-none">
                 {getWeatherDescription(current.weather_code)}
               </div>
             </div>
           </div>
 
           {/* Right Column: Details List */}
-          <div className="flex flex-col justify-center gap-6">
+          <div className="flex flex-col justify-center gap-2 lg:gap-6">
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-cyan-500/10 rounded-xl">
-                  <Wind size={20} className="text-cyan-500" />
+              <div className="flex items-center gap-2 lg:gap-4">
+                <div className="p-1.5 lg:p-2 bg-cyan-500/10 rounded-lg lg:rounded-xl">
+                  <Wind size={14} className="text-cyan-500 lg:w-5 lg:h-5" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <span className="text-[9px] lg:text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Wind
                   </span>
-                  <span className="text-lg font-bold text-foreground">
-                    {current.wind_speed_10m} km/h
+                  <span className="text-xs lg:text-lg font-bold text-foreground">
+                    {current.wind_speed_10m}{' '}
+                    <span className="text-[9px] lg:text-base">km/h</span>
                   </span>
                 </div>
               </div>
             </div>
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-blue-500/10 rounded-xl">
-                  <Droplets size={20} className="text-blue-500" />
+              <div className="flex items-center gap-2 lg:gap-4">
+                <div className="p-1.5 lg:p-2 bg-blue-500/10 rounded-lg lg:rounded-xl">
+                  <Droplets size={14} className="text-blue-500 lg:w-5 lg:h-5" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <span className="text-[9px] lg:text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Humidity
                   </span>
-                  <span className="text-lg font-bold text-foreground">
+                  <span className="text-xs lg:text-lg font-bold text-foreground">
                     {current.relative_humidity_2m}%
                   </span>
                 </div>
               </div>
             </div>
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-purple-500/10 rounded-xl">
-                  <Eye size={20} className="text-purple-500" />
+              <div className="flex items-center gap-2 lg:gap-4">
+                <div className="p-1.5 lg:p-2 bg-purple-500/10 rounded-lg lg:rounded-xl">
+                  <Eye size={14} className="text-purple-500 lg:w-5 lg:h-5" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <span className="text-[9px] lg:text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Visibility
                   </span>
-                  <span className="text-lg font-bold text-foreground">
-                    {(visibility / 1000).toFixed(1)} km
+                  <span className="text-xs lg:text-lg font-bold text-foreground">
+                    {(visibility / 1000).toFixed(1)}{' '}
+                    <span className="text-[9px] lg:text-base">km</span>
                   </span>
                 </div>
               </div>

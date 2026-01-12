@@ -1,30 +1,70 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { convertAreaToSqFt } from '@/utils/unitConversion';
 
 const FieldDetails = () => {
   const navigate = useNavigate();
-  const [fieldData, setFieldData] = useState({
-    fieldName: '',
-    description: '',
-    area: '',
-    units: 'acres',
-    boundaryType: 'Polygon',
-    coordinates: '',
-    soilType: 'Loamy',
-    phLevel: '',
-    irrigationMethod: 'Drip',
+  const [fieldData, setFieldData] = useState(() => {
+    const tempStr = localStorage.getItem('tempRegistrationData');
+    if (tempStr) {
+      try {
+        const tempData = JSON.parse(tempStr);
+        if (tempData.fieldDetails) {
+          return tempData.fieldDetails;
+        }
+      } catch (e) {
+        console.error('Error parsing temp data', e);
+      }
+    }
+    const storedUserStr = localStorage.getItem('registeredUser');
+    if (storedUserStr) {
+      try {
+        const storedUser = JSON.parse(storedUserStr);
+        if (
+          storedUser.fieldDetails &&
+          Object.keys(storedUser.fieldDetails).length > 0
+        ) {
+          return storedUser.fieldDetails;
+        }
+      } catch (e) {
+        console.error('Error loading stored user', e);
+      }
+    }
+    return {
+      fieldName: '',
+      description: '',
+      area: '',
+      units: 'acres',
+      boundaryType: 'Polygon',
+      coordinates: '',
+      soilType: 'Loamy',
+      phLevel: '',
+      irrigationMethod: 'Drip',
+    };
   });
+
+  useEffect(() => {
+    const tempStr = localStorage.getItem('tempRegistrationData');
+    const tempData = tempStr ? JSON.parse(tempStr) : {};
+
+    if (JSON.stringify(tempData.fieldDetails) !== JSON.stringify(fieldData)) {
+      const updatedTemp = {
+        ...tempData,
+        fieldDetails: fieldData,
+      };
+      localStorage.setItem('tempRegistrationData', JSON.stringify(updatedTemp));
+    }
+  }, [fieldData]);
 
   const handleGeolocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setFieldData({
-            ...fieldData,
+          setFieldData((prev: any) => ({
+            ...prev,
             coordinates: `${position.coords.latitude}, ${position.coords.longitude}`,
-          });
+          }));
         },
         (error) => {
           console.error('Error detecting location', error);
@@ -43,10 +83,10 @@ const FieldDetails = () => {
     console.log('Field Details:', fieldData);
 
     // Validation against Farm Details
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
-      const storedUser = JSON.parse(storedUserStr);
-      const farmDetails = storedUser.farmDetails;
+    const tempStr = localStorage.getItem('tempRegistrationData');
+    if (tempStr) {
+      const tempData = JSON.parse(tempStr);
+      const farmDetails = tempData.farmDetails;
 
       if (farmDetails && farmDetails.area && farmDetails.units) {
         const farmAreaSqFt = convertAreaToSqFt(
@@ -70,12 +110,11 @@ const FieldDetails = () => {
         }
       }
 
-      // Update stored user with new field details
-      const updatedUser = {
-        ...storedUser,
-        fieldDetails: fieldData,
-      };
-      localStorage.setItem('registeredUser', JSON.stringify(updatedUser));
+      // Update temp storage with new field details
+      // Already handled by useEffect
+    } else {
+      // Fallback or init if missing
+      // Already handled by useEffect
     }
 
     // Navigate to next step

@@ -400,19 +400,39 @@ const IOTDashboard = ({
     },
   ];
 
-  return (
-    <section className="flex flex-col gap-4 border border-border p-4 lg:p-6 rounded-2xl bg-gradient-to-br from-green-500/10 via-background to-background dark:bg-card">
-      <div className="flex justify-end items-center">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <Signal size={24} />
-            <Battery size={24} />
-            <span className="text-lg font-bold">78%</span>
-          </div>
-        </div>
-      </div>
+  // Battery Hook
+  const [battery, setBattery] = useState({ level: 1, charging: false });
+  useEffect(() => {
+    // @ts-ignore
+    if (navigator.getBattery) {
+      // @ts-ignore
+      navigator.getBattery().then((bat) => {
+        const updateBattery = () => {
+          setBattery({ level: bat.level, charging: bat.charging });
+        };
+        updateBattery();
+        bat.addEventListener('levelchange', updateBattery);
+        bat.addEventListener('chargingchange', updateBattery);
+      });
+    }
+  }, []);
 
-      <div className="bg-gradient-to-br from-background to-green-500/5 dark:bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+  // Network Hook
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return (
+    <section className="flex flex-col gap-4 p-4 lg:p-6 rounded-2xl bg-gradient-to-br from-green-500/10 via-background to-background dark:bg-card">
+      <div className="bg-gradient-to-br from-background to-green-500/5 dark:bg-card rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
         <div className="flex justify-between items-start mb-8">
           <div className="flex gap-4">
             <div className="p-4 bg-green-500/10 rounded-2xl text-green-500 border border-green-500/20">
@@ -425,6 +445,23 @@ const IOTDashboard = ({
               <p className="text-xs text-muted-foreground uppercase tracking-wider">
                 {farmInfo.location}
               </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <Signal
+                size={24}
+                className={isOnline ? 'text-green-500' : 'text-red-500'}
+              />
+              <div className="flex items-center gap-1">
+                <Battery
+                  size={24}
+                  className={battery.charging ? 'text-green-500' : ''}
+                />
+                <span className="text-lg font-bold">
+                  {Math.round(battery.level * 100)}%
+                </span>
+              </div>
             </div>
           </div>
         </div>

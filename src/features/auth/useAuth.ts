@@ -1,6 +1,5 @@
 import { useContext } from 'react';
-import { AuthContext } from './auth.context';
-import type { AuthContextValue } from './AuthProvider';
+import { AuthContext, type AuthContextValue } from './auth.context';
 
 /**
  * Infer the value type from AuthContext without redefining it.

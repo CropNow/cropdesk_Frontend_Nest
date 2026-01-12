@@ -4,22 +4,65 @@ import { ArrowLeft, Plus } from 'lucide-react';
 
 const FarmDetails = () => {
   const navigate = useNavigate();
-  const [farmData, setFarmData] = useState({
-    farmName: '',
-    description: '',
-    area: '',
-    units: 'acres',
-    location: {
-      address: '',
-      city: '',
-      country: '',
-      latitude: '',
-      longitude: '',
-    },
+  const [farmData, setFarmData] = useState(() => {
+    const tempStr = localStorage.getItem('tempRegistrationData');
+    if (tempStr) {
+      try {
+        const tempData = JSON.parse(tempStr);
+        if (tempData.farmDetails) {
+          return tempData.farmDetails;
+        }
+      } catch (error) {
+        console.error('Error loading temp data:', error);
+      }
+    }
+    const storedUserStr = localStorage.getItem('registeredUser');
+    if (storedUserStr) {
+      try {
+        const storedUser = JSON.parse(storedUserStr);
+        if (
+          storedUser.farmDetails &&
+          Object.keys(storedUser.farmDetails).length > 0
+        ) {
+          return storedUser.farmDetails;
+        }
+      } catch (e) {
+        console.error('Error loading stored user', e);
+      }
+    }
+    return {
+      farmName: '',
+      description: '',
+      area: '',
+      units: 'acres',
+      location: {
+        address: '',
+        city: '',
+        country: '',
+        latitude: '',
+        longitude: '',
+      },
+    };
   });
 
   useEffect(() => {
-    handleGeolocation(true);
+    const tempStr = localStorage.getItem('tempRegistrationData');
+    const tempData = tempStr ? JSON.parse(tempStr) : {};
+
+    if (JSON.stringify(tempData.farmDetails) !== JSON.stringify(farmData)) {
+      const updatedTemp = {
+        ...tempData,
+        farmDetails: farmData,
+      };
+      localStorage.setItem('tempRegistrationData', JSON.stringify(updatedTemp));
+    }
+  }, [farmData]);
+
+  useEffect(() => {
+    // Only run geo if no location data exists to avoid overwriting
+    if (!farmData.location.latitude && !farmData.location.longitude) {
+      handleGeolocation(true);
+    }
   }, []);
 
   const handleLocationChange = (field: string, value: string) => {
@@ -82,17 +125,6 @@ const FarmDetails = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Farm Info:', farmData);
-
-    // Update stored user
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
-      const storedUser = JSON.parse(storedUserStr);
-      const updatedUser = {
-        ...storedUser,
-        farmDetails: farmData,
-      };
-      localStorage.setItem('registeredUser', JSON.stringify(updatedUser));
-    }
 
     // Navigate to next step
     navigate('/register/field-details');

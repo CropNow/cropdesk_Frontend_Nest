@@ -11,6 +11,17 @@ export interface User {
   lastName?: string;
   status?: string;
   username?: string;
+
+  // Hierarchical Data Structure
+  farmers?: Farmer[]; // User manages multiple farmers
+
+  // Local Storage / Onboarding fields
+  farmerDetails?: any; // To act as a catch-all for the flat structure used in onboarding
+  fieldDetails?: any;
+  cropDetails?: any;
+  isOnboardingComplete?: boolean;
+
+  // Legacy/Flat fields (Deprecated, kept for temporary compatibility if needed)
   farmDetails?: {
     farmName?: string;
     location?: {
@@ -20,7 +31,42 @@ export interface User {
       city?: string;
       country?: string;
     };
+    [key: string]: any; // Allow other properties
   };
+}
+
+export interface Farmer {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  farms: Farm[];
+}
+
+export interface Farm {
+  id: string;
+  name: string;
+  location?: string;
+  area?: string;
+  units?: string;
+  fields: Field[];
+}
+
+export interface Field {
+  id: string;
+  name: string;
+  area: string; // e.g., "10"
+  units: string; // e.g., "acres"
+  soilType?: string;
+  irrigationMethod?: string;
+  crops: Crop[];
+}
+
+export interface Crop {
+  id: string;
+  name: string;
+  variety?: string;
+  sowingDate?: string;
 }
 
 export interface LoginResponse {

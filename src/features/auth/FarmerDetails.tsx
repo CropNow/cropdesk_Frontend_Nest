@@ -1,35 +1,63 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const FarmerDetails = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: '',
-    phoneNumber: '',
-    email: '',
-    address: '',
-    village: '',
-    district: '',
-    state: '',
+  const [formData, setFormData] = useState(() => {
+    const tempStr = localStorage.getItem('tempRegistrationData');
+    if (tempStr) {
+      try {
+        const tempData = JSON.parse(tempStr);
+        if (tempData.farmerDetails) {
+          return tempData.farmerDetails;
+        }
+      } catch (error) {
+        console.error('Error loading temp data:', error);
+      }
+    }
+    // Fallback try to load from registeredUser
+    const storedUserStr = localStorage.getItem('registeredUser');
+    if (storedUserStr) {
+      try {
+        const storedUser = JSON.parse(storedUserStr);
+        if (
+          storedUser.farmerDetails &&
+          Object.keys(storedUser.farmerDetails).length > 0
+        ) {
+          return storedUser.farmerDetails;
+        }
+      } catch (e) {
+        console.error('Error loading stored user', e);
+      }
+    }
+    return {
+      name: '',
+      phoneNumber: '',
+      email: '',
+      address: '',
+      village: '',
+      district: '',
+      state: '',
+    };
   });
+
+  useEffect(() => {
+    const tempStr = localStorage.getItem('tempRegistrationData');
+    const tempData = tempStr ? JSON.parse(tempStr) : {};
+
+    if (JSON.stringify(tempData.farmerDetails) !== JSON.stringify(formData)) {
+      const updatedTemp = {
+        ...tempData,
+        farmerDetails: formData,
+      };
+      localStorage.setItem('tempRegistrationData', JSON.stringify(updatedTemp));
+    }
+  }, [formData]);
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Farmer Details:', formData);
-
-    // Update stored user
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
-      const storedUser = JSON.parse(storedUserStr);
-      const updatedUser = {
-        ...storedUser,
-        farmerDetails: formData,
-      };
-      localStorage.setItem('registeredUser', JSON.stringify(updatedUser));
-    }
-
-    // Validate and Store data then navigate to next step
+    // Navigate to next step
     navigate('/register/farm-details');
   };
 
