@@ -12,7 +12,7 @@ const WelcomeBanner = ({
   activeCrops,
 }: WelcomeBannerProps) => {
   return (
-    <div className="h-full flex flex-col gap-2 p-4 lg:p-6 rounded-2xl bg-gradient-to-br from-green-500/20 via-green-500/5 to-background border border-border shadow-sm justify-center">
+    <div className="h-full flex flex-col gap-2 p-4 lg:p-6 rounded-2xl bg-linear-to-br from-green-500/20 via-green-500/5 to-background border border-border shadow-sm justify-center">
       <div className="flex flex-col gap-1">
         <p className="text-muted-foreground text-xs lg:text-sm font-medium">
           Welcome Back

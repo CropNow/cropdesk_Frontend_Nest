@@ -50,8 +50,12 @@ export const resetPassword = async (data: any): Promise<void> => {
   await http.post('/auth/reset-password', data);
 };
 
-export const getMe = async (): Promise<User> => {
-  console.log('[Mock Auth] Getting current user');
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  return MOCK_USER;
+export const getMe = async (): Promise<User | null> => {
+  const token = localStorage.getItem('accessToken');
+  if (!token) {
+    return null;
+  }
+
+  const response = await http.get<User>('/users/me');
+  return response.data;
 };

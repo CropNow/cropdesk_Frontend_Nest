@@ -1,8 +1,16 @@
-import React from 'react';
-import AIInsights from './AIInsights';
-import IOTDashboard from './IOTDashboard';
+import React, { lazy, Suspense } from 'react';
 import WelcomeBanner from './WelcomeBanner';
-import WeatherSection from './WeatherSection';
+import AgricultureNews from './AgricultureNews';
+
+const AIInsights = lazy(() => import('./AIInsights'));
+const IOTDashboard = lazy(() => import('./IOTDashboard'));
+const WeatherSection = lazy(() => import('./WeatherSection'));
+
+const WidgetLoader = () => (
+  <div className="w-full h-48 flex items-center justify-center bg-card/50 rounded-xl border border-border animate-pulse">
+    <div className="text-muted-foreground text-sm">Loading widget...</div>
+  </div>
+);
 
 const Dashboard = () => {
   const [isProfileComplete, setIsProfileComplete] = React.useState(false);
@@ -46,19 +54,26 @@ const Dashboard = () => {
     <main className="min-h-screen bg-background text-foreground pb-20 pt-16 md:pt-0">
       <div className="px-4 lg:px-6 mt-4 flex flex-col gap-4">
         {/* Top Row: Welcome & Weather */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 items-stretch">
           <WelcomeBanner
             name={userName}
             university="CropDesk User"
             activeCrops={activeCropsCount}
           />
-          <WeatherSection showEmptyState={!isProfileComplete} />
+          <AgricultureNews />
+          <Suspense fallback={<WidgetLoader />}>
+            <WeatherSection showEmptyState={!isProfileComplete} />
+          </Suspense>
         </div>
 
         {/* Bottom Row: IOT & AI */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-          <IOTDashboard showEmptyState={!isProfileComplete} />
-          <AIInsights showEmptyState={!isProfileComplete} />
+          <Suspense fallback={<WidgetLoader />}>
+            <IOTDashboard showEmptyState={!isProfileComplete} />
+          </Suspense>
+          <Suspense fallback={<WidgetLoader />}>
+            <AIInsights showEmptyState={!isProfileComplete} />
+          </Suspense>
         </div>
       </div>
     </main>

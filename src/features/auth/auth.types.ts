@@ -29,6 +29,10 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface LogoutResponse {
+  message: string;
+}
+
 export interface RegisterRequest {
   firstName?: string;
   lastName?: string;
