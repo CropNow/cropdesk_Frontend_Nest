@@ -70,13 +70,44 @@ const Login = () => {
 
       // ✅ STORE USER (if backend sends it later)
       if (response.user) {
-        const userStr = JSON.stringify(response.user);
+        let finalUser = response.user;
+
+        // CHECK FOR EXISTING LOCAL DATA TO PRESERVE
+        const existingLocalStr = localStorage.getItem('registeredUser');
+        if (existingLocalStr) {
+          try {
+            const existingLocal = JSON.parse(existingLocalStr);
+            // If the logged-in user matches the stored local profile (by email), preserve the rich details
+            // Normalize emails for comparison
+            if (
+              existingLocal.email &&
+              response.user.email &&
+              existingLocal.email.toLowerCase() ===
+                response.user.email.toLowerCase()
+            ) {
+              finalUser = {
+                ...response.user, // Backend is source of truth for auth info
+                ...existingLocal, // Local is source of truth for profile/onboarding details (until backend fully supports them)
+                id: response.user.id, // Keep backend ID
+                email: response.user.email,
+                username: response.user.username || existingLocal.username,
+              };
+              console.log(
+                'Merged existing local profile data with login response'
+              );
+            }
+          } catch (e) {
+            console.error('Error parsing existing user data', e);
+          }
+        }
+
+        const userStr = JSON.stringify(finalUser);
         localStorage.setItem('user', userStr);
         localStorage.setItem('registeredUser', userStr);
-        if (response.user.role) {
-          localStorage.setItem('role', response.user.role);
+        if (finalUser.role) {
+          localStorage.setItem('role', finalUser.role);
         }
-        setUser(response.user);
+        setUser(finalUser);
       }
 
       navigate('/');

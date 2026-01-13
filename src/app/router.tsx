@@ -1,4 +1,4 @@
-import { Routes, Route, Outlet } from 'react-router-dom';
+import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 
 import { ProtectedRoute } from '@/features/auth/ProtectedRoute';
@@ -66,7 +66,7 @@ export const AppRouter = () => {
         </Route>
 
         {/* Fallback */}
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Suspense>
   );

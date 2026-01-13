@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Layers, Droplets, FlaskConical } from 'lucide-react';
 
-const FieldDetailsTab = () => {
+const FieldDetailsTab = ({
+  field,
+  onUpdate,
+  onDelete,
+}: {
+  field: any;
+  onUpdate: (data: any) => void;
+  onDelete: () => void;
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
   const [fieldData, setFieldData] = useState({
-    fieldName: '',
+    name: '',
     description: '',
     area: '',
     units: '',
@@ -14,21 +23,49 @@ const FieldDetailsTab = () => {
   });
 
   useEffect(() => {
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
-      try {
-        const user = JSON.parse(storedUserStr);
-        if (user.fieldDetails) {
-          setFieldData((prev) => ({
-            ...prev,
-            ...user.fieldDetails,
-          }));
-        }
-      } catch (e) {
-        console.error('Error parsing user data', e);
-      }
+    if (field) {
+      setFieldData({
+        name: field.name || field.fieldName || '',
+        description: field.description || '',
+        area: field.area || '',
+        units: field.units || '',
+        boundaryType: field.boundaryType || '',
+        soilType: field.soilType || '',
+        phLevel: field.phLevel || '',
+        irrigationMethod: field.irrigationMethod || '',
+      });
     }
-  }, []);
+  }, [field]);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFieldData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = () => {
+    if (isEditing) {
+      onUpdate({ ...field, ...fieldData });
+    }
+    setIsEditing(!isEditing);
+  };
+
+  if (!field) {
+    return (
+      <div className="bg-card border border-border rounded-3xl p-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">No field selected.</p>
+          <button
+            className="px-4 py-2 bg-green-500 text-black rounded-xl font-bold hover:bg-green-400"
+            onClick={() => window.location.reload()}
+          >
+            Reload Details
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
@@ -47,9 +84,11 @@ const FieldDetailsTab = () => {
           </label>
           <input
             type="text"
-            value={fieldData.fieldName || ''}
-            readOnly
-            className="w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none cursor-default"
+            name="name"
+            value={fieldData.name || ''}
+            readOnly={!isEditing}
+            onChange={handleChange}
+            className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
           />
         </div>
 
@@ -61,13 +100,12 @@ const FieldDetailsTab = () => {
             </label>
             <input
               type="text"
-              value={
-                fieldData.area
-                  ? `${fieldData.area} ${fieldData.units || ''}`
-                  : ''
-              }
-              readOnly
-              className="w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none cursor-default"
+              name="area"
+              value={fieldData.area || ''}
+              readOnly={!isEditing}
+              onChange={handleChange}
+              placeholder={!isEditing ? '' : 'Area'}
+              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
             />
           </div>
           {/* Boundary */}
@@ -77,9 +115,11 @@ const FieldDetailsTab = () => {
             </label>
             <input
               type="text"
+              name="boundaryType"
               value={fieldData.boundaryType || ''}
-              readOnly
-              className="w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none cursor-default"
+              readOnly={!isEditing}
+              onChange={handleChange}
+              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
             />
           </div>
         </div>
@@ -98,9 +138,11 @@ const FieldDetailsTab = () => {
               </div>
               <input
                 type="text"
+                name="soilType"
                 value={fieldData.soilType || ''}
-                readOnly
-                className="w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none cursor-default"
+                readOnly={!isEditing}
+                onChange={handleChange}
+                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
               />
             </div>
           </div>
@@ -116,9 +158,11 @@ const FieldDetailsTab = () => {
               </div>
               <input
                 type="text"
+                name="phLevel"
                 value={fieldData.phLevel || ''}
-                readOnly
-                className="w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none cursor-default"
+                readOnly={!isEditing}
+                onChange={handleChange}
+                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
               />
             </div>
           </div>
@@ -134,13 +178,35 @@ const FieldDetailsTab = () => {
               </div>
               <input
                 type="text"
+                name="irrigationMethod"
                 value={fieldData.irrigationMethod || ''}
-                readOnly
-                className="w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none cursor-default"
+                readOnly={!isEditing}
+                onChange={handleChange}
+                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
               />
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Actions for Field Tab */}
+      <div className="flex gap-3 mt-8 border-t border-border pt-6">
+        <button
+          onClick={handleSave}
+          className={`w-fit px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+            isEditing
+              ? 'bg-green-500 text-black border-transparent hover:bg-green-400'
+              : 'bg-secondary text-foreground hover:bg-muted border-transparent'
+          }`}
+        >
+          {isEditing ? 'Save Details' : 'Edit Details'}
+        </button>
+        <button
+          onClick={onDelete}
+          className="w-fit px-4 py-2 bg-[#ffe4e6] text-[#e11d48] border border-transparent rounded-xl text-xs font-bold hover:bg-[#ffced4] transition-all"
+        >
+          Delete Field
+        </button>
       </div>
     </div>
   );

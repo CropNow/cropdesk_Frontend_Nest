@@ -1,6 +1,6 @@
 import { LogOut, Moon, Sun } from 'lucide-react';
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,11 +23,11 @@ const DesktopNavbar = () => {
 
   return (
     <header className="hidden md:flex items-center justify-between px-6 py-4 bg-background/50 backdrop-blur-md sticky top-0 z-50 border-b border-border w-full">
-      <div className="flex flex-col">
+      <Link to="/" className="flex flex-col">
         <h1 className="text-2xl font-bold text-foreground tracking-tight">
           CropDesk
         </h1>
-      </div>
+      </Link>
 
       <nav className="flex items-center gap-8">
         <NavLink

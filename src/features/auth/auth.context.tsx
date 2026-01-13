@@ -1,10 +1,13 @@
 import { createContext } from 'react';
-import type { AuthContextValue } from './AuthProvider';
+import type { User } from './auth.types';
+
+export interface AuthContextValue {
+  user: User | null;
+  loading: boolean;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+}
 
 /**
  * Authentication context value.
- *
- * Currently unknown during migration, so we use `unknown`
- * instead of `any` to keep strict type safety.
  */
 export const AuthContext = createContext<AuthContextValue | null>(null);

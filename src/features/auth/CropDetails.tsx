@@ -1,47 +1,142 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar } from 'lucide-react';
+import { useAuth } from './useAuth';
 
 const CropDetails = () => {
   const navigate = useNavigate();
-  const [cropData, setCropData] = useState({
-    cropName: '',
-    plantingDate: '',
-    harvestingDate: '',
-    area: '',
+  const { setUser, user } = useAuth(); // Get setUser to update context directly
+  const [cropData, setCropData] = useState(() => {
+    const tempStr = localStorage.getItem('tempRegistrationData');
+    if (tempStr) {
+      try {
+        const tempData = JSON.parse(tempStr);
+        if (tempData.cropDetails) {
+          return tempData.cropDetails;
+        }
+      } catch (error) {
+        console.error('Error loading saved crop details:', error);
+      }
+    }
+    return {
+      cropName: '',
+      plantingDate: '',
+      harvestingDate: '',
+      area: '',
+    };
   });
+
+  useEffect(() => {
+    const tempStr = localStorage.getItem('tempRegistrationData');
+    const tempData = tempStr ? JSON.parse(tempStr) : {};
+
+    if (JSON.stringify(tempData.cropDetails) !== JSON.stringify(cropData)) {
+      const updatedTemp = {
+        ...tempData,
+        cropDetails: cropData,
+      };
+      localStorage.setItem('tempRegistrationData', JSON.stringify(updatedTemp));
+    }
+  }, [cropData]);
+
+  const finalizeRegistration = (finalCropData?: any) => {
+    const tempStr = localStorage.getItem('tempRegistrationData');
+    const tempData = tempStr ? JSON.parse(tempStr) : {};
+
+    const storedUserStr = localStorage.getItem('registeredUser');
+    if (storedUserStr) {
+      const storedUser = JSON.parse(storedUserStr);
+
+      const cropToSave = finalCropData || tempData.cropDetails || {};
+
+      // Generate Identifiers
+      const farmerId = tempData.farmerDetails?.id || `farmer-${Date.now()}`;
+      // Add small delay or random to ensure subsequent IDs differ if running fast
+      const farmId =
+        tempData.farmDetails?.id ||
+        `farm-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const fieldId =
+        tempData.fieldDetails?.id ||
+        `field-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const cropId =
+        cropToSave.id ||
+        `crop-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      // Prepare Objects with IDs and Links
+      const farmerObj = tempData.farmerDetails
+        ? { ...tempData.farmerDetails, id: farmerId }
+        : null;
+      const farmObj = tempData.farmDetails
+        ? { ...tempData.farmDetails, id: farmId, farmerId: farmerId }
+        : null;
+      const fieldObj = tempData.fieldDetails
+        ? { ...tempData.fieldDetails, id: fieldId, farmId: farmId }
+        : null;
+      const cropObj = cropToSave.cropName
+        ? { ...cropToSave, id: cropId, fieldId: fieldId }
+        : null;
+
+      const farmersList = farmerObj ? [farmerObj] : [];
+      const farmsList = farmObj ? [farmObj] : [];
+      const fieldsList = fieldObj ? [fieldObj] : [];
+      const cropsList = cropObj ? [cropObj] : [];
+
+      const updatedUser = {
+        ...storedUser,
+
+        // Update basic details if present in temp (e.g. if we allowed editing basic info)
+        ...(tempData.farmerDetails && tempData.farmerDetails.name
+          ? {
+              firstName: tempData.farmerDetails.name.split(' ')[0],
+              lastName: tempData.farmerDetails.name
+                .split(' ')
+                .slice(1)
+                .join(' '),
+            }
+          : {}),
+
+        // Store legacy single objects (optional, for backward compat)
+        farmerDetails: farmerObj || {},
+        farmDetails: farmObj || {},
+        fieldDetails: fieldObj || {},
+        cropDetails: cropObj || {},
+
+        // Store Lists
+        farmers: farmersList,
+        farms: farmsList,
+        fields: fieldsList,
+        crops: cropsList,
+
+        isOnboardingComplete: true,
+      };
+
+      localStorage.setItem('registeredUser', JSON.stringify(updatedUser));
+      // Also update 'user' key for AuthContext initialization
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      localStorage.removeItem('tempRegistrationData');
+
+      // Update global auth state immediately
+      if (setUser) {
+        setUser(updatedUser);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Crop Details:', cropData);
 
-    // Finalize Onboarding
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
-      const storedUser = JSON.parse(storedUserStr);
-      const updatedUser = {
-        ...storedUser,
-        cropDetails: cropData,
-        isOnboardingComplete: true, // Mark complete here
-      };
-      localStorage.setItem('registeredUser', JSON.stringify(updatedUser));
-    }
+    finalizeRegistration(cropData);
 
     // Navigate to Dashboard
     navigate('/');
+    // No reload needed if setUser is called
   };
 
   const handleSkip = () => {
-    // Finalize Onboarding even if skipped
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
-      const storedUser = JSON.parse(storedUserStr);
-      const updatedUser = {
-        ...storedUser,
-        isOnboardingComplete: true,
-      };
-      localStorage.setItem('registeredUser', JSON.stringify(updatedUser));
-    }
+    // Finalize Onboarding even if skipped, without adding current crop data
+    finalizeRegistration({});
     navigate('/');
   };
 
