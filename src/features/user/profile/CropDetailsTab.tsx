@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Sprout, Calendar } from 'lucide-react';
+import { Sprout, Calendar, Plus, ChevronDown } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 const CropDetailsTab = ({
+  crop,
   crops,
+  onSelectCrop,
   onAdd,
   onUpdate,
   onDelete,
 }: {
+  crop: any;
   crops: any[];
+  onSelectCrop: (id: string) => void;
   onAdd: (crop: any) => void;
   onUpdate: (crop: any) => void;
   onDelete: (id: string) => void;
 }) => {
-  const [editingCrop, setEditingCrop] = useState<any | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
 
   // Form State
@@ -23,24 +30,35 @@ const CropDetailsTab = ({
     area: '',
   });
 
-  // When editingCrop changes, update form data
+  // Sync with prop
   useEffect(() => {
-    if (editingCrop) {
-      setFormData({
-        cropName: editingCrop.cropName || '',
-        plantingDate: editingCrop.plantingDate || '',
-        harvestingDate: editingCrop.harvestingDate || '',
-        area: editingCrop.area || '',
-      });
-    } else {
+    if (isAdding) {
       setFormData({
         cropName: '',
         plantingDate: '',
         harvestingDate: '',
         area: '',
       });
+      setIsEditing(true);
+    } else if (crop) {
+      setFormData({
+        cropName: crop.cropName || '',
+        plantingDate: crop.plantingDate || '',
+        harvestingDate: crop.harvestingDate || '',
+        area: crop.area || '',
+      });
+      setIsEditing(false);
+    } else {
+      // Reset if no crop selected
+      setFormData({
+        cropName: '',
+        plantingDate: '',
+        harvestingDate: '',
+        area: '',
+      });
+      setIsEditing(false);
     }
-  }, [editingCrop, isAdding]);
+  }, [crop, isAdding]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -51,79 +69,37 @@ const CropDetailsTab = ({
     if (isAdding) {
       onAdd(formData);
       setIsAdding(false);
-    } else if (editingCrop) {
-      onUpdate({ ...editingCrop, ...formData });
-      setEditingCrop(null);
+    } else if (isEditing) {
+      onUpdate({ ...crop, ...formData });
+      setIsEditing(false);
+    } else {
+      setIsEditing(true);
     }
   };
 
-  const handleCancel = () => {
-    setIsAdding(false);
-    setEditingCrop(null);
+  const toggleAddMode = () => {
+    if (isAdding) {
+      setIsAdding(false);
+      setIsEditing(false);
+    } else {
+      setIsAdding(true);
+    }
   };
 
-  // LIST VIEW
-  if (!isAdding && !editingCrop) {
+  // No Crop Selected View
+  if (!crop && !isAdding) {
     return (
-      <div className="bg-card border border-border rounded-3xl p-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h2 className="text-xl font-bold text-foreground">Crop Details</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Current season crops
-            </p>
-          </div>
-          <button
-            onClick={() => setIsAdding(true)}
-            className="px-4 py-2 bg-green-500 text-black rounded-xl font-bold hover:bg-green-400"
+      <div className="bg-card border border-border rounded-3xl p-8 flex items-center justify-center min-h-[400px] flex-col gap-4">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">No crop selected.</p>
+          <Button
+            className="rounded-xl font-bold flex items-center gap-2 mx-auto"
+            onClick={toggleAddMode}
           >
-            + Add Crop
-          </button>
+            <Plus size={16} />
+            Add New Crop
+          </Button>
         </div>
-
-        {crops.length === 0 ? (
-          <div className="text-center py-12 bg-muted/30 rounded-2xl border border-dashed border-border">
-            <p className="text-muted-foreground">No crops added yet.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {crops.map((crop) => (
-              <div
-                key={crop.id}
-                className="flex items-center justify-between p-4 bg-secondary rounded-2xl border border-transparent hover:border-green-500/30 transition-all"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-muted rounded-xl">
-                    <Sprout size={20} className="text-green-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground">
-                      {crop.cropName || 'Unnamed Crop'}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {crop.area || '0'} acres • Planted:{' '}
-                      {crop.plantingDate || 'N/A'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setEditingCrop(crop)}
-                    className="px-3 py-1.5 bg-muted text-foreground text-xs font-bold rounded-lg hover:bg-white/20 transition-colors"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => onDelete(crop.id)}
-                    className="px-3 py-1.5 bg-[#ffe4e6] text-[#e11d48] text-xs font-bold rounded-lg hover:bg-[#ffced4] transition-colors"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     );
   }
@@ -131,32 +107,77 @@ const CropDetailsTab = ({
   // FORM VIEW (Edit or Add)
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-foreground">
-          {isAdding ? 'Add New Crop' : 'Edit Crop Details'}
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {isAdding ? 'Enter crop information' : 'Update crop information'}
-        </p>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">
+            {isAdding ? 'Add New Crop' : 'Crop Details'}
+          </h2>
+        </div>
+
+        {/* Crop Selector */}
+        {!isAdding && crops && crops.length > 0 && onSelectCrop && (
+          <div className="flex-1 mx-8">
+            <Label className="block text-[10px] uppercase font-bold text-white mb-1">
+              Select Crop
+            </Label>
+            <select
+              className="w-fit min-w-[200px] bg-zinc-900 text-white border border-zinc-700 rounded-xl font-bold px-4 py-2 text-sm focus:outline-none cursor-pointer"
+              value={crop?.id || ''}
+              onChange={(e) => onSelectCrop(e.target.value)}
+            >
+              {crops.map((c) => (
+                <option
+                  key={c.id}
+                  value={c.id}
+                  className="bg-zinc-800 text-white"
+                >
+                  {c.cropName || 'Unnamed Crop'}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {!isAdding && (
+          <Button
+            onClick={toggleAddMode}
+            size="sm"
+            className="rounded-xl text-xs font-bold flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Add Crop
+          </Button>
+        )}
+        {isAdding && (
+          <Button
+            onClick={toggleAddMode}
+            variant="secondary"
+            size="sm"
+            className="rounded-xl text-xs font-bold"
+          >
+            Cancel
+          </Button>
+        )}
       </div>
 
       <div className="space-y-6 max-w-4xl">
         {/* Crop Name */}
         <div>
-          <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+          <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
             Crop Name
-          </label>
+          </Label>
           <div className="flex items-center gap-3">
             <div className="p-3 bg-muted rounded-xl">
               <Sprout size={18} className="text-foreground" />
             </div>
-            <input
+            <Input
               type="text"
               name="cropName"
               value={formData.cropName}
+              readOnly={!isEditing}
               onChange={handleChange}
-              className="w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50"
-              placeholder="e.g. Wheat, Corn"
+              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
+              placeholder={!isEditing ? '' : 'e.g. Wheat, Corn'}
             />
           </div>
         </div>
@@ -164,38 +185,40 @@ const CropDetailsTab = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Planting Date */}
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+            <Label className="block text-xs font-bold text-white uppercase mb-2">
               Planting Date
-            </label>
+            </Label>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-muted rounded-xl">
                 <Calendar size={18} className="text-foreground" />
               </div>
-              <input
+              <Input
                 type="date"
                 name="plantingDate"
                 value={formData.plantingDate}
+                readOnly={!isEditing}
                 onChange={handleChange}
-                className="w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
               />
             </div>
           </div>
 
           {/* Harvest Date */}
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+            <Label className="block text-xs font-bold text-white uppercase mb-2">
               Expected Harvest
-            </label>
+            </Label>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-muted rounded-xl">
                 <Calendar size={18} className="text-foreground" />
               </div>
-              <input
+              <Input
                 type="date"
                 name="harvestingDate"
                 value={formData.harvestingDate}
+                readOnly={!isEditing}
                 onChange={handleChange}
-                className="w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
               />
             </div>
           </div>
@@ -203,32 +226,41 @@ const CropDetailsTab = ({
 
         {/* Area */}
         <div>
-          <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+          <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
             Cultivation Area (Acres)
-          </label>
-          <input
+          </Label>
+          <Input
             type="text"
             name="area"
             value={formData.area}
+            readOnly={!isEditing}
             onChange={handleChange}
-            className="w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50"
+            className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
           />
         </div>
 
         {/* Actions */}
         <div className="flex gap-3 mt-8 border-t border-border pt-6">
-          <button
+          <Button
             onClick={handleSave}
-            className="w-fit px-6 py-2 bg-green-500 text-black rounded-xl text-sm font-bold hover:bg-green-400 transition-all"
+            variant={isEditing ? 'default' : 'secondary'}
+            className="w-fit rounded-xl text-xs font-bold"
           >
-            {isAdding ? 'Add Crop' : 'Save Changes'}
-          </button>
-          <button
-            onClick={handleCancel}
-            className="w-fit px-6 py-2 bg-muted text-foreground rounded-xl text-sm font-bold hover:bg-white/20 transition-all"
-          >
-            Cancel
-          </button>
+            {isAdding
+              ? 'Save New Crop'
+              : isEditing
+                ? 'Save Changes'
+                : 'Edit Details'}
+          </Button>
+          {!isAdding && (
+            <Button
+              onClick={() => onDelete(crop.id)}
+              variant="destructive"
+              className="w-fit rounded-xl text-xs font-bold"
+            >
+              Delete Crop
+            </Button>
+          )}
         </div>
       </div>
     </div>

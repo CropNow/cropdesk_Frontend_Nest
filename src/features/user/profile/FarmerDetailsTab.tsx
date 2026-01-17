@@ -1,16 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { User, MapPin, Phone, Mail } from 'lucide-react';
+import { User, MapPin, Phone, Mail, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const FarmerDetailsTab = ({
   farmer,
+  farmers,
+  onSelectFarmer,
+  onAdd,
   onUpdate,
   onDelete,
 }: {
   farmer: any;
+  farmers: any[];
+  onSelectFarmer: (id: string) => void;
+  onAdd: (data: any) => void;
   onUpdate: (data: any) => void;
   onDelete: () => void;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
 
   // Initialize with default matching the structure
   const [formData, setFormData] = useState({
@@ -24,7 +35,18 @@ const FarmerDetailsTab = ({
   });
 
   useEffect(() => {
-    if (farmer) {
+    if (isAdding) {
+      setFormData({
+        name: '',
+        phoneNumber: '',
+        email: '',
+        address: '',
+        village: '',
+        district: '',
+        state: '',
+      });
+      setIsEditing(true); // Force editing mode when adding
+    } else if (farmer) {
       setFormData({
         name: farmer.name || '',
         phoneNumber: farmer.phoneNumber || '',
@@ -34,8 +56,9 @@ const FarmerDetailsTab = ({
         district: farmer.district || '',
         state: farmer.state || '',
       });
+      setIsEditing(false);
     }
-  }, [farmer]);
+  }, [farmer, isAdding]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -45,38 +68,94 @@ const FarmerDetailsTab = ({
   };
 
   const handleSave = () => {
-    if (isEditing) {
+    if (isAdding) {
+      onAdd(formData);
+      setIsAdding(false);
+    } else if (isEditing) {
       onUpdate({ ...farmer, ...formData });
+      setIsEditing(false); // Disable editing after save
+    } else {
+      setIsEditing(true); // Enable editing
     }
-    setIsEditing(!isEditing);
+  };
+
+  const toggleAddMode = () => {
+    if (isAdding) {
+      setIsAdding(false);
+      setIsEditing(false);
+    } else {
+      setIsAdding(true);
+    }
   };
 
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-foreground">Farmer Details</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Personal information
-        </p>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">
+            {isAdding ? 'Add New Farmer' : 'Farmer Details'}
+          </h2>
+        </div>
+
+        {/* Farmer Selector */}
+        {!isAdding && farmers.length > 0 && (
+          <div className="flex-1 mx-8">
+            <Label className="block text-[10px] uppercase font-bold text-white mb-1">
+              Select Farmer
+            </Label>
+            <select
+              className="w-fit min-w-[200px] bg-secondary rounded-xl text-foreground font-bold px-4 py-2 text-sm focus:outline-none cursor-pointer"
+              value={farmer?.id || ''}
+              onChange={(e) => onSelectFarmer(e.target.value)}
+            >
+              {farmers.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {!isAdding && (
+          <Button
+            onClick={toggleAddMode}
+            size="sm"
+            className="rounded-xl text-xs font-bold flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Add Farmer
+          </Button>
+        )}
+        {isAdding && (
+          <Button
+            onClick={toggleAddMode}
+            variant="secondary"
+            size="sm"
+            className="rounded-xl text-xs font-bold"
+          >
+            Cancel
+          </Button>
+        )}
       </div>
 
       <div className="space-y-6 max-w-4xl">
         {/* Name */}
         <div>
-          <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+          <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
             Full Name
-          </label>
+          </Label>
           <div className="flex items-center gap-3">
             <div className="p-3 bg-muted rounded-xl">
               <User size={18} className="text-foreground" />
             </div>
-            <input
+            <Input
               type="text"
               name="name"
               value={formData.name || ''}
               readOnly={!isEditing}
               onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
             />
           </div>
         </div>
@@ -84,40 +163,40 @@ const FarmerDetailsTab = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Phone */}
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+            <Label className="block text-xs font-bold text-white uppercase mb-2">
               Phone Number
-            </label>
+            </Label>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-muted rounded-xl">
                 <Phone size={18} className="text-foreground" />
               </div>
-              <input
+              <Input
                 type="text"
                 name="phoneNumber"
                 value={formData.phoneNumber || ''}
                 readOnly={!isEditing}
                 onChange={handleChange}
-                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+                className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
               />
             </div>
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+            <Label className="block text-xs font-bold text-white uppercase mb-2">
               Email Address
-            </label>
+            </Label>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-muted rounded-xl">
                 <Mail size={18} className="text-foreground" />
               </div>
-              <input
+              <Input
                 type="text"
                 name="email"
                 value={formData.email || ''}
                 readOnly={!isEditing}
                 onChange={handleChange}
-                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+                className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
               />
             </div>
           </div>
@@ -127,19 +206,19 @@ const FarmerDetailsTab = ({
 
         {/* Address */}
         <div>
-          <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+          <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
             Address
-          </label>
+          </Label>
           <div className="flex items-start gap-3">
             <div className="p-3 bg-muted rounded-xl">
               <MapPin size={18} className="text-foreground" />
             </div>
-            <textarea
+            <Textarea
               name="address"
               value={formData.address || ''}
               readOnly={!isEditing}
               onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none resize-none h-24 ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none resize-none h-24 ${!isEditing ? 'cursor-default' : ''}`}
             />
           </div>
         </div>
@@ -147,66 +226,70 @@ const FarmerDetailsTab = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Village */}
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+            <Label className="block text-xs font-bold text-white uppercase mb-2">
               Village
-            </label>
-            <input
+            </Label>
+            <Input
               type="text"
               name="village"
               value={formData.village || ''}
               readOnly={!isEditing}
               onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
             />
           </div>
           {/* District */}
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+            <Label className="block text-xs font-bold text-white uppercase mb-2">
               District
-            </label>
-            <input
+            </Label>
+            <Input
               type="text"
               name="district"
               value={formData.district || ''}
               readOnly={!isEditing}
               onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
             />
           </div>
           {/* State */}
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+            <Label className="block text-xs font-bold text-white uppercase mb-2">
               State
-            </label>
-            <input
+            </Label>
+            <Input
               type="text"
               name="state"
               value={formData.state || ''}
               readOnly={!isEditing}
               onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
             />
           </div>
         </div>
 
         {/* Actions for Farmer Tab */}
         <div className="flex gap-3 mt-8 border-t border-border pt-6">
-          <button
+          <Button
             onClick={handleSave}
-            className={`w-fit px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-              isEditing
-                ? 'bg-green-500 text-black border-transparent hover:bg-green-400'
-                : 'bg-secondary text-foreground hover:bg-muted border-transparent'
-            }`}
+            variant={isEditing ? 'default' : 'secondary'}
+            className="w-fit rounded-xl text-xs font-bold"
           >
-            {isEditing ? 'Save Details' : 'Edit Details'}
-          </button>
-          <button
-            onClick={onDelete}
-            className="w-fit px-4 py-2 bg-[#ffe4e6] text-[#e11d48] border border-transparent rounded-xl text-xs font-bold hover:bg-[#ffced4] transition-all"
-          >
-            Delete Farmer
-          </button>
+            {isAdding
+              ? 'Save New Farmer'
+              : isEditing
+                ? 'Save Changes'
+                : 'Edit Details'}
+          </Button>
+          {!isAdding && (
+            <Button
+              onClick={onDelete}
+              variant="destructive"
+              className="w-fit rounded-xl text-xs font-bold"
+            >
+              Delete Farmer
+            </Button>
+          )}
         </div>
       </div>
     </div>

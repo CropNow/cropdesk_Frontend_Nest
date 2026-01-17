@@ -23,17 +23,29 @@ import FarmerDetailsTab from './FarmerDetailsTab';
 import FarmDetailsTab from './FarmDetailsTab';
 import FieldDetailsTab from './FieldDetailsTab';
 import CropDetailsTab from './CropDetailsTab';
+import { Switch } from '../../../components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const Profile = () => {
   const navigate = useNavigate();
   const { setUser } = useAuth();
   const [activeTab, setActiveTab] = useState('Profile');
 
+  // Preferences State
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [smsNotifications, setSmsNotifications] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isPublicProfile, setIsPublicProfile] = useState(false);
+
   // Hierarchy State
   const [farmers, setFarmers] = useState<any[]>([]);
   const [selectedFarmerId, setSelectedFarmerId] = useState<string>('');
   const [selectedFarmId, setSelectedFarmId] = useState<string>('');
   const [selectedFieldId, setSelectedFieldId] = useState<string>('');
+  const [selectedCropId, setSelectedCropId] = useState<string>('');
 
   // Derived Selected Objects
   const selectedFarmer = farmers.find((f) => f.id === selectedFarmerId);
@@ -42,6 +54,9 @@ const Profile = () => {
   );
   const selectedField = selectedFarm?.fields?.find(
     (f: any) => f.id === selectedFieldId
+  );
+  const selectedCrop = selectedField?.crops?.find(
+    (c: any) => c.id === selectedCropId
   );
 
   // Add Item Logic (Mock IDs)
@@ -99,6 +114,41 @@ const Profile = () => {
     persistFarmers(updatedFarmers);
     setSelectedFieldId(newField.id);
   };
+
+  const handleCropSelect = (cropId: string) => {
+    setSelectedCropId(cropId);
+  };
+
+  /* MOVED HANDLERS START */
+  const handleFarmerSelect = (farmerId: string) => {
+    setSelectedFarmerId(farmerId);
+    // Auto-select first nested items
+    const farmer = farmers.find((f) => f.id === farmerId);
+    if (farmer && farmer.farms && farmer.farms.length > 0) {
+      const firstFarm = farmer.farms[0];
+      setSelectedFarmId(firstFarm.id);
+      if (firstFarm.fields && firstFarm.fields.length > 0) {
+        setSelectedFieldId(firstFarm.fields[0].id);
+      } else {
+        setSelectedFieldId('');
+      }
+    } else {
+      setSelectedFarmId('');
+      setSelectedFieldId('');
+    }
+  };
+
+  const handleFarmSelect = (farmId: string) => {
+    setSelectedFarmId(farmId);
+    // Auto-select first field
+    const farm = selectedFarmer?.farms?.find((f: any) => f.id === farmId);
+    if (farm && farm.fields && farm.fields.length > 0) {
+      setSelectedFieldId(farm.fields[0].id);
+    } else {
+      setSelectedFieldId('');
+    }
+  };
+  /* MOVED HANDLERS END */
 
   const persistFarmers = (updatedFarmers: any[]) => {
     const storedUserStr = localStorage.getItem('registeredUser');
@@ -301,13 +351,24 @@ const Profile = () => {
   };
 
   const handleDeleteFarmer = (id: string) => {
-    if (window.confirm('Delete this farmer?')) {
+    if (
+      window.confirm(
+        'Delete this farmer? All associated farms, fields, and crops will be deleted.'
+      )
+    ) {
       const updated = farmers.filter((f) => f.id !== id);
       setFarmers(updated);
       persistFarmers(updated);
-      if (selectedFarmerId === id && updated.length > 0)
-        setSelectedFarmerId(updated[0].id);
-      else if (updated.length === 0) setSelectedFarmerId('');
+      if (selectedFarmerId === id) {
+        if (updated.length > 0) {
+          handleFarmerSelect(updated[0].id);
+        } else {
+          setSelectedFarmerId('');
+          setSelectedFarmId('');
+          setSelectedFieldId('');
+          setSelectedCropId('');
+        }
+      }
     }
   };
 
@@ -329,7 +390,11 @@ const Profile = () => {
   };
 
   const handleDeleteFarm = (id: string) => {
-    if (window.confirm('Delete this farm?')) {
+    if (
+      window.confirm(
+        'Delete this farm? All associated fields and crops will be deleted.'
+      )
+    ) {
       const updated = farmers.map((farmer) => {
         if (farmer.id === selectedFarmerId) {
           return {
@@ -341,8 +406,21 @@ const Profile = () => {
       });
       setFarmers(updated);
       persistFarmers(updated);
-      // Logic to update selectedFarmId is tricky if we don't know the new one, but for now simple check:
-      if (selectedFarmId === id) setSelectedFarmId('');
+      if (selectedFarmId === id) {
+        // Find the specific farmer to get updated farms list
+        const relatedFarmer = updated.find((f) => f.id === selectedFarmerId);
+        if (
+          relatedFarmer &&
+          relatedFarmer.farms &&
+          relatedFarmer.farms.length > 0
+        ) {
+          handleFarmSelect(relatedFarmer.farms[0].id);
+        } else {
+          setSelectedFarmId('');
+          setSelectedFieldId('');
+          setSelectedCropId('');
+        }
+      }
     }
   };
 
@@ -372,7 +450,11 @@ const Profile = () => {
   };
 
   const handleDeleteField = (id: string) => {
-    if (window.confirm('Delete this field?')) {
+    if (
+      window.confirm(
+        'Delete this field? All associated crop details will be deleted.'
+      )
+    ) {
       const updated = farmers.map((farmer) => {
         if (farmer.id === selectedFarmerId) {
           return {
@@ -392,40 +474,33 @@ const Profile = () => {
       });
       setFarmers(updated);
       persistFarmers(updated);
-      if (selectedFieldId === id) setSelectedFieldId('');
-    }
-  };
-
-  // Crop CRUD
-  const handleAddCrop = (newCrop: any) => {
-    const cropWithId = { ...newCrop, id: newCrop.id || Date.now().toString() };
-    const updated = farmers.map((farmer) => {
-      if (farmer.id === selectedFarmerId) {
-        return {
-          ...farmer,
-          farms: farmer.farms.map((farm: any) => {
-            if (farm.id === selectedFarmId) {
-              return {
-                ...farm,
-                fields: farm.fields.map((field: any) => {
-                  if (field.id === selectedFieldId) {
-                    return {
-                      ...field,
-                      crops: [...(field.crops || []), cropWithId],
-                    };
-                  }
-                  return field;
-                }),
-              };
-            }
-            return farm;
-          }),
-        };
+      if (selectedFieldId === id) {
+        const relatedFarmer = updated.find((f) => f.id === selectedFarmerId);
+        const relatedFarm = relatedFarmer?.farms?.find(
+          (f: any) => f.id === selectedFarmId
+        );
+        if (
+          relatedFarm &&
+          relatedFarm.fields &&
+          relatedFarm.fields.length > 0
+        ) {
+          // We can't use a dedicated handler easily because field selection logic is simple, so we do it manually or assume existing handler logic
+          setSelectedFieldId(relatedFarm.fields[0].id);
+          // Also reset crop
+          if (
+            relatedFarm.fields[0].crops &&
+            relatedFarm.fields[0].crops.length > 0
+          ) {
+            setSelectedCropId(relatedFarm.fields[0].crops[0].id);
+          } else {
+            setSelectedCropId('');
+          }
+        } else {
+          setSelectedFieldId('');
+          setSelectedCropId('');
+        }
       }
-      return farmer;
-    });
-    setFarmers(updated);
-    persistFarmers(updated);
+    }
   };
 
   const handleUpdateCrop = (id: string, updates: any) => {
@@ -491,23 +566,125 @@ const Profile = () => {
       });
       setFarmers(updated);
       persistFarmers(updated);
+      if (selectedCropId === id) {
+        // Find the field to select next crop
+        const relatedFarmer = updated.find((f) => f.id === selectedFarmerId);
+        const relatedFarm = relatedFarmer?.farms?.find(
+          (f: any) => f.id === selectedFarmId
+        );
+        const relatedField = relatedFarm?.fields?.find(
+          (f: any) => f.id === selectedFieldId
+        );
+
+        if (
+          relatedField &&
+          relatedField.crops &&
+          relatedField.crops.length > 0
+        ) {
+          setSelectedCropId(relatedField.crops[0].id);
+        } else {
+          setSelectedCropId('');
+        }
+      }
     }
   };
 
+  const handleAddFarmer = (newFarmer: any) => {
+    const id = (Math.random() * 10000).toString();
+    const farmer = { ...newFarmer, id, farms: [] };
+    const updated = [...farmers, farmer];
+    setFarmers(updated);
+    persistFarmers(updated);
+    setSelectedFarmerId(id);
+    setActiveTab('Farmer Details');
+  };
+
+  const handleAddFarm = (newFarm: any) => {
+    if (!selectedFarmerId) return;
+    const id = (Math.random() * 10000).toString();
+    const updated = farmers.map((f) => {
+      if (f.id === selectedFarmerId) {
+        const farm = { ...newFarm, id, fields: [] };
+        return { ...f, farms: [...(f.farms || []), farm] };
+      }
+      return f;
+    });
+    setFarmers(updated);
+    persistFarmers(updated);
+    setSelectedFarmId(id);
+  };
+
+  const handleAddField = (newField: any) => {
+    if (!selectedFarmId || !selectedFarmerId) return;
+    const id = (Math.random() * 10000).toString();
+    const updated = farmers.map((farmer) => {
+      if (farmer.id === selectedFarmerId) {
+        return {
+          ...farmer,
+          farms: farmer.farms.map((farm: any) => {
+            if (farm.id === selectedFarmId) {
+              const field = { ...newField, id, crops: [] };
+              return { ...farm, fields: [...(farm.fields || []), field] };
+            }
+            return farm;
+          }),
+        };
+      }
+      return farmer;
+    });
+    setFarmers(updated);
+    persistFarmers(updated);
+    setSelectedFieldId(id);
+  };
+
+  const handleAddCrop = (newCrop: any) => {
+    if (!selectedFieldId || !selectedFarmId || !selectedFarmerId) return;
+    const id = (Math.random() * 10000).toString();
+    const updated = farmers.map((farmer) => {
+      if (farmer.id === selectedFarmerId) {
+        return {
+          ...farmer,
+          farms: farmer.farms.map((farm: any) => {
+            if (farm.id === selectedFarmId) {
+              return {
+                ...farm,
+                fields: farm.fields.map((field: any) => {
+                  if (field.id === selectedFieldId) {
+                    return {
+                      ...field,
+                      crops: [...(field.crops || []), { ...newCrop, id }],
+                    };
+                  }
+                  return field;
+                }),
+              };
+            }
+            return farm;
+          }),
+        };
+      }
+      return farmer;
+    });
+    setFarmers(updated);
+    persistFarmers(updated);
+    setSelectedCropId(id);
+  };
+
   return (
-    <main className="min-h-screen bg-background text-foreground pb-20 p-4 lg:p-8 font-sans">
+    <main className="min-h-screen bg-background text-foreground pb-20 p-4 pt-20 md:pt-8 lg:p-8 font-sans">
       <div className="max-w-[1600px] mx-auto flex flex-col gap-8">
         {/* MAIN CONTENT */}
         <div className="flex-1">
           {/* Sub Navigation */}
-          <div className="bg-card border border-border rounded-2xl p-2 mb-8 flex flex-wrap gap-2">
+          <div className="bg-card border border-border rounded-2xl p-2 mb-8 flex overflow-x-auto no-scrollbar gap-2 sticky top-16 md:static z-40">
             {tabs.map((tab) => (
-              <button
+              <Button
                 key={tab}
+                variant="ghost"
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                className={`px-4 py-2 md:px-6 rounded-xl text-xs md:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab
-                    ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                    ? 'bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20 hover:text-green-500'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent'
                 }`}
               >
@@ -523,223 +700,150 @@ const Profile = () => {
                     6
                   </span>
                 )}
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* PROFILE TAB CONTENT */}
           {activeTab === 'Profile' && (
-            <div className="bg-card border border-border rounded-3xl p-8">
+            <div className="bg-card border border-border rounded-3xl p-4 md:p-8">
               <div className="mb-8"></div>
-              {/* User Header */}
-              <div className="flex items-start gap-6 mb-10">
-                <div className="w-20 h-20 rounded-2xl flex items-center justify-center bg-green-500 text-black">
-                  <User size={32} />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-foreground">
-                    {userDetails.name}
-                  </h1>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {userDetails.email}
-                  </p>
-                </div>
-              </div>
 
-              {/* Stats Cards */}
-              <div className="mb-6 flex justify-end items-center gap-4">
-                <div className="relative inline-block text-left">
-                  <div className="flex items-center gap-2 bg-card border border-border px-4 py-2 rounded-xl">
-                    <span className="text-xs font-bold text-muted-foreground uppercase">
-                      Select Field:
-                    </span>
-                    <select
-                      className="bg-transparent text-sm font-bold text-foreground focus:outline-none cursor-pointer"
-                      value={selectedFieldId}
-                      onChange={(e) => {
-                        const fieldId = e.target.value;
-                        for (const farmer of farmers) {
-                          for (const farm of farmer.farms) {
-                            const field = farm.fields.find(
-                              (f: any) => f.id === fieldId
-                            );
-                            if (field) {
-                              setSelectedFarmerId(farmer.id);
-                              setSelectedFarmId(farm.id);
-                              setSelectedFieldId(fieldId);
-                              return;
-                            }
-                          }
-                        }
-                      }}
-                    >
-                      {farmers.map((farmer) => (
-                        <optgroup
-                          key={farmer.id}
-                          label={`Farmer: ${farmer.name}`}
-                        >
-                          {farmer.farms?.map((farm: any) => (
-                            <React.Fragment key={farm.id}>
-                              {farm.fields?.length > 0 ? (
-                                farm.fields.map((field: any) => (
-                                  <option key={field.id} value={field.id}>
-                                    {farm.name} - {field.name}
-                                  </option>
-                                ))
-                              ) : (
-                                <option disabled>
-                                  No fields in {farm.name}
-                                </option>
-                              )}
-                            </React.Fragment>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
+              <div className="flex flex-col-reverse md:flex-col">
+                {/* User Header Section (Second on Mobile) */}
+                <div className="flex items-start gap-4 mb-8 mt-6 md:mt-0">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center bg-green-500 text-black flex-shrink-0">
+                    <User size={32} />
                   </div>
-                </div>
-
-                <button
-                  onClick={addField}
-                  disabled={!isEditing}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${!isEditing ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-green-500 text-black hover:bg-green-400'}`}
-                >
-                  Add Field
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                {/* Total Land Area - From Selected FARM */}
-                <div className="bg-[#1e40af] rounded-2xl p-6 relative overflow-hidden group hover:scale-[1.02] transition-transform">
-                  <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                  <div className="flex justify-between items-start mb-6 relative z-10">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <Map size={24} className="text-white" />
-                    </div>
-                  </div>
-                  <div className="relative z-10">
-                    <h3 className="text-4xl font-bold text-white mb-1">
-                      {selectedFarm
-                        ? selectedFarm.fields?.reduce(
-                            (acc: number, f: any) =>
-                              acc + (parseFloat(f.area) || 0),
-                            0
-                          ) +
-                          ' ' +
-                          (selectedFarm.units || 'acres')
-                        : '0'}
-                      <span className="text-lg font-medium opacity-80"></span>
-                    </h3>
-                    <p className="text-xs font-bold text-white/60 uppercase tracking-wider">
-                      Total Land Area (Farm)
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1"></div>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      {userDetails.email}
                     </p>
                   </div>
                 </div>
 
-                {/* Cultivable Area - From Selected FIELD */}
-                <div className="bg-[#16a34a] rounded-2xl p-6 relative overflow-hidden group hover:scale-[1.02] transition-transform">
-                  <div className="absolute top-0 right-0 p-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                  <div className="flex justify-between items-start mb-6 relative z-10">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <Leaf size={24} className="text-white" />
+                {/* Stats Cards (First on Mobile) */}
+                <div className="mb-2">
+                  <h3 className="text-sm font-bold text-muted-foreground uppercase mb-4 md:hidden">
+                    Farm Statistics
+                  </h3>
+                  <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-6">
+                    {/* Total Land Area */}
+                    <div className="bg-[#1e40af] rounded-2xl p-3 md:p-6 relative overflow-hidden group hover:scale-[1.02] transition-transform h-28 md:h-auto flex flex-col justify-between">
+                      <div className="hidden md:flex justify-between items-start mb-6 relative z-10">
+                        <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                          <Map size={24} className="text-white" />
+                        </div>
+                      </div>
+                      <div className="md:hidden mb-2">
+                        <Map size={16} className="text-white opacity-80" />
+                      </div>
+                      <div className="relative z-10">
+                        <h3 className="text-xl md:text-4xl font-bold text-white mb-0.5">
+                          {selectedFarm
+                            ? selectedFarm.fields?.reduce(
+                                (acc: number, f: any) =>
+                                  acc + (parseFloat(f.area) || 0),
+                                0
+                              )
+                            : '0'}
+                        </h3>
+                        <p className="text-[9px] md:text-xs font-bold text-white/60 uppercase tracking-wider leading-tight">
+                          Total Land
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="relative z-10">
-                    <h3 className="text-4xl font-bold text-white mb-1">
-                      {selectedField ? selectedField.area : '0'}{' '}
-                      <span className="text-lg font-medium opacity-80">
-                        {selectedField ? selectedField.units : 'acres'}
-                      </span>
-                    </h3>
-                    <p className="text-xs font-bold text-white/60 uppercase tracking-wider mb-4">
-                      Cultivable Area (Field)
-                    </p>
-                    <div className="h-1.5 bg-black/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-white/80 w-full rounded-full"></div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Water Source - From Selected FIELD */}
-                <div className="bg-[#06b6d4] rounded-2xl p-6 relative overflow-hidden group hover:scale-[1.02] transition-transform">
-                  <div className="absolute top-0 right-0 p-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                  <div className="flex justify-between items-start mb-6 relative z-10">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <Droplets size={24} className="text-white" />
+                    {/* Cultivable Area */}
+                    <div className="bg-[#16a34a] rounded-2xl p-3 md:p-6 relative overflow-hidden group hover:scale-[1.02] transition-transform h-28 md:h-auto flex flex-col justify-between">
+                      <div className="hidden md:flex justify-between items-start mb-6 relative z-10">
+                        <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                          <Leaf size={24} className="text-white" />
+                        </div>
+                      </div>
+                      <div className="md:hidden mb-2">
+                        <Leaf size={16} className="text-white opacity-80" />
+                      </div>
+                      <div className="relative z-10">
+                        <h3 className="text-xl md:text-4xl font-bold text-white mb-0.5">
+                          {selectedField ? selectedField.area : '0'}
+                        </h3>
+                        <p className="text-[9px] md:text-xs font-bold text-white/60 uppercase tracking-wider leading-tight">
+                          Cultivable
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="relative z-10">
-                    <h3 className="text-xl font-bold text-white mb-2 capitalize truncate">
-                      {selectedField && selectedField.irrigationMethod
-                        ? selectedField.irrigationMethod
-                        : 'No Source'}
-                    </h3>
-                    <p className="text-xs font-bold text-white/60 uppercase tracking-wider">
-                      Primary Water Source
-                    </p>
+
+                    {/* Water Source */}
+                    <div className="bg-[#06b6d4] rounded-2xl p-3 md:p-6 relative overflow-hidden group hover:scale-[1.02] transition-transform h-28 md:h-auto flex flex-col justify-between">
+                      <div className="hidden md:flex justify-between items-start mb-6 relative z-10">
+                        <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                          <Droplets size={24} className="text-white" />
+                        </div>
+                      </div>
+                      <div className="md:hidden mb-2">
+                        <Droplets size={16} className="text-white opacity-80" />
+                      </div>
+                      <div className="relative z-10">
+                        <h3 className="text-lg md:text-xl font-bold text-white mb-0.5 capitalize truncate">
+                          {selectedField && selectedField.irrigationMethod
+                            ? selectedField.irrigationMethod
+                            : 'No Source'}
+                        </h3>
+                        <p className="text-[9px] md:text-xs font-bold text-white/60 uppercase tracking-wider leading-tight">
+                          Water Source
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Form Section */}
-              <div className="space-y-8 max-w-4xl">
+              <div className="space-y-6 max-w-4xl">
                 {/* Username */}
                 <div>
-                  <label className="block text-xs font-bold text-muted-foreground uppercase mb-3">
+                  <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2 ml-1">
                     Username
-                  </label>
-                  <div className="flex">
-                    <div className="px-4 py-3 bg-muted border border-border rounded-l-xl text-muted-foreground text-sm font-medium border-r-0 flex items-center">
-                      cropnow.com/
-                    </div>
-                    <input
-                      type="text"
-                      value={userDetails.name}
-                      readOnly={!isEditing}
-                      className="flex-1 bg-secondary text-foreground rounded-r-xl font-bold px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50"
-                    />
-                  </div>
+                  </Label>
+                  <Input
+                    type="text"
+                    value={userDetails.name}
+                    readOnly={!isEditing}
+                    className="w-full bg-white text-black rounded-xl font-bold px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 hover:bg-white/90 transition-colors"
+                  />
                 </div>
 
                 {/* Bio */}
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <label className="block text-xs font-bold text-muted-foreground uppercase">
-                      Bio
-                    </label>
-                    <Info size={14} className="text-muted-foreground" />
-                  </div>
-                  <textarea
+                  <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2 ml-1">
+                    Bio
+                  </Label>
+                  <Textarea
                     placeholder="Tell us about yourself and your farming experience..."
-                    className="w-full h-32 bg-secondary rounded-xl text-foreground font-medium px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 resize-none p-4"
+                    className="w-full h-32 bg-white rounded-xl text-black font-medium px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
                     readOnly={!isEditing}
-                  ></textarea>
-                  <div className="text-right mt-2">
-                    <span className="text-[10px] text-muted-foreground font-bold uppercase">
-                      275 characters remaining
-                    </span>
-                  </div>
+                  />
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="mt-8 pt-6 border-t border-border flex gap-3">
-                <button
+                <Button
                   onClick={handleEditToggle}
-                  className={`w-fit px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                    isEditing
-                      ? 'bg-green-500 text-black border-transparent hover:bg-green-400'
-                      : 'bg-secondary text-foreground hover:bg-muted border-transparent'
-                  }`}
+                  variant={isEditing ? 'default' : 'secondary'}
+                  className="w-fit rounded-xl text-xs font-bold"
                 >
                   {isEditing ? 'Save Profile' : 'Edit Profile'}
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleDeleteAccount}
-                  className="w-fit px-4 py-2 bg-[#ffe4e6] text-[#e11d48] border border-transparent rounded-xl text-xs font-bold hover:bg-[#ffced4] transition-all"
+                  variant="destructive"
+                  className="w-fit rounded-xl text-xs font-bold"
                 >
                   Delete Account
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -748,6 +852,9 @@ const Profile = () => {
           {activeTab === 'Farmer Details' && (
             <FarmerDetailsTab
               farmer={selectedFarmer}
+              farmers={farmers}
+              onSelectFarmer={handleFarmerSelect}
+              onAdd={handleAddFarmer}
               onUpdate={(updates: any) =>
                 selectedFarmerId &&
                 handleUpdateFarmer(selectedFarmerId, updates)
@@ -762,6 +869,9 @@ const Profile = () => {
           {activeTab === 'Farm Details' && (
             <FarmDetailsTab
               farm={selectedFarm}
+              farms={selectedFarmer?.farms || []}
+              onSelectFarm={handleFarmSelect}
+              onAdd={handleAddFarm}
               onUpdate={(updates: any) =>
                 selectedFarmId && handleUpdateFarm(selectedFarmId, updates)
               }
@@ -775,6 +885,9 @@ const Profile = () => {
           {activeTab === 'Field Details' && (
             <FieldDetailsTab
               field={selectedField}
+              fields={selectedFarm?.fields || []}
+              onSelectField={setSelectedFieldId}
+              onAdd={handleAddField}
               onUpdate={(updates: any) =>
                 selectedFieldId && handleUpdateField(selectedFieldId, updates)
               }
@@ -787,7 +900,9 @@ const Profile = () => {
           {/* CROP DETAILS TAB */}
           {activeTab === 'Crop Details' && (
             <CropDetailsTab
+              crop={selectedCrop}
               crops={selectedField?.crops || []}
+              onSelectCrop={handleCropSelect}
               onAdd={handleAddCrop}
               onUpdate={(crop: any) => handleUpdateCrop(crop.id, crop)}
               onDelete={handleDeleteCrop}
@@ -807,82 +922,78 @@ const Profile = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Appearance */}
+                {/* Notifications */}
                 <div className="bg-muted border border-border rounded-2xl p-6">
                   <h3 className="text-sm font-bold text-muted-foreground uppercase mb-6">
-                    Appearance
+                    Notifications
                   </h3>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between cursor-pointer group py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
-                          <Monitor size={18} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-sm text-foreground group-hover:text-blue-400 transition-colors flex items-center gap-2">
-                            Theme Mode <ChevronRight size={14} />
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            System Default
-                          </p>
-                        </div>
+                    <div className="flex items-center justify-between py-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-foreground">
+                          Email Alerts
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          Receive daily summaries
+                        </p>
                       </div>
+                      <Switch
+                        checked={emailNotifications}
+                        onCheckedChange={setEmailNotifications}
+                      />
                     </div>
-                    <div className="w-full h-px bg-border"></div>
-                    <div className="flex items-center justify-between cursor-pointer group py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
-                          <Globe size={18} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-sm text-foreground group-hover:text-blue-400 transition-colors flex items-center gap-2">
-                            Language <ChevronRight size={14} />
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            English
-                          </p>
-                        </div>
+                    <div className="w-full h-px bg-border/50"></div>
+                    <div className="flex items-center justify-between py-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-foreground">
+                          SMS Updates
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          Get critical alerts via SMS
+                        </p>
                       </div>
+                      <Switch
+                        checked={smsNotifications}
+                        onCheckedChange={setSmsNotifications}
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Privacy & Security */}
+                {/* Settings */}
                 <div className="bg-muted border border-border rounded-2xl p-6">
                   <h3 className="text-sm font-bold text-muted-foreground uppercase mb-6">
-                    Privacy & Security
+                    Settings
                   </h3>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between cursor-pointer group py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500">
-                          <ShieldCheck size={18} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-sm text-foreground group-hover:text-orange-400 transition-colors flex items-center gap-2">
-                            Privacy Settings <ChevronRight size={14} />
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            Control your data
-                          </p>
-                        </div>
+                    <div className="flex items-center justify-between py-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-foreground">
+                          Dark Mode
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          Switch to dark theme
+                        </p>
                       </div>
+                      <Switch
+                        checked={isDarkMode}
+                        onCheckedChange={setIsDarkMode}
+                      />
                     </div>
-                    <div className="w-full h-px bg-border"></div>
-                    <div className="flex items-center justify-between cursor-pointer group py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-red-500/10 rounded-lg text-red-500">
-                          <ShieldCheck size={18} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-sm text-foreground group-hover:text-red-400 transition-colors flex items-center gap-2">
-                            Data Sharing <ChevronRight size={14} />
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            Manage permissions
-                          </p>
-                        </div>
+                    <div className="w-full h-px bg-border/50"></div>
+                    <div className="flex items-center justify-between py-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-foreground">
+                          Public Profile
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          Allow others to see your farm stats
+                        </p>
                       </div>
+                      <Switch
+                        checked={isPublicProfile}
+                        onCheckedChange={setIsPublicProfile}
+                      />
                     </div>
                   </div>
                 </div>
@@ -894,37 +1005,5 @@ const Profile = () => {
     </main>
   );
 };
-
-// Internal ToggleItem Component
-const ToggleItem = ({
-  label,
-  desc,
-  active,
-  onToggle,
-}: {
-  label: string;
-  desc: string;
-  active: boolean;
-  onToggle: () => void;
-}) => (
-  <div
-    className="flex items-center justify-between group cursor-pointer"
-    onClick={onToggle}
-  >
-    <div>
-      <h4 className="font-bold text-sm text-foreground group-hover:text-green-500 transition-colors">
-        {label}
-      </h4>
-      <p className="text-xs text-muted-foreground">{desc}</p>
-    </div>
-    <div
-      className={`w-10 h-6 rounded-full p-1 transition-colors ${active ? 'bg-green-500' : 'bg-muted border border-border'}`}
-    >
-      <div
-        className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${active ? 'translate-x-4' : 'translate-x-0'}`}
-      ></div>
-    </div>
-  </div>
-);
 
 export default Profile;

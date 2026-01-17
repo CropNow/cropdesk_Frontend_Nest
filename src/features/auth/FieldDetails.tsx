@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { convertAreaToSqFt } from '@/utils/unitConversion';
+import { isLocationValid } from '@/utils/geoUtils';
+import LocationPicker from '@/components/common/LocationPicker';
 
 const FieldDetails = () => {
   const navigate = useNavigate();
@@ -107,6 +109,25 @@ const FieldDetails = () => {
             `Field area (${fieldData.area} ${fieldData.units}) cannot exceed the total Farm area (${farmDetails.area} ${farmDetails.units})!`
           );
           return; // Stop execution
+        }
+
+        // Validate Location Distance
+        if (
+          farmDetails.location &&
+          farmDetails.location.latitude &&
+          farmDetails.location.longitude &&
+          fieldData.coordinates
+        ) {
+          const locValidation = isLocationValid(
+            farmDetails.location.latitude,
+            farmDetails.location.longitude,
+            fieldData.coordinates,
+            10 // Max 10km radius
+          );
+          if (!locValidation.valid) {
+            alert(locValidation.error);
+            return;
+          }
         }
       }
 
@@ -229,38 +250,50 @@ const FieldDetails = () => {
             </select>
           </div>
 
-          {/* Coordinates */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Coordinates (Lat, Long)"
-              value={fieldData.coordinates}
-              onChange={(e) =>
-                setFieldData({ ...fieldData, coordinates: e.target.value })
-              }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors pr-10"
+          {/* Coordinates / Map */}
+          <div className="relative border border-white/20 rounded-lg p-3 bg-white/5">
+            <label className="text-xs text-white/50 mb-1 block">
+              Field Boundary (Draw your field)
+            </label>
+            <LocationPicker
+              mode="polygon"
+              value={fieldData.coordinates} // Will be empty or JSON string
+              onChange={(val: any) => {
+                // val is JSON string like {"type":"Rectangle", "points":...}
+                setFieldData({ ...fieldData, coordinates: val });
+                // Auto set boundary type if possible
+                try {
+                  const parsed = JSON.parse(val);
+                  if (parsed.type) {
+                    // Type names from our component: Rectangle, Polygon, Circle
+                    // Select options: Polygon, Rectangle, Square, Circle
+                    // Map Rectangle -> Rectangle
+                    // Map Circle -> Circle
+                    // Map Polygon -> Polygon (Irregular)
+                    if (parsed.type === 'Rectangle') {
+                      setFieldData((prev: any) => ({
+                        ...prev,
+                        coordinates: val,
+                        boundaryType: 'Rectangle',
+                      }));
+                    } else if (parsed.type === 'Circle') {
+                      setFieldData((prev: any) => ({
+                        ...prev,
+                        coordinates: val,
+                        boundaryType: 'Circle',
+                      }));
+                    } else {
+                      setFieldData((prev: any) => ({
+                        ...prev,
+                        coordinates: val,
+                        boundaryType: 'Polygon',
+                      }));
+                    }
+                  }
+                } catch (e) {}
+              }}
+              height="350px"
             />
-            <button
-              type="button"
-              onClick={handleGeolocation}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-green-500"
-              title="Use current location"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
           </div>
 
           {/* Soil Type */}

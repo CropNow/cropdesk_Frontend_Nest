@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Map, Ruler, LocateFixed } from 'lucide-react';
+import { Map, Ruler, LocateFixed, Plus } from 'lucide-react';
+import LocationPicker from '@/components/common/LocationPicker';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const FarmDetailsTab = ({
   farm,
+  farms,
+  onSelectFarm,
+  onAdd,
   onUpdate,
   onDelete,
 }: {
   farm: any;
+  farms: any[];
+  onSelectFarm: (id: string) => void;
+  onAdd: (data: any) => void;
   onUpdate: (data: any) => void;
   onDelete: () => void;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [farmData, setFarmData] = useState({
     name: '',
     description: '',
@@ -26,7 +38,22 @@ const FarmDetailsTab = ({
   });
 
   useEffect(() => {
-    if (farm) {
+    if (isAdding) {
+      setFarmData({
+        name: '',
+        description: '',
+        area: '',
+        units: '',
+        location: {
+          address: '',
+          city: '',
+          country: '',
+          latitude: '',
+          longitude: '',
+        },
+      });
+      setIsEditing(true);
+    } else if (farm) {
       setFarmData({
         name: farm.name || farm.farmName || '',
         description: farm.description || '',
@@ -40,8 +67,9 @@ const FarmDetailsTab = ({
           longitude: farm.location?.longitude || '',
         },
       });
+      setIsEditing(false);
     }
-  }, [farm]);
+  }, [farm, isAdding]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -67,23 +95,39 @@ const FarmDetailsTab = ({
   };
 
   const handleSave = () => {
-    if (isEditing) {
+    if (isAdding) {
+      onAdd(farmData);
+      setIsAdding(false);
+    } else if (isEditing) {
       onUpdate({ ...farm, ...farmData });
+      setIsEditing(false);
+    } else {
+      setIsEditing(true);
     }
-    setIsEditing(!isEditing);
   };
 
-  if (!farm) {
+  const toggleAddMode = () => {
+    if (isAdding) {
+      setIsAdding(false);
+      setIsEditing(false);
+    } else {
+      setIsAdding(true);
+    }
+  };
+
+  // Show "No Farm Selected" only if NOT adding AND no farm
+  if (!farm && !isAdding) {
     return (
-      <div className="bg-card border border-border rounded-3xl p-8 flex items-center justify-center min-h-[400px]">
+      <div className="bg-card border border-border rounded-3xl p-8 flex items-center justify-center min-h-[400px] flex-col gap-4">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">No farm selected.</p>
-          <button
-            className="px-4 py-2 bg-green-500 text-black rounded-xl font-bold hover:bg-green-400"
-            onClick={() => window.location.reload()}
+          <Button
+            className="rounded-xl font-bold flex items-center gap-2 mx-auto"
+            onClick={toggleAddMode}
           >
-            Reload Details
-          </button>
+            <Plus size={16} />
+            Add New Farm
+          </Button>
         </div>
       </div>
     );
@@ -91,166 +135,214 @@ const FarmDetailsTab = ({
 
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-foreground">Farm Details</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          General farm information
-        </p>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">
+            {isAdding ? 'Add New Farm' : 'Farm Details'}
+          </h2>
+        </div>
+
+        {/* Farm Selector */}
+        {!isAdding && farms && farms.length > 0 && onSelectFarm && (
+          <div className="flex-1 mx-8">
+            <Label className="block text-[10px] uppercase font-bold text-white mb-1">
+              Select Farm
+            </Label>
+            <select
+              className="w-fit min-w-[200px] bg-zinc-900 text-white border border-zinc-700 rounded-xl font-bold px-4 py-2 text-sm focus:outline-none cursor-pointer"
+              value={farm?.id || ''}
+              onChange={(e) => onSelectFarm(e.target.value)}
+            >
+              {farms.map((f) => (
+                <option
+                  key={f.id}
+                  value={f.id}
+                  className="bg-zinc-800 text-white"
+                >
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {!isAdding && (
+          <Button
+            onClick={toggleAddMode}
+            size="sm"
+            className="rounded-xl text-xs font-bold flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Add Farm
+          </Button>
+        )}
+        {isAdding && (
+          <Button
+            onClick={toggleAddMode}
+            variant="secondary"
+            size="sm"
+            className="rounded-xl text-xs font-bold"
+          >
+            Cancel
+          </Button>
+        )}
       </div>
 
       <div className="space-y-6 max-w-4xl">
         {/* Farm Name */}
         <div>
-          <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+          <Label className="block text-xs font-bold text-white uppercase mb-2">
             Farm Name
-          </label>
-          <input
+          </Label>
+          <Input
             type="text"
             name="name"
             value={farmData.name || ''}
             readOnly={!isEditing}
             onChange={handleChange}
-            className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+            className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+          <Label className="block text-xs font-bold text-white uppercase mb-2">
             Description
-          </label>
-          <textarea
+          </Label>
+          <Textarea
             name="description"
             value={farmData.description || ''}
             readOnly={!isEditing}
             onChange={handleChange}
-            className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none resize-none h-20 ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+            className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none resize-none h-20 ${!isEditing ? 'cursor-default' : ''}`}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-6">
           {/* Size */}
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+            <Label className="block text-xs font-bold text-white uppercase mb-2">
               Total Area
-            </label>
+            </Label>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-muted rounded-xl">
                 <Ruler size={18} className="text-foreground" />
               </div>
-              <input
+              <Input
                 type="text"
                 name="area"
                 value={farmData.area ? `${farmData.area}` : ''}
                 readOnly={!isEditing}
                 onChange={handleChange}
                 placeholder={!isEditing ? '' : 'Area (e.g. 10)'}
-                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+                className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
               />
             </div>
           </div>
         </div>
 
         <hr className="border-border my-2" />
-        <h3 className="text-sm font-bold text-muted-foreground uppercase">
-          Location
-        </h3>
+        <h3 className="text-sm font-bold text-white uppercase">Location</h3>
 
         {/* Location Inputs */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+            <Label className="block text-xs font-bold text-white uppercase mb-2">
               Address / Landmark
-            </label>
+            </Label>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-muted rounded-xl">
                 <Map size={18} className="text-foreground" />
               </div>
-              <input
+              <Input
                 type="text"
                 name="location.address"
                 value={farmData.location?.address || ''}
                 readOnly={!isEditing}
                 onChange={handleChange}
-                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+                className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+            <Label className="block text-xs font-bold text-white uppercase mb-2">
               City
-            </label>
-            <input
+            </Label>
+            <Input
               type="text"
               name="location.city"
               value={farmData.location?.city || ''}
               readOnly={!isEditing}
               onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+            <Label className="block text-xs font-bold text-white uppercase mb-2">
               Country
-            </label>
-            <input
+            </Label>
+            <Input
               type="text"
               name="location.country"
               value={farmData.location?.country || ''}
               readOnly={!isEditing}
               onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
             />
           </div>
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+        <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
           GPS Coordinates (Lat / Long)
-        </label>
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-muted rounded-xl">
-            <LocateFixed size={18} className="text-foreground" />
-          </div>
-          <input
-            type="text"
-            name="location.latitude"
-            placeholder="Latitude"
-            value={farmData.location?.latitude || ''}
+        </Label>
+        <div className="mb-4">
+          <LocationPicker
+            mode="point"
             readOnly={!isEditing}
-            onChange={handleChange}
-            className={`w-1/2 bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none font-mono ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-          />
-          <input
-            type="text"
-            name="location.longitude"
-            placeholder="Longitude"
-            value={farmData.location?.longitude || ''}
-            readOnly={!isEditing}
-            onChange={handleChange}
-            className={`w-1/2 bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none font-mono ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+            value={
+              farmData.location?.latitude && farmData.location?.longitude
+                ? `${farmData.location.latitude}, ${farmData.location.longitude}`
+                : ''
+            }
+            onChange={(val: string) => {
+              const [lat, lng] = val.split(',').map((s) => s.trim());
+              setFarmData((prev) => ({
+                ...prev,
+                location: {
+                  ...prev.location,
+                  latitude: lat || '',
+                  longitude: lng || '',
+                },
+              }));
+            }}
+            height="300px"
           />
         </div>
       </div>
 
       <div className="mt-6 pt-6 border-t border-border flex gap-3">
-        <button
+        <Button
           onClick={handleSave}
-          className={`w-fit px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-            isEditing
-              ? 'bg-green-500 text-black border-transparent hover:bg-green-400'
-              : 'bg-secondary text-foreground hover:bg-muted border-transparent'
-          }`}
+          variant={isEditing ? 'default' : 'secondary'}
+          className="w-fit rounded-xl text-xs font-bold"
         >
-          {isEditing ? 'Save Details' : 'Edit Details'}
-        </button>
-        <button
-          onClick={onDelete}
-          className="w-fit px-4 py-2 bg-[#ffe4e6] text-[#e11d48] border border-transparent rounded-xl text-xs font-bold hover:bg-[#ffced4] transition-all"
-        >
-          Delete Farm
-        </button>
+          {isAdding
+            ? 'Save New Farm'
+            : isEditing
+              ? 'Save Changes'
+              : 'Edit Details'}
+        </Button>
+        {!isAdding && (
+          <Button
+            onClick={onDelete}
+            variant="destructive"
+            className="w-fit rounded-xl text-xs font-bold"
+          >
+            Delete Farm
+          </Button>
+        )}
       </div>
     </div>
   );

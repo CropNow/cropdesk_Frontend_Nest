@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus } from 'lucide-react';
+import LocationPicker from '@/components/common/LocationPicker';
 
 const FarmDetails = () => {
   const navigate = useNavigate();
@@ -259,49 +260,28 @@ const FarmDetails = () => {
             <label className="text-xs text-white/50 mb-1 block">
               Coordinates
             </label>
-            <div className="grid grid-cols-2 gap-3 mb-2">
-              <input
-                type="text"
-                placeholder="Latitude"
-                value={farmData.location.latitude}
-                onChange={(e) =>
-                  handleLocationChange('latitude', e.target.value)
+            <div className="mb-2">
+              <LocationPicker
+                mode="point"
+                value={
+                  farmData.location.latitude && farmData.location.longitude
+                    ? `${farmData.location.latitude}, ${farmData.location.longitude}`
+                    : ''
                 }
-                className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded text-sm text-white focus:outline-none focus:border-green-500"
-                required
-              />
-              <input
-                type="text"
-                placeholder="Longitude"
-                value={farmData.location.longitude}
-                onChange={(e) =>
-                  handleLocationChange('longitude', e.target.value)
-                }
-                className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded text-sm text-white focus:outline-none focus:border-green-500"
-                required
+                onChange={(val: string) => {
+                  const [lat, lng] = val.split(',').map((s) => s.trim());
+                  setFarmData({
+                    ...farmData,
+                    location: {
+                      ...farmData.location,
+                      latitude: lat,
+                      longitude: lng,
+                    },
+                  });
+                }}
+                height="300px"
               />
             </div>
-            <button
-              type="button"
-              onClick={() => handleGeolocation(false)}
-              className="w-full py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 text-xs font-semibold rounded transition-colors flex items-center justify-center gap-2"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              Use My Current Location
-            </button>
           </div>
 
           <button

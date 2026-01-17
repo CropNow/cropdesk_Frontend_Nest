@@ -77,6 +77,36 @@ const IOTDashboard = ({
     }
   }, []);
 
+  // Battery Hook
+  const [battery, setBattery] = useState({ level: 1, charging: false });
+  useEffect(() => {
+    // @ts-ignore
+    if (navigator.getBattery) {
+      // @ts-ignore
+      navigator.getBattery().then((bat) => {
+        const updateBattery = () => {
+          setBattery({ level: bat.level, charging: bat.charging });
+        };
+        updateBattery();
+        bat.addEventListener('levelchange', updateBattery);
+        bat.addEventListener('chargingchange', updateBattery);
+      });
+    }
+  }, []);
+
+  // Network Hook
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   if (showEmptyState) {
     return (
       <section className="flex flex-col gap-4 border border-border p-4 lg:p-6 rounded-2xl bg-gradient-to-br from-green-500/10 via-background to-background dark:bg-card relative overflow-hidden h-full min-h-[300px] items-center justify-center text-center">
@@ -399,36 +429,6 @@ const IOTDashboard = ({
       ],
     },
   ];
-
-  // Battery Hook
-  const [battery, setBattery] = useState({ level: 1, charging: false });
-  useEffect(() => {
-    // @ts-ignore
-    if (navigator.getBattery) {
-      // @ts-ignore
-      navigator.getBattery().then((bat) => {
-        const updateBattery = () => {
-          setBattery({ level: bat.level, charging: bat.charging });
-        };
-        updateBattery();
-        bat.addEventListener('levelchange', updateBattery);
-        bat.addEventListener('chargingchange', updateBattery);
-      });
-    }
-  }, []);
-
-  // Network Hook
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
 
   return (
     <section className="flex flex-col gap-4 p-4 lg:p-6 rounded-2xl bg-gradient-to-br from-green-500/10 via-background to-background dark:bg-card">

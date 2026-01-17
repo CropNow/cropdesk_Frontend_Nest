@@ -108,6 +108,23 @@ const Login = () => {
           localStorage.setItem('role', finalUser.role);
         }
         setUser(finalUser);
+
+        // Request Location Access
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              console.log('Location access granted:', position);
+              // You can store these coordinates if needed
+              // localStorage.setItem('userLocation', JSON.stringify({
+              //   lat: position.coords.latitude,
+              //   lng: position.coords.longitude
+              // }));
+            },
+            (error) => {
+              console.error('Location access denied or error:', error);
+            }
+          );
+        }
       }
 
       navigate('/');
