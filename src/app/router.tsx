@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 
 import { ProtectedRoute } from '@/features/auth/ProtectedRoute';
@@ -7,87 +7,70 @@ import NotFound from '@/features/common/NotFound';
 import Loader from '@/components/common/Loader';
 
 // Lazy loaded auth pages
+const Welcome = lazy(() => import('@/features/auth/Welcome'));
 const Login = lazy(() => import('@/features/auth/Login'));
 const Register = lazy(() => import('@/features/auth/Register'));
+const FarmerDetails = lazy(() => import('@/features/auth/FarmerDetails'));
+const FarmDetails = lazy(() => import('@/features/auth/FarmDetails'));
+const FieldDetails = lazy(() => import('@/features/auth/FieldDetails'));
+const CropDetails = lazy(() => import('@/features/auth/CropDetails'));
 const ForgetPassword = lazy(() => import('@/features/auth/ForgetPassword'));
 const ResetPassword = lazy(() => import('@/features/auth/ResetPassword'));
 
 // Lazy loaded protected pages
-const Dashboard = lazy(() => import('@/features/user/Dashboard'));
-const Profile = lazy(() => import('@/features/user/Profile'));
-const SmartInfo = lazy(() => import('@/features/user/SmartInfo'));
+const Dashboard = lazy(() => import('@/features/user/dashboard/Dashboard'));
+const Profile = lazy(() => import('@/features/user/profile/Profile'));
+const SmartInfo = lazy(() => import('@/features/user/smart-info/SmartInfo'));
+const SensorDetails = lazy(
+  () => import('@/features/user/dashboard/SensorDetails')
+);
 
 export const AppRouter = () => {
   return (
     <Suspense fallback={<Loader />}>
       <Routes>
-        {/* Public routes */}
+        {/* ==================== Public Routes ==================== */}
+        {/* These routes are accessible only when NOT logged in (or public) */}
+
+        {/* Wrapper for "Only Public" logic */}
         <Route
-          path="/login"
           element={
             <PublicRoute>
-              <Login />
+              <Outlet />
             </PublicRoute>
           }
-        />
+        >
+          <Route path="/welcome" element={<Welcome />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgetPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+        </Route>
 
+        {/* ==================== Protected Routes ==================== */}
+        {/* These routes require authentication */}
         <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          }
-        />
-
-        <Route
-          path="/forgot-password"
-          element={
-            <PublicRoute>
-              <ForgetPassword />
-            </PublicRoute>
-          }
-        />
-
-        <Route
-          path="/reset-password"
-          element={
-            <PublicRoute>
-              <ResetPassword />
-            </PublicRoute>
-          }
-        />
-
-        {/* Protected routes */}
-        <Route
-          path="/"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Outlet />
             </ProtectedRoute>
           }
-        />
+        >
+          {/* Onboarding Flow */}
+          <Route path="/register/farmer-details" element={<FarmerDetails />} />
+          <Route path="/register/farm-details" element={<FarmDetails />} />
+          <Route path="/register/field-details" element={<FieldDetails />} />
+          <Route path="/register/crop-details" element={<CropDetails />} />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/smart-info"
-          element={
-            <ProtectedRoute>
-              <SmartInfo />
-            </ProtectedRoute>
-          }
-        />
+          {/* Main App */}
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/smart-info" element={<SmartInfo />} />
+          <Route path="/sensor-details" element={<SensorDetails />} />
+        </Route>
 
         {/* Fallback */}
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Suspense>
   );
