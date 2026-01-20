@@ -1,44 +1,67 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 const FarmerDetails = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState(() => {
+    let loadedData: any = null;
+
     const tempStr = localStorage.getItem('tempRegistrationData');
     if (tempStr) {
       try {
         const tempData = JSON.parse(tempStr);
         if (tempData.farmerDetails) {
-          return tempData.farmerDetails;
+          loadedData = tempData.farmerDetails;
         }
       } catch (error) {
         console.error('Error loading temp data:', error);
       }
     }
-    // Fallback try to load from registeredUser
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
-      try {
-        const storedUser = JSON.parse(storedUserStr);
-        if (
-          storedUser.farmerDetails &&
-          Object.keys(storedUser.farmerDetails).length > 0
-        ) {
-          return storedUser.farmerDetails;
+
+    // Attempt to load from User Session if no temp data found
+    if (!loadedData) {
+      const sessionStr = localStorage.getItem('user');
+      if (sessionStr) {
+        try {
+          const sessionUser = JSON.parse(sessionStr);
+          // Pre-fill from User Session (Register step)
+          loadedData = {
+            name: sessionUser.firstName
+              ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim()
+              : sessionUser.username || '',
+            email: sessionUser.email || '',
+            phone: sessionUser.phone || '',
+            // Try to find address in existing farmerDetails if present (rare case here)
+            address: sessionUser.farmerDetails?.address || {},
+          };
+
+          const collectionStr = localStorage.getItem('app_users');
+          if (collectionStr && sessionUser.email) {
+            const collection = JSON.parse(collectionStr);
+            const user = collection[sessionUser.email.toLowerCase()];
+            if (user && user.farmerDetails) {
+              loadedData = { ...loadedData, ...user.farmerDetails };
+            }
+          }
+        } catch (e) {
+          console.error('Error loading stored user', e);
         }
-      } catch (e) {
-        console.error('Error loading stored user', e);
       }
     }
+
+    // Default structure / Migration
     return {
-      name: '',
-      phoneNumber: '',
-      email: '',
-      address: '',
-      village: '',
-      district: '',
-      state: '',
+      name: loadedData?.name || '',
+      phone: loadedData?.phone || loadedData?.phoneNumber || '',
+      email: loadedData?.email || '',
+      address: {
+        village: loadedData?.address?.village || loadedData?.village || '',
+        district: loadedData?.address?.district || loadedData?.district || '',
+        state: loadedData?.address?.state || loadedData?.state || '',
+      },
     };
   });
 
@@ -98,7 +121,7 @@ const FarmerDetails = () => {
         {/* Form */}
         <form onSubmit={handleNext} className="space-y-4">
           <div>
-            <input
+            <Input
               type="text"
               placeholder="Full Name"
               value={formData.name}
@@ -111,12 +134,12 @@ const FarmerDetails = () => {
           </div>
 
           <div>
-            <input
+            <Input
               type="tel"
               placeholder="Phone Number"
-              value={formData.phoneNumber}
+              value={formData.phone}
               onChange={(e) =>
-                setFormData({ ...formData, phoneNumber: e.target.value })
+                setFormData({ ...formData, phone: e.target.value })
               }
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
               required
@@ -124,7 +147,7 @@ const FarmerDetails = () => {
           </div>
 
           <div>
-            <input
+            <Input
               type="email"
               placeholder="Email Address"
               value={formData.email}
@@ -136,35 +159,31 @@ const FarmerDetails = () => {
             />
           </div>
 
-          <div>
-            <textarea
-              placeholder="Address"
-              value={formData.address}
-              onChange={(e) =>
-                setFormData({ ...formData, address: e.target.value })
-              }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors resize-none h-24"
-              required
-            />
-          </div>
+          {/* Address generic field removed as per schema */}
 
           <div className="grid grid-cols-2 gap-4">
-            <input
+            <Input
               type="text"
               placeholder="Village"
-              value={formData.village}
+              value={formData.address.village}
               onChange={(e) =>
-                setFormData({ ...formData, village: e.target.value })
+                setFormData({
+                  ...formData,
+                  address: { ...formData.address, village: e.target.value },
+                })
               }
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
               required
             />
-            <input
+            <Input
               type="text"
               placeholder="District"
-              value={formData.district}
+              value={formData.address.district}
               onChange={(e) =>
-                setFormData({ ...formData, district: e.target.value })
+                setFormData({
+                  ...formData,
+                  address: { ...formData.address, district: e.target.value },
+                })
               }
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
               required
@@ -172,32 +191,36 @@ const FarmerDetails = () => {
           </div>
 
           <div>
-            <input
+            <Input
               type="text"
               placeholder="State"
-              value={formData.state}
+              value={formData.address.state}
               onChange={(e) =>
-                setFormData({ ...formData, state: e.target.value })
+                setFormData({
+                  ...formData,
+                  address: { ...formData.address, state: e.target.value },
+                })
               }
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
               required
             />
           </div>
 
-          <button
+          <Button
             type="submit"
-            className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all active:scale-[0.98]"
+            className="w-full py-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all active:scale-[0.98] text-lg"
           >
             Next: Farm Details
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => navigate('/')}
             className="w-full py-3 bg-transparent border border-white/10 hover:bg-white/5 text-white/60 font-medium rounded-lg transition-all mt-3"
           >
             Skip for now
-          </button>
+          </Button>
         </form>
       </div>
     </div>

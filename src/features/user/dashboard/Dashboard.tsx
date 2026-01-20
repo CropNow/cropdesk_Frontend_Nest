@@ -22,52 +22,117 @@ const Dashboard = () => {
   const { user } = useAuth();
 
   React.useEffect(() => {
-    if (user) {
-      try {
-        // Prioritize: Farmer Details Name -> Registration First Name -> Username -> Default
-        // Note: user.farmerDetails might be populated from the merge in getMe()
-        const displayName =
-          user.farmerDetails?.name ||
-          user.firstName ||
-          user.username ||
-          'Farmer';
-        setUserName(displayName);
+    const fetchDashboardData = async () => {
+      if (user) {
+        try {
+          // 1. Set Display Name
+          const displayName = user.firstName || user.username || 'Farmer';
+          setUserName(displayName);
 
-        // Check complete profile (farmer, farm, field, crop)
-        // Check for presence of details. For strictness, check keys.
-        const hasFarmer =
-          user.farmerDetails && Object.keys(user.farmerDetails).length > 0;
-        const hasFarm =
-          user.farmDetails && Object.keys(user.farmDetails).length > 0;
-        const hasField =
-          user.fieldDetails && Object.keys(user.fieldDetails).length > 0;
-        const hasCrop =
-          user.cropDetails &&
-          (Array.isArray(user.cropDetails)
-            ? user.cropDetails.length > 0
-            : Object.keys(user.cropDetails).length > 0);
+          // 2. Fetch Real Backend Data
+          // We need to find the user's farm to show stats.
+          // Strategy: Get All Farmers -> Get First Farmer -> Get First Farm -> Get Stats
+          const { getAllFarmers } =
+            await import('@/features/auth/api/farmer.api');
+          const farmers = await getAllFarmers();
 
-        // Trust the explicit flag if present, otherwise fallback to checking data presence
-        if (
-          user.isOnboardingComplete ||
-          (hasFarmer && hasFarm && hasField && hasCrop)
-        ) {
-          setIsProfileComplete(true);
-          // If cropDetails is array, use length, else 1 if object exists
-          const count = Array.isArray(user.cropDetails)
-            ? user.cropDetails.length
-            : user.cropDetails
-              ? 1
-              : 0;
-          setActiveCropsCount(count);
-        } else {
-          setIsProfileComplete(false);
-          setActiveCropsCount(0);
+          if (farmers && farmers.length > 0) {
+            // Filter to find the farmer belonging to THIS user
+            const firstFarmer = farmers.find((f: any) => {
+              const fUserId =
+                f.userId && typeof f.userId === 'object'
+                  ? f.userId._id
+                  : f.userId;
+              return (
+                String(fUserId) === String(user.id) ||
+                String(f.farmerUserId) === String(user.id)
+              );
+            });
+
+            if (firstFarmer) {
+              console.log('Dashboard: Found matching farmer:', firstFarmer);
+
+              let farms = firstFarmer?.farms || [];
+
+              // Fallback: If farms not populated, fetch explicity
+              if (!farms || farms.length === 0) {
+                console.log(
+                  'Dashboard: No farms in farmer object, fetching explicitly...'
+                );
+                try {
+                  const { getFarms } =
+                    await import('@/features/auth/api/farm.api');
+                  const farmsResponse = await getFarms(1, 100);
+                  if (farmsResponse && farmsResponse.farms) {
+                    // Filter by farmer ID using robust string comparison
+                    farms = farmsResponse.farms.filter((f: any) => {
+                      const fFarmerId =
+                        f.farmerId && typeof f.farmerId === 'object'
+                          ? f.farmerId._id
+                          : f.farmerId;
+                      const targetFarmerId =
+                        firstFarmer.id || (firstFarmer as any)._id;
+                      return String(fFarmerId) === String(targetFarmerId);
+                    });
+                    console.log(
+                      'Dashboard: Explicitly fetched farms for farmer:',
+                      farms
+                    );
+                  }
+                } catch (err) {
+                  console.error(
+                    'Dashboard: Failed to fetch farms explicitly',
+                    err
+                  );
+                }
+              }
+
+              if (farms.length > 0) {
+                const firstFarm = farms[0];
+                if (!firstFarm) return; // Safety check
+                const farmId = firstFarm.id || (firstFarm as any)._id; // Handle _id vs id
+
+                if (farmId) {
+                  const { getFarmStatistics } =
+                    await import('@/features/auth/api/farm.api'); // Use correct import path from file tree
+                  const stats = await getFarmStatistics(farmId);
+                  console.log('Dashboard: Farm Stats:', stats);
+
+                  if (stats && stats.overview) {
+                    setActiveCropsCount(stats.overview.totalCrops || 0);
+                    // Could also set totalArea if we had a state for it
+                  }
+                  setIsProfileComplete(true); // If we found farm and stats, consider active
+                }
+              } else {
+                // No farms found
+                setIsProfileComplete(false);
+                setActiveCropsCount(0);
+              }
+            } else {
+              // No matching farmer found for user
+              console.warn(
+                'Dashboard: No matching farmer found for current user.'
+              );
+              setIsProfileComplete(false);
+              setActiveCropsCount(0);
+            }
+          } else {
+            // No farmers returned at all
+            setIsProfileComplete(false);
+            setActiveCropsCount(0);
+          }
+        } catch (e) {
+          console.error('Error fetching dashboard data', e);
+          // Fallback to basic user object check if API fails
+          const hasFarmer =
+            user.farmerDetails && Object.keys(user.farmerDetails).length > 0;
+          if (hasFarmer) setIsProfileComplete(true);
         }
-      } catch (e) {
-        console.error('Error parsing user data in dashboard', e);
       }
-    }
+    };
+
+    fetchDashboardData();
   }, [user]);
 
   return (

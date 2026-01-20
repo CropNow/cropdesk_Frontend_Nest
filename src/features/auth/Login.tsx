@@ -69,65 +69,77 @@ const Login = () => {
       }
 
       // ✅ STORE USER (if backend sends it later)
-      if (response.user) {
-        let finalUser = response.user;
+      // Check for user in 'user' prop OR 'data' prop (common API variance)
+      const userFromResponse = response.user || (response as any).data;
 
-        // CHECK FOR EXISTING LOCAL DATA TO PRESERVE
-        const existingLocalStr = localStorage.getItem('registeredUser');
-        if (existingLocalStr) {
-          try {
-            const existingLocal = JSON.parse(existingLocalStr);
-            // If the logged-in user matches the stored local profile (by email), preserve the rich details
-            // Normalize emails for comparison
-            if (
-              existingLocal.email &&
-              response.user.email &&
-              existingLocal.email.toLowerCase() ===
-                response.user.email.toLowerCase()
-            ) {
-              finalUser = {
-                ...response.user, // Backend is source of truth for auth info
-                ...existingLocal, // Local is source of truth for profile/onboarding details (until backend fully supports them)
-                id: response.user.id, // Keep backend ID
-                email: response.user.email,
-                username: response.user.username || existingLocal.username,
-              };
-              console.log(
-                'Merged existing local profile data with login response'
+      if (userFromResponse) {
+        import('@/utils/storage').then(
+          ({ getStoredUser, saveStoredUser, setCurrentSession }) => {
+            let finalUser = userFromResponse;
+
+            // CHECK FOR EXISTING LOCAL DATA IN COLLECTION
+            // We assume userFromResponse.email is present (it should be for login)
+            if (finalUser.email) {
+              const existingLocal = getStoredUser(finalUser.email);
+
+              if (existingLocal) {
+                finalUser = {
+                  ...userFromResponse, // Backend is source of truth for auth info
+                  ...existingLocal, // Local collection is source of truth for profile/onboarding details
+                  id: userFromResponse.id,
+                  email: userFromResponse.email,
+                  username: userFromResponse.username || existingLocal.username,
+                };
+                console.log(
+                  'Merged existing local profile data from collection'
+                );
+              }
+            }
+
+            // Save back to collection and set as current session
+            saveStoredUser(finalUser);
+            setCurrentSession(finalUser);
+
+            if (finalUser.role) {
+              localStorage.setItem('role', finalUser.role);
+            }
+            setUser(finalUser);
+
+            // Request Location Access
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (position) => {
+                  console.log('Location access granted:', position);
+                },
+                (error) => {
+                  console.error('Location access denied or error:', error);
+                }
               );
             }
-          } catch (e) {
-            console.error('Error parsing existing user data', e);
-          }
-        }
 
-        const userStr = JSON.stringify(finalUser);
-        localStorage.setItem('user', userStr);
-        localStorage.setItem('registeredUser', userStr);
-        if (finalUser.role) {
-          localStorage.setItem('role', finalUser.role);
-        }
-        setUser(finalUser);
+            // INTELLIGENT REDIRECT:
+            // If user has no farmers/farms (new user), go to Onboarding.
+            // Otherwise, go to Dashboard.
 
-        // Request Location Access
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              console.log('Location access granted:', position);
-              // You can store these coordinates if needed
-              // localStorage.setItem('userLocation', JSON.stringify({
-              //   lat: position.coords.latitude,
-              //   lng: position.coords.longitude
-              // }));
-            },
-            (error) => {
-              console.error('Location access denied or error:', error);
+            // Check deep structure (farmers array) or flat structure (farmerDetails)
+            const hasFarmers =
+              (finalUser.farmers && finalUser.farmers.length > 0) ||
+              (finalUser.farmerDetails &&
+                Object.keys(finalUser.farmerDetails).length > 0);
+
+            if (!hasFarmers) {
+              console.log('New user detected, redirecting to Onboarding...');
+              navigate('/register/farmer-details');
+            } else {
+              console.log('Existing user, redirecting to Dashboard...');
+              navigate('/');
             }
-          );
-        }
+          }
+        );
+      } else {
+        // Fallback if no user object in response (rare)
+        navigate('/');
       }
-
-      navigate('/');
     } catch (err: any) {
       console.error(err);
       console.error('Login Error:', err);
@@ -246,24 +258,26 @@ const Login = () => {
                 required
               />
 
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-white/60 hover:text-white transition-colors"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
+              </Button>
             </div>
           </div>
 
           <div className="text-right">
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={() => navigate('/forgot-password')}
-              className="text-white/70 text-sm hover:text-white transition-colors"
+              className="text-white/70 text-sm hover:text-white transition-colors p-0 h-auto font-normal"
             >
               Forgot password?
-            </button>
+            </Button>
           </div>
 
           <Button
@@ -285,13 +299,14 @@ const Login = () => {
             <span className="text-white/60 text-sm">
               Don't have an account?{' '}
             </span>
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={() => navigate('/register')}
-              className="text-white font-semibold hover:text-green-400 transition-colors"
+              className="text-white font-semibold hover:text-green-400 transition-colors p-0 h-auto"
             >
               Register Now
-            </button>
+            </Button>
           </div>
         </form>
       </div>

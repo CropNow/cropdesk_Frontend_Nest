@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Dropdown } from '@/components/ui/dropdown';
+import { Subheading } from '@/components/common/Heading';
 
 const FarmerDetailsTab = ({
   farmer,
@@ -26,35 +28,38 @@ const FarmerDetailsTab = ({
   // Initialize with default matching the structure
   const [formData, setFormData] = useState({
     name: '',
-    phoneNumber: '',
+    phone: '',
     email: '',
-    address: '',
-    village: '',
-    district: '',
-    state: '',
+    address: {
+      village: '',
+      district: '',
+      state: '',
+    },
   });
 
   useEffect(() => {
     if (isAdding) {
       setFormData({
         name: '',
-        phoneNumber: '',
+        phone: '',
         email: '',
-        address: '',
-        village: '',
-        district: '',
-        state: '',
+        address: {
+          village: '',
+          district: '',
+          state: '',
+        },
       });
       setIsEditing(true); // Force editing mode when adding
     } else if (farmer) {
       setFormData({
         name: farmer.name || '',
-        phoneNumber: farmer.phoneNumber || '',
+        phone: farmer.phone || farmer.phoneNumber || '',
         email: farmer.email || '',
-        address: farmer.address || '',
-        village: farmer.village || '',
-        district: farmer.district || '',
-        state: farmer.state || '',
+        address: {
+          village: farmer.address?.village || farmer.village || '',
+          district: farmer.address?.district || farmer.district || '',
+          state: farmer.address?.state || farmer.state || '',
+        },
       });
       setIsEditing(false);
     }
@@ -90,21 +95,21 @@ const FarmerDetailsTab = ({
 
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4 md:gap-0">
         <div>
-          <h2 className="text-xl font-bold text-foreground">
+          <Subheading className="font-bold">
             {isAdding ? 'Add New Farmer' : 'Farmer Details'}
-          </h2>
+          </Subheading>
         </div>
 
         {/* Farmer Selector */}
         {!isAdding && farmers.length > 0 && (
-          <div className="flex-1 mx-8">
+          <div className="flex-1 w-full md:w-auto mx-0 md:mx-8">
             <Label className="block text-[10px] uppercase font-bold text-white mb-1">
               Select Farmer
             </Label>
-            <select
-              className="w-fit min-w-[200px] bg-secondary rounded-xl text-foreground font-bold px-4 py-2 text-sm focus:outline-none cursor-pointer"
+            <Dropdown
+              className="w-full md:w-fit min-w-[200px] bg-secondary rounded-xl text-foreground font-bold px-4 py-2 text-sm focus:outline-none cursor-pointer [&>option]:bg-zinc-800 [&>option]:text-white"
               value={farmer?.id || ''}
               onChange={(e) => onSelectFarmer(e.target.value)}
             >
@@ -113,30 +118,32 @@ const FarmerDetailsTab = ({
                   {f.name}
                 </option>
               ))}
-            </select>
+            </Dropdown>
           </div>
         )}
 
-        {!isAdding && (
-          <Button
-            onClick={toggleAddMode}
-            size="sm"
-            className="rounded-xl text-xs font-bold flex items-center gap-2"
-          >
-            <Plus size={16} />
-            Add Farmer
-          </Button>
-        )}
-        {isAdding && (
-          <Button
-            onClick={toggleAddMode}
-            variant="secondary"
-            size="sm"
-            className="rounded-xl text-xs font-bold"
-          >
-            Cancel
-          </Button>
-        )}
+        <div className="w-full md:w-auto flex justify-end">
+          {!isAdding && (
+            <Button
+              onClick={toggleAddMode}
+              size="sm"
+              className="rounded-xl text-xs font-bold flex items-center gap-2 w-full md:w-auto justify-center"
+            >
+              <Plus size={16} />
+              Add Farmer
+            </Button>
+          )}
+          {isAdding && (
+            <Button
+              onClick={toggleAddMode}
+              variant="secondary"
+              size="sm"
+              className="rounded-xl text-xs font-bold w-full md:w-auto"
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6 max-w-4xl">
@@ -172,10 +179,12 @@ const FarmerDetailsTab = ({
               </div>
               <Input
                 type="text"
-                name="phoneNumber"
-                value={formData.phoneNumber || ''}
+                name="phone"
+                value={formData.phone || ''}
                 readOnly={!isEditing}
-                onChange={handleChange}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
                 className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
               />
             </div>
@@ -204,24 +213,7 @@ const FarmerDetailsTab = ({
 
         <hr className="border-border my-2" />
 
-        {/* Address */}
-        <div>
-          <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-            Address
-          </Label>
-          <div className="flex items-start gap-3">
-            <div className="p-3 bg-muted rounded-xl">
-              <MapPin size={18} className="text-foreground" />
-            </div>
-            <Textarea
-              name="address"
-              value={formData.address || ''}
-              readOnly={!isEditing}
-              onChange={handleChange}
-              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none resize-none h-24 ${!isEditing ? 'cursor-default' : ''}`}
-            />
-          </div>
-        </div>
+        {/* Address textarea removed */}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Village */}
@@ -232,9 +224,14 @@ const FarmerDetailsTab = ({
             <Input
               type="text"
               name="village"
-              value={formData.village || ''}
+              value={formData.address.village || ''}
               readOnly={!isEditing}
-              onChange={handleChange}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  address: { ...formData.address, village: e.target.value },
+                })
+              }
               className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
             />
           </div>
@@ -246,9 +243,14 @@ const FarmerDetailsTab = ({
             <Input
               type="text"
               name="district"
-              value={formData.district || ''}
+              value={formData.address.district || ''}
               readOnly={!isEditing}
-              onChange={handleChange}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  address: { ...formData.address, district: e.target.value },
+                })
+              }
               className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
             />
           </div>
@@ -260,9 +262,14 @@ const FarmerDetailsTab = ({
             <Input
               type="text"
               name="state"
-              value={formData.state || ''}
+              value={formData.address.state || ''}
               readOnly={!isEditing}
-              onChange={handleChange}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  address: { ...formData.address, state: e.target.value },
+                })
+              }
               className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
             />
           </div>

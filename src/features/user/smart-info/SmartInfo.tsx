@@ -17,12 +17,14 @@ import {
   TrendingDown,
   Thermometer,
   Sun,
+  Plus,
 } from 'lucide-react';
 import FISAlertEngine from './FISAlertEngine';
 import { getCalendarStatus, DailyStatus } from './smart-info.api';
 
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { useAuth } from '@/features/auth/useAuth';
+import { Button } from '@/components/ui/button';
 
 const SmartInfo = () => {
   const navigate = useNavigate();
@@ -37,17 +39,49 @@ const SmartInfo = () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   };
 
+  const { user } = useAuth();
+
   React.useEffect(() => {
-    const userStr = localStorage.getItem('registeredUser');
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        if (user.farmerDetails && user.farmDetails) {
+    const checkProfileStatus = async () => {
+      if (user) {
+        // Optimistic check (from session)
+        if (
+          (user.farmers && user.farmers.length > 0) ||
+          (user.farmerDetails && Object.keys(user.farmerDetails).length > 0)
+        ) {
           setIsProfileComplete(true);
+          return;
         }
-      } catch (e) {}
-    }
-  }, []);
+
+        // Deep check (from Backend)
+        try {
+          const { getAllFarmers } =
+            await import('@/features/auth/api/farmer.api');
+          const farmers = await getAllFarmers();
+
+          if (farmers && farmers.length > 0) {
+            const myFarmer = farmers.find((f: any) => {
+              const fUserId =
+                f.userId && typeof f.userId === 'object'
+                  ? f.userId._id
+                  : f.userId;
+              return (
+                String(fUserId) === String(user.id) ||
+                String(f.farmerUserId) === String(user.id)
+              );
+            });
+
+            if (myFarmer) {
+              setIsProfileComplete(true);
+            }
+          }
+        } catch (e) {
+          console.error('SmartInfo: Failed to verify profile status', e);
+        }
+      }
+    };
+    checkProfileStatus();
+  }, [user]);
 
   // Fetch Calendar Data when month changes
   useEffect(() => {
@@ -73,13 +107,13 @@ const SmartInfo = () => {
           <p className="text-muted-foreground">
             Please complete your profile to access smart insights and alerts.
           </p>
-          <button
+          <Button
             onClick={() => navigate('/register/farmer-details')}
             className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-all"
           >
             <Plus size={20} />
             Complete Profile
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -200,35 +234,35 @@ const SmartInfo = () => {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground pb-20 p-4 lg:p-8 font-sans">
+    <main className="min-h-screen bg-background text-foreground pb-20 pt-20 lg:pt-8 p-4 lg:p-8 font-sans">
       <div className="max-w-[1600px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* LEFT SIDEBAR */}
           <div className="lg:col-span-3 flex flex-col gap-6">
             {/* Calendar Widget */}
-            <div className="bg-card border border-border rounded-3xl p-6">
-              <div className="flex justify-between items-center mb-6">
+            <div className="bg-card border border-border rounded-3xl p-3 lg:p-6">
+              <div className="flex justify-between items-center mb-3 lg:mb-6">
                 <div className="flex items-center gap-2">
-                  <CalendarIcon size={18} className="text-orange-500" />
-                  <h3 className="font-bold text-base">
+                  <CalendarIcon size={16} className="text-orange-500" />
+                  <h3 className="font-bold text-sm lg:text-base">
                     {months[currentDate.getMonth()]} {currentDate.getFullYear()}
                   </h3>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-2 lg:gap-3">
                   <ChevronLeft
-                    size={16}
+                    size={14}
                     onClick={handlePrevMonth}
                     className="text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                   />
                   <ChevronRight
-                    size={16}
+                    size={14}
                     onClick={handleNextMonth}
                     className="text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-7 gap-2 text-center text-xs font-medium text-muted-foreground mb-4">
+              <div className="grid grid-cols-7 gap-1 lg:gap-2 text-center text-[10px] lg:text-xs font-medium text-muted-foreground mb-2 lg:mb-4">
                 <span>Su</span>
                 <span>Mo</span>
                 <span>Tu</span>
@@ -238,7 +272,7 @@ const SmartInfo = () => {
                 <span>Sa</span>
               </div>
 
-              <div className="grid grid-cols-7 gap-2 text-center text-sm">
+              <div className="grid grid-cols-7 gap-1 lg:gap-2 text-center text-xs lg:text-sm">
                 {Array(firstDayOfMonth)
                   .fill(null)
                   .map((_, i) => (
@@ -266,7 +300,7 @@ const SmartInfo = () => {
                     <div
                       key={i}
                       onClick={() => setSelectedDay(day)}
-                      className={`aspect-square flex items-center justify-center rounded-lg cursor-pointer transition-all hover:bg-muted relative ${
+                      className={`aspect-square flex items-center justify-center rounded-lg cursor-pointer transition-all hover:bg-muted relative text-[11px] lg:text-sm ${
                         selectedDay === day
                           ? 'bg-primary/10 text-primary font-bold border border-primary/20'
                           : 'text-muted-foreground'
@@ -275,7 +309,7 @@ const SmartInfo = () => {
                       {day}
                       {dotColor && (
                         <span
-                          className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`}
+                          className={`absolute bottom-0.5 lg:bottom-1 w-1 h-1 rounded-full ${dotColor}`}
                         ></span>
                       )}
                     </div>
@@ -283,7 +317,7 @@ const SmartInfo = () => {
                 })}
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center gap-4 text-[10px] font-bold uppercase text-muted-foreground">
+              <div className="mt-3 lg:mt-6 flex flex-wrap items-center gap-3 lg:gap-4 text-[9px] lg:text-[10px] font-bold uppercase text-muted-foreground">
                 <div className="flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>{' '}
                   Good
@@ -300,26 +334,31 @@ const SmartInfo = () => {
             </div>
 
             {/* Overall Farm Status */}
-            <div className="bg-card border border-border rounded-3xl p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-green-500/10 rounded-xl text-green-500">
-                    <Sprout size={24} />
+            <div className="bg-card border border-border rounded-3xl p-4 lg:p-6">
+              <div className="flex justify-between items-start mb-4 lg:mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 lg:p-3 bg-green-500/10 rounded-xl text-green-500">
+                    <Sprout size={20} />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold">Overall Farm Status</h2>
+                    <h2 className="text-base lg:text-lg font-bold">
+                      Overall Farm Status
+                    </h2>
+                    <p className="text-[10px] text-muted-foreground">
+                      Real-time monitoring
+                    </p>
                   </div>
                 </div>
                 <div
-                  className={`${statusBg} border ${statusBorder} rounded-xl px-4 py-2 flex items-center gap-3`}
+                  className={`${statusBg} border ${statusBorder} rounded-xl px-3 py-1.5 lg:px-4 lg:py-2 flex items-center gap-2`}
                 >
-                  <TrendingUp size={16} className={statusColor} />
+                  <TrendingUp size={14} className={statusColor} />
                   <div className="text-center">
-                    <div className="text-base font-bold text-foreground">
+                    <div className="text-sm lg:text-base font-bold text-foreground">
                       {averageScore}%
                     </div>
                     <div
-                      className={`text-[10px] font-bold ${statusColor} uppercase`}
+                      className={`text-[9px] lg:text-[10px] font-bold ${statusColor} uppercase`}
                     >
                       {statusText}
                     </div>
@@ -328,7 +367,7 @@ const SmartInfo = () => {
               </div>
 
               {/* Metric Cards */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 lg:gap-3">
                 {metrics.map((metric, idx) => (
                   <MetricCard
                     key={idx}
@@ -355,45 +394,53 @@ const SmartInfo = () => {
               {/* LEFT COLUMN: Water Savings */}
               <div className="flex flex-col gap-6">
                 {/* WATER SAVINGS */}
-                <div className="bg-card border border-border rounded-3xl p-8">
-                  <div className="flex justify-between items-center mb-8">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-500">
-                        <Droplets size={24} />
+                <div className="bg-card border border-border rounded-3xl p-4 lg:p-8">
+                  <div className="flex justify-between items-center mb-4 lg:mb-8">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 lg:p-3 bg-cyan-500/10 rounded-xl text-cyan-500">
+                        <Droplets size={20} />
                       </div>
                       <div>
-                        <h2 className="text-xl font-bold">Water Savings</h2>
+                        <h2 className="text-base lg:text-xl font-bold">
+                          Water Savings
+                        </h2>
                       </div>
+                    </div>
+                    <div className="px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-2">
+                      <TrendingUp size={12} className="text-green-500" />
+                      <span className="text-xs font-bold text-green-500">
+                        15.0%
+                      </span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-gradient-to-br from-cyan-500/20 to-cyan-900/10 border border-border/50 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
+                  <div className="grid grid-cols-2 gap-3 lg:gap-6 mb-4 lg:mb-8">
+                    <div className="bg-gradient-to-br from-cyan-500/20 to-cyan-900/10 border border-border/50 rounded-2xl p-4 lg:p-6 flex flex-col items-center justify-center text-center">
                       <div className="flex items-center gap-2 text-cyan-400 mb-2">
-                        <Droplets size={16} />
-                        <span className="text-xs font-bold uppercase">
+                        <Droplets size={14} />
+                        <span className="text-[10px] lg:text-xs font-bold uppercase">
                           Total Saved
                         </span>
                       </div>
-                      <div className="text-4xl font-bold text-cyan-400 mb-1">
+                      <div className="text-2xl lg:text-4xl font-bold text-cyan-400 mb-1">
                         250 L
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-[10px] lg:text-xs text-muted-foreground">
                         This Month
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-green-500/20 to-green-900/10 border border-border/50 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
+                    <div className="bg-gradient-to-br from-green-500/20 to-green-900/10 border border-border/50 rounded-2xl p-4 lg:p-6 flex flex-col items-center justify-center text-center">
                       <div className="flex items-center gap-2 text-green-400 mb-2">
-                        <TrendingDown size={16} />
-                        <span className="text-xs font-bold uppercase">
+                        <TrendingDown size={14} />
+                        <span className="text-[10px] lg:text-xs font-bold uppercase">
                           Daily Average
                         </span>
                       </div>
-                      <div className="text-4xl font-bold text-green-400 mb-1">
+                      <div className="text-2xl lg:text-4xl font-bold text-green-400 mb-1">
                         8.3 L
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-[10px] lg:text-xs text-muted-foreground">
                         Per Day
                       </div>
                     </div>
@@ -434,20 +481,24 @@ const MetricCard = ({
   };
 
   return (
-    <div className="bg-muted border border-border rounded-2xl p-5">
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-2.5 rounded-lg ${colorMap[color]}`}>{icon}</div>
-        <div className="px-2 py-1 bg-background/50 rounded-full text-xs font-bold text-muted-foreground">
+    <div className="bg-muted border border-border rounded-2xl p-3 lg:p-5">
+      <div className="flex justify-between items-start mb-3 lg:mb-4">
+        <div className={`p-2 lg:p-2.5 rounded-lg ${colorMap[color]}`}>
+          {icon}
+        </div>
+        <div className="px-2 py-1 bg-background/50 rounded-full text-[10px] lg:text-xs font-bold text-muted-foreground">
           {trend}
         </div>
       </div>
       <div className="flex items-baseline gap-1 mb-1">
-        <span className="text-2xl font-bold text-foreground">{value}</span>
-        <span className="text-sm font-medium text-muted-foreground">
+        <span className="text-xl lg:text-2xl font-bold text-foreground">
+          {value}
+        </span>
+        <span className="text-xs lg:text-sm font-medium text-muted-foreground">
           {unit}
         </span>
       </div>
-      <p className="text-xs font-bold text-muted-foreground uppercase mb-4">
+      <p className="text-[10px] lg:text-xs font-bold text-muted-foreground uppercase mb-3 lg:mb-4">
         {label}
       </p>
 

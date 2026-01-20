@@ -38,14 +38,20 @@ export interface User {
 export interface Farmer {
   id: string;
   name: string;
-  email?: string;
-  phone?: string;
+  phone: string;
+  email: string;
+  address: {
+    village: string;
+    district: string;
+    state: string;
+  };
   farms: Farm[];
 }
 
 export interface Farm {
   id: string;
   name: string;
+  farmerId?: string; // Relation ID
   location?: string;
   area?: string;
   units?: string;

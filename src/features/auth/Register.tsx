@@ -68,29 +68,41 @@ const Register = () => {
 
       console.log('Sending Register Payload:', payload);
 
-      const response = await import('./auth.api').then((m) =>
-        m.register(payload)
-      );
+      await import('./auth.api').then((m) => m.register(payload));
 
-      if (response.accessToken) {
-        localStorage.setItem('accessToken', response.accessToken);
-        localStorage.setItem('isAuthenticated', 'true'); // Keep legacy flag just in case
-      }
-      if (response.refreshToken) {
-        localStorage.setItem('refreshToken', response.refreshToken);
-      }
-      if (response.user) {
-        const userStr = JSON.stringify(response.user);
-        localStorage.setItem('user', userStr);
-        localStorage.setItem('registeredUser', userStr); // Legacy/Onboarding compatibility
-      }
+      // Auto-Login
+      const { login } = await import('./auth.api');
+      const loginResponse = await login({
+        email: payload.email,
+        password: payload.password,
+      });
 
-      setSuccess('Registration successful!');
-      setTimeout(() => {
-        navigate('/register/farmer-details'); // Go to onboarding flow
-      }, 1500);
+      if (loginResponse.accessToken && loginResponse.refreshToken) {
+        localStorage.setItem('accessToken', loginResponse.accessToken);
+        localStorage.setItem('refreshToken', loginResponse.refreshToken);
+
+        // Update user context (handled by AuthProvider usually, but we can do manual trigger or reload)
+        // ideally useAuth() hook's login/setUser if available, but for now we set storage and reload/navigate
+        // We will assume AuthContext reads from storage on mount/update.
+
+        // Force a context update if possible, or just navigate.
+        // We can't easily access setUser here effectively without passing it or using global state correctly.
+        // Assuming wrapping Register in useAuth() is done but we might need to call a function.
+        // For now, simple storage set and navigation to onboarding.
+
+        setSuccess('Account created! Redirecting to setup...');
+        setTimeout(() => {
+          // Redirect to first step of profile creation
+          navigate('/farmer-details');
+        }, 1000);
+      } else {
+        setSuccess('Account created successfully! Please log in.');
+        setTimeout(() => {
+          navigate('/login');
+        }, 1500);
+      }
     } catch (err: any) {
-      console.error('Registration Error:', err);
+      console.error('Registration/Login Error:', err);
       const message =
         err.response?.data?.message ||
         err.message ||
@@ -267,13 +279,14 @@ const Register = () => {
                 className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-green-500 focus:ring-green-500 pr-12"
                 required
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-white/60 hover:text-white transition-colors"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -294,13 +307,14 @@ const Register = () => {
                 className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-green-500 focus:ring-green-500 pr-12"
                 required
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-white/60 hover:text-white transition-colors"
               >
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -323,13 +337,14 @@ const Register = () => {
             <span className="text-white/60 text-sm">
               Already have an account?{' '}
             </span>
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={() => navigate('/login')}
-              className="text-white font-semibold hover:text-green-400 transition-colors"
+              className="text-white font-semibold hover:text-green-400 transition-colors p-0 h-auto"
             >
               Login
-            </button>
+            </Button>
           </div>
         </form>
       </div>

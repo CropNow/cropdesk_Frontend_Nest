@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { useAuth } from './useAuth';
 
 const CropDetails = () => {
@@ -39,87 +42,287 @@ const CropDetails = () => {
     }
   }, [cropData]);
 
-  const finalizeRegistration = (finalCropData?: any) => {
-    const tempStr = localStorage.getItem('tempRegistrationData');
-    const tempData = tempStr ? JSON.parse(tempStr) : {};
+  /* API Imports handled at top of file, ensuring we have them */
 
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
-      const storedUser = JSON.parse(storedUserStr);
+  const finalizeRegistration = async (finalCropData?: any) => {
+    try {
+      console.log('Finalizing Registration...');
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        console.error('CRITICAL: No access token found in localStorage!');
+        alert(
+          'Authentication Error: No access token found. Please login again.'
+        );
+        return false;
+      }
+      console.log('Access Token exists (length):', token.length);
 
-      const cropToSave = finalCropData || tempData.cropDetails || {};
+      // Verify Token Validity with Backend using a known safe read endpoint
+      try {
+        const { getAllFarmers } =
+          await import('@/features/auth/api/farmer.api');
+        await getAllFarmers(); // Just a ping to check if token is accepted
+        console.log('Token validated with backend (getAllFarmers).');
+      } catch (authError: any) {
+        console.error('Token validation failed:', authError);
+        // If this read fails with 401, we know for sure token is bad
+        if (authError.response?.status === 401) {
+          alert('Your session has expired. Please log in again.');
+          // force cleanup
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('user');
+          navigate('/login');
+          return false;
+        }
+        console.warn(
+          'Network issue or other error checking token, proceeding with caution...'
+        );
+      }
 
-      // Generate Identifiers
-      const farmerId = tempData.farmerDetails?.id || `farmer-${Date.now()}`;
-      // Add small delay or random to ensure subsequent IDs differ if running fast
-      const farmId =
-        tempData.farmDetails?.id ||
-        `farm-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const fieldId =
-        tempData.fieldDetails?.id ||
-        `field-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const cropId =
-        cropToSave.id ||
-        `crop-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const tempStr = localStorage.getItem('tempRegistrationData');
+      const tempData = tempStr ? JSON.parse(tempStr) : {};
 
-      // Prepare Objects with IDs and Links
-      const farmerObj = tempData.farmerDetails
-        ? { ...tempData.farmerDetails, id: farmerId }
-        : null;
-      const farmObj = tempData.farmDetails
-        ? { ...tempData.farmDetails, id: farmId, farmerId: farmerId }
-        : null;
-      const fieldObj = tempData.fieldDetails
-        ? { ...tempData.fieldDetails, id: fieldId, farmId: farmId }
-        : null;
-      const cropObj = cropToSave.cropName
-        ? { ...cropToSave, id: cropId, fieldId: fieldId }
-        : null;
+      // 1. Create Farmer
+      console.log('Creating Farmer...');
 
-      const farmersList = farmerObj ? [farmerObj] : [];
-      const farmsList = farmObj ? [farmObj] : [];
-      const fieldsList = fieldObj ? [fieldObj] : [];
-      const cropsList = cropObj ? [cropObj] : [];
+      // Safety: Ensure we use the logged-in user's email if possible to prevent 401/403 on mismatched identity
+      let safeEmail = tempData.farmerDetails?.email;
+      if (user && user.email) {
+        safeEmail = user.email;
+      }
 
-      const updatedUser = {
-        ...storedUser,
-
-        // Update basic details if present in temp (e.g. if we allowed editing basic info)
-        ...(tempData.farmerDetails && tempData.farmerDetails.name
-          ? {
-              firstName: tempData.farmerDetails.name.split(' ')[0],
-              lastName: tempData.farmerDetails.name
-                .split(' ')
-                .slice(1)
-                .join(' '),
-            }
-          : {}),
-
-        // Store legacy single objects (optional, for backward compat)
-        farmerDetails: farmerObj || {},
-        farmDetails: farmObj || {},
-        fieldDetails: fieldObj || {},
-        cropDetails: cropObj || {},
-
-        // Store Lists
-        farmers: farmersList,
-        farms: farmsList,
-        fields: fieldsList,
-        crops: cropsList,
-
-        isOnboardingComplete: true,
+      const farmerPayload = {
+        name: tempData.farmerDetails?.name,
+        phone: tempData.farmerDetails?.phone,
+        email: safeEmail,
+        address: tempData.farmerDetails?.address,
       };
 
-      localStorage.setItem('registeredUser', JSON.stringify(updatedUser));
-      // Also update 'user' key for AuthContext initialization
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Guard: Do not create a farmer if the name is empty (User skipped onboarding completely)
+      if (!farmerPayload.name || farmerPayload.name.trim() === '') {
+        console.warn('Skipping Farmer Creation: No name provided.');
+        // We consider this "Status Quo Success" - user chose not to register details.
+        // Cleanup storage and return.
+        localStorage.removeItem('tempRegistrationData');
+        return true;
+      }
 
+      let farmer;
+      try {
+        // Import dynamically to avoid top-level issues if something is wrong
+        const { createFarmer } = await import('@/features/auth/api/farmer.api');
+        farmer = await createFarmer(farmerPayload);
+        console.log('Farmer Created:', farmer);
+      } catch (err: any) {
+        console.error('Create Farmer Failed:', err);
+        if (err.response?.status === 401) {
+          alert(
+            'Unauthorized: Cannot create farmer. Please ensure you are logged in correctly.'
+          );
+          return false;
+        }
+        throw new Error(
+          `Farmer creation failed: ${err.response?.data?.message || err.message}`
+        );
+      }
+
+      // 2. Create Farm
+      console.log('Creating Farm...');
+
+      const loc = tempData.farmDetails?.location || {};
+      const farmPayload = {
+        name: tempData.farmDetails?.farmName, // DB expects 'name', FE stores 'farmName'
+        description: tempData.farmDetails?.description || 'Main Farm',
+        farmerId: farmer.id || (farmer as any)._id, // Safety check for ID field
+        location: {
+          address: loc.address || 'Unknown Address',
+          city: loc.city || 'Unknown City',
+          state: loc.state || 'Unknown State', // Added if available, though not in form explicitly sometimes
+          country: loc.country || 'India',
+          coordinates: {
+            type: 'Point',
+            coordinates: [
+              parseFloat(loc.longitude || '0'),
+              parseFloat(loc.latitude || '0'),
+            ],
+          },
+        },
+        area: tempData.farmDetails?.area || '0', // Keep as string for TS interface
+        unit: tempData.farmDetails?.units || 'acres',
+        soilType: tempData.farmDetails?.soilType || 'loamy', // Default or from field? Farm schema requires it.
+        irrigationType: 'drip',
+        farmingType: 'conventional',
+      };
+
+      // Ensure specific fields match backend Enum values
+      // (Backend: clay, sandy, loamy... lowercase)
+      // FE might have Capitalized.
+      if (farmPayload.soilType)
+        farmPayload.soilType = farmPayload.soilType.toLowerCase();
+      if (farmPayload.unit) farmPayload.unit = farmPayload.unit.toLowerCase();
+
+      // Cast payload to any if extra casting is needed by backend but TS restriction is tight
+      // or rely on Mongoose string->number casting
+      let farm;
+      try {
+        const { createFarm } = await import('@/features/auth/api/farm.api');
+        farm = await createFarm(farmPayload as any);
+        console.log('Farm Created:', farm);
+      } catch (err: any) {
+        console.error('Create Farm Failed:', err);
+        throw new Error(
+          `Farm creation failed: ${err.response?.data?.message || err.message}`
+        );
+      }
+
+      // 3. Create Field
+      console.log('Creating Field...');
+      const fieldPayload = {
+        name: tempData.fieldDetails?.fieldName, // DB 'name', FE 'fieldName'
+        description: tempData.fieldDetails?.description,
+        area: tempData.fieldDetails?.area || '0', // Keep as string
+        unit: tempData.fieldDetails?.units?.toLowerCase() || 'acres',
+        soil: {
+          type: tempData.fieldDetails?.soilType?.toLowerCase() || 'loamy',
+          ph: parseFloat(tempData.fieldDetails?.phLevel || '7'),
+          organicCarbon: 0,
+          nitrogen: 0,
+          phosphorus: 0,
+          potassium: 0,
+        },
+        irrigation: {
+          type:
+            tempData.fieldDetails?.irrigationMethod?.toLowerCase() || 'drip',
+          waterSource: 'Well',
+        },
+        boundary: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [0, 1],
+              [1, 1],
+              [1, 0],
+              [0, 0],
+            ],
+          ], // Default mock boundary if none provided
+        },
+      };
+
+      // Handle Coordinates
+      if (tempData.fieldDetails?.coordinates) {
+        try {
+          // If valid GeoJSON or points are stored, parse and format for backend
+          // Backend expects { type: "Polygon", coordinates: [[[lon, lat], ...]] }
+          // User input might be simple string or JSON from LocationPicker
+          // For now, using the fallback above to prevent crash if data is complex
+          const parsedCoords =
+            typeof tempData.fieldDetails.coordinates === 'string'
+              ? JSON.parse(tempData.fieldDetails.coordinates)
+              : tempData.fieldDetails.coordinates;
+
+          // If parsedCoords is just an array of points, wrap it
+          if (
+            Array.isArray(parsedCoords) &&
+            parsedCoords.length > 0 &&
+            Array.isArray(parsedCoords[0])
+          ) {
+            // Assume it's [[lat, lng], ...]
+            // Verify format and swap to [lon, lat] if needed?
+            // Usually map tools give [lat, lng]. standard GeoJSON is [lon, lat].
+          }
+        } catch (e) {}
+      }
+
+      const { createField } = await import('@/features/auth/api/field.api');
+      const farmId = farm.id || (farm as any)._id;
+      // We need to cast fieldPayload to any because 'soil', 'irrigation', 'boundary' are not in current Field interface in auth.types.ts
+      // Update auth.types.ts is better, but for now cast to avoid error
+      const field = await createField(farmId, fieldPayload as any);
+      console.log('Field Created Response:', field);
+
+      // 4. Create Crop
+      // Only if we have valid crop data
+      const cropToSave = finalCropData || tempData.cropDetails;
+      if (cropToSave && cropToSave.cropName) {
+        console.log('Preparing to create crop...');
+        const fieldId = field.id || (field as any)._id;
+
+        if (!fieldId) {
+          console.error(
+            'CRITICAL: Field ID missing from created field response! Cannot create crop.'
+          );
+          console.log('Field Object:', field);
+          alert('Field created but ID is missing. Crop creation skipped.');
+        } else {
+          console.log('Using Field ID for Crop:', fieldId);
+          const cropPayload = {
+            name: cropToSave.cropName,
+            plantingDate: cropToSave.plantingDate,
+            expectedHarvestDate: cropToSave.harvestingDate, // FE 'harvestingDate', BE 'expectedHarvestDate'
+            area: cropToSave.area || '0',
+            unit: 'acres', // Default
+            // fieldId is passed in URL params, and not allowed in body by backend validation
+          };
+          console.log('Crop Payload:', cropPayload);
+
+          try {
+            const { createCrop } = await import('@/features/auth/api/crop.api');
+            // Cast to any because Crop interface in auth.types.ts is very minimal
+            const createdCrop = await createCrop(fieldId, cropPayload as any);
+            console.log('Crop Created Successfully:', createdCrop);
+          } catch (cropErr: any) {
+            console.error('Failed to create crop:', cropErr);
+            if (cropErr.response) {
+              console.error(
+                'Server responded with:',
+                cropErr.response.status,
+                cropErr.response.data
+              );
+              alert(
+                `Crop creation failed: ${cropErr.response.data.message || cropErr.message}`
+              );
+            } else {
+              alert(`Crop creation failed: ${cropErr.message}`);
+            }
+            // We do NOT rethrow here, so the user flow can complete (redirect to dashboard)
+            // even if crop fails. But the alert informs them.
+          }
+        }
+      } else {
+        console.log('Skipping Crop creation: No valid crop data found.');
+      }
+
+      // Cleanup
       localStorage.removeItem('tempRegistrationData');
 
-      // Update global auth state immediately
-      if (setUser) {
-        setUser(updatedUser);
+      // Refresh User/Session Global State to unlock UI (Smart Info etc) immediately
+      try {
+        console.log('Refreshing User Session to unlock dashboards...');
+        const { getMe } = await import('@/features/auth/auth.api');
+        const freshUser = await getMe();
+        setUser(freshUser); // Update global context
+        // Also update local storage to be safe
+        import('@/utils/storage').then(({ saveStoredUser }) => {
+          saveStoredUser(freshUser);
+        });
+      } catch (refreshErr) {
+        console.warn(
+          'Failed to refresh session, UI might require reload:',
+          refreshErr
+        );
       }
+
+      // Navigate is handled by caller or we can do it here if we pass navigate
+      return true;
+    } catch (error: any) {
+      console.error('Finalization Failed:', error);
+      if (error.response?.status === 401) {
+        alert('Session Expired or Unauthorized. Please log in again.');
+      } else {
+        alert(`Failed to save data: ${error.message || 'Unknown error'}`);
+      }
+      throw error; // Rethrow to stop navigation if needed
     }
   };
 
@@ -127,11 +330,12 @@ const CropDetails = () => {
     e.preventDefault();
     console.log('Crop Details:', cropData);
 
-    finalizeRegistration(cropData);
+    const success = await finalizeRegistration(cropData);
 
-    // Navigate to Dashboard
-    navigate('/');
-    // No reload needed if setUser is called
+    // Only navigate on success
+    if (success) {
+      navigate('/');
+    }
   };
 
   const handleSkip = () => {
@@ -155,12 +359,13 @@ const CropDetails = () => {
       {/* Content */}
       <div className="relative z-10 w-full max-w-md mx-auto flex flex-col justify-center px-8 py-12">
         {/* Back Button */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => navigate(-1)}
           className="absolute top-8 left-8 text-white/80 hover:text-white transition-colors"
         >
           <ArrowLeft size={24} />
-        </button>
+        </Button>
 
         {/* Skip Button */}
 
@@ -175,77 +380,71 @@ const CropDetails = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Crop Name */}
-          <div>
-            <label className="text-xs text-white/60 mb-1 block ml-1">
-              Crop Name
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label className="text-white/60 ml-1">Crop Name</Label>
+            <Input
               type="text"
               placeholder="e.g. Wheat, Rice, Tomato"
               value={cropData.cropName}
               onChange={(e) =>
                 setCropData({ ...cropData, cropName: e.target.value })
               }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-green-500 focus:ring-green-500"
               required
             />
           </div>
 
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-white/60 mb-1 block ml-1">
-                Planting Date
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label className="text-white/60 ml-1">Planting Date</Label>
+              <Input
                 type="date"
                 value={cropData.plantingDate}
                 onChange={(e) =>
                   setCropData({ ...cropData, plantingDate: e.target.value })
                 }
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors max-h-[50px]"
+                className="h-12 bg-white/10 border-white/20 text-white appearance-none focus:border-green-500 focus:ring-green-500"
                 required
               />
             </div>
-            <div>
-              <label className="text-xs text-white/60 mb-1 block ml-1">
-                Exp. Harvest
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label className="text-white/60 ml-1">Exp. Harvest</Label>
+              <Input
                 type="date"
                 value={cropData.harvestingDate}
                 onChange={(e) =>
                   setCropData({ ...cropData, harvestingDate: e.target.value })
                 }
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors max-h-[50px]"
+                className="h-12 bg-white/10 border-white/20 text-white appearance-none focus:border-green-500 focus:ring-green-500"
                 required
               />
             </div>
           </div>
 
           {/* Area */}
-          <div>
-            <label className="text-xs text-white/60 mb-1 block ml-1">
+          <div className="space-y-2">
+            <Label className="text-white/60 ml-1">
               Cultivation Area (Acres)
-            </label>
-            <input
+            </Label>
+            <Input
               type="number"
               placeholder="Area for this crop"
               value={cropData.area}
               onChange={(e) =>
                 setCropData({ ...cropData, area: e.target.value })
               }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-green-500 focus:ring-green-500"
               required
             />
           </div>
 
-          <button
+          <Button
             type="submit"
-            className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all active:scale-[0.98] mt-4"
+            className="w-full py-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all active:scale-[0.98] mt-4 text-xl"
           >
             Finish Setup
-          </button>
+          </Button>
 
           <p className="text-center text-xs text-white/40 mt-4">
             You can always add more crops later from the dashboard.

@@ -109,15 +109,15 @@ const IOTDashboard = ({
 
   if (showEmptyState) {
     return (
-      <section className="flex flex-col gap-4 border border-border p-4 lg:p-6 rounded-2xl bg-gradient-to-br from-green-500/10 via-background to-background dark:bg-card relative overflow-hidden h-full min-h-[300px] items-center justify-center text-center">
+      <section className="flex flex-col gap-4 border border-border p-3 lg:p-4 rounded-2xl bg-gradient-to-br from-green-500/10 via-background to-background dark:bg-card relative overflow-hidden h-full min-h-[220px] items-center justify-center text-center">
         {/* Blurred Content Placeholder */}
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
           <button
             onClick={() => navigate('/register/farmer-details')}
             className="group flex flex-col items-center gap-4 transition-transform hover:scale-105 active:scale-95"
           >
-            <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/20 group-hover:shadow-green-500/40 transition-shadow">
-              <Plus size={32} className="text-white" />
+            <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/20 group-hover:shadow-green-500/40 transition-shadow">
+              <Plus className="w-5 h-5 lg:w-8 lg:h-8 text-white" />
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-lg font-bold text-foreground">
@@ -431,34 +431,43 @@ const IOTDashboard = ({
   ];
 
   return (
-    <section className="flex flex-col gap-4 p-4 lg:p-6 rounded-2xl bg-gradient-to-br from-green-500/10 via-background to-background dark:bg-card">
-      <div className="bg-gradient-to-br from-background to-green-500/5 dark:bg-card rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-        <div className="flex justify-between items-start mb-8">
-          <div className="flex gap-4">
-            <div className="p-4 bg-green-500/10 rounded-2xl text-green-500 border border-green-500/20">
-              <Wifi size={32} />
+    <section className="flex flex-col gap-4 p-0 lg:p-4 rounded-2xl">
+      <div className="bg-gradient-to-br from-background to-green-500/5 dark:bg-card rounded-2xl p-3 lg:p-6 shadow-sm hover:shadow-md transition-shadow duration-300 border border-border">
+        <div className="flex justify-between items-start mb-3 lg:mb-8">
+          <div className="flex gap-2 lg:gap-4">
+            <div className="p-2 lg:p-4 bg-green-500/10 rounded-xl lg:rounded-2xl text-green-500 border border-green-500/20">
+              <Wifi size={20} className="lg:hidden" />
+              <Wifi size={32} className="hidden lg:block" />
             </div>
             <div>
-              <h4 className="text-lg font-medium text-foreground leading-none mb-1">
+              <h4 className="text-xs lg:text-lg font-medium text-foreground leading-none mb-1">
                 {farmInfo.name}
               </h4>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+              <p className="text-[10px] lg:text-xs text-muted-foreground uppercase tracking-wider">
                 {farmInfo.location}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-3 text-muted-foreground">
+          <div className="flex items-center gap-2 lg:gap-3">
+            <div className="flex items-center gap-2 lg:gap-3 text-muted-foreground">
+              <Signal
+                size={18}
+                className={`lg:hidden ${isOnline ? 'text-green-500' : 'text-red-500'}`}
+              />
               <Signal
                 size={24}
-                className={isOnline ? 'text-green-500' : 'text-red-500'}
+                className={`hidden lg:block ${isOnline ? 'text-green-500' : 'text-red-500'}`}
               />
               <div className="flex items-center gap-1">
                 <Battery
-                  size={24}
-                  className={battery.charging ? 'text-green-500' : ''}
+                  size={18}
+                  className={`lg:hidden ${battery.charging ? 'text-green-500' : ''}`}
                 />
-                <span className="text-lg font-bold">
+                <Battery
+                  size={24}
+                  className={`hidden lg:block ${battery.charging ? 'text-green-500' : ''}`}
+                />
+                <span className="text-sm lg:text-lg font-bold">
                   {Math.round(battery.level * 100)}%
                 </span>
               </div>
@@ -466,7 +475,7 @@ const IOTDashboard = ({
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-6">
+        <div className="flex flex-col sm:flex-row gap-3 lg:gap-6">
           {/* Sensors Count Card */}
           <div className="w-full sm:w-auto shrink-0">
             {[
@@ -492,26 +501,28 @@ const IOTDashboard = ({
           </div>
 
           {/* Sensor Categories Card */}
-          <div className="flex-1 bg-background border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-            <h5 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Activity size={16} /> Sensor Categories
+          <div className="flex-1 bg-background border border-border rounded-xl p-3 lg:p-5 shadow-sm hover:shadow-md transition-shadow">
+            <h5 className="text-[10px] lg:text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 lg:mb-4 flex items-center gap-2">
+              <Activity size={12} className="lg:hidden" />
+              <Activity size={16} className="hidden lg:block" />
+              Sensor Categories
             </h5>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 lg:gap-3">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat)}
-                  className="flex flex-col items-center justify-center p-4 rounded-xl bg-card hover:bg-muted/50 border border-border hover:border-primary/20 transition-all text-center group"
+                  className="flex flex-col items-center justify-center p-2 lg:p-4 rounded-lg lg:rounded-xl bg-card hover:bg-muted/50 border border-border hover:border-primary/20 transition-all text-center group"
                 >
-                  <div className={`text-${cat.color}-500 mb-2`}>
+                  <div className={`text-${cat.color}-500 mb-1 lg:mb-2`}>
                     {React.isValidElement(cat.icon)
                       ? React.cloneElement(
                           cat.icon as React.ReactElement<any>,
-                          { size: 32 }
+                          { size: 24 }
                         )
                       : cat.icon}
                   </div>
-                  <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                  <span className="text-[10px] lg:text-sm font-bold text-foreground group-hover:text-primary transition-colors">
                     {cat.name}
                   </span>
                 </button>
@@ -609,47 +620,61 @@ const SensorCategoryModal = ({
                           onClick={() =>
                             setSelectedSensor(isSelected ? null : sensor.name)
                           }
-                          className={`p-4 rounded-2xl bg-background border transition-all cursor-pointer group shadow-sm w-full ${
+                          className={`p-3 lg:p-4 rounded-xl lg:rounded-2xl bg-background border transition-all cursor-pointer group shadow-sm w-full ${
                             isSelected
                               ? 'border-primary ring-1 ring-primary/20 bg-primary/5 shadow-md'
                               : 'border-border hover:border-primary/50 hover:shadow-md'
                           }`}
                         >
-                          <div className="flex justify-between items-start mb-3">
+                          <div className="flex justify-between items-start mb-2 lg:mb-3">
                             <div
-                              className={`p-4 rounded-xl bg-${sensor.color}-500/10 text-${sensor.color}-500 border border-${sensor.color}-500/20`}
+                              className={`p-2 lg:p-4 rounded-lg lg:rounded-xl bg-${sensor.color}-500/10 text-${sensor.color}-500 border border-${sensor.color}-500/20`}
                             >
                               {React.isValidElement(sensor.icon)
                                 ? React.cloneElement(
                                     sensor.icon as React.ReactElement<any>,
-                                    { size: 40 }
+                                    { size: 24 }
                                   )
                                 : sensor.icon}
                             </div>
                           </div>
-                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 truncate">
+                          <p className="text-[10px] lg:text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 lg:mb-2 truncate">
                             {sensor.name}
                           </p>
-                          <div className="flex items-baseline gap-1 mb-2">
-                            <span className="text-3xl font-bold text-foreground">
+                          <div className="flex items-baseline gap-1 mb-1 lg:mb-2">
+                            <span className="text-xl lg:text-3xl font-bold text-foreground">
                               {sensor.value}
                             </span>
-                            <span className="text-sm font-medium text-muted-foreground">
+                            <span className="text-xs lg:text-sm font-medium text-muted-foreground">
                               {sensor.unit}
                             </span>
                           </div>
                           <div className="mt-2 flex items-center gap-1">
                             <span
-                              className={`w-2 h-2 rounded-full ${sensor.status === 'Good' ? 'bg-green-500' : sensor.status === 'Warning' ? 'bg-yellow-500' : 'bg-red-500'}`}
+                              className={`w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full ${
+                                sensor.status === 'Good'
+                                  ? 'bg-green-500'
+                                  : sensor.status === 'Warning'
+                                    ? 'bg-yellow-500'
+                                    : 'bg-red-500'
+                              }`}
                             ></span>
                             <span
-                              className={`text-xs font-bold uppercase ${sensor.status === 'Good' ? 'text-green-500' : sensor.status === 'Warning' ? 'text-yellow-500' : 'text-red-500'}`}
+                              className={`text-[10px] lg:text-xs font-bold uppercase ${
+                                sensor.status === 'Good'
+                                  ? 'text-green-500'
+                                  : sensor.status === 'Warning'
+                                    ? 'text-yellow-500'
+                                    : 'text-red-500'
+                              }`}
                             >
                               {sensor.status}
                             </span>
                             <ChevronDown
-                              size={12}
-                              className={`ml-auto text-muted-foreground transition-transform duration-300 ${isSelected ? 'rotate-180' : ''}`}
+                              size={10}
+                              className={`ml-auto text-muted-foreground transition-transform duration-300 ${
+                                isSelected ? 'rotate-180' : ''
+                              }`}
                             />
                           </div>
                         </div>

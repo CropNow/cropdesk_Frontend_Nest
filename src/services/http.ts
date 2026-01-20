@@ -21,6 +21,9 @@ http.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    // console.log('Checking Auth Header:', `Bearer ${token.substring(0, 10)}...`);
+  } else {
+    console.warn('HTTP Request missing Authorization token');
   }
   return config;
 });

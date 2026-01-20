@@ -70,32 +70,9 @@ export const getMe = async (): Promise<User> => {
 
   try {
     // Attempt to fetch real user from backend
-    const response = await http.get<User>('/auth/me');
-    let user = response.data;
-    const localUserStr = localStorage.getItem('registeredUser');
-    if (localUserStr) {
-      try {
-        const localUser = JSON.parse(localUserStr);
-        user = {
-          ...user,
-          ...localUser,
-          id: user.id,
-          email: user.email, // Trust backend for auth fields
-          username: user.username, // Trust backend for auth fields
-        };
-        if (localUser.farmerDetails)
-          user.farmerDetails = localUser.farmerDetails;
-        if (localUser.farmDetails) user.farmDetails = localUser.farmDetails;
-        if (localUser.fieldDetails) user.fieldDetails = localUser.fieldDetails;
-        if (localUser.cropDetails) user.cropDetails = localUser.cropDetails;
-        if (localUser.isOnboardingComplete)
-          user.isOnboardingComplete = localUser.isOnboardingComplete;
-      } catch (e) {
-        console.warn('Failed to parse local user data for merge', e);
-      }
-    }
-
-    return user;
+    const response = await http.get<User>('/users/me');
+    // Simplified: Trust backend as source of truth
+    return response.data;
   } catch (error) {
     console.error('Failed to fetch user from backend', error);
     throw error;

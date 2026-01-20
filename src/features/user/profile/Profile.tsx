@@ -19,6 +19,7 @@ import {
 
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
+import { getStoredUser, saveStoredUser } from '@/utils/storage';
 import FarmerDetailsTab from './FarmerDetailsTab';
 import FarmDetailsTab from './FarmDetailsTab';
 import FieldDetailsTab from './FieldDetailsTab';
@@ -151,11 +152,51 @@ const Profile = () => {
   /* MOVED HANDLERS END */
 
   const persistFarmers = (updatedFarmers: any[]) => {
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
-      const user = JSON.parse(storedUserStr);
+    const sessionStr = localStorage.getItem('user');
+    if (sessionStr) {
+      const sessionUser = JSON.parse(sessionStr);
+      if (!sessionUser.email) return;
+
+      // Get latest from collection or fall back to session
+      const user = getStoredUser(sessionUser.email) || sessionUser;
+
+      // Update Hierarchy
       user.farmers = updatedFarmers;
-      localStorage.setItem('registeredUser', JSON.stringify(user));
+
+      // Update Flat Lists to match Hierarchy (Cascading Delete Support)
+      const allFarms: any[] = [];
+      const allFields: any[] = [];
+      const allCrops: any[] = [];
+
+      updatedFarmers.forEach((farmer) => {
+        if (farmer.farms) {
+          allFarms.push(...farmer.farms);
+          farmer.farms.forEach((farm: any) => {
+            if (farm.fields) {
+              allFields.push(...farm.fields);
+              farm.fields.forEach((field: any) => {
+                if (field.crops) {
+                  allCrops.push(...field.crops);
+                }
+              });
+            }
+          });
+        }
+      });
+
+      user.farms = allFarms;
+      user.fields = allFields;
+      user.crops = allCrops;
+
+      // Update single object refs if they were deleted (optional, but good for consistency)
+      if (!allFarms.find((f) => f.id === user.farmDetails?.id))
+        user.farmDetails = {};
+      if (!allFields.find((f) => f.id === user.fieldDetails?.id))
+        user.fieldDetails = {};
+      if (!allCrops.find((c) => c.id === user.cropDetails?.id))
+        user.cropDetails = {};
+
+      saveStoredUser(user);
     }
   };
 
@@ -174,121 +215,166 @@ const Profile = () => {
 
   // Load Data
   React.useEffect(() => {
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
-      const user = JSON.parse(storedUserStr);
-
-      setUserDetails({
-        name: user.username || user.firstName || 'User',
-        email: user.email || '',
-        joinDate: 'Dec 2024',
-      });
-
-      // Reconstruct Hierarchy from Flat Lists (or use existing hierarchy if saved that way)
-      let hierarchy = [];
-
-      const rawFarmers = user.farmers || [];
-      const rawFarms = user.farms || [];
-      const rawFields = user.fields || [];
-      const rawCrops = user.crops || [];
-
-      // Link Fields to Crops
-      const fieldsWithCrops = rawFields.map((field: any) => ({
-        ...field,
-        crops: rawCrops.filter(
-          (c: any) =>
-            c.fieldId === field.id ||
-            c.fieldId === field.fieldName ||
-            c.fieldId === field.name
-        ),
-      }));
-
-      // Link Farms to Fields
-      const farmsWithFields = rawFarms.map((farm: any) => ({
-        ...farm,
-        fields: fieldsWithCrops.filter(
-          (f: any) =>
-            f.farmId === farm.id ||
-            f.farmId === farm.farmName ||
-            f.farmId === farm.name
-        ),
-      }));
-
-      // Link Farmers to Farms
-      const farmersWithFarms = rawFarmers.map((farmer: any) => {
-        if (
-          farmer.farms &&
-          Array.isArray(farmer.farms) &&
-          farmer.farms.length > 0
-        ) {
-          return farmer;
+    const fetchProfileData = async () => {
+      try {
+        // 1. Basic User Info (Sync with session storage mainly for email/name display)
+        const sessionStr = localStorage.getItem('user');
+        let currentUser = sessionStr ? JSON.parse(sessionStr) : null;
+        if (currentUser) {
+          setUserDetails({
+            name: currentUser.username || currentUser.firstName || 'User',
+            email: currentUser.email || '',
+            joinDate: 'Dec 2024',
+          });
         }
-        return {
-          ...farmer,
-          farms: farmsWithFields.filter(
-            (f: any) => f.farmerId === farmer.id || f.farmerId === farmer.name
-          ),
-        };
-      });
 
-      hierarchy = farmersWithFarms;
+        // 2. Fetch Deep Hierarchy Manually
+        const { getAllFarmers } =
+          await import('@/features/auth/api/farmer.api');
+        const apiFarmers = await getAllFarmers();
 
-      if (hierarchy.length > 0) {
-        setFarmers(hierarchy);
-        // Default select first available
-        const firstFarmer = hierarchy[0];
-        setSelectedFarmerId(firstFarmer.id);
-
-        if (firstFarmer.farms && firstFarmer.farms.length > 0) {
-          const firstFarm = firstFarmer.farms[0];
-          setSelectedFarmId(firstFarm.id);
-
-          if (firstFarm.fields && firstFarm.fields.length > 0) {
-            setSelectedFieldId(firstFarm.fields[0].id);
+        if (apiFarmers && apiFarmers.length > 0) {
+          // Filter Farmers to only show those belonging to the current user
+          let enrichedFarmers = apiFarmers;
+          if (currentUser && currentUser.id) {
+            enrichedFarmers = apiFarmers.filter((f: any) => {
+              const fUserId =
+                f.userId && typeof f.userId === 'object'
+                  ? f.userId._id
+                  : f.userId;
+              return (
+                String(fUserId) === String(currentUser.id) ||
+                String(f.farmerUserId) === String(currentUser.id)
+              );
+            });
           }
-        }
-      } else {
-        // Fallback / Initial Mock if no farmers exist
-        const defaultFarmer = {
-          id: 'default-farmer',
-          name: user.farmerDetails?.name || 'Main Farmer',
-          farms: [
-            {
-              id: 'default-farm',
-              name: user.farmDetails?.farmName || 'Main Farm',
-              fields: user.fieldDetails
-                ? [
-                    {
-                      id: 'default-field',
-                      name: 'Main Field',
-                      area: user.farmDetails?.area || '0',
-                      units: user.farmDetails?.units || 'acres',
-                      irrigationMethod:
-                        user.fieldDetails?.irrigationMethod || 'Borewell',
-                      crops: [],
-                    },
-                  ]
-                : [],
-            },
-          ],
-        };
-        const initFarmers = [defaultFarmer];
-        setFarmers(initFarmers);
-        // Note: We don't persist this back immediately to avoid overwriting registeredUser with mocks,
-        // unless user edits. But for display we use it.
-        setSelectedFarmerId(defaultFarmer.id);
-        const firstFarm = defaultFarmer.farms[0];
-        if (firstFarm) {
-          setSelectedFarmId(firstFarm.id);
-          if (firstFarm.fields && firstFarm.fields.length > 0) {
-            const firstField = firstFarm.fields[0];
-            if (firstField) {
-              setSelectedFieldId(firstField.id);
+
+          if (enrichedFarmers.length === 0) {
+            console.warn('No farmers found for current user.');
+            // Do NOT revert to showing all farmers. Keep it empty.
+          }
+
+          console.log('Filtered Farmers:', enrichedFarmers);
+
+          // A. Fetch Farms
+          try {
+            const { getFarms } = await import('@/features/auth/api/farm.api');
+            // Fetch all farms (assuming pagination is handled or we get enough)
+            // Ideally we should handle pagination or use a 'getAll' endpoint if available
+            const farmsResponse = await getFarms(1, 100);
+            const allFarms = farmsResponse.farms || [];
+            console.log('Fetched All Farms:', allFarms);
+
+            if (allFarms.length > 0) {
+              // Map Farms to Farmers
+              enrichedFarmers = enrichedFarmers.map((farmer) => {
+                const farmerId = farmer.id || (farmer as any)._id;
+                const myFarms = allFarms.filter((farm) => {
+                  const fOwner = farm.farmerId || (farm as any).farmer;
+                  const fOwnerId =
+                    typeof fOwner === 'object' && fOwner
+                      ? fOwner.id || fOwner._id
+                      : fOwner;
+                  return String(fOwnerId) === String(farmerId);
+                });
+                return { ...farmer, farms: myFarms };
+              });
+            }
+          } catch (err) {
+            console.error('Error fetching farms:', err);
+          }
+
+          // B. Fetch Fields (Global fetch)
+          try {
+            const { getFields } = await import('@/features/auth/api/field.api');
+            const allFields = await getFields({}); // Fetch all fields for user
+            console.log('Fetched All Fields:', allFields);
+
+            if (allFields.length > 0) {
+              // C. Fetch Crops for these fields (N+1 but necessary if no global crop endpoint)
+              const { getCropsByField } =
+                await import('@/features/auth/api/crop.api');
+
+              // Promise.all to fetch crops for each field
+              const fieldsWithCrops = await Promise.all(
+                allFields.map(async (field) => {
+                  const fieldId = field.id || (field as any)._id;
+                  try {
+                    const crops = await getCropsByField(fieldId);
+                    return { ...field, crops: crops || [] };
+                  } catch (e) {
+                    console.warn(
+                      `Failed to fetch crops for field ${fieldId}`,
+                      e
+                    );
+                    return { ...field, crops: [] };
+                  }
+                })
+              );
+
+              console.log('Fields with Crops:', fieldsWithCrops);
+
+              // Map Fields (with crops) to Farms
+              enrichedFarmers = enrichedFarmers.map((farmer) => {
+                if (!farmer.farms) return farmer;
+
+                const enrichedFarms = farmer.farms.map((farm: any) => {
+                  const farmId = farm.id || (farm as any)._id;
+                  const myFields = fieldsWithCrops.filter((field: any) => {
+                    const fFarm = field.farmId || field.farm;
+                    const fFarmId =
+                      typeof fFarm === 'object' && fFarm
+                        ? fFarm.id || fFarm._id
+                        : fFarm;
+                    return String(fFarmId) === String(farmId);
+                  });
+                  return { ...farm, fields: myFields };
+                });
+                return { ...farmer, farms: enrichedFarms };
+              });
+            }
+          } catch (err) {
+            console.error('Error fetching fields/crops:', err);
+          }
+
+          setFarmers(enrichedFarmers);
+
+          // Auto-Select Logic (using enriched data) with safe fallbacks
+          if (enrichedFarmers.length > 0) {
+            const firstFarmer = enrichedFarmers[0];
+            if (firstFarmer) {
+              setSelectedFarmerId(firstFarmer.id);
+
+              if (firstFarmer.farms && firstFarmer.farms.length > 0) {
+                const firstFarm = firstFarmer.farms[0];
+                if (firstFarm) {
+                  setSelectedFarmId(firstFarm.id);
+
+                  if (firstFarm.fields && firstFarm.fields.length > 0) {
+                    const firstField = firstFarm.fields[0];
+                    if (firstField) {
+                      setSelectedFieldId(firstField.id);
+
+                      if (firstField.crops && firstField.crops.length > 0) {
+                        const firstCrop = firstField.crops[0];
+                        if (firstCrop) {
+                          setSelectedCropId(firstCrop.id);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
+        } else {
+          setFarmers([]);
         }
+      } catch (e) {
+        console.error('Profile Data Fetch Error:', e);
       }
-    }
+    };
+    fetchProfileData();
   }, []);
 
   const countries = [

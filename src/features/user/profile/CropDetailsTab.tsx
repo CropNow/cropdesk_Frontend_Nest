@@ -3,6 +3,8 @@ import { Sprout, Calendar, Plus, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Subheading } from '@/components/common/Heading';
+import { Dropdown } from '@/components/ui/dropdown';
 
 const CropDetailsTab = ({
   crop,
@@ -107,21 +109,21 @@ const CropDetailsTab = ({
   // FORM VIEW (Edit or Add)
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4 md:gap-0">
         <div>
-          <h2 className="text-xl font-bold text-foreground">
+          <Subheading className="font-bold">
             {isAdding ? 'Add New Crop' : 'Crop Details'}
-          </h2>
+          </Subheading>
         </div>
 
         {/* Crop Selector */}
         {!isAdding && crops && crops.length > 0 && onSelectCrop && (
-          <div className="flex-1 mx-8">
+          <div className="flex-1 w-full md:w-auto mx-0 md:mx-8">
             <Label className="block text-[10px] uppercase font-bold text-white mb-1">
               Select Crop
             </Label>
-            <select
-              className="w-fit min-w-[200px] bg-zinc-900 text-white border border-zinc-700 rounded-xl font-bold px-4 py-2 text-sm focus:outline-none cursor-pointer"
+            <Dropdown
+              className="w-full md:w-fit min-w-[200px] bg-zinc-900 text-white border border-zinc-700 rounded-xl font-bold px-4 py-2 text-sm focus:outline-none cursor-pointer [&>option]:bg-zinc-800 [&>option]:text-white"
               value={crop?.id || ''}
               onChange={(e) => onSelectCrop(e.target.value)}
             >
@@ -134,30 +136,32 @@ const CropDetailsTab = ({
                   {c.cropName || 'Unnamed Crop'}
                 </option>
               ))}
-            </select>
+            </Dropdown>
           </div>
         )}
 
-        {!isAdding && (
-          <Button
-            onClick={toggleAddMode}
-            size="sm"
-            className="rounded-xl text-xs font-bold flex items-center gap-2"
-          >
-            <Plus size={16} />
-            Add Crop
-          </Button>
-        )}
-        {isAdding && (
-          <Button
-            onClick={toggleAddMode}
-            variant="secondary"
-            size="sm"
-            className="rounded-xl text-xs font-bold"
-          >
-            Cancel
-          </Button>
-        )}
+        <div className="w-full md:w-auto flex justify-end">
+          {!isAdding && (
+            <Button
+              onClick={toggleAddMode}
+              size="sm"
+              className="rounded-xl text-xs font-bold flex items-center gap-2 w-full md:w-auto justify-center"
+            >
+              <Plus size={16} />
+              Add Crop
+            </Button>
+          )}
+          {isAdding && (
+            <Button
+              onClick={toggleAddMode}
+              variant="secondary"
+              size="sm"
+              className="rounded-xl text-xs font-bold w-full md:w-auto"
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6 max-w-4xl">

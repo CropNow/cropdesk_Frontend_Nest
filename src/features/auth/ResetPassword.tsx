@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { resetPassword } from './auth.api';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -86,16 +89,17 @@ const ResetPassword = () => {
       {/* Content */}
       <div className="relative z-10 w-full max-w-md mx-auto flex flex-col justify-center px-8 py-12">
         {/* Back Button */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => navigate('/login')}
-          className="flex items-center text-white/70 hover:text-white transition-colors mb-8 group w-fit"
+          className="flex items-center text-white/70 hover:text-white transition-colors mb-8 group w-fit pl-0 hover:bg-transparent"
         >
           <ArrowLeft
             size={20}
             className="mr-2 group-hover:-translate-x-1 transition-transform"
           />
           Back to Login
-        </button>
+        </Button>
 
         {/* Header Text */}
         <div className="text-left mb-8">
@@ -108,11 +112,11 @@ const ResetPassword = () => {
         {/* Form */}
         <form onSubmit={handleReset} className="space-y-6">
           <div className="relative space-y-2">
-            <label className="text-sm font-medium text-white/80">
+            <Label className="text-sm font-medium text-white/80">
               New Password
-            </label>
+            </Label>
             <div className="relative">
-              <input
+              <Input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Enter new password"
                 value={formData.password}
@@ -122,22 +126,23 @@ const ResetPassword = () => {
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors pr-12"
                 required
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-white/60 hover:text-white transition-colors"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
+              </Button>
             </div>
           </div>
 
           <div className="relative space-y-2">
-            <label className="text-sm font-medium text-white/80">
+            <Label className="text-sm font-medium text-white/80">
               Confirm Password
-            </label>
+            </Label>
             <div className="relative">
-              <input
+              <Input
                 type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="Confirm new password"
                 value={formData.confirmPassword}
@@ -147,25 +152,26 @@ const ResetPassword = () => {
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors pr-12"
                 required
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-white/60 hover:text-white transition-colors"
               >
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
+              </Button>
             </div>
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={
               loading || !formData.password || !formData.confirmPassword
             }
-            className="w-full py-4 bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all active:scale-[0.98]"
+            className="w-full py-6 bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all active:scale-[0.98]"
           >
             {loading ? 'Reseting...' : 'Reset Password'}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus } from 'lucide-react';
 import LocationPicker from '@/components/common/LocationPicker';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dropdown } from '@/components/ui/dropdown';
 
 const FarmDetails = () => {
   const navigate = useNavigate();
@@ -17,16 +22,18 @@ const FarmDetails = () => {
         console.error('Error loading temp data:', error);
       }
     }
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
+    const sessionStr = localStorage.getItem('user');
+    if (sessionStr) {
       try {
-        const storedUser = JSON.parse(storedUserStr);
-        if (
-          storedUser.farmDetails &&
-          Object.keys(storedUser.farmDetails).length > 0
-        ) {
-          return storedUser.farmDetails;
+        const sessionUser = JSON.parse(sessionStr);
+        const collectionStr = localStorage.getItem('app_users'); // STORAGE_KEYS.USERS_COLLECTION
+        if (collectionStr && sessionUser.email) {
+          const collection = JSON.parse(collectionStr);
+          const user = collection[sessionUser.email.toLowerCase()];
+          if (user && user.farmDetails) return user.farmDetails;
         }
+
+        if (sessionUser.farmDetails) return sessionUser.farmDetails;
       } catch (e) {
         console.error('Error loading stored user', e);
       }
@@ -36,6 +43,7 @@ const FarmDetails = () => {
       description: '',
       area: '',
       units: 'acres',
+      soilType: '',
       location: {
         address: '',
         city: '',
@@ -164,7 +172,7 @@ const FarmDetails = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <input
+            <Input
               type="text"
               placeholder="Farm Name"
               value={farmData.farmName}
@@ -177,7 +185,7 @@ const FarmDetails = () => {
           </div>
 
           <div>
-            <textarea
+            <Textarea
               placeholder="Description (Optional)"
               value={farmData.description}
               onChange={(e) =>
@@ -188,7 +196,7 @@ const FarmDetails = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <input
+            <Input
               type="number"
               placeholder="Area / Size"
               value={farmData.area}
@@ -202,12 +210,12 @@ const FarmDetails = () => {
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
               required
             />
-            <select
+            <Dropdown
               value={farmData.units}
               onChange={(e) =>
                 setFarmData({ ...farmData, units: e.target.value })
               }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors"
+              className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
               <option value="acres" className="bg-gray-800">
                 Acres
@@ -218,7 +226,7 @@ const FarmDetails = () => {
               <option value="sq_ft" className="bg-gray-800">
                 Sq Ft
               </option>
-            </select>
+            </Dropdown>
           </div>
 
           <hr className="border-white/10 my-4" />
@@ -227,7 +235,7 @@ const FarmDetails = () => {
           </p>
 
           <div>
-            <input
+            <Input
               type="text"
               placeholder="Address / Landmark"
               value={farmData.location.address}
@@ -238,7 +246,7 @@ const FarmDetails = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <input
+            <Input
               type="text"
               placeholder="City"
               value={farmData.location.city}
@@ -246,7 +254,7 @@ const FarmDetails = () => {
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
               required
             />
-            <input
+            <Input
               type="text"
               placeholder="Country"
               value={farmData.location.country}
@@ -257,9 +265,9 @@ const FarmDetails = () => {
           </div>
 
           <div className="relative border border-white/20 rounded-lg p-3 bg-white/5">
-            <label className="text-xs text-white/50 mb-1 block">
+            <Label className="text-xs text-white/50 mb-1 block">
               Coordinates
-            </label>
+            </Label>
             <div className="mb-2">
               <LocationPicker
                 mode="point"
@@ -284,12 +292,12 @@ const FarmDetails = () => {
             </div>
           </div>
 
-          <button
+          <Button
             type="submit"
-            className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all active:scale-[0.98]"
+            className="w-full py-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all active:scale-[0.98] text-lg"
           >
             Next: Field Details
-          </button>
+          </Button>
         </form>
       </div>
     </div>
