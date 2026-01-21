@@ -112,6 +112,7 @@ const FarmerDetailsTab = ({
               className="w-full md:w-fit min-w-[200px] bg-secondary rounded-xl text-foreground font-bold px-4 py-2 text-sm focus:outline-none cursor-pointer [&>option]:bg-zinc-800 [&>option]:text-white"
               value={farmer?.id || ''}
               onChange={(e) => onSelectFarmer(e.target.value)}
+              hideArrow
             >
               {farmers.map((f) => (
                 <option key={f.id} value={f.id}>

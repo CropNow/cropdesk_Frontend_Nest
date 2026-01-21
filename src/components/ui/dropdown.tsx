@@ -4,8 +4,8 @@ import { cn } from '@/lib/utils';
 
 const Dropdown = React.forwardRef<
   HTMLSelectElement,
-  React.SelectHTMLAttributes<HTMLSelectElement>
->(({ className, children, ...props }, ref) => {
+  React.SelectHTMLAttributes<HTMLSelectElement> & { hideArrow?: boolean }
+>(({ className, children, hideArrow, ...props }, ref) => {
   return (
     <div className="relative w-full">
       <select
@@ -18,7 +18,9 @@ const Dropdown = React.forwardRef<
       >
         {children}
       </select>
-      <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-50 pointer-events-none" />
+      {!hideArrow && (
+        <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-50 pointer-events-none" />
+      )}
     </div>
   );
 });

@@ -70,7 +70,13 @@ const Login = () => {
 
       // ✅ STORE USER (if backend sends it later)
       // Check for user in 'user' prop OR 'data' prop (common API variance)
-      const userFromResponse = response.user || (response as any).data;
+      // Check for user in 'user' prop OR 'data' prop (common API variance)
+      let userFromResponse = response.user;
+      if (!userFromResponse && (response as any).data) {
+        // Handle case where user is nested inside data (e.g., { data: { user: ... } })
+        userFromResponse =
+          (response as any).data.user || (response as any).data;
+      }
 
       if (userFromResponse) {
         import('@/utils/storage').then(
@@ -86,7 +92,7 @@ const Login = () => {
                 finalUser = {
                   ...userFromResponse, // Backend is source of truth for auth info
                   ...existingLocal, // Local collection is source of truth for profile/onboarding details
-                  id: userFromResponse.id,
+                  id: userFromResponse.id || (userFromResponse as any)._id,
                   email: userFromResponse.email,
                   username: userFromResponse.username || existingLocal.username,
                 };

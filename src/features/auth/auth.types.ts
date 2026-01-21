@@ -4,6 +4,7 @@ export interface LoginRequest {
 }
 
 export interface User {
+  _id: string;
   id: string;
   email: string;
   role?: string;

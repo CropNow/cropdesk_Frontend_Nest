@@ -428,261 +428,75 @@ const Profile = () => {
   };
 
   // Farmer CRUD
-  const handleUpdateFarmer = (id: string, updates: any) => {
-    const updated = farmers.map((f) =>
-      f.id === id ? { ...f, ...updates } : f
-    );
-    setFarmers(updated);
-    persistFarmers(updated);
+  // Farmer CRUD
+  const handleUpdateFarmer = async (id: string, updates: any) => {
+    try {
+      const { updateFarmer } = await import('@/features/auth/api/farmer.api');
+      const updatedFarmerRes = await updateFarmer(id, updates);
+
+      const updated = farmers.map((f) =>
+        f.id === id || f._id === id ? { ...f, ...updatedFarmerRes } : f
+      );
+      setFarmers(updated);
+      persistFarmers(updated); // Optional: if we still want local backup, mainly cache invalidation needed though
+    } catch (error) {
+      console.error('Failed to update farmer', error);
+      alert('Failed to update farmer. Please try again.');
+    }
   };
 
-  const handleDeleteFarmer = (id: string) => {
+  const handleDeleteFarmer = async (id: string) => {
     if (
       window.confirm(
         'Delete this farmer? All associated farms, fields, and crops will be deleted.'
       )
     ) {
-      const updated = farmers.filter((f) => f.id !== id);
-      setFarmers(updated);
-      persistFarmers(updated);
-      if (selectedFarmerId === id) {
-        if (updated.length > 0) {
-          handleFarmerSelect(updated[0].id);
-        } else {
-          setSelectedFarmerId('');
-          setSelectedFarmId('');
-          setSelectedFieldId('');
-          setSelectedCropId('');
-        }
-      }
-    }
-  };
+      try {
+        const { deleteFarmer } = await import('@/features/auth/api/farmer.api');
+        await deleteFarmer(id);
 
-  // Farm CRUD
-  const handleUpdateFarm = (id: string, updates: any) => {
-    const updated = farmers.map((farmer) => {
-      if (farmer.id === selectedFarmerId) {
-        return {
-          ...farmer,
-          farms: farmer.farms.map((farm: any) =>
-            farm.id === id ? { ...farm, ...updates } : farm
-          ),
-        };
-      }
-      return farmer;
-    });
-    setFarmers(updated);
-    persistFarmers(updated);
-  };
+        const updated = farmers.filter((f) => f.id !== id && f._id !== id);
+        setFarmers(updated);
+        persistFarmers(updated);
 
-  const handleDeleteFarm = (id: string) => {
-    if (
-      window.confirm(
-        'Delete this farm? All associated fields and crops will be deleted.'
-      )
-    ) {
-      const updated = farmers.map((farmer) => {
-        if (farmer.id === selectedFarmerId) {
-          return {
-            ...farmer,
-            farms: farmer.farms.filter((farm: any) => farm.id !== id),
-          };
-        }
-        return farmer;
-      });
-      setFarmers(updated);
-      persistFarmers(updated);
-      if (selectedFarmId === id) {
-        // Find the specific farmer to get updated farms list
-        const relatedFarmer = updated.find((f) => f.id === selectedFarmerId);
-        if (
-          relatedFarmer &&
-          relatedFarmer.farms &&
-          relatedFarmer.farms.length > 0
-        ) {
-          handleFarmSelect(relatedFarmer.farms[0].id);
-        } else {
-          setSelectedFarmId('');
-          setSelectedFieldId('');
-          setSelectedCropId('');
-        }
-      }
-    }
-  };
-
-  // Field CRUD
-  const handleUpdateField = (id: string, updates: any) => {
-    const updated = farmers.map((farmer) => {
-      if (farmer.id === selectedFarmerId) {
-        return {
-          ...farmer,
-          farms: farmer.farms.map((farm: any) => {
-            if (farm.id === selectedFarmId) {
-              return {
-                ...farm,
-                fields: farm.fields.map((field: any) =>
-                  field.id === id ? { ...field, ...updates } : field
-                ),
-              };
-            }
-            return farm;
-          }),
-        };
-      }
-      return farmer;
-    });
-    setFarmers(updated);
-    persistFarmers(updated);
-  };
-
-  const handleDeleteField = (id: string) => {
-    if (
-      window.confirm(
-        'Delete this field? All associated crop details will be deleted.'
-      )
-    ) {
-      const updated = farmers.map((farmer) => {
-        if (farmer.id === selectedFarmerId) {
-          return {
-            ...farmer,
-            farms: farmer.farms.map((farm: any) => {
-              if (farm.id === selectedFarmId) {
-                return {
-                  ...farm,
-                  fields: farm.fields.filter((field: any) => field.id !== id),
-                };
-              }
-              return farm;
-            }),
-          };
-        }
-        return farmer;
-      });
-      setFarmers(updated);
-      persistFarmers(updated);
-      if (selectedFieldId === id) {
-        const relatedFarmer = updated.find((f) => f.id === selectedFarmerId);
-        const relatedFarm = relatedFarmer?.farms?.find(
-          (f: any) => f.id === selectedFarmId
-        );
-        if (
-          relatedFarm &&
-          relatedFarm.fields &&
-          relatedFarm.fields.length > 0
-        ) {
-          // We can't use a dedicated handler easily because field selection logic is simple, so we do it manually or assume existing handler logic
-          setSelectedFieldId(relatedFarm.fields[0].id);
-          // Also reset crop
-          if (
-            relatedFarm.fields[0].crops &&
-            relatedFarm.fields[0].crops.length > 0
-          ) {
-            setSelectedCropId(relatedFarm.fields[0].crops[0].id);
+        if (selectedFarmerId === id) {
+          if (updated.length > 0) {
+            const nextId = updated[0].id || updated[0]._id;
+            handleFarmerSelect(nextId);
           } else {
+            setSelectedFarmerId('');
+            setSelectedFarmId('');
+            setSelectedFieldId('');
             setSelectedCropId('');
           }
-        } else {
-          setSelectedFieldId('');
-          setSelectedCropId('');
         }
+      } catch (error) {
+        console.error('Failed to delete farmer', error);
+        alert('Failed to delete farmer.');
       }
     }
   };
 
-  const handleUpdateCrop = (id: string, updates: any) => {
-    const updated = farmers.map((farmer) => {
-      if (farmer.id === selectedFarmerId) {
-        return {
-          ...farmer,
-          farms: farmer.farms.map((farm: any) => {
-            if (farm.id === selectedFarmId) {
-              return {
-                ...farm,
-                fields: farm.fields.map((field: any) => {
-                  if (field.id === selectedFieldId) {
-                    return {
-                      ...field,
-                      crops: field.crops.map((crop: any) =>
-                        crop.id === id ? { ...crop, ...updates } : crop
-                      ),
-                    };
-                  }
-                  return field;
-                }),
-              };
-            }
-            return farm;
-          }),
-        };
-      }
-      return farmer;
-    });
-    setFarmers(updated);
-    persistFarmers(updated);
-  };
+  /* ... Farm/Field/Crop CRUD ... */
 
-  const handleDeleteCrop = (id: string) => {
-    if (window.confirm('Delete this crop?')) {
-      const updated = farmers.map((farmer) => {
-        if (farmer.id === selectedFarmerId) {
-          return {
-            ...farmer,
-            farms: farmer.farms.map((farm: any) => {
-              if (farm.id === selectedFarmId) {
-                return {
-                  ...farm,
-                  fields: farm.fields.map((field: any) => {
-                    if (field.id === selectedFieldId) {
-                      return {
-                        ...field,
-                        crops: field.crops.filter(
-                          (crop: any) => crop.id !== id
-                        ),
-                      };
-                    }
-                    return field;
-                  }),
-                };
-              }
-              return farm;
-            }),
-          };
-        }
-        return farmer;
-      });
+  const handleAddFarmer = async (newFarmer: any) => {
+    try {
+      const { createFarmer } = await import('@/features/auth/api/farmer.api');
+      // Map flat structure to what API expects if needed, or pass directly
+      const createdFarmer = await createFarmer(newFarmer);
+      console.log('Created Farmer:', createdFarmer);
+
+      const updated = [...farmers, { ...createdFarmer, farms: [] }];
       setFarmers(updated);
       persistFarmers(updated);
-      if (selectedCropId === id) {
-        // Find the field to select next crop
-        const relatedFarmer = updated.find((f) => f.id === selectedFarmerId);
-        const relatedFarm = relatedFarmer?.farms?.find(
-          (f: any) => f.id === selectedFarmId
-        );
-        const relatedField = relatedFarm?.fields?.find(
-          (f: any) => f.id === selectedFieldId
-        );
 
-        if (
-          relatedField &&
-          relatedField.crops &&
-          relatedField.crops.length > 0
-        ) {
-          setSelectedCropId(relatedField.crops[0].id);
-        } else {
-          setSelectedCropId('');
-        }
-      }
+      const newId = createdFarmer.id || (createdFarmer as any)._id;
+      setSelectedFarmerId(newId);
+      setActiveTab('Farmer Details');
+    } catch (error) {
+      console.error('Failed to create farmer', error);
+      alert('Failed to create farmer.');
     }
-  };
-
-  const handleAddFarmer = (newFarmer: any) => {
-    const id = (Math.random() * 10000).toString();
-    const farmer = { ...newFarmer, id, farms: [] };
-    const updated = [...farmers, farmer];
-    setFarmers(updated);
-    persistFarmers(updated);
-    setSelectedFarmerId(id);
-    setActiveTab('Farmer Details');
   };
 
   const handleAddFarm = (newFarm: any) => {
@@ -754,6 +568,218 @@ const Profile = () => {
     setFarmers(updated);
     persistFarmers(updated);
     setSelectedCropId(id);
+  };
+
+  const handleUpdateFarm = async (id: string, updates: any) => {
+    try {
+      const { updateFarm } = await import('@/features/auth/api/farm.api');
+      const updatedFarm = await updateFarm(id, updates);
+
+      const updated = farmers.map((farmer) => {
+        if (farmer.id === selectedFarmerId) {
+          const updatedFarms = farmer.farms.map((farm: any) =>
+            farm.id === id || farm._id === id
+              ? { ...farm, ...updatedFarm }
+              : farm
+          );
+          return { ...farmer, farms: updatedFarms };
+        }
+        return farmer;
+      });
+      setFarmers(updated);
+      persistFarmers(updated);
+    } catch (error) {
+      console.error('Failed to update farm', error);
+      alert('Failed to update farm.');
+    }
+  };
+
+  const handleDeleteFarm = async (id: string) => {
+    if (window.confirm('Delete this farm?')) {
+      try {
+        const { deleteFarm } = await import('@/features/auth/api/farm.api');
+        await deleteFarm(id);
+
+        const updated = farmers.map((farmer) => {
+          if (farmer.id === selectedFarmerId) {
+            return {
+              ...farmer,
+              farms: farmer.farms.filter(
+                (f: any) => f.id !== id && f._id !== id
+              ),
+            };
+          }
+          return farmer;
+        });
+        setFarmers(updated);
+        persistFarmers(updated);
+        if (updated.length > 0 && selectedFarmId === id) {
+          setSelectedFarmId('');
+          setSelectedFieldId('');
+          setSelectedCropId('');
+        }
+      } catch (error) {
+        console.error('Failed to delete farm', error);
+        alert('Failed to delete farm.');
+      }
+    }
+  };
+
+  const handleUpdateField = async (id: string, updates: any) => {
+    try {
+      const { updateField } = await import('@/features/auth/api/field.api');
+      const updatedField = await updateField(id, updates);
+
+      const updated = farmers.map((farmer) => {
+        if (farmer.id === selectedFarmerId) {
+          return {
+            ...farmer,
+            farms: farmer.farms.map((farm: any) => {
+              if (farm.id === selectedFarmId) {
+                return {
+                  ...farm,
+                  fields: farm.fields.map((field: any) =>
+                    field.id === id || field._id === id
+                      ? { ...field, ...updatedField }
+                      : field
+                  ),
+                };
+              }
+              return farm;
+            }),
+          };
+        }
+        return farmer;
+      });
+      setFarmers(updated);
+      persistFarmers(updated);
+    } catch (error) {
+      console.error('Failed to update field', error);
+      alert('Failed to update field.');
+    }
+  };
+
+  const handleDeleteField = async (id: string) => {
+    if (window.confirm('Delete this field?')) {
+      try {
+        const { deleteField } = await import('@/features/auth/api/field.api');
+        await deleteField(id);
+
+        const updated = farmers.map((farmer) => {
+          if (farmer.id === selectedFarmerId) {
+            return {
+              ...farmer,
+              farms: farmer.farms.map((farm: any) => {
+                if (farm.id === selectedFarmId) {
+                  return {
+                    ...farm,
+                    fields: farm.fields.filter(
+                      (field: any) => field.id !== id && field._id !== id
+                    ),
+                  };
+                }
+                return farm;
+              }),
+            };
+          }
+          return farmer;
+        });
+        setFarmers(updated);
+        persistFarmers(updated);
+        if (selectedFieldId === id) {
+          setSelectedFieldId('');
+          setSelectedCropId('');
+        }
+      } catch (error) {
+        console.error('Failed to delete field', error);
+        alert('Failed to delete field.');
+      }
+    }
+  };
+
+  const handleUpdateCrop = async (id: string, updates: any) => {
+    try {
+      const { updateCrop } = await import('@/features/auth/api/crop.api');
+      const updatedCropRes = await updateCrop(id, updates);
+
+      const updated = farmers.map((farmer) => {
+        if (farmer.id === selectedFarmerId) {
+          return {
+            ...farmer,
+            farms: farmer.farms.map((farm: any) => {
+              if (farm.id === selectedFarmId) {
+                return {
+                  ...farm,
+                  fields: farm.fields.map((field: any) => {
+                    if (field.id === selectedFieldId) {
+                      return {
+                        ...field,
+                        crops: field.crops.map((crop: any) =>
+                          crop.id === id || crop._id === id
+                            ? { ...crop, ...updatedCropRes }
+                            : crop
+                        ),
+                      };
+                    }
+                    return field;
+                  }),
+                };
+              }
+              return farm;
+            }),
+          };
+        }
+        return farmer;
+      });
+      setFarmers(updated);
+      persistFarmers(updated);
+    } catch (error) {
+      console.error('Failed to update crop', error);
+      alert('Failed to update crop.');
+    }
+  };
+
+  const handleDeleteCrop = async (id: string) => {
+    if (window.confirm('Delete this crop?')) {
+      try {
+        const { deleteCrop } = await import('@/features/auth/api/crop.api');
+        await deleteCrop(id);
+
+        const updated = farmers.map((farmer) => {
+          if (farmer.id === selectedFarmerId) {
+            return {
+              ...farmer,
+              farms: farmer.farms.map((farm: any) => {
+                if (farm.id === selectedFarmId) {
+                  return {
+                    ...farm,
+                    fields: farm.fields.map((field: any) => {
+                      if (field.id === selectedFieldId) {
+                        return {
+                          ...field,
+                          crops: field.crops.filter(
+                            (c: any) => c.id !== id && c._id !== id
+                          ),
+                        };
+                      }
+                      return field;
+                    }),
+                  };
+                }
+                return farm;
+              }),
+            };
+          }
+          return farmer;
+        });
+        setFarmers(updated);
+        persistFarmers(updated);
+        if (selectedCropId === id) setSelectedCropId('');
+      } catch (error) {
+        console.error('Failed to delete crop', error);
+        alert('Failed to delete crop.');
+      }
+    }
   };
 
   return (
