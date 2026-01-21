@@ -27,7 +27,7 @@ const Login = () => {
         password: formData.password || '',
       });
 
-      console.log(response);
+      console.log('FULL LOGIN RESPONSE:', response);
       // ✅ STORE REAL TOKENS
       if (response.accessToken) {
         localStorage.setItem('accessToken', response.accessToken);
@@ -37,9 +37,28 @@ const Login = () => {
       }
 
       // ✅ STORE USER (if backend sends it later)
-      if (response.user) {
-        let finalUser = response.user;
+      // FIX: If backend fails to send user object (but sends token), synthesize a fallback user
+      // so that our auth fallback mechanism works.
 
+      // Handle response structure variations: user might be at root, or inside 'data'
+      // Based on logs: { status: 'success', data: { ...user... } }
+      let fetchedUser = response.user || (response as any).data;
+
+      let finalUser = fetchedUser;
+
+      if (!finalUser && response.accessToken) {
+        console.warn(
+          'Login response missing user object. Synthesizing fallback user.'
+        );
+        finalUser = {
+          id: 'temp-user-' + Date.now(),
+          email: (formData.email || '').trim(),
+          username: (formData.email || '').split('@')[0],
+          role: 'farmer', // Default fallback
+        };
+      }
+
+      if (finalUser) {
         // CHECK FOR EXISTING LOCAL DATA TO PRESERVE
         const existingLocalStr = localStorage.getItem('registeredUser');
         if (existingLocalStr) {
@@ -47,18 +66,21 @@ const Login = () => {
             const existingLocal = JSON.parse(existingLocalStr);
             // If the logged-in user matches the stored local profile (by email), preserve the rich details
             // Normalize emails for comparison
+            // FIX: Use finalUser to compare, as fetchedUser might be undefined/incomplete.
+            // Also ensure existingLocal has email.
             if (
               existingLocal.email &&
-              response.user.email &&
+              finalUser.email &&
               existingLocal.email.toLowerCase() ===
-                response.user.email.toLowerCase()
+                finalUser.email.toLowerCase()
             ) {
               finalUser = {
-                ...response.user, // Backend is source of truth for auth info
+                ...fetchedUser, // Backend is source of truth for auth info (might be undefined, which is fine, spreads nothing)
                 ...existingLocal, // Local is source of truth for profile/onboarding details (until backend fully supports them)
-                id: response.user.id, // Keep backend ID
-                email: response.user.email,
-                username: response.user.username || existingLocal.username,
+                ...finalUser, // Ensure synthesized basics (like email) are present if fetchedUser was null
+                id: finalUser.id || existingLocal.id, // Keep backend ID if available, else local
+                email: finalUser.email,
+                username: finalUser.username || existingLocal.username,
               };
               console.log(
                 'Merged existing local profile data with login response'
@@ -71,7 +93,24 @@ const Login = () => {
 
         const userStr = JSON.stringify(finalUser);
         localStorage.setItem('user', userStr);
-        localStorage.setItem('registeredUser', userStr);
+
+        // CRITICAL FIX: Only overwrite 'registeredUser' if the new user object looks "richer" or at least as good.
+        // Don't overwrite a rich local profile with a synthesized skeleton just because backend returned 404/empty.
+        // Simple heuristic: if finalUser has 'farmerDetails' or 'farmDetails', update registeredUser.
+        // OR if we merged successfully (which means finalUser should have them).
+        if (
+          finalUser.farmerDetails ||
+          finalUser.farmDetails ||
+          finalUser.isOnboardingComplete
+        ) {
+          localStorage.setItem('registeredUser', userStr);
+        } else {
+          console.warn(
+            'Skipping update of registeredUser to preserve potential local data (login did not return detailed profile)'
+          );
+          // If we synthesized, we definitely don't want to kill the existing local DB.
+        }
+
         if (finalUser.role) {
           localStorage.setItem('role', finalUser.role);
         }

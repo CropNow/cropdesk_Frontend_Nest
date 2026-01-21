@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { User, MapPin, Phone, Mail } from 'lucide-react';
+import { User, MapPin, Phone, Mail, ChevronDown } from 'lucide-react';
 
 const FarmerDetailsTab = ({
   farmer,
+  farmers,
+  selectedFarmerId,
+  onSelectFarmer,
   onUpdate,
   onDelete,
 }: {
   farmer: any;
+  farmers?: any[];
+  selectedFarmerId?: string;
+  onSelectFarmer?: (id: string) => void;
   onUpdate: (data: any) => void;
   onDelete: () => void;
 }) => {
@@ -25,14 +31,36 @@ const FarmerDetailsTab = ({
 
   useEffect(() => {
     if (farmer) {
+      // Handle Address: It might be an object per backend response
+      let addrString = '';
+      let village = farmer.village || '';
+      let district = farmer.district || '';
+      let state = farmer.state || '';
+
+      if (typeof farmer.address === 'object' && farmer.address !== null) {
+        // If address is an object, extract fields
+        // Assuming backend structure like { address: { street: '...', village: '...', ... } }
+        // or just { village: '...', district: '...' } inside address
+        addrString = farmer.address.street || farmer.address.addressLine || '';
+        // If generic 'address' field in object is missing, maybe we shouldn't show anything or show JSON for debug?
+        // For now, let's try to grab 'street' or just leave it empty if it's purely structural.
+
+        // Also check if nested fields are preferred
+        if (!village) village = farmer.address.village || '';
+        if (!district) district = farmer.address.district || '';
+        if (!state) state = farmer.address.state || '';
+      } else {
+        addrString = farmer.address || '';
+      }
+
       setFormData({
         name: farmer.name || '',
         phoneNumber: farmer.phoneNumber || '',
         email: farmer.email || '',
-        address: farmer.address || '',
-        village: farmer.village || '',
-        district: farmer.district || '',
-        state: farmer.state || '',
+        address: addrString,
+        village: village,
+        district: district,
+        state: state,
       });
     }
   }, [farmer]);
@@ -46,6 +74,9 @@ const FarmerDetailsTab = ({
 
   const handleSave = () => {
     if (isEditing) {
+      // If address was originally an object, we might want to preserve that structure on save?
+      // For now, we just push flat fields. The backend might need adjustment or we send a constructed object.
+      // We'll send flat for now as per previous logic, assuming backend can handle or we update it later.
       onUpdate({ ...farmer, ...formData });
     }
     setIsEditing(!isEditing);
@@ -53,11 +84,38 @@ const FarmerDetailsTab = ({
 
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-foreground">Farmer Details</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Personal information
-        </p>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Farmer Details</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Personal information
+          </p>
+        </div>
+
+        {/* Farmer Selection Dropdown */}
+        {farmers && farmers.length > 0 && onSelectFarmer && (
+          <div className="relative">
+            <select
+              value={selectedFarmerId}
+              onChange={(e) => onSelectFarmer(e.target.value)}
+              className="appearance-none bg-secondary/50 border border-border rounded-xl px-4 py-2 pr-10 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/50 cursor-pointer min-w-[200px]"
+            >
+              {farmers.map((f) => (
+                <option
+                  key={f.id}
+                  value={f.id}
+                  className="bg-card text-foreground"
+                >
+                  {f.name || 'Unnamed Farmer'}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={14}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+            />
+          </div>
+        )}
       </div>
 
       <div className="space-y-6 max-w-4xl">
@@ -139,6 +197,11 @@ const FarmerDetailsTab = ({
               value={formData.address || ''}
               readOnly={!isEditing}
               onChange={handleChange}
+              placeholder={
+                isEditing
+                  ? 'Enter detailed address (Street, House No, etc.)'
+                  : ''
+              }
               className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none resize-none h-24 ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
             />
           </div>

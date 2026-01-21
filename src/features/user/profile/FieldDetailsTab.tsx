@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Droplets, FlaskConical } from 'lucide-react';
+import { Layers, Droplets, FlaskConical, ChevronDown } from 'lucide-react';
 
 const FieldDetailsTab = ({
   field,
+  fields,
+  selectedFieldId,
+  onSelectField,
   onUpdate,
   onDelete,
 }: {
   field: any;
+  fields?: any[];
+  selectedFieldId?: string;
+  onSelectField?: (id: string) => void;
   onUpdate: (data: any) => void;
   onDelete: () => void;
 }) => {
@@ -69,11 +75,38 @@ const FieldDetailsTab = ({
 
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-foreground">Field Details</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Specific field information
-        </p>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Field Details</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Specific field information
+          </p>
+        </div>
+
+        {/* Field Selection Dropdown */}
+        {fields && fields.length > 0 && onSelectField && (
+          <div className="relative">
+            <select
+              value={selectedFieldId}
+              onChange={(e) => onSelectField(e.target.value)}
+              className="appearance-none bg-secondary/50 border border-border rounded-xl px-4 py-2 pr-10 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/50 cursor-pointer min-w-[200px]"
+            >
+              {fields.map((f) => (
+                <option
+                  key={f.id}
+                  value={f.id}
+                  className="bg-card text-foreground"
+                >
+                  {f.name || f.fieldName || 'Unnamed Field'}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={14}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+            />
+          </div>
+        )}
       </div>
 
       <div className="space-y-6 max-w-4xl">

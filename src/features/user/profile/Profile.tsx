@@ -123,11 +123,12 @@ const Profile = () => {
   });
 
   // Load Data
-  React.useEffect(() => {
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
-      const user = JSON.parse(storedUserStr);
+  // FIX: Read directly from the hydrated user context provided by useAuth(),
+  // instead of manually parsing 'registeredUser' from localStorage which might be stale or incomplete.
+  const { user } = useAuth();
 
+  React.useEffect(() => {
+    if (user) {
       setUserDetails({
         name: user.username || user.firstName || 'User',
         email: user.email || '',
@@ -137,6 +138,7 @@ const Profile = () => {
       // Reconstruct Hierarchy from Flat Lists (or use existing hierarchy if saved that way)
       let hierarchy = [];
 
+      // Prefer the hydrated 'farmers' array we built in auth.api.ts
       const rawFarmers = user.farmers || [];
       const rawFarms = user.farms || [];
       const rawFields = user.fields || [];
@@ -748,6 +750,9 @@ const Profile = () => {
           {activeTab === 'Farmer Details' && (
             <FarmerDetailsTab
               farmer={selectedFarmer}
+              farmers={farmers}
+              selectedFarmerId={selectedFarmerId}
+              onSelectFarmer={setSelectedFarmerId}
               onUpdate={(updates: any) =>
                 selectedFarmerId &&
                 handleUpdateFarmer(selectedFarmerId, updates)
@@ -762,6 +767,9 @@ const Profile = () => {
           {activeTab === 'Farm Details' && (
             <FarmDetailsTab
               farm={selectedFarm}
+              farms={selectedFarmer?.farms || []}
+              selectedFarmId={selectedFarmId}
+              onSelectFarm={setSelectedFarmId}
               onUpdate={(updates: any) =>
                 selectedFarmId && handleUpdateFarm(selectedFarmId, updates)
               }
@@ -775,6 +783,9 @@ const Profile = () => {
           {activeTab === 'Field Details' && (
             <FieldDetailsTab
               field={selectedField}
+              fields={selectedFarm?.fields || []}
+              selectedFieldId={selectedFieldId}
+              onSelectField={setSelectedFieldId}
               onUpdate={(updates: any) =>
                 selectedFieldId && handleUpdateField(selectedFieldId, updates)
               }

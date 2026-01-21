@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Map, Ruler, LocateFixed } from 'lucide-react';
+import { Map, Ruler, LocateFixed, ChevronDown } from 'lucide-react';
 
 const FarmDetailsTab = ({
   farm,
+  farms,
+  selectedFarmId,
+  onSelectFarm,
   onUpdate,
   onDelete,
 }: {
   farm: any;
+  farms?: any[];
+  selectedFarmId?: string;
+  onSelectFarm?: (id: string) => void;
   onUpdate: (data: any) => void;
   onDelete: () => void;
 }) => {
@@ -91,11 +97,38 @@ const FarmDetailsTab = ({
 
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-foreground">Farm Details</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          General farm information
-        </p>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Farm Details</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            General farm information
+          </p>
+        </div>
+
+        {/* Farm Selection Dropdown */}
+        {farms && farms.length > 0 && onSelectFarm && (
+          <div className="relative">
+            <select
+              value={selectedFarmId}
+              onChange={(e) => onSelectFarm(e.target.value)}
+              className="appearance-none bg-secondary/50 border border-border rounded-xl px-4 py-2 pr-10 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/50 cursor-pointer min-w-[200px]"
+            >
+              {farms.map((f) => (
+                <option
+                  key={f.id}
+                  value={f.id}
+                  className="bg-card text-foreground"
+                >
+                  {f.name || f.farmName || 'Unnamed Farm'}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={14}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+            />
+          </div>
+        )}
       </div>
 
       <div className="space-y-6 max-w-4xl">
