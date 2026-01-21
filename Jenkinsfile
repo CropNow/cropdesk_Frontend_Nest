@@ -7,12 +7,6 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'dev_s',
-                    url: 'https://github.com/CropNow/CropDesk_Frontend.git'
-            }
-        }
 
         stage('Build Docker Image') {
             steps {
@@ -22,7 +16,7 @@ pipeline {
             }
         }
 
-        stage('Deploy Container') {
+        stage('Deploy Frontend') {
             steps {
                 sh '''
                 docker stop frontend || true
@@ -40,10 +34,10 @@ pipeline {
 
     post {
         success {
-            echo "Frontend deployed successfully"
+            echo "✅ Frontend deployed successfully"
         }
         failure {
-            echo "Frontend deployment failed"
+            echo "❌ Frontend deployment failed"
         }
     }
 }
