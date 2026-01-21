@@ -78,7 +78,10 @@ export const getMe = async (): Promise<User> => {
           console.log(
             'Hydration Debug: user.farmers missing. Attempting GET /farmers'
           );
-          const farmersRes = await http.get('/farmers');
+          // FIX: Filter by userId to avoid fetching ALL farmers in the system
+          const farmersRes = await http.get('/farmers', {
+            params: { userId: user.id || user._id },
+          });
           // Assuming /farmers returns { data: [...] } or [...] or { farmers: [...] }
           // Let's guess it might be an array or wrapped.
           const farmersList = Array.isArray(farmersRes.data)
