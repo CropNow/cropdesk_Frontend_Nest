@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import registerBg from './asset/creat_account.png';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -81,7 +82,7 @@ const Register = () => {
       {/* Background Image */}
       <div className="absolute inset-0">
         <img
-          src="C:\Users\91810\Desktop\cropnow\CropDesk_Frontend\src\features\auth\asset\creat_account.png"
+          src={registerBg}
           alt="Hands holding seedling"
           className="w-full h-full object-cover opacity-80"
         />

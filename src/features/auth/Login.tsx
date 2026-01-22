@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import loginBg from './asset/login.png';
 
 import { useAuth } from './useAuth';
 import { login } from './auth.api';
@@ -144,7 +145,7 @@ const Login = () => {
       {/* Background Image */}
       <div className="absolute inset-0">
         <img
-          src="/src/features/auth/asset/login.png"
+          src={loginBg}
           alt="Farmer in field"
           className="w-full h-full object-cover opacity-80"
         />
