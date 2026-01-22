@@ -1,28 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Map, Ruler, LocateFixed, Plus } from 'lucide-react';
+import { Map, Ruler, Plus } from 'lucide-react';
 import LocationPicker from '@/components/common/LocationPicker';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Subheading } from '@/components/common/Heading';
-import { Dropdown } from '@/components/ui/dropdown';
+import { ListBox } from '@/components/ui/list-box';
+import { useProfile } from './context/useProfile';
 
-const FarmDetailsTab = ({
-  farm,
-  farms,
-  onSelectFarm,
-  onAdd,
-  onUpdate,
-  onDelete,
-}: {
-  farm: any;
-  farms: any[];
-  onSelectFarm: (id: string) => void;
-  onAdd: (data: any) => void;
-  onUpdate: (data: any) => void;
-  onDelete: () => void;
-}) => {
+const FarmDetailsTab = () => {
+  const {
+    selectedFarmer,
+    selectedFarm,
+    selectedFarmId,
+    addFarm,
+    updateFarm,
+    deleteFarm,
+    setSelectedFarmId,
+  } = useProfile();
+
+  // Derived farms list from context
+  const farms = selectedFarmer?.farms || [];
+
   const [isEditing, setIsEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [farmData, setFarmData] = useState({
@@ -45,7 +45,7 @@ const FarmDetailsTab = ({
         name: '',
         description: '',
         area: '',
-        units: '',
+        units: 'acres',
         location: {
           address: '',
           city: '',
@@ -55,23 +55,51 @@ const FarmDetailsTab = ({
         },
       });
       setIsEditing(true);
-    } else if (farm) {
+    } else if (selectedFarm) {
+      let loc: any = {
+        address: '',
+        city: '',
+        country: '',
+        latitude: '',
+        longitude: '',
+      };
+      if (selectedFarm.location && typeof selectedFarm.location === 'object') {
+        loc = {
+          address: selectedFarm.location.address || '',
+          city: selectedFarm.location.city || '',
+          country: selectedFarm.location.country || '',
+          latitude: selectedFarm.location.latitude || '',
+          longitude: selectedFarm.location.longitude || '',
+        };
+      } else if (typeof selectedFarm.location === 'string') {
+        try {
+          const parsed = JSON.parse(selectedFarm.location);
+          if (typeof parsed === 'object' && parsed !== null) {
+            loc = {
+              address: parsed.address || '',
+              city: parsed.city || '',
+              country: parsed.country || '',
+              latitude: parsed.latitude || '',
+              longitude: parsed.longitude || '',
+            };
+          } else {
+            loc.address = selectedFarm.location;
+          }
+        } catch (e) {
+          loc.address = selectedFarm.location;
+        }
+      }
+
       setFarmData({
-        name: farm.name || farm.farmName || '',
-        description: farm.description || '',
-        area: farm.area || '',
-        units: farm.units || '',
-        location: {
-          address: farm.location?.address || '',
-          city: farm.location?.city || '',
-          country: farm.location?.country || '',
-          latitude: farm.location?.latitude || '',
-          longitude: farm.location?.longitude || '',
-        },
+        name: selectedFarm.name || selectedFarm.farmName || '',
+        description: selectedFarm.description || '',
+        area: selectedFarm.area || '',
+        units: selectedFarm.units || '',
+        location: loc,
       });
       setIsEditing(false);
     }
-  }, [farm, isAdding]);
+  }, [selectedFarm, isAdding]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -96,15 +124,24 @@ const FarmDetailsTab = ({
     });
   };
 
-  const handleSave = () => {
-    if (isAdding) {
-      onAdd(farmData);
-      setIsAdding(false);
-    } else if (isEditing) {
-      onUpdate({ ...farm, ...farmData });
-      setIsEditing(false);
-    } else {
-      setIsEditing(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      if (isAdding) {
+        await addFarm(farmData);
+        setIsAdding(false);
+      } else if (isEditing && selectedFarmId) {
+        await updateFarm(selectedFarmId, { ...selectedFarm, ...farmData });
+        setIsEditing(false);
+      } else {
+        setIsEditing(true);
+      }
+    } catch (error) {
+      console.error('Failed to save farm:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -118,7 +155,7 @@ const FarmDetailsTab = ({
   };
 
   // Show "No Farm Selected" only if NOT adding AND no farm
-  if (!farm && !isAdding) {
+  if (!selectedFarm && !isAdding) {
     return (
       <div className="bg-card border border-border rounded-3xl p-8 flex items-center justify-center min-h-[400px] flex-col gap-4">
         <div className="text-center">
@@ -137,43 +174,18 @@ const FarmDetailsTab = ({
 
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4 md:gap-0">
+      {/* Header with Title and Add Button */}
+      <div className="flex justify-between items-center mb-8">
+        <Subheading className="font-bold">
+          {isAdding ? 'Add New Farm' : 'Farm Details'}
+        </Subheading>
+
         <div>
-          <Subheading className="font-bold">
-            {isAdding ? 'Add New Farm' : 'Farm Details'}
-          </Subheading>
-        </div>
-
-        {/* Farm Selector */}
-        {!isAdding && farms && farms.length > 0 && onSelectFarm && (
-          <div className="flex-1 w-full md:w-auto mx-0 md:mx-8">
-            <Label className="block text-[10px] uppercase font-bold text-white mb-1">
-              Select Farm
-            </Label>
-            <Dropdown
-              className="w-full md:w-fit min-w-[200px] bg-zinc-900 text-white border border-zinc-700 rounded-xl font-bold px-4 py-2 text-sm focus:outline-none cursor-pointer [&>option]:bg-zinc-800 [&>option]:text-white"
-              value={farm?.id || ''}
-              onChange={(e) => onSelectFarm(e.target.value)}
-            >
-              {farms.map((f) => (
-                <option
-                  key={f.id}
-                  value={f.id}
-                  className="bg-zinc-800 text-white"
-                >
-                  {f.name}
-                </option>
-              ))}
-            </Dropdown>
-          </div>
-        )}
-
-        <div className="w-full md:w-auto flex justify-end">
           {!isAdding && (
             <Button
               onClick={toggleAddMode}
               size="sm"
-              className="rounded-xl text-xs font-bold flex items-center gap-2 w-full md:w-auto justify-center"
+              className="rounded-xl text-xs font-bold flex items-center gap-2"
             >
               <Plus size={16} />
               Add Farm
@@ -184,7 +196,7 @@ const FarmDetailsTab = ({
               onClick={toggleAddMode}
               variant="secondary"
               size="sm"
-              className="rounded-xl text-xs font-bold w-full md:w-auto"
+              className="rounded-xl text-xs font-bold"
             >
               Cancel
             </Button>
@@ -192,160 +204,295 @@ const FarmDetailsTab = ({
         </div>
       </div>
 
-      <div className="space-y-6 max-w-4xl">
-        {/* Farm Name */}
+      {/* Grid Layout: Details Card (left) + Farm List (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+        {/* Left: Farm Details Card or Form */}
         <div>
-          <Label className="block text-xs font-bold text-white uppercase mb-2">
-            Farm Name
-          </Label>
-          <Input
-            type="text"
-            name="name"
-            value={farmData.name || ''}
-            readOnly={!isEditing}
-            onChange={handleChange}
-            className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
-          />
-        </div>
+          {!isEditing ? (
+            // READ MODE - Card Display
+            <div className="bg-card border border-border rounded-xl p-6 space-y-4 max-w-md">
+              {/* Header - Farm Name */}
+              <h3 className="text-xl font-bold text-foreground">
+                {farmData.name || 'Unnamed Farm'}
+              </h3>
 
-        {/* Description */}
-        <div>
-          <Label className="block text-xs font-bold text-white uppercase mb-2">
-            Description
-          </Label>
-          <Textarea
-            name="description"
-            value={farmData.description || ''}
-            readOnly={!isEditing}
-            onChange={handleChange}
-            className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none resize-none h-20 ${!isEditing ? 'cursor-default' : ''}`}
-          />
-        </div>
+              {/* Details Section */}
+              <div className="space-y-2 text-foreground">
+                <p className="text-base text-muted-foreground">
+                  {farmData.description || (
+                    <span className="italic">No description provided</span>
+                  )}
+                </p>
 
-        <div className="grid grid-cols-2 gap-6">
-          {/* Size */}
-          <div>
-            <Label className="block text-xs font-bold text-white uppercase mb-2">
-              Total Area
-            </Label>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-muted rounded-xl">
-                <Ruler size={18} className="text-foreground" />
+                <p className="text-base">
+                  Area:{' '}
+                  {farmData.area ? (
+                    `${farmData.area} acres`
+                  ) : (
+                    <span className="text-muted-foreground italic">
+                      Not provided
+                    </span>
+                  )}
+                </p>
+
+                <p className="text-base">
+                  Location:{' '}
+                  {farmData.location?.address || (
+                    <span className="text-muted-foreground italic">
+                      Not provided
+                    </span>
+                  )}
+                </p>
+
+                <p className="text-base">
+                  {farmData.location?.city || farmData.location?.country ? (
+                    [farmData.location.city, farmData.location.country]
+                      .filter(Boolean)
+                      .join(', ')
+                  ) : (
+                    <span className="text-muted-foreground italic">
+                      City/Country not provided
+                    </span>
+                  )}
+                </p>
               </div>
-              <Input
-                type="text"
-                name="area"
-                value={farmData.area ? `${farmData.area}` : ''}
-                readOnly={!isEditing}
-                onChange={handleChange}
-                placeholder={!isEditing ? '' : 'Area (e.g. 10)'}
-                className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
-              />
+
+              {/* Actions */}
+              <div className="pt-4 border-t border-border flex gap-4">
+                <Button
+                  variant="link"
+                  onClick={() => setIsEditing(true)}
+                  className="text-primary hover:underline font-medium p-0 h-auto"
+                >
+                  Edit
+                </Button>
+                {!isAdding && deleteFarm && selectedFarmId && (
+                  <>
+                    <span className="text-muted-foreground">|</span>
+                    <Button
+                      variant="link"
+                      onClick={() => deleteFarm(selectedFarmId)}
+                      className="text-destructive hover:underline font-medium p-0 h-auto"
+                    >
+                      Remove
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="space-y-6 max-w-4xl">
+                {/* Farm Name */}
+                <div>
+                  <Label className="block text-xs font-bold text-white uppercase mb-2">
+                    Farm Name
+                  </Label>
+                  <Input
+                    type="text"
+                    name="name"
+                    value={farmData.name || ''}
+                    onChange={handleChange}
+                    className="w-full font-semibold px-4 py-3 text-sm"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <Label className="block text-xs font-bold text-white uppercase mb-2">
+                    Description
+                  </Label>
+                  <Textarea
+                    name="description"
+                    value={farmData.description || ''}
+                    onChange={handleChange}
+                    className="w-full font-semibold px-4 py-3 text-sm resize-none h-20"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Size */}
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Total Area
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-muted rounded-xl">
+                        <Ruler size={18} className="text-foreground" />
+                      </div>
+                      <Input
+                        type="text"
+                        name="area"
+                        value={farmData.area ? `${farmData.area}` : ''}
+                        onChange={handleChange}
+                        placeholder="Area (e.g. 10)"
+                        className="w-full font-semibold px-4 py-3 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <hr className="border-border my-2" />
+                <h3 className="text-sm font-bold text-white uppercase">
+                  Location
+                </h3>
+
+                {/* Location Inputs */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Address / Landmark
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-muted rounded-xl">
+                        <Map size={18} className="text-foreground" />
+                      </div>
+                      <Input
+                        type="text"
+                        name="location.address"
+                        value={farmData.location?.address || ''}
+                        onChange={handleChange}
+                        className="w-full font-semibold px-4 py-3 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      City
+                    </Label>
+                    <Input
+                      type="text"
+                      name="location.city"
+                      value={farmData.location?.city || ''}
+                      onChange={handleChange}
+                      className="w-full font-semibold px-4 py-3 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Country
+                    </Label>
+                    <Input
+                      type="text"
+                      name="location.country"
+                      value={farmData.location?.country || ''}
+                      onChange={handleChange}
+                      className="w-full font-semibold px-4 py-3 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+                  GPS Coordinates (Lat / Long)
+                </Label>
+                <div className="mb-4">
+                  <LocationPicker
+                    mode="point"
+                    readOnly={false}
+                    value={
+                      farmData.location?.latitude &&
+                      farmData.location?.longitude
+                        ? `${farmData.location.latitude}, ${farmData.location.longitude}`
+                        : ''
+                    }
+                    onChange={(val: string) => {
+                      const [lat, lng] = val.split(',').map((s) => s.trim());
+                      setFarmData((prev) => ({
+                        ...prev,
+                        location: {
+                          ...prev.location,
+                          latitude: lat || '',
+                          longitude: lng || '',
+                        },
+                      }));
+                    }}
+                    height="300px"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-border flex gap-3">
+                <Button
+                  onClick={handleSave}
+                  variant="default"
+                  className="w-fit rounded-xl text-xs font-bold"
+                  disabled={isSaving}
+                >
+                  {isSaving
+                    ? 'Saving...'
+                    : isAdding
+                      ? 'Save New Farm'
+                      : 'Save Changes'}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsEditing(false);
+                    if (isAdding) {
+                      setIsAdding(false);
+                    } else if (selectedFarm) {
+                      let loc: any = {
+                        address: '',
+                        city: '',
+                        country: '',
+                        latitude: '',
+                        longitude: '',
+                      };
+                      if (
+                        selectedFarm.location &&
+                        typeof selectedFarm.location === 'object'
+                      ) {
+                        loc = {
+                          address: selectedFarm.location.address || '',
+                          city: selectedFarm.location.city || '',
+                          country: selectedFarm.location.country || '',
+                          latitude: selectedFarm.location.latitude || '',
+                          longitude: selectedFarm.location.longitude || '',
+                        };
+                      }
+                      setFarmData({
+                        name: selectedFarm.name || selectedFarm.farmName || '',
+                        description: selectedFarm.description || '',
+                        area: selectedFarm.area || '',
+                        units: selectedFarm.units || 'acres',
+                        location: loc,
+                      });
+                    }
+                  }}
+                  variant="outline"
+                  className="w-fit rounded-xl text-xs font-bold"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </>
+          )}
         </div>
 
-        <hr className="border-border my-2" />
-        <h3 className="text-sm font-bold text-white uppercase">Location</h3>
-
-        {/* Location Inputs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Right: Farm List */}
+        {!isAdding && farms && farms.length > 0 && (
           <div>
-            <Label className="block text-xs font-bold text-white uppercase mb-2">
-              Address / Landmark
+            <Label className="block text-[10px] uppercase font-bold text-white mb-4">
+              Select Farm
             </Label>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-muted rounded-xl">
-                <Map size={18} className="text-foreground" />
-              </div>
-              <Input
-                type="text"
-                name="location.address"
-                value={farmData.location?.address || ''}
-                readOnly={!isEditing}
-                onChange={handleChange}
-                className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
-              />
-            </div>
-          </div>
-          <div>
-            <Label className="block text-xs font-bold text-white uppercase mb-2">
-              City
-            </Label>
-            <Input
-              type="text"
-              name="location.city"
-              value={farmData.location?.city || ''}
-              readOnly={!isEditing}
-              onChange={handleChange}
-              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
+            <ListBox
+              key={`farm-list-${farms?.length}-${selectedFarmId}`}
+              items={farms.map((f: any) => ({
+                id: f.id || f._id,
+                label: f.name || f.farmName,
+                subLabel:
+                  (typeof f.location === 'object'
+                    ? f.location?.city || f.location?.address
+                    : f.location) || '',
+              }))}
+              selectedId={
+                selectedFarmId || selectedFarm?.id || selectedFarm?._id || ''
+              }
+              onSelect={setSelectedFarmId}
+              height="h-[220px]"
             />
           </div>
-          <div>
-            <Label className="block text-xs font-bold text-white uppercase mb-2">
-              Country
-            </Label>
-            <Input
-              type="text"
-              name="location.country"
-              value={farmData.location?.country || ''}
-              readOnly={!isEditing}
-              onChange={handleChange}
-              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-          GPS Coordinates (Lat / Long)
-        </Label>
-        <div className="mb-4">
-          <LocationPicker
-            mode="point"
-            readOnly={!isEditing}
-            value={
-              farmData.location?.latitude && farmData.location?.longitude
-                ? `${farmData.location.latitude}, ${farmData.location.longitude}`
-                : ''
-            }
-            onChange={(val: string) => {
-              const [lat, lng] = val.split(',').map((s) => s.trim());
-              setFarmData((prev) => ({
-                ...prev,
-                location: {
-                  ...prev.location,
-                  latitude: lat || '',
-                  longitude: lng || '',
-                },
-              }));
-            }}
-            height="300px"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6 pt-6 border-t border-border flex gap-3">
-        <Button
-          onClick={handleSave}
-          variant={isEditing ? 'default' : 'secondary'}
-          className="w-fit rounded-xl text-xs font-bold"
-        >
-          {isAdding
-            ? 'Save New Farm'
-            : isEditing
-              ? 'Save Changes'
-              : 'Edit Details'}
-        </Button>
-        {!isAdding && (
-          <Button
-            onClick={onDelete}
-            variant="destructive"
-            className="w-fit rounded-xl text-xs font-bold"
-          >
-            Delete Farm
-          </Button>
         )}
       </div>
     </div>

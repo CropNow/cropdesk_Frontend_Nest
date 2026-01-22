@@ -12,6 +12,7 @@ export interface User {
   lastName?: string;
   status?: string;
   username?: string;
+  bio?: string;
 
   // Hierarchical Data Structure
   farmers?: Farmer[]; // User manages multiple farmers

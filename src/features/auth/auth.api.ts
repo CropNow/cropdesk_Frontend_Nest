@@ -8,6 +8,7 @@ import type {
 
 // Mock User Data (Still used for fallback/mock structure if needed, but primary is API)
 const MOCK_USER: User = {
+  _id: 'mock-user-123',
   id: 'mock-user-123',
   email: 'farmer@cropdesk.local',
   firstName: 'John',

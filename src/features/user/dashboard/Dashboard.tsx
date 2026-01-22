@@ -39,7 +39,10 @@ const Dashboard = () => {
         console.log('Dashboard: Starting data fetch for user:', user);
 
         // 1. Set Display Name
-        const displayName = user.firstName || user.username || 'Farmer';
+        const fullName = [user.firstName, user.lastName]
+          .filter(Boolean)
+          .join(' ');
+        const displayName = fullName || user.username || 'Farmer';
         setUserName(displayName);
 
         // 2. Fetch Real Backend Data

@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Sprout, Calendar, Plus, ChevronDown } from 'lucide-react';
+import { Sprout, Calendar, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Subheading } from '@/components/common/Heading';
-import { Dropdown } from '@/components/ui/dropdown';
+import { ListBox } from '@/components/ui/list-box';
+import { useProfile } from './context/useProfile';
 
-const CropDetailsTab = ({
-  crop,
-  crops,
-  onSelectCrop,
-  onAdd,
-  onUpdate,
-  onDelete,
-}: {
-  crop: any;
-  crops: any[];
-  onSelectCrop: (id: string) => void;
-  onAdd: (crop: any) => void;
-  onUpdate: (crop: any) => void;
-  onDelete: (id: string) => void;
-}) => {
+const CropDetailsTab = () => {
+  const {
+    selectedField,
+    selectedCrop,
+    selectedCropId,
+    addCrop,
+    updateCrop,
+    deleteCrop,
+    setSelectedCropId,
+  } = useProfile();
+
+  // Derived crops list
+  const crops = selectedField?.crops || [];
+
   const [isEditing, setIsEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -42,12 +42,12 @@ const CropDetailsTab = ({
         area: '',
       });
       setIsEditing(true);
-    } else if (crop) {
+    } else if (selectedCrop) {
       setFormData({
-        cropName: crop.cropName || '',
-        plantingDate: crop.plantingDate || '',
-        harvestingDate: crop.harvestingDate || '',
-        area: crop.area || '',
+        cropName: selectedCrop.cropName || '',
+        plantingDate: selectedCrop.plantingDate || '',
+        harvestingDate: selectedCrop.harvestingDate || '',
+        area: selectedCrop.area || '',
       });
       setIsEditing(false);
     } else {
@@ -60,22 +60,31 @@ const CropDetailsTab = ({
       });
       setIsEditing(false);
     }
-  }, [crop, isAdding]);
+  }, [selectedCrop, isAdding]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    if (isAdding) {
-      onAdd(formData);
-      setIsAdding(false);
-    } else if (isEditing) {
-      onUpdate({ ...crop, ...formData });
-      setIsEditing(false);
-    } else {
-      setIsEditing(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      if (isAdding) {
+        await addCrop(formData);
+        setIsAdding(false);
+      } else if (isEditing && selectedCropId) {
+        await updateCrop(selectedCropId, { ...selectedCrop, ...formData });
+        setIsEditing(false);
+      } else {
+        setIsEditing(true);
+      }
+    } catch (error) {
+      console.error('Failed to save crop:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -89,7 +98,7 @@ const CropDetailsTab = ({
   };
 
   // No Crop Selected View
-  if (!crop && !isAdding) {
+  if (!selectedCrop && !isAdding) {
     return (
       <div className="bg-card border border-border rounded-3xl p-8 flex items-center justify-center min-h-[400px] flex-col gap-4">
         <div className="text-center">
@@ -109,43 +118,18 @@ const CropDetailsTab = ({
   // FORM VIEW (Edit or Add)
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4 md:gap-0">
+      {/* Header with Title and Add Button */}
+      <div className="flex justify-between items-center mb-8">
+        <Subheading className="font-bold">
+          {isAdding ? 'Add New Crop' : 'Crop Details'}
+        </Subheading>
+
         <div>
-          <Subheading className="font-bold">
-            {isAdding ? 'Add New Crop' : 'Crop Details'}
-          </Subheading>
-        </div>
-
-        {/* Crop Selector */}
-        {!isAdding && crops && crops.length > 0 && onSelectCrop && (
-          <div className="flex-1 w-full md:w-auto mx-0 md:mx-8">
-            <Label className="block text-[10px] uppercase font-bold text-white mb-1">
-              Select Crop
-            </Label>
-            <Dropdown
-              className="w-full md:w-fit min-w-[200px] bg-zinc-900 text-white border border-zinc-700 rounded-xl font-bold px-4 py-2 text-sm focus:outline-none cursor-pointer [&>option]:bg-zinc-800 [&>option]:text-white"
-              value={crop?.id || ''}
-              onChange={(e) => onSelectCrop(e.target.value)}
-            >
-              {crops.map((c) => (
-                <option
-                  key={c.id}
-                  value={c.id}
-                  className="bg-zinc-800 text-white"
-                >
-                  {c.cropName || 'Unnamed Crop'}
-                </option>
-              ))}
-            </Dropdown>
-          </div>
-        )}
-
-        <div className="w-full md:w-auto flex justify-end">
           {!isAdding && (
             <Button
               onClick={toggleAddMode}
               size="sm"
-              className="rounded-xl text-xs font-bold flex items-center gap-2 w-full md:w-auto justify-center"
+              className="rounded-xl text-xs font-bold flex items-center gap-2"
             >
               <Plus size={16} />
               Add Crop
@@ -156,7 +140,7 @@ const CropDetailsTab = ({
               onClick={toggleAddMode}
               variant="secondary"
               size="sm"
-              className="rounded-xl text-xs font-bold w-full md:w-auto"
+              className="rounded-xl text-xs font-bold"
             >
               Cancel
             </Button>
@@ -164,108 +148,233 @@ const CropDetailsTab = ({
         </div>
       </div>
 
-      <div className="space-y-6 max-w-4xl">
-        {/* Crop Name */}
+      {/* Grid Layout: Details Card (left) + Crop List (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+        {/* Left: Crop Details Card or Form */}
         <div>
-          <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-            Crop Name
-          </Label>
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-muted rounded-xl">
-              <Sprout size={18} className="text-foreground" />
-            </div>
-            <Input
-              type="text"
-              name="cropName"
-              value={formData.cropName}
-              readOnly={!isEditing}
-              onChange={handleChange}
-              className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
-              placeholder={!isEditing ? '' : 'e.g. Wheat, Corn'}
-            />
-          </div>
-        </div>
+          {!isEditing ? (
+            // READ MODE - Card Display
+            <div className="bg-card border border-border rounded-xl p-6 space-y-4 max-w-md">
+              {/* Header - Crop Name */}
+              <h3 className="text-xl font-bold text-foreground">
+                {formData.cropName || 'Unnamed Crop'}
+              </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Planting Date */}
-          <div>
-            <Label className="block text-xs font-bold text-white uppercase mb-2">
-              Planting Date
-            </Label>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-muted rounded-xl">
-                <Calendar size={18} className="text-foreground" />
+              {/* Details Section */}
+              <div className="space-y-2 text-foreground">
+                <p className="text-base">
+                  Planted:{' '}
+                  {formData.plantingDate ? (
+                    new Date(formData.plantingDate).toLocaleDateString(
+                      'en-US',
+                      {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      }
+                    )
+                  ) : (
+                    <span className="text-muted-foreground italic">
+                      Not set
+                    </span>
+                  )}
+                </p>
+
+                <p className="text-base">
+                  Expected Harvest:{' '}
+                  {formData.harvestingDate ? (
+                    new Date(formData.harvestingDate).toLocaleDateString(
+                      'en-US',
+                      {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      }
+                    )
+                  ) : (
+                    <span className="text-muted-foreground italic">
+                      Not set
+                    </span>
+                  )}
+                </p>
+
+                <p className="text-base">
+                  Area:{' '}
+                  {formData.area ? (
+                    `${formData.area} acres`
+                  ) : (
+                    <span className="text-muted-foreground italic">
+                      Not provided
+                    </span>
+                  )}
+                </p>
               </div>
-              <Input
-                type="date"
-                name="plantingDate"
-                value={formData.plantingDate}
-                readOnly={!isEditing}
-                onChange={handleChange}
-                className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
-              />
-            </div>
-          </div>
 
-          {/* Harvest Date */}
-          <div>
-            <Label className="block text-xs font-bold text-white uppercase mb-2">
-              Expected Harvest
-            </Label>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-muted rounded-xl">
-                <Calendar size={18} className="text-foreground" />
+              {/* Actions */}
+              <div className="pt-4 border-t border-border flex gap-4">
+                <Button
+                  variant="link"
+                  onClick={() => setIsEditing(true)}
+                  className="text-primary hover:underline font-medium p-0 h-auto"
+                >
+                  Edit
+                </Button>
+                {!isAdding && deleteCrop && selectedCropId && (
+                  <>
+                    <span className="text-muted-foreground">|</span>
+                    <Button
+                      variant="link"
+                      onClick={() => deleteCrop(selectedCropId)}
+                      className="text-destructive hover:underline font-medium p-0 h-auto"
+                    >
+                      Remove
+                    </Button>
+                  </>
+                )}
               </div>
-              <Input
-                type="date"
-                name="harvestingDate"
-                value={formData.harvestingDate}
-                readOnly={!isEditing}
-                onChange={handleChange}
-                className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
-              />
             </div>
-          </div>
-        </div>
+          ) : (
+            <>
+              <div className="space-y-6 max-w-4xl">
+                {/* Crop Name */}
+                <div>
+                  <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+                    Crop Name
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-muted rounded-xl">
+                      <Sprout size={18} className="text-foreground" />
+                    </div>
+                    <Input
+                      type="text"
+                      name="cropName"
+                      value={formData.cropName}
+                      onChange={handleChange}
+                      className="w-full font-semibold px-4 py-3 text-sm"
+                      placeholder="e.g. Wheat, Corn"
+                    />
+                  </div>
+                </div>
 
-        {/* Area */}
-        <div>
-          <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-            Cultivation Area (Acres)
-          </Label>
-          <Input
-            type="text"
-            name="area"
-            value={formData.area}
-            readOnly={!isEditing}
-            onChange={handleChange}
-            className={`w-full font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : ''}`}
-          />
-        </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Planting Date */}
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Planting Date
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-muted rounded-xl">
+                        <Calendar size={18} className="text-foreground" />
+                      </div>
+                      <Input
+                        type="date"
+                        name="plantingDate"
+                        value={formData.plantingDate}
+                        onChange={handleChange}
+                        className="w-full font-semibold px-4 py-3 text-sm"
+                      />
+                    </div>
+                  </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 mt-8 border-t border-border pt-6">
-          <Button
-            onClick={handleSave}
-            variant={isEditing ? 'default' : 'secondary'}
-            className="w-fit rounded-xl text-xs font-bold"
-          >
-            {isAdding
-              ? 'Save New Crop'
-              : isEditing
-                ? 'Save Changes'
-                : 'Edit Details'}
-          </Button>
-          {!isAdding && (
-            <Button
-              onClick={() => onDelete(crop.id)}
-              variant="destructive"
-              className="w-fit rounded-xl text-xs font-bold"
-            >
-              Delete Crop
-            </Button>
+                  {/* Harvest Date */}
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Expected Harvest
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-muted rounded-xl">
+                        <Calendar size={18} className="text-foreground" />
+                      </div>
+                      <Input
+                        type="date"
+                        name="harvestingDate"
+                        value={formData.harvestingDate}
+                        onChange={handleChange}
+                        className="w-full font-semibold px-4 py-3 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Area */}
+                <div>
+                  <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+                    Cultivation Area (Acres)
+                  </Label>
+                  <Input
+                    type="text"
+                    name="area"
+                    value={formData.area}
+                    onChange={handleChange}
+                    className="w-full font-semibold px-4 py-3 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 mt-8 border-t border-border pt-6">
+                <Button
+                  onClick={handleSave}
+                  variant="default"
+                  className="w-fit rounded-xl text-xs font-bold"
+                  disabled={isSaving}
+                >
+                  {isSaving
+                    ? 'Saving...'
+                    : isAdding
+                      ? 'Save New Crop'
+                      : 'Save Changes'}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsEditing(false);
+                    if (isAdding) {
+                      setIsAdding(false);
+                    } else if (selectedCrop) {
+                      setFormData({
+                        cropName: selectedCrop.cropName || '',
+                        plantingDate: selectedCrop.plantingDate || '',
+                        harvestingDate: selectedCrop.harvestingDate || '',
+                        area: selectedCrop.area || '',
+                      });
+                    }
+                  }}
+                  variant="outline"
+                  className="w-fit rounded-xl text-xs font-bold"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </>
           )}
         </div>
+
+        {/* Right: Crop List */}
+        {!isAdding && crops && crops.length > 0 && (
+          <div>
+            <Label className="block text-[10px] uppercase font-bold text-white mb-4">
+              Select Crop
+            </Label>
+            <ListBox
+              key={`crop-list-${crops?.length}-${selectedCropId}`}
+              items={crops.map((c: any) => {
+                const item: { id: string; label: string; subLabel?: string } = {
+                  id: c.id || c._id,
+                  label: c.cropName || 'Unnamed Crop',
+                };
+                if (c.plantingDate) {
+                  item.subLabel = `Planted: ${c.plantingDate}`;
+                }
+                return item;
+              })}
+              selectedId={
+                selectedCropId || selectedCrop?.id || selectedCrop?._id || ''
+              }
+              onSelect={setSelectedCropId}
+              height="h-[220px]"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
