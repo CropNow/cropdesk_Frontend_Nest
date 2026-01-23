@@ -143,9 +143,11 @@ const Register = () => {
           className="flex flex-col cursor-pointer"
           onClick={() => navigate('/')}
         >
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            CropDesk
-          </h1>
+          <img
+            src="/CropNow_Logo_1-D3AGwrH0.png"
+            alt="CropNow Logo"
+            className="h-12 w-auto object-contain"
+          />
         </div>
       </header>
 

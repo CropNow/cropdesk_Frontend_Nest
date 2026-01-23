@@ -24,9 +24,11 @@ export default function Loader({
         <div className="absolute inset-0 h-12 w-12 animate-pulse rounded-full bg-green-500/20 blur-xl" />
       </div>
       <div className="flex flex-col items-center gap-1">
-        <p className="text-lg text-white font-semibold text-foreground tracking-tight">
-          {text}
-        </p>
+        <img
+          src="/CropNow_Logo_1-D3AGwrH0.png"
+          alt="CropNow Logo"
+          className="h-12 w-auto object-contain mb-2"
+        />
         <p className="text-sm text-muted-foreground animate-pulse">{subText}</p>
       </div>
     </div>

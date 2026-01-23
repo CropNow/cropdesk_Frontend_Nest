@@ -66,7 +66,7 @@ export const AppRouter = () => {
         </Route>
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

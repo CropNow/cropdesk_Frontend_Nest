@@ -41,7 +41,11 @@ const MobileCTA = () => {
           onClick={() => setIsMenuOpen(false)}
           className="flex items-center gap-2"
         >
-          <h1 className="text-xl font-bold text-foreground">CropDesk</h1>
+          <img
+            src="/CropNow_Logo_1-D3AGwrH0.png"
+            alt="CropNow Logo"
+            className="h-8 w-auto object-contain"
+          />
         </Link>
 
         <div className="flex items-center gap-3">

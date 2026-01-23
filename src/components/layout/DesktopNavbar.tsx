@@ -24,9 +24,11 @@ const DesktopNavbar = () => {
   return (
     <header className="hidden md:flex items-center justify-between px-6 py-4 bg-background/50 backdrop-blur-md sticky top-0 z-50 border-b border-border w-full">
       <Link to="/" className="flex flex-col">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">
-          CropDesk
-        </h1>
+        <img
+          src="/CropNow_Logo_1-D3AGwrH0.png"
+          alt="CropNow Logo"
+          className="h-10 w-auto object-contain"
+        />
       </Link>
 
       <nav className="flex items-center gap-8">

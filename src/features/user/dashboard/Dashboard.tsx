@@ -173,7 +173,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 items-stretch">
           <WelcomeBanner
             name={userName}
-            university="CropDesk User"
+            university="CropNow User"
             activeCrops={activeCropsCount}
           />
           <AgricultureNews />
