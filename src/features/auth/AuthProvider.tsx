@@ -21,12 +21,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     getMe()
       .then((user) => {
         if (user?.id) {
           setUser(user);
         } else {
           setUser(null);
+          // Only clear if we were expecting a user but got none
+          localStorage.removeItem('user');
+          localStorage.removeItem('accessToken');
         }
       })
       .catch((error: any) => {

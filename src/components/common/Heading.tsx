@@ -1,17 +1,10 @@
 import type { ReactNode, ElementType } from 'react';
-
-/* =====================================================
- * Shared base props
- * ===================================================== */
+import { cn } from '@/lib/utils';
 
 interface BaseHeadingProps {
   children: ReactNode;
   className?: string;
 }
-
-/* =====================================================
- * CenterHeading
- * ===================================================== */
 
 type CenterHeadingLevel = 'h1' | 'h2' | 'h3' | 'h4';
 
@@ -22,10 +15,8 @@ interface CenterHeadingProps extends BaseHeadingProps {
 export function CenterHeading({
   level = 'h1',
   children,
-  className = '',
+  className,
 }: CenterHeadingProps) {
-  const baseStyles = 'tracking-tight text-foreground text-center';
-
   const styles: Record<CenterHeadingLevel, string> = {
     h1: 'text-2xl md:text-3xl lg:text-4xl leading-none font-semibold',
     h2: 'text-xl md:text-2xl lg:text-3xl leading-tight font-medium',
@@ -36,15 +27,17 @@ export function CenterHeading({
   const Tag = level as ElementType;
 
   return (
-    <Tag className={`${baseStyles} ${styles[level]} ${className}`}>
+    <Tag
+      className={cn(
+        'tracking-tight text-foreground text-center',
+        styles[level],
+        className
+      )}
+    >
       {children}
     </Tag>
   );
 }
-
-/* =====================================================
- * MainHeading
- * ===================================================== */
 
 type MainHeadingLevel = 'h1' | 'h2' | 'h3' | 'h4';
 
@@ -55,10 +48,8 @@ interface MainHeadingProps extends BaseHeadingProps {
 export function MainHeading({
   level = 'h1',
   children,
-  className = '',
+  className,
 }: MainHeadingProps) {
-  const baseStyles = 'tracking-tight text-foreground';
-
   const styles: Record<MainHeadingLevel, string> = {
     h1: 'text-2xl md:text-3xl lg:text-4xl font-semibold',
     h2: 'text-xl md:text-2xl lg:text-3xl font-medium',
@@ -69,15 +60,13 @@ export function MainHeading({
   const Tag = level as ElementType;
 
   return (
-    <Tag className={`${baseStyles} ${styles[level]} ${className}`}>
+    <Tag
+      className={cn('tracking-tight text-foreground', styles[level], className)}
+    >
       {children}
     </Tag>
   );
 }
-
-/* =====================================================
- * MainHeadings (advanced variant)
- * ===================================================== */
 
 type MainHeadingsLevel = 'h1' | 'h2' | 'h3' | 'h4';
 type Spacing = 'none' | 'tight' | 'snug' | 'normal' | 'relaxed';
@@ -94,10 +83,8 @@ export function MainHeadings({
   spacing = 'none',
   tracking = 'tight',
   children,
-  className = '',
+  className,
 }: MainHeadingsProps) {
-  const baseStyles = 'tracking-tight text-foreground';
-
   const sizeStyles: Record<MainHeadingsLevel, string> = {
     h1: 'text-2xl md:text-3xl lg:text-4xl font-semibold',
     h2: 'text-xl md:text-2xl lg:text-3xl font-medium',
@@ -123,18 +110,18 @@ export function MainHeadings({
 
   return (
     <Tag
-      className={`${baseStyles} ${sizeStyles[level]} ${
-        spacingStyles[spacing]
-      } ${trackingStyles[tracking]} ${className}`}
+      className={cn(
+        'text-foreground',
+        sizeStyles[level],
+        spacingStyles[spacing],
+        trackingStyles[tracking],
+        className
+      )}
     >
       {children}
     </Tag>
   );
 }
-
-/* =====================================================
- * Subheading
- * ===================================================== */
 
 type SubheadingLevel = 'h2' | 'h3';
 
@@ -145,10 +132,8 @@ interface SubheadingProps extends BaseHeadingProps {
 export function Subheading({
   level = 'h2',
   children,
-  className = '',
+  className,
 }: SubheadingProps) {
-  const baseStyles = 'tracking-tight text-foreground';
-
   const styles: Record<SubheadingLevel, string> = {
     h2: 'text-lg md:text-xl font-semibold',
     h3: 'text-base md:text-lg font-medium',
@@ -157,15 +142,13 @@ export function Subheading({
   const Tag = level as ElementType;
 
   return (
-    <Tag className={`${baseStyles} ${styles[level]} ${className}`}>
+    <Tag
+      className={cn('tracking-tight text-foreground', styles[level], className)}
+    >
       {children}
     </Tag>
   );
 }
-
-/* =====================================================
- * Boxheading
- * ===================================================== */
 
 type BoxheadingLevel = 'h3' | 'h4';
 
@@ -176,10 +159,8 @@ interface BoxheadingProps extends BaseHeadingProps {
 export function Boxheading({
   level = 'h3',
   children,
-  className = '',
+  className,
 }: BoxheadingProps) {
-  const baseStyles = 'tracking-tight text-foreground';
-
   const styles: Record<BoxheadingLevel, string> = {
     h3: 'text-lg md:text-xl font-medium',
     h4: 'text-base md:text-lg font-medium',
@@ -188,15 +169,13 @@ export function Boxheading({
   const Tag = level as ElementType;
 
   return (
-    <Tag className={`${baseStyles} ${styles[level]} ${className}`}>
+    <Tag
+      className={cn('tracking-tight text-foreground', styles[level], className)}
+    >
       {children}
     </Tag>
   );
 }
-
-/* =====================================================
- * Sideheading
- * ===================================================== */
 
 type SideheadingLevel = 'h6';
 
@@ -207,10 +186,8 @@ interface SideheadingProps extends BaseHeadingProps {
 export function Sideheading({
   level = 'h6',
   children,
-  className = '',
+  className,
 }: SideheadingProps) {
-  const baseStyles = 'tracking-tight text-foreground';
-
   const styles: Record<SideheadingLevel, string> = {
     h6: 'text-base md:text-lg',
   };
@@ -218,8 +195,14 @@ export function Sideheading({
   const Tag = level as ElementType;
 
   return (
-    <Tag className={`${baseStyles} ${styles[level]} ${className}`}>
+    <Tag
+      className={cn('tracking-tight text-foreground', styles[level], className)}
+    >
       {children}
     </Tag>
   );
 }
+
+export const Heading = MainHeading;
+
+export default Heading;

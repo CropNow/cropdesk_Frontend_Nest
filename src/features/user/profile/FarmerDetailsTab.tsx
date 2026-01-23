@@ -1,41 +1,72 @@
 import React, { useState, useEffect } from 'react';
-import { User, MapPin, Phone, Mail } from 'lucide-react';
+import { User, Phone, Mail, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { ListBox } from '@/components/ui/list-box';
+import { Subheading } from '@/components/common/Heading';
+import { useProfile } from './context/useProfile';
 
-const FarmerDetailsTab = ({
-  farmer,
-  onUpdate,
-  onDelete,
-}: {
-  farmer: any;
-  onUpdate: (data: any) => void;
-  onDelete: () => void;
-}) => {
+const FarmerDetailsTab = (
+  {
+    // Keep props optional or remove if not needed at all.
+    // To minimize breaking changes in parent, we can keep them optional but ignore them,
+    // OR we fully remove them since parent (Profile.tsx) is also under our control.
+    // I will remove them to enforce context usage as per plan.
+  }
+) => {
+  const {
+    farmers,
+    selectedFarmer,
+    selectedFarmerId,
+    setSelectedFarmerId,
+    addFarmer,
+    updateFarmer,
+    deleteFarmer,
+  } = useProfile();
+
   const [isEditing, setIsEditing] = useState(false);
-
-  // Initialize with default matching the structure
+  const [isAdding, setIsAdding] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    phoneNumber: '',
+    phone: '',
     email: '',
-    address: '',
-    village: '',
-    district: '',
-    state: '',
+    address: {
+      village: '',
+      district: '',
+      state: '',
+    },
   });
 
   useEffect(() => {
-    if (farmer) {
+    if (isAdding) {
       setFormData({
-        name: farmer.name || '',
-        phoneNumber: farmer.phoneNumber || '',
-        email: farmer.email || '',
-        address: farmer.address || '',
-        village: farmer.village || '',
-        district: farmer.district || '',
-        state: farmer.state || '',
+        name: '',
+        phone: '',
+        email: '',
+        address: {
+          village: '',
+          district: '',
+          state: '',
+        },
       });
+      setIsEditing(true); // Force editing mode when adding
+    } else if (selectedFarmer) {
+      setFormData({
+        name: selectedFarmer.name || '',
+        phone: selectedFarmer.phone || selectedFarmer.phoneNumber || '',
+        email: selectedFarmer.email || '',
+        address: {
+          village:
+            selectedFarmer.address?.village || selectedFarmer.village || '',
+          district:
+            selectedFarmer.address?.district || selectedFarmer.district || '',
+          state: selectedFarmer.address?.state || selectedFarmer.state || '',
+        },
+      });
+      setIsEditing(false);
     }
-  }, [farmer]);
+  }, [selectedFarmer, isAdding]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -44,170 +75,340 @@ const FarmerDetailsTab = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    if (isEditing) {
-      onUpdate({ ...farmer, ...formData });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      if (isAdding) {
+        await addFarmer(formData);
+        setIsAdding(false);
+      } else if (isEditing && selectedFarmerId) {
+        await updateFarmer(selectedFarmerId, {
+          ...selectedFarmer,
+          ...formData,
+        });
+        setIsEditing(false);
+      } else {
+        setIsEditing(true);
+      }
+    } catch (error) {
+      console.error('Failed to save farmer:', error);
+    } finally {
+      setIsSaving(false);
     }
-    setIsEditing(!isEditing);
+  };
+
+  const toggleAddMode = () => {
+    if (isAdding) {
+      setIsAdding(false);
+      setIsEditing(false);
+    } else {
+      setIsAdding(true);
+    }
   };
 
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-foreground">Farmer Details</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Personal information
-        </p>
+      {/* Header with Title and Add Button */}
+      <div className="flex justify-between items-center mb-8">
+        <Subheading className="font-bold">
+          {isAdding ? 'Add New Farmer' : 'Farmer Details'}
+        </Subheading>
+
+        <div>
+          {!isAdding && (
+            <Button
+              onClick={toggleAddMode}
+              size="sm"
+              className="rounded-xl text-xs font-bold flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Add Farmer
+            </Button>
+          )}
+          {isAdding && (
+            <Button
+              onClick={toggleAddMode}
+              variant="secondary"
+              size="sm"
+              className="rounded-xl text-xs font-bold"
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="space-y-6 max-w-4xl">
-        {/* Name */}
+      {/* Grid Layout: Details Card (left) + Farmer List (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+        {/* Left: Farmer Details Card or Form */}
         <div>
-          <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-            Full Name
-          </label>
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-muted rounded-xl">
-              <User size={18} className="text-foreground" />
-            </div>
-            <input
-              type="text"
-              name="name"
-              value={formData.name || ''}
-              readOnly={!isEditing}
-              onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-            />
-          </div>
-        </div>
+          {!isEditing ? (
+            // READ MODE - Card Display
+            <div className="bg-card border border-border rounded-xl p-6 space-y-4 max-w-md">
+              {/* Header - Farmer Name */}
+              <h3 className="text-xl font-bold text-foreground">
+                {formData.name || 'Unnamed Farmer'}
+              </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Phone */}
-          <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-              Phone Number
-            </label>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-muted rounded-xl">
-                <Phone size={18} className="text-foreground" />
+              {/* Details Section */}
+              <div className="space-y-2 text-foreground">
+                {formData.address.village ||
+                formData.address.district ||
+                formData.address.state ? (
+                  <p className="text-base">
+                    {[
+                      formData.address.village,
+                      formData.address.district,
+                      formData.address.state,
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground italic text-sm">
+                    No address provided
+                  </p>
+                )}
+
+                <p className="text-base">
+                  Phone number:{' '}
+                  {formData.phone || (
+                    <span className="text-muted-foreground italic">
+                      Not provided
+                    </span>
+                  )}
+                </p>
+
+                <p className="text-base">
+                  Email:{' '}
+                  {formData.email || (
+                    <span className="text-muted-foreground italic">
+                      Not provided
+                    </span>
+                  )}
+                </p>
               </div>
-              <input
-                type="text"
-                name="phoneNumber"
-                value={formData.phoneNumber || ''}
-                readOnly={!isEditing}
-                onChange={handleChange}
-                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-              />
-            </div>
-          </div>
 
-          {/* Email */}
-          <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-              Email Address
-            </label>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-muted rounded-xl">
-                <Mail size={18} className="text-foreground" />
+              {/* Actions */}
+              <div className="pt-4 border-t border-border flex gap-4">
+                <Button
+                  variant="link"
+                  onClick={() => setIsEditing(true)}
+                  className="text-primary hover:underline font-medium p-0 h-auto"
+                >
+                  Edit
+                </Button>
+                {!isAdding && deleteFarmer && selectedFarmerId && (
+                  <>
+                    <span className="text-muted-foreground">|</span>
+                    <Button
+                      variant="link"
+                      onClick={() => deleteFarmer(selectedFarmerId)}
+                      className="text-destructive hover:underline font-medium p-0 h-auto"
+                    >
+                      Remove
+                    </Button>
+                  </>
+                )}
               </div>
-              <input
-                type="text"
-                name="email"
-                value={formData.email || ''}
-                readOnly={!isEditing}
-                onChange={handleChange}
-                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-              />
             </div>
-          </div>
-        </div>
+          ) : (
+            // EDIT MODE - Form Display
+            <div className="space-y-6 max-w-4xl">
+              {/* Name */}
+              <div>
+                <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+                  Full Name
+                </Label>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-muted rounded-xl">
+                    <User size={18} className="text-foreground" />
+                  </div>
+                  <Input
+                    type="text"
+                    name="name"
+                    value={formData.name || ''}
+                    onChange={handleChange}
+                    className="w-full font-semibold px-4 py-3 text-sm"
+                  />
+                </div>
+              </div>
 
-        <hr className="border-border my-2" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Phone */}
+                <div>
+                  <Label className="block text-xs font-bold text-white uppercase mb-2">
+                    Phone Number
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-muted rounded-xl">
+                      <Phone size={18} className="text-foreground" />
+                    </div>
+                    <Input
+                      type="text"
+                      name="phone"
+                      value={formData.phone || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
+                      className="w-full font-semibold px-4 py-3 text-sm"
+                    />
+                  </div>
+                </div>
 
-        {/* Address */}
-        <div>
-          <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-            Address
-          </label>
-          <div className="flex items-start gap-3">
-            <div className="p-3 bg-muted rounded-xl">
-              <MapPin size={18} className="text-foreground" />
+                {/* Email */}
+                <div>
+                  <Label className="block text-xs font-bold text-white uppercase mb-2">
+                    Email Address
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-muted rounded-xl">
+                      <Mail size={18} className="text-foreground" />
+                    </div>
+                    <Input
+                      type="text"
+                      name="email"
+                      value={formData.email || ''}
+                      onChange={handleChange}
+                      className="w-full font-semibold px-4 py-3 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <hr className="border-border my-2" />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Village */}
+                <div>
+                  <Label className="block text-xs font-bold text-white uppercase mb-2">
+                    Village
+                  </Label>
+                  <Input
+                    type="text"
+                    name="village"
+                    value={formData.address.village || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: {
+                          ...formData.address,
+                          village: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full font-semibold px-4 py-3 text-sm"
+                  />
+                </div>
+                {/* District */}
+                <div>
+                  <Label className="block text-xs font-bold text-white uppercase mb-2">
+                    District
+                  </Label>
+                  <Input
+                    type="text"
+                    name="district"
+                    value={formData.address.district || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: {
+                          ...formData.address,
+                          district: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full font-semibold px-4 py-3 text-sm"
+                  />
+                </div>
+                {/* State */}
+                <div>
+                  <Label className="block text-xs font-bold text-white uppercase mb-2">
+                    State
+                  </Label>
+                  <Input
+                    type="text"
+                    name="state"
+                    value={formData.address.state || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: { ...formData.address, state: e.target.value },
+                      })
+                    }
+                    className="w-full font-semibold px-4 py-3 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Actions for Farmer Tab */}
+              <div className="flex gap-3 mt-8 border-t border-border pt-6">
+                <Button
+                  onClick={handleSave}
+                  variant="default"
+                  className="w-fit rounded-xl text-xs font-bold"
+                  disabled={isSaving}
+                >
+                  {isSaving
+                    ? 'Saving...'
+                    : isAdding
+                      ? 'Save New Farmer'
+                      : 'Save Changes'}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsEditing(false);
+                    if (isAdding) {
+                      setIsAdding(false);
+                    } else if (selectedFarmer) {
+                      setFormData({
+                        name: selectedFarmer.name || '',
+                        phone: selectedFarmer.phone || '',
+                        email: selectedFarmer.email || '',
+                        address: {
+                          village: selectedFarmer.address?.village || '',
+                          district: selectedFarmer.address?.district || '',
+                          state: selectedFarmer.address?.state || '',
+                        },
+                      });
+                    }
+                  }}
+                  variant="outline"
+                  className="w-fit rounded-xl text-xs font-bold"
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
-            <textarea
-              name="address"
-              value={formData.address || ''}
-              readOnly={!isEditing}
-              onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none resize-none h-24 ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-            />
-          </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Village */}
+        {/* Right: Farmer List */}
+        {!isAdding && farmers.length > 0 && (
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-              Village
-            </label>
-            <input
-              type="text"
-              name="village"
-              value={formData.village || ''}
-              readOnly={!isEditing}
-              onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
+            <Label className="block text-[10px] uppercase font-bold text-white mb-4">
+              Select Farmer
+            </Label>
+            <ListBox
+              key={`farmer-list-${farmers.length}-${selectedFarmerId}`}
+              items={farmers.map((f, index) => ({
+                id: f.id || f._id || `temp-${index}`,
+                label: f.name || 'Unnamed',
+                subLabel: f.phone || f.email,
+              }))}
+              selectedId={
+                selectedFarmerId ||
+                selectedFarmer?.id ||
+                selectedFarmer?._id ||
+                ''
+              }
+              onSelect={(id) => setSelectedFarmerId(id)}
+              height="h-[220px]"
             />
           </div>
-          {/* District */}
-          <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-              District
-            </label>
-            <input
-              type="text"
-              name="district"
-              value={formData.district || ''}
-              readOnly={!isEditing}
-              onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-            />
-          </div>
-          {/* State */}
-          <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-              State
-            </label>
-            <input
-              type="text"
-              name="state"
-              value={formData.state || ''}
-              readOnly={!isEditing}
-              onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-            />
-          </div>
-        </div>
-
-        {/* Actions for Farmer Tab */}
-        <div className="flex gap-3 mt-8 border-t border-border pt-6">
-          <button
-            onClick={handleSave}
-            className={`w-fit px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-              isEditing
-                ? 'bg-green-500 text-black border-transparent hover:bg-green-400'
-                : 'bg-secondary text-foreground hover:bg-muted border-transparent'
-            }`}
-          >
-            {isEditing ? 'Save Details' : 'Edit Details'}
-          </button>
-          <button
-            onClick={onDelete}
-            className="w-fit px-4 py-2 bg-[#ffe4e6] text-[#e11d48] border border-transparent rounded-xl text-xs font-bold hover:bg-[#ffced4] transition-all"
-          >
-            Delete Farmer
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );

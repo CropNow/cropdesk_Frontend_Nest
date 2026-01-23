@@ -30,9 +30,6 @@ export const AppRouter = () => {
     <Suspense fallback={<Loader />}>
       <Routes>
         {/* ==================== Public Routes ==================== */}
-        {/* These routes are accessible only when NOT logged in (or public) */}
-
-        {/* Wrapper for "Only Public" logic */}
         <Route
           element={
             <PublicRoute>
@@ -48,7 +45,6 @@ export const AppRouter = () => {
         </Route>
 
         {/* ==================== Protected Routes ==================== */}
-        {/* These routes require authentication */}
         <Route
           element={
             <ProtectedRoute>
@@ -70,7 +66,7 @@ export const AppRouter = () => {
         </Route>
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

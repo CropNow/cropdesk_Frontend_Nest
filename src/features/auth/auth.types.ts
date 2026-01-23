@@ -4,6 +4,7 @@ export interface LoginRequest {
 }
 
 export interface User {
+  _id: string;
   id: string;
   email: string;
   role?: string;
@@ -11,6 +12,7 @@ export interface User {
   lastName?: string;
   status?: string;
   username?: string;
+  bio?: string;
 
   // Hierarchical Data Structure
   farmers?: Farmer[]; // User manages multiple farmers
@@ -38,14 +40,20 @@ export interface User {
 export interface Farmer {
   id: string;
   name: string;
-  email?: string;
-  phone?: string;
+  phone: string;
+  email: string;
+  address: {
+    village: string;
+    district: string;
+    state: string;
+  };
   farms: Farm[];
 }
 
 export interface Farm {
   id: string;
   name: string;
+  farmerId?: string; // Relation ID
   location?: string;
   area?: string;
   units?: string;
@@ -73,6 +81,10 @@ export interface LoginResponse {
   accessToken: string;
   refreshToken?: string;
   user: User;
+}
+
+export interface LogoutResponse {
+  message: string;
 }
 
 export interface RegisterRequest {

@@ -1,24 +1,27 @@
-import type { ReactNode, ElementType } from 'react';
+import type { ElementType, HTMLAttributes, ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 type ParaLevel = 'p' | 'span' | 'div';
 
-interface ParaProps {
+interface ParaProps extends HTMLAttributes<HTMLElement> {
   level?: ParaLevel;
   children: ReactNode;
   className?: string;
 }
 
-export function Para({ level = 'p', children, className = '' }: ParaProps) {
-  const baseStyles = 'text-foreground';
-
-  const styles = {
-    default: 'text-base md:text-lg',
-  };
-
+export function Para({
+  level = 'p',
+  children,
+  className,
+  ...props
+}: ParaProps) {
   const Tag = level as ElementType;
 
   return (
-    <Tag className={`${baseStyles} ${styles.default} ${className}`}>
+    <Tag
+      className={cn('text-foreground text-base md:text-lg', className)}
+      {...props}
+    >
       {children}
     </Tag>
   );

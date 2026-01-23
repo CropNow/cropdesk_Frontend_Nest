@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 const ForgetPassword = () => {
   const navigate = useNavigate();
@@ -43,25 +46,28 @@ const ForgetPassword = () => {
           className="flex flex-col cursor-pointer"
           onClick={() => navigate('/')}
         >
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            CropDesk
-          </h1>
+          <img
+            src="/CropNow_Logo_1-D3AGwrH0.png"
+            alt="CropNow Logo"
+            className="h-10 w-auto object-contain"
+          />
         </div>
       </header>
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-md mx-auto flex flex-col justify-center px-8 py-12">
         {/* Back Button */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => navigate('/login')}
-          className="flex items-center text-white/70 hover:text-white transition-colors mb-8 group w-fit"
+          className="flex items-center text-white/70 hover:text-white transition-colors mb-8 group w-fit pl-0 hover:bg-transparent"
         >
           <ArrowLeft
             size={20}
             className="mr-2 group-hover:-translate-x-1 transition-transform"
           />
           Back to Login
-        </button>
+        </Button>
 
         {/* Header Text */}
         <div className="text-left mb-8">
@@ -79,13 +85,13 @@ const ForgetPassword = () => {
         {!submitted ? (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label
+              <Label
                 htmlFor="email"
                 className="text-sm font-medium text-white/80"
               >
                 Email Address
-              </label>
-              <input
+              </Label>
+              <Input
                 id="email"
                 type="email"
                 placeholder="name@example.com"
@@ -96,13 +102,13 @@ const ForgetPassword = () => {
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={loading || !email}
-              className="w-full py-4 bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all active:scale-[0.98]"
+              className="w-full py-6 bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all active:scale-[0.98]"
             >
               {loading ? 'Sending Link...' : 'Send Reset Link'}
-            </button>
+            </Button>
           </form>
         ) : (
           <div className="space-y-6">
@@ -117,20 +123,22 @@ const ForgetPassword = () => {
               <p className="text-white/40 text-xs mb-2">
                 (Dev: Simulate Email Click)
               </p>
-              <button
+              <Button
+                variant="link"
                 onClick={() => navigate('/reset-password')}
                 className="text-green-400 hover:text-green-300 underline text-sm"
               >
                 Go to Reset Password Page
-              </button>
+              </Button>
             </div>
 
-            <button
+            <Button
+              variant="outline"
               onClick={() => setSubmitted(false)}
-              className="w-full py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-all"
+              className="w-full py-6 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-all border-none"
             >
               Try another email
-            </button>
+            </Button>
           </div>
         )}
       </div>

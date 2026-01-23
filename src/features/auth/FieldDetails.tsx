@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { convertAreaToSqFt } from '@/utils/unitConversion';
+import { isLocationValid } from '@/utils/geoUtils';
+import LocationPicker from '@/components/common/LocationPicker';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dropdown } from '@/components/ui/dropdown';
 
 const FieldDetails = () => {
   const navigate = useNavigate();
@@ -17,16 +24,18 @@ const FieldDetails = () => {
         console.error('Error parsing temp data', e);
       }
     }
-    const storedUserStr = localStorage.getItem('registeredUser');
-    if (storedUserStr) {
+    const sessionStr = localStorage.getItem('user');
+    if (sessionStr) {
       try {
-        const storedUser = JSON.parse(storedUserStr);
-        if (
-          storedUser.fieldDetails &&
-          Object.keys(storedUser.fieldDetails).length > 0
-        ) {
-          return storedUser.fieldDetails;
+        const sessionUser = JSON.parse(sessionStr);
+        const collectionStr = localStorage.getItem('app_users'); // STORAGE_KEYS.USERS_COLLECTION
+        if (collectionStr && sessionUser.email) {
+          const collection = JSON.parse(collectionStr);
+          const user = collection[sessionUser.email.toLowerCase()];
+          if (user && user.fieldDetails) return user.fieldDetails;
         }
+
+        if (sessionUser.fieldDetails) return sessionUser.fieldDetails;
       } catch (e) {
         console.error('Error loading stored user', e);
       }
@@ -76,48 +85,81 @@ const FieldDetails = () => {
     }
   };
 
-  // Import moved to top
-
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Field Details:', fieldData);
+    console.log('Field Details Submitting:', fieldData);
 
-    // Validation against Farm Details
-    const tempStr = localStorage.getItem('tempRegistrationData');
-    if (tempStr) {
-      const tempData = JSON.parse(tempStr);
-      const farmDetails = tempData.farmDetails;
-
-      if (farmDetails && farmDetails.area && farmDetails.units) {
-        const farmAreaSqFt = convertAreaToSqFt(
-          parseFloat(farmDetails.area),
-          farmDetails.units
-        );
-        const fieldAreaSqFt = convertAreaToSqFt(
-          parseFloat(fieldData.area),
-          fieldData.units
-        );
-
-        console.log(
-          `Validation: Farm ${farmAreaSqFt} sqft vs Field ${fieldAreaSqFt} sqft`
-        );
-
-        if (fieldAreaSqFt > farmAreaSqFt) {
-          alert(
-            `Field area (${fieldData.area} ${fieldData.units}) cannot exceed the total Farm area (${farmDetails.area} ${farmDetails.units})!`
+    try {
+      // Validation against Farm Details
+      const tempStr = localStorage.getItem('tempRegistrationData');
+      if (tempStr) {
+        let tempData: any = {};
+        try {
+          tempData = JSON.parse(tempStr);
+        } catch (jsonErr) {
+          console.error(
+            'Error parsing tempRegistrationData during validation',
+            jsonErr
           );
-          return; // Stop execution
+        }
+
+        const farmDetails = tempData.farmDetails;
+
+        if (farmDetails && farmDetails.area && farmDetails.units) {
+          try {
+            const farmAreaSqFt = convertAreaToSqFt(
+              parseFloat(farmDetails.area),
+              farmDetails.units
+            );
+            const fieldAreaSqFt = convertAreaToSqFt(
+              parseFloat(fieldData.area),
+              fieldData.units
+            );
+
+            console.log(
+              `Validation: Farm ${farmAreaSqFt} sqft vs Field ${fieldAreaSqFt} sqft`
+            );
+
+            if (
+              !isNaN(farmAreaSqFt) &&
+              !isNaN(fieldAreaSqFt) &&
+              fieldAreaSqFt > farmAreaSqFt
+            ) {
+              alert(
+                `Field area (${fieldData.area} ${fieldData.units}) cannot exceed the total Farm area (${farmDetails.area} ${farmDetails.units})!`
+              );
+              return; // Stop execution
+            }
+
+            // Validate Location Distance
+            if (
+              farmDetails.location &&
+              farmDetails.location.latitude &&
+              farmDetails.location.longitude &&
+              fieldData.coordinates
+            ) {
+              const locValidation = isLocationValid(
+                farmDetails.location.latitude,
+                farmDetails.location.longitude,
+                fieldData.coordinates,
+                10 // Max 10km radius
+              );
+              if (!locValidation.valid) {
+                alert(locValidation.error || 'Location validation failed');
+                return;
+              }
+            }
+          } catch (valErr) {
+            console.error('Validation error:', valErr);
+          }
         }
       }
-
-      // Update temp storage with new field details
-      // Already handled by useEffect
-    } else {
-      // Fallback or init if missing
-      // Already handled by useEffect
+    } catch (err) {
+      console.error('Unexpected error in handleNext:', err);
     }
 
     // Navigate to next step
+    console.log('Navigating to Crop Details...');
     navigate('/register/crop-details');
   };
 
@@ -159,7 +201,7 @@ const FieldDetails = () => {
         <form onSubmit={handleNext} className="space-y-4">
           {/* Field Name & Description */}
           <div>
-            <input
+            <Input
               type="text"
               placeholder="Field Name"
               value={fieldData.fieldName}
@@ -171,7 +213,7 @@ const FieldDetails = () => {
             />
           </div>
           <div>
-            <textarea
+            <Textarea
               placeholder="Description (Optional)"
               value={fieldData.description}
               onChange={(e) =>
@@ -183,7 +225,7 @@ const FieldDetails = () => {
 
           {/* Area & Units */}
           <div className="grid grid-cols-2 gap-4">
-            <input
+            <Input
               type="number"
               placeholder="Area"
               value={fieldData.area}
@@ -197,95 +239,102 @@ const FieldDetails = () => {
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
               required
             />
-            <select
+            <Dropdown
               value={fieldData.units}
               onChange={(e) =>
                 setFieldData({ ...fieldData, units: e.target.value })
               }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
+              className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
               <option value="acres">Acres</option>
               <option value="hectares">Hectares</option>
               <option value="sq_ft">Sq Ft</option>
-            </select>
+            </Dropdown>
           </div>
 
           {/* Boundary Type */}
           <div>
-            <label className="text-xs text-white/60 mb-1 block ml-1">
+            <Label className="text-xs text-white/60 mb-1 block ml-1">
               Boundary Shape
-            </label>
-            <select
+            </Label>
+            <Dropdown
               value={fieldData.boundaryType}
               onChange={(e) =>
                 setFieldData({ ...fieldData, boundaryType: e.target.value })
               }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
+              className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
               <option value="Polygon">Polygon (Irregular)</option>
               <option value="Rectangle">Rectangle</option>
               <option value="Square">Square</option>
               <option value="Circle">Circle</option>
-            </select>
+            </Dropdown>
           </div>
 
-          {/* Coordinates */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Coordinates (Lat, Long)"
-              value={fieldData.coordinates}
-              onChange={(e) =>
-                setFieldData({ ...fieldData, coordinates: e.target.value })
-              }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors pr-10"
+          {/* Coordinates / Map */}
+          <div className="relative border border-white/20 rounded-lg p-3 bg-white/5">
+            <Label className="text-xs text-white/50 mb-1 block">
+              Field Boundary (Draw your field)
+            </Label>
+            <LocationPicker
+              mode="polygon"
+              value={fieldData.coordinates} // Will be empty or JSON string
+              onChange={(val: any) => {
+                // val is JSON string like {"type":"Rectangle", "points":...}
+                setFieldData({ ...fieldData, coordinates: val });
+                // Auto set boundary type if possible
+                try {
+                  const parsed = JSON.parse(val);
+                  if (parsed.type) {
+                    if (parsed.type === 'Rectangle') {
+                      setFieldData((prev: any) => ({
+                        ...prev,
+                        coordinates: val,
+                        boundaryType: 'Rectangle',
+                      }));
+                    } else if (parsed.type === 'Circle') {
+                      setFieldData((prev: any) => ({
+                        ...prev,
+                        coordinates: val,
+                        boundaryType: 'Circle',
+                      }));
+                    } else {
+                      setFieldData((prev: any) => ({
+                        ...prev,
+                        coordinates: val,
+                        boundaryType: 'Polygon',
+                      }));
+                    }
+                  }
+                } catch (e) {}
+              }}
+              height="350px"
             />
-            <button
-              type="button"
-              onClick={handleGeolocation}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-green-500"
-              title="Use current location"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
           </div>
 
           {/* Soil Type */}
           <div>
-            <label className="text-xs text-white/60 mb-1 block ml-1">
+            <Label className="text-xs text-white/60 mb-1 block ml-1">
               Soil Type
-            </label>
-            <select
+            </Label>
+            <Dropdown
               value={fieldData.soilType}
               onChange={(e) =>
                 setFieldData({ ...fieldData, soilType: e.target.value })
               }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
+              className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
               <option value="Clay">Clay</option>
               <option value="Sandy">Sandy</option>
               <option value="Loamy">Loamy</option>
               <option value="Chalky">Chalky</option>
               <option value="Mixed">Mixed</option>
-            </select>
+            </Dropdown>
           </div>
 
           {/* pH Level & Irrigation */}
           <div className="grid grid-cols-2 gap-4">
-            <input
+            <Input
               type="number"
               step="0.1"
               min="0"
@@ -300,26 +349,26 @@ const FieldDetails = () => {
               }}
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
             />
-            <select
+            <Dropdown
               value={fieldData.irrigationMethod}
               onChange={(e) =>
                 setFieldData({ ...fieldData, irrigationMethod: e.target.value })
               }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
+              className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
               <option value="Drip">Drip</option>
               <option value="Sprinkler">Sprinkler</option>
               <option value="Flood">Flood</option>
               <option value="Manual">Manual</option>
-            </select>
+            </Dropdown>
           </div>
 
-          <button
+          <Button
             type="submit"
-            className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all active:scale-[0.98] mt-6"
+            className="w-full py-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all active:scale-[0.98] mt-6 text-lg"
           >
             Next: Crop Details
-          </button>
+          </Button>
         </form>
       </div>
     </div>

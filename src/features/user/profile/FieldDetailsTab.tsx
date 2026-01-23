@@ -1,16 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Droplets, FlaskConical } from 'lucide-react';
+import { Layers, Droplets, FlaskConical, Plus } from 'lucide-react';
+import LocationPicker from '@/components/common/LocationPicker';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { ListBox } from '@/components/ui/list-box';
+import { Subheading } from '@/components/common/Heading';
+import { useProfile } from './context/useProfile';
 
-const FieldDetailsTab = ({
-  field,
-  onUpdate,
-  onDelete,
-}: {
-  field: any;
-  onUpdate: (data: any) => void;
-  onDelete: () => void;
-}) => {
+const FieldDetailsTab = () => {
+  const {
+    selectedFarm,
+    selectedField,
+    selectedFieldId,
+    addField,
+    updateField,
+    deleteField,
+    setSelectedFieldId,
+  } = useProfile();
+
+  // Derived fields list
+  const fields = selectedFarm?.fields || [];
+  const parentFarmLocation = selectedFarm?.location;
+
   const [isEditing, setIsEditing] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [fieldData, setFieldData] = useState({
     name: '',
     description: '',
@@ -20,22 +34,38 @@ const FieldDetailsTab = ({
     soilType: '',
     phLevel: '',
     irrigationMethod: '',
+    coordinates: '',
   });
 
   useEffect(() => {
-    if (field) {
+    if (isAdding) {
       setFieldData({
-        name: field.name || field.fieldName || '',
-        description: field.description || '',
-        area: field.area || '',
-        units: field.units || '',
-        boundaryType: field.boundaryType || '',
-        soilType: field.soilType || '',
-        phLevel: field.phLevel || '',
-        irrigationMethod: field.irrigationMethod || '',
+        name: '',
+        description: '',
+        area: '',
+        units: 'acres',
+        boundaryType: '',
+        soilType: '',
+        phLevel: '',
+        irrigationMethod: '',
+        coordinates: '',
       });
+      setIsEditing(true);
+    } else if (selectedField) {
+      setFieldData({
+        name: selectedField.name || selectedField.fieldName || '',
+        description: selectedField.description || '',
+        area: selectedField.area || '',
+        units: selectedField.units || '',
+        boundaryType: selectedField.boundaryType || '',
+        soilType: selectedField.soilType || '',
+        phLevel: selectedField.phLevel || '',
+        irrigationMethod: selectedField.irrigationMethod || '',
+        coordinates: selectedField.coordinates || '',
+      });
+      setIsEditing(false);
     }
-  }, [field]);
+  }, [selectedField, isAdding]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -44,24 +74,48 @@ const FieldDetailsTab = ({
     setFieldData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    if (isEditing) {
-      onUpdate({ ...field, ...fieldData });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      if (isAdding) {
+        await addField(fieldData);
+        setIsAdding(false);
+      } else if (isEditing && selectedFieldId) {
+        await updateField(selectedFieldId, { ...selectedField, ...fieldData });
+        setIsEditing(false);
+      } else {
+        setIsEditing(true);
+      }
+    } catch (error) {
+      console.error('Failed to save field:', error);
+    } finally {
+      setIsSaving(false);
     }
-    setIsEditing(!isEditing);
   };
 
-  if (!field) {
+  const toggleAddMode = () => {
+    if (isAdding) {
+      setIsAdding(false);
+      setIsEditing(false);
+    } else {
+      setIsAdding(true);
+    }
+  };
+
+  if (!selectedField && !isAdding) {
     return (
-      <div className="bg-card border border-border rounded-3xl p-8 flex items-center justify-center min-h-[400px]">
+      <div className="bg-card border border-border rounded-3xl p-8 flex items-center justify-center min-h-[400px] flex-col gap-4">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">No field selected.</p>
-          <button
-            className="px-4 py-2 bg-green-500 text-black rounded-xl font-bold hover:bg-green-400"
-            onClick={() => window.location.reload()}
+          <Button
+            className="rounded-xl font-bold flex items-center gap-2 mx-auto"
+            onClick={toggleAddMode}
           >
-            Reload Details
-          </button>
+            <Plus size={16} />
+            Add New Field
+          </Button>
         </div>
       </div>
     );
@@ -69,144 +123,349 @@ const FieldDetailsTab = ({
 
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-foreground">Field Details</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Specific field information
-        </p>
-      </div>
+      {/* Header with Title and Add Button */}
+      <div className="flex justify-between items-center mb-8">
+        <Subheading className="font-bold">
+          {isAdding ? 'Add New Field' : 'Field Details'}
+        </Subheading>
 
-      <div className="space-y-6 max-w-4xl">
-        {/* Name */}
         <div>
-          <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-            Field Name
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={fieldData.name || ''}
-            readOnly={!isEditing}
-            onChange={handleChange}
-            className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-6">
-          {/* Area */}
-          <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-              Area
-            </label>
-            <input
-              type="text"
-              name="area"
-              value={fieldData.area || ''}
-              readOnly={!isEditing}
-              onChange={handleChange}
-              placeholder={!isEditing ? '' : 'Area'}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-            />
-          </div>
-          {/* Boundary */}
-          <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-              Boundary Type
-            </label>
-            <input
-              type="text"
-              name="boundaryType"
-              value={fieldData.boundaryType || ''}
-              readOnly={!isEditing}
-              onChange={handleChange}
-              className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-            />
-          </div>
-        </div>
-
-        <hr className="border-border my-2" />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Soil Type */}
-          <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-              Soil Type
-            </label>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-muted rounded-xl">
-                <Layers size={18} className="text-foreground" />
-              </div>
-              <input
-                type="text"
-                name="soilType"
-                value={fieldData.soilType || ''}
-                readOnly={!isEditing}
-                onChange={handleChange}
-                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-              />
-            </div>
-          </div>
-
-          {/* pH Level */}
-          <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-              Soil pH
-            </label>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-muted rounded-xl">
-                <FlaskConical size={18} className="text-foreground" />
-              </div>
-              <input
-                type="text"
-                name="phLevel"
-                value={fieldData.phLevel || ''}
-                readOnly={!isEditing}
-                onChange={handleChange}
-                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-              />
-            </div>
-          </div>
-
-          {/* Irrigation */}
-          <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-              Irrigation
-            </label>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-muted rounded-xl">
-                <Droplets size={18} className="text-foreground" />
-              </div>
-              <input
-                type="text"
-                name="irrigationMethod"
-                value={fieldData.irrigationMethod || ''}
-                readOnly={!isEditing}
-                onChange={handleChange}
-                className={`w-full bg-secondary rounded-xl text-foreground font-semibold px-4 py-3 text-sm focus:outline-none ${!isEditing ? 'cursor-default' : 'focus:ring-2 focus:ring-green-500/50'}`}
-              />
-            </div>
-          </div>
+          {!isAdding && (
+            <Button
+              onClick={toggleAddMode}
+              size="sm"
+              className="rounded-xl text-xs font-bold flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Add Field
+            </Button>
+          )}
+          {isAdding && (
+            <Button
+              onClick={toggleAddMode}
+              variant="secondary"
+              size="sm"
+              className="rounded-xl text-xs font-bold"
+            >
+              Cancel
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Actions for Field Tab */}
-      <div className="flex gap-3 mt-8 border-t border-border pt-6">
-        <button
-          onClick={handleSave}
-          className={`w-fit px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-            isEditing
-              ? 'bg-green-500 text-black border-transparent hover:bg-green-400'
-              : 'bg-secondary text-foreground hover:bg-muted border-transparent'
-          }`}
-        >
-          {isEditing ? 'Save Details' : 'Edit Details'}
-        </button>
-        <button
-          onClick={onDelete}
-          className="w-fit px-4 py-2 bg-[#ffe4e6] text-[#e11d48] border border-transparent rounded-xl text-xs font-bold hover:bg-[#ffced4] transition-all"
-        >
-          Delete Field
-        </button>
+      {/* Grid Layout: Details Card (left) + Field List (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+        {/* Left: Field Details Card or Form */}
+        <div>
+          {!isEditing ? (
+            // READ MODE - Card Display
+            <div className="bg-card border border-border rounded-xl p-6 space-y-4 max-w-md">
+              {/* Header - Field Name */}
+              <h3 className="text-xl font-bold text-foreground">
+                {fieldData.name || 'Unnamed Field'}
+              </h3>
+
+              {/* Details Section */}
+              <div className="space-y-2 text-foreground">
+                <p className="text-base">
+                  Area:{' '}
+                  {fieldData.area ? (
+                    `${fieldData.area} ${fieldData.units || 'acres'}`
+                  ) : (
+                    <span className="text-muted-foreground italic">
+                      Not provided
+                    </span>
+                  )}
+                </p>
+
+                <p className="text-base">
+                  Boundary:{' '}
+                  {fieldData.boundaryType || (
+                    <span className="text-muted-foreground italic">
+                      Not provided
+                    </span>
+                  )}
+                </p>
+
+                <p className="text-base">
+                  Soil Type:{' '}
+                  {fieldData.soilType || (
+                    <span className="text-muted-foreground italic">
+                      Not provided
+                    </span>
+                  )}
+                </p>
+
+                <p className="text-base">
+                  pH Level:{' '}
+                  {fieldData.phLevel || (
+                    <span className="text-muted-foreground italic">
+                      Not provided
+                    </span>
+                  )}
+                </p>
+
+                <p className="text-base">
+                  Irrigation:{' '}
+                  {fieldData.irrigationMethod || (
+                    <span className="text-muted-foreground italic">
+                      Not provided
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-4 border-t border-border flex gap-4">
+                <Button
+                  variant="link"
+                  onClick={() => setIsEditing(true)}
+                  className="text-primary hover:underline font-medium p-0 h-auto"
+                >
+                  Edit
+                </Button>
+                {!isAdding && deleteField && selectedFieldId && (
+                  <>
+                    <span className="text-muted-foreground">|</span>
+                    <Button
+                      variant="link"
+                      onClick={() => deleteField(selectedFieldId)}
+                      className="text-destructive hover:underline font-medium p-0 h-auto"
+                    >
+                      Remove
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-6 max-w-4xl">
+                {/* Name */}
+                <div>
+                  <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+                    Field Name
+                  </Label>
+                  <Input
+                    type="text"
+                    name="name"
+                    value={fieldData.name || ''}
+                    onChange={handleChange}
+                    className="w-full font-semibold px-4 py-3 text-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Area */}
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Area
+                    </Label>
+                    <Input
+                      type="text"
+                      name="area"
+                      value={fieldData.area || ''}
+                      onChange={handleChange}
+                      placeholder="Area"
+                      className="w-full font-semibold px-4 py-3 text-sm"
+                    />
+                  </div>
+                  {/* Boundary */}
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Boundary Type
+                    </Label>
+                    <Input
+                      type="text"
+                      name="boundaryType"
+                      value={fieldData.boundaryType || ''}
+                      onChange={handleChange}
+                      className="w-full font-semibold px-4 py-3 text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Coordinates / Map */}
+                <div className="mt-6">
+                  <Label className="block text-xs font-bold text-white uppercase mb-2">
+                    Field Location (Draw Shape)
+                  </Label>
+                  <LocationPicker
+                    mode="polygon"
+                    readOnly={false}
+                    value={fieldData.coordinates}
+                    onChange={(val: any) => {
+                      setFieldData((prev) => {
+                        const updates: any = { ...prev, coordinates: val };
+                        // Auto-detect boundary type
+                        try {
+                          const parsed = JSON.parse(val);
+                          if (parsed.type) {
+                            if (parsed.type === 'Rectangle')
+                              updates.boundaryType = 'Rectangle';
+                            else if (parsed.type === 'Circle')
+                              updates.boundaryType = 'Circle';
+                            else updates.boundaryType = 'Polygon';
+                          }
+                        } catch (e) {}
+                        return updates;
+                      });
+                    }}
+                    center={
+                      parentFarmLocation && parentFarmLocation.latitude
+                        ? [
+                            parseFloat(parentFarmLocation.latitude),
+                            parseFloat(parentFarmLocation.longitude),
+                          ]
+                        : undefined
+                    }
+                    onAreaCalculated={(sqFt) => {
+                      let val = sqFt;
+                      if (fieldData.units === 'acres') val = sqFt / 43560;
+                      else if (fieldData.units === 'hectares')
+                        val = sqFt / 107639;
+
+                      setFieldData((prev) => ({
+                        ...prev,
+                        area: val.toFixed(2),
+                      }));
+                    }}
+                    height="350px"
+                  />
+                </div>
+
+                <hr className="border-border my-2" />
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Soil Type */}
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Soil Type
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-muted rounded-xl">
+                        <Layers size={18} className="text-foreground" />
+                      </div>
+                      <Input
+                        type="text"
+                        name="soilType"
+                        value={fieldData.soilType || ''}
+                        onChange={handleChange}
+                        className="w-full font-semibold px-4 py-3 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* pH Level */}
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Soil pH
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-muted rounded-xl">
+                        <FlaskConical size={18} className="text-foreground" />
+                      </div>
+                      <Input
+                        type="text"
+                        name="phLevel"
+                        value={fieldData.phLevel || ''}
+                        onChange={handleChange}
+                        className="w-full font-semibold px-4 py-3 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Irrigation */}
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Irrigation
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-muted rounded-xl">
+                        <Droplets size={18} className="text-foreground" />
+                      </div>
+                      <Input
+                        type="text"
+                        name="irrigationMethod"
+                        value={fieldData.irrigationMethod || ''}
+                        onChange={handleChange}
+                        className="w-full font-semibold px-4 py-3 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions for Field Tab */}
+              <div className="flex gap-3 mt-8 border-t border-border pt-6">
+                <Button
+                  onClick={handleSave}
+                  variant="default"
+                  className="w-fit rounded-xl text-xs font-bold"
+                  disabled={isSaving}
+                >
+                  {isSaving
+                    ? 'Saving...'
+                    : isAdding
+                      ? 'Save New Field'
+                      : 'Save Changes'}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsEditing(false);
+                    if (isAdding) {
+                      setIsAdding(false);
+                    } else if (selectedField) {
+                      setFieldData({
+                        name:
+                          selectedField.name || selectedField.fieldName || '',
+                        description: selectedField.description || '',
+                        area: selectedField.area || '',
+                        units: selectedField.units || 'acres',
+                        boundaryType: selectedField.boundaryType || '',
+                        coordinates: selectedField.coordinates || '',
+                        soilType: selectedField.soilType || '',
+                        phLevel: selectedField.phLevel || '',
+                        irrigationMethod: selectedField.irrigationMethod || '',
+                      });
+                    }
+                  }}
+                  variant="outline"
+                  className="w-fit rounded-xl text-xs font-bold"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Right: Field List */}
+        {!isAdding && fields && fields.length > 0 && (
+          <div>
+            <Label className="block text-[10px] uppercase font-bold text-white mb-4">
+              Select Field
+            </Label>
+            <ListBox
+              key={`field-list-${fields?.length}-${selectedFieldId}`}
+              items={fields.map((f: any) => {
+                const item: { id: string; label: string; subLabel?: string } = {
+                  id: f.id || f._id,
+                  label: f.name || f.fieldName,
+                };
+                if (f.area) {
+                  item.subLabel = `${f.area} ${f.units || 'acres'}`;
+                }
+                return item;
+              })}
+              selectedId={
+                selectedFieldId || selectedField?.id || selectedField?._id || ''
+              }
+              onSelect={setSelectedFieldId}
+              height="h-[220px]"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

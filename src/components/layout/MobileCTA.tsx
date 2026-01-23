@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Sun, Moon, Menu, X, LogOut } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/features/auth/useAuth';
@@ -36,10 +36,17 @@ const MobileCTA = () => {
   return (
     <header className="flex md:hidden flex-col fixed top-0 left-0 right-0 z-[100] bg-background/80 backdrop-blur-md border-b border-border transition-all duration-300">
       <div className="flex items-center justify-between px-4 h-16">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold text-foreground">CropDesk</h1>
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-        </div>
+        <Link
+          to="/"
+          onClick={() => setIsMenuOpen(false)}
+          className="flex items-center gap-2"
+        >
+          <img
+            src="/CropNow_Logo_1-D3AGwrH0.png"
+            alt="CropNow Logo"
+            className="h-8 w-auto object-contain"
+          />
+        </Link>
 
         <div className="flex items-center gap-3">
           <button
