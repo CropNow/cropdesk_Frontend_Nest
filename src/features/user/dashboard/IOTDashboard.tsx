@@ -138,6 +138,60 @@ const IOTDashboard = ({
 
   const categories: SensorCategory[] = [
     {
+      id: 'weather',
+      name: 'Weather Sensors',
+      count: 3,
+      icon: (
+        <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-500">
+          <Cloud size={20} />
+        </div>
+      ),
+      color: 'cyan',
+      previewSensors: [
+        { name: 'Rain Fall', value: '12mm', icon: <CloudRain size={12} /> },
+        { name: 'Wind Spd', value: '3.3m/s', icon: <Wind size={12} /> },
+        { name: 'Wind Dir', value: 'NE', icon: <Compass size={12} /> },
+      ],
+      details: [
+        {
+          name: 'Wind Direction',
+          value: 'NE',
+          unit: '',
+          icon: <Compass size={20} />,
+          color: 'purple',
+          status: 'Good',
+          hourlyData: [
+            45, 45, 50, 45, 40, 45, 50, 45, 45, 45, 50, 45, 40, 45, 50, 45, 45,
+            45, 50, 45, 40, 45, 50, 45,
+          ],
+        },
+        {
+          name: 'Wind Speed',
+          value: '3.3',
+          unit: 'm/s',
+          icon: <Wind size={20} />,
+          color: 'blue',
+          status: 'Good',
+          hourlyData: [
+            2, 2.5, 3, 3.2, 3.5, 3.3, 3.1, 2.8, 2.5, 2.2, 2, 2.5, 3, 3.5, 4,
+            3.8, 3.5, 3.2, 3, 2.8, 2.5, 2.2, 2, 2.5,
+          ],
+        },
+        {
+          name: 'Rain Fall',
+          value: '12',
+          unit: 'mm',
+          icon: <CloudRain size={20} />,
+          color: 'cyan',
+          status: 'Good',
+          hourlyData: [
+            0, 0, 0, 0, 0, 2, 5, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0,
+          ],
+        },
+      ],
+    },
+    {
       id: 'soil',
       name: 'Soil Sensors',
       count: 4,
@@ -148,37 +202,13 @@ const IOTDashboard = ({
       ),
       color: 'green',
       previewSensors: [
-        { name: 'Soil Moisture 1', value: '45%', icon: <Droplets size={12} /> },
-        { name: 'Soil Temp 1', value: '24°C', icon: <Thermometer size={12} /> },
-        { name: 'Soil Moisture 2', value: '42%', icon: <Droplets size={12} /> },
+        { name: 'Temp Surf', value: '24°C', icon: <Thermometer size={12} /> },
+        { name: 'Moist Surf', value: '45%', icon: <Droplets size={12} /> },
+        { name: 'Temp Root', value: '23°C', icon: <Thermometer size={12} /> },
       ],
       details: [
         {
-          name: 'Soil Moisture 1',
-          value: '45',
-          unit: '%',
-          icon: <Droplets size={20} />,
-          color: 'blue',
-          status: 'Good',
-          hourlyData: [
-            45, 46, 47, 48, 50, 52, 50, 48, 46, 45, 44, 43, 42, 42, 43, 44, 45,
-            46, 47, 48, 49, 48, 46, 45,
-          ],
-        },
-        {
-          name: 'Soil Moisture 2',
-          value: '42',
-          unit: '%',
-          icon: <Droplets size={20} />,
-          color: 'blue',
-          status: 'Good',
-          hourlyData: [
-            40, 41, 42, 43, 45, 46, 45, 43, 42, 41, 40, 40, 41, 42, 43, 44, 45,
-            44, 43, 42, 42, 41, 41, 42,
-          ],
-        },
-        {
-          name: 'Soil Temperature 1',
+          name: 'Soil Temperature at Surface',
           value: '24',
           unit: '°C',
           icon: <Thermometer size={20} />,
@@ -190,7 +220,19 @@ const IOTDashboard = ({
           ],
         },
         {
-          name: 'Soil Temperature 2',
+          name: 'Soil Moisture at Surface',
+          value: '45',
+          unit: '%',
+          icon: <Droplets size={20} />,
+          color: 'blue',
+          status: 'Good',
+          hourlyData: [
+            45, 46, 47, 48, 50, 52, 50, 48, 46, 45, 44, 43, 42, 42, 43, 44, 45,
+            46, 47, 48, 49, 48, 46, 45,
+          ],
+        },
+        {
+          name: 'Soil Temperature at Root',
           value: '23',
           unit: '°C',
           icon: <Thermometer size={20} />,
@@ -201,12 +243,24 @@ const IOTDashboard = ({
             21, 20, 20, 21, 22, 23, 23,
           ],
         },
+        {
+          name: 'Soil Moisture at Root',
+          value: '42',
+          unit: '%',
+          icon: <Droplets size={20} />,
+          color: 'blue',
+          status: 'Good',
+          hourlyData: [
+            40, 41, 42, 43, 45, 46, 45, 43, 42, 41, 40, 40, 41, 42, 43, 44, 45,
+            44, 43, 42, 42, 41, 41, 42,
+          ],
+        },
       ],
     },
     {
       id: 'air',
-      name: 'Air Quality Sensors',
-      count: 6,
+      name: 'Air Sensors',
+      count: 10,
       icon: (
         <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
           <Wind size={20} />
@@ -214,9 +268,9 @@ const IOTDashboard = ({
       ),
       color: 'blue',
       previewSensors: [
-        { name: 'PM 2.5', value: '35μg/m³', icon: <Activity size={12} /> },
+        { name: 'PM 2.5', value: '35μg', icon: <Activity size={12} /> },
         { name: 'CO2', value: '420ppm', icon: <CloudRain size={12} /> },
-        { name: 'O2', value: '20.9%', icon: <Wind size={12} /> },
+        { name: 'Temp', value: '28°C', icon: <Thermometer size={12} /> },
       ],
       details: [
         {
@@ -294,24 +348,18 @@ const IOTDashboard = ({
             415, 410, 405, 400, 395, 400, 405, 410, 415, 420, 425,
           ].map((v) => v / 8),
         },
-      ],
-    },
-    {
-      id: 'weather',
-      name: 'Weather Sensors',
-      count: 6,
-      icon: (
-        <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-500">
-          <Cloud size={20} />
-        </div>
-      ),
-      color: 'cyan',
-      previewSensors: [
-        { name: 'Air Temp', value: '28°C', icon: <Thermometer size={12} /> },
-        { name: 'Humidity', value: '68%', icon: <Droplets size={12} /> },
-        { name: 'Wind', value: '3.3m/s', icon: <Wind size={12} /> },
-      ],
-      details: [
+        {
+          name: 'Humidity',
+          value: '68',
+          unit: '%',
+          icon: <Droplets size={20} />,
+          color: 'cyan',
+          status: 'Good',
+          hourlyData: [
+            75, 78, 80, 82, 80, 75, 70, 68, 65, 62, 60, 58, 55, 53, 55, 58, 60,
+            63, 65, 68, 70, 72, 74, 75,
+          ],
+        },
         {
           name: 'Air Temperature',
           value: '28',
@@ -325,19 +373,7 @@ const IOTDashboard = ({
           ].map((v) => v * 2),
         },
         {
-          name: 'Relative Humidity',
-          value: '68',
-          unit: '%',
-          icon: <Droplets size={20} />,
-          color: 'cyan',
-          status: 'Good',
-          hourlyData: [
-            75, 78, 80, 82, 80, 75, 70, 68, 65, 62, 60, 58, 55, 53, 55, 58, 60,
-            63, 65, 68, 70, 72, 74, 75,
-          ],
-        },
-        {
-          name: 'Atmosphere Pressure',
+          name: 'Air Pressure',
           value: '1013',
           unit: 'hPa',
           icon: <Activity size={20} />,
@@ -361,30 +397,6 @@ const IOTDashboard = ({
             25, 20, 15, 10, 5,
           ],
         },
-        {
-          name: 'Wind Speed',
-          value: '3.3',
-          unit: 'm/s',
-          icon: <Wind size={20} />,
-          color: 'blue',
-          status: 'Good',
-          hourlyData: [
-            2, 2.5, 3, 3.2, 3.5, 3.3, 3.1, 2.8, 2.5, 2.2, 2, 2.5, 3, 3.5, 4,
-            3.8, 3.5, 3.2, 3, 2.8, 2.5, 2.2, 2, 2.5,
-          ],
-        },
-        {
-          name: 'Wind Direction',
-          value: 'NE',
-          unit: '',
-          icon: <Compass size={20} />,
-          color: 'purple',
-          status: 'Good',
-          hourlyData: [
-            45, 45, 50, 45, 40, 45, 50, 45, 45, 45, 50, 45, 40, 45, 50, 45, 45,
-            45, 50, 45, 40, 45, 50, 45,
-          ],
-        },
       ],
     },
     {
@@ -398,12 +410,12 @@ const IOTDashboard = ({
       ),
       color: 'yellow',
       previewSensors: [
-        { name: 'UV Index', value: '4', icon: <Sun size={12} /> },
-        { name: 'Solar Radiation', value: '680W/m²', icon: <Sun size={12} /> },
+        { name: 'UV Light', value: '4', icon: <Sun size={12} /> },
+        { name: 'Radiation', value: '680W', icon: <Sun size={12} /> },
       ],
       details: [
         {
-          name: 'UV Index',
+          name: 'UV Light',
           value: '4',
           unit: 'Index',
           icon: <Sun size={20} />,
@@ -415,7 +427,7 @@ const IOTDashboard = ({
           ].map((v) => v * 10),
         },
         {
-          name: 'Solar Radiation',
+          name: 'Radiation',
           value: '680',
           unit: 'W/m²',
           icon: <Sun size={20} />,
@@ -482,7 +494,7 @@ const IOTDashboard = ({
               {
                 icon: <Activity size={32} />,
                 label: 'Sensors',
-                value: '18',
+                value: '19',
                 subValue: (
                   <div className="flex items-center gap-1 text-xs text-purple-400 mt-2 uppercase font-bold tracking-tighter">
                     <Activity size={12} /> Active
