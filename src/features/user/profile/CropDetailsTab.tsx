@@ -379,5 +379,5 @@ const CropDetailsTab = () => {
     </div>
   );
 };
-
+//crop details tab
 export default CropDetailsTab;
