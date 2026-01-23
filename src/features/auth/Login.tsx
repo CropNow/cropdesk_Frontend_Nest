@@ -59,7 +59,7 @@ const Login = () => {
         password: formData.password || '',
       });
 
-      console.log(response);
+      console.log('FULL LOGIN RESPONSE:', response);
       // ✅ STORE REAL TOKENS
       if (response.accessToken) {
         localStorage.setItem('accessToken', response.accessToken);

@@ -51,6 +51,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(null);
           localStorage.removeItem('user');
           localStorage.removeItem('accessToken');
+          // NOTE: We deliberately do NOT remove 'registeredUser' here.
+          // That local data is our "offline profile source" and should persist until manually cleared or overwritten by a better profile.
         } else {
           // Optional: Set a flag for "Offline Mode" or just warn.
           // We keep the existing 'user' state (from localStorage) intact.

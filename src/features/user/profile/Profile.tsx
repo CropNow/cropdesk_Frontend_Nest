@@ -74,6 +74,8 @@ const ProfileContent = () => {
           ? `${currentUser.firstName} ${currentUser.lastName}`
           : currentUser.username || 'User';
 
+  React.useEffect(() => {
+    if (user) {
       setUserDetails({
         name: fullName,
         email: currentUser.email || '',

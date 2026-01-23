@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+#key files  
+*.pem
+*.key
+frontend_key.pem
