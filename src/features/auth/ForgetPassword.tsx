@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,13 @@ const ForgetPassword = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [bgImage, setBgImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    import('@/features/auth/asset/welcome_back.png').then((module) => {
+      setBgImage(module.default);
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,11 +39,13 @@ const ForgetPassword = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img
-          src="/src/features/auth/asset/welcome_back.png"
-          alt="Background"
-          className="w-full h-full object-cover opacity-80"
-        />
+        {bgImage && (
+          <img
+            src={bgImage}
+            alt="Background"
+            className="w-full h-full object-cover opacity-80"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
       </div>
 

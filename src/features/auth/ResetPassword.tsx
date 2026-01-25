@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { resetPassword } from './auth.api';
@@ -11,6 +11,13 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [bgImage, setBgImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    import('@/features/auth/asset/welcome_back.png').then((module) => {
+      setBgImage(module.default);
+    });
+  }, []);
 
   const [formData, setFormData] = useState({
     password: '',
@@ -66,11 +73,13 @@ const ResetPassword = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img
-          src="/src/features/auth/asset/welcome_back.png"
-          alt="Background"
-          className="w-full h-full object-cover opacity-80"
-        />
+        {bgImage && (
+          <img
+            src={bgImage}
+            alt="Background"
+            className="w-full h-full object-cover opacity-80"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
       </div>
 

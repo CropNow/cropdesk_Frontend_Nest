@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 import { useAuth } from './useAuth';
-import { login } from './auth.api';
+import { login, getMe } from './auth.api';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -70,12 +70,27 @@ const Login = () => {
 
       // ✅ STORE USER (if backend sends it later)
       // Check for user in 'user' prop OR 'data' prop (common API variance)
-      // Check for user in 'user' prop OR 'data' prop (common API variance)
+      // ✅ STORE USER (if backend sends it later)
+      // We check for user in 'user' prop OR 'data' prop (common API variance)
       let userFromResponse = response.user;
       if (!userFromResponse && (response as any).data) {
-        // Handle case where user is nested inside data (e.g., { data: { user: ... } })
         userFromResponse =
           (response as any).data.user || (response as any).data;
+      }
+
+      // 🔄 FETCH FULL PROFILE (to get firstName, lastName etc if missing in login response)
+      try {
+        const fullProfile = await getMe();
+        if (fullProfile) {
+          console.log('Fetched full profile after login:', fullProfile);
+          // Merge to ensure we have tokens + profile
+          userFromResponse = { ...userFromResponse, ...fullProfile };
+        }
+      } catch (profileErr) {
+        console.warn(
+          'Could not fetch full profile after login, using basic response',
+          profileErr
+        );
       }
 
       if (userFromResponse) {

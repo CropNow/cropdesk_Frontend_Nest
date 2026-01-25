@@ -1,17 +1,51 @@
 import { LogOut, Moon, Sun } from 'lucide-react';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+const AlertDialog = React.lazy(() =>
+  import('@/components/ui/alert-dialog').then((m) => ({
+    default: m.AlertDialog,
+  }))
+);
+const AlertDialogAction = React.lazy(() =>
+  import('@/components/ui/alert-dialog').then((m) => ({
+    default: m.AlertDialogAction,
+  }))
+);
+const AlertDialogCancel = React.lazy(() =>
+  import('@/components/ui/alert-dialog').then((m) => ({
+    default: m.AlertDialogCancel,
+  }))
+);
+const AlertDialogContent = React.lazy(() =>
+  import('@/components/ui/alert-dialog').then((m) => ({
+    default: m.AlertDialogContent,
+  }))
+);
+const AlertDialogDescription = React.lazy(() =>
+  import('@/components/ui/alert-dialog').then((m) => ({
+    default: m.AlertDialogDescription,
+  }))
+);
+const AlertDialogFooter = React.lazy(() =>
+  import('@/components/ui/alert-dialog').then((m) => ({
+    default: m.AlertDialogFooter,
+  }))
+);
+const AlertDialogHeader = React.lazy(() =>
+  import('@/components/ui/alert-dialog').then((m) => ({
+    default: m.AlertDialogHeader,
+  }))
+);
+const AlertDialogTitle = React.lazy(() =>
+  import('@/components/ui/alert-dialog').then((m) => ({
+    default: m.AlertDialogTitle,
+  }))
+);
+const AlertDialogTrigger = React.lazy(() =>
+  import('@/components/ui/alert-dialog').then((m) => ({
+    default: m.AlertDialogTrigger,
+  }))
+);
 import { logout } from '@/features/auth/auth.api';
 import { useAuth } from '@/features/auth/useAuth';
 import { useTheme } from '@/hooks/useTheme';
@@ -79,50 +113,52 @@ const DesktopNavbar = () => {
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
         </button>
 
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <button
-              className="p-2 rounded-lg bg-card border border-border text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all active:scale-95"
-              title="Logout"
-            >
-              <LogOut size={20} />
-            </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Are you sure you want to logout?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                You will be redirected to the login page.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-red-500 hover:bg-red-600 text-white"
-                onClick={async () => {
-                  try {
-                    await logout();
-                  } catch (error) {
-                    console.error('Logout failed', error);
-                  } finally {
-                    // Always clear local state and redirect
-                    localStorage.removeItem('accessToken');
-                    localStorage.removeItem('refreshToken');
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('isAuthenticated');
-                    setUser(null);
-
-                    navigate('/login?logout=success');
-                  }
-                }}
+        <Suspense fallback={null}>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                className="p-2 rounded-lg bg-card border border-border text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all active:scale-95"
+                title="Logout"
               >
-                Logout
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                <LogOut size={20} />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Are you sure you want to logout?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  You will be redirected to the login page.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-500 hover:bg-red-600 text-white"
+                  onClick={async () => {
+                    try {
+                      await logout();
+                    } catch (error) {
+                      console.error('Logout failed', error);
+                    } finally {
+                      // Always clear local state and redirect
+                      localStorage.removeItem('accessToken');
+                      localStorage.removeItem('refreshToken');
+                      localStorage.removeItem('user');
+                      localStorage.removeItem('isAuthenticated');
+                      setUser(null);
+
+                      navigate('/login?logout=success');
+                    }
+                  }}
+                >
+                  Logout
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </Suspense>
       </div>
     </header>
   );

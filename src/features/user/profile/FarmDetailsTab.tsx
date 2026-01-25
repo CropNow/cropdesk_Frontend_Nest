@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Map, Ruler, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import LocationPicker from '@/components/common/LocationPicker';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,8 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Subheading } from '@/components/common/Heading';
 import { ListBox } from '@/components/ui/list-box';
 import { useProfile } from './context/useProfile';
+import { useAuth } from '../../auth/useAuth';
 
 const FarmDetailsTab = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     selectedFarmer,
     selectedFarm,
@@ -150,8 +154,21 @@ const FarmDetailsTab = () => {
       setIsAdding(false);
       setIsEditing(false);
     } else {
+      // Requirement: Redirect new users to registration wizard if they haven't completed it
+      if (!user?.isOnboardingComplete && (!farms || farms.length === 0)) {
+        navigate('/register/farm-details'); // Redirect to farm step
+        return;
+      }
       setIsAdding(true);
     }
+  };
+
+  const startEditing = () => {
+    if (!user?.isOnboardingComplete && (!farms || farms.length === 0)) {
+      navigate('/register/farm-details');
+      return;
+    }
+    setIsEditing(true);
   };
 
   // Show "No Farm Selected" only if NOT adding AND no farm
@@ -261,7 +278,7 @@ const FarmDetailsTab = () => {
               <div className="pt-4 border-t border-border flex gap-4">
                 <Button
                   variant="link"
-                  onClick={() => setIsEditing(true)}
+                  onClick={startEditing}
                   className="text-primary hover:underline font-medium p-0 h-auto"
                 >
                   Edit
@@ -477,7 +494,6 @@ const FarmDetailsTab = () => {
               Select Farm
             </Label>
             <ListBox
-              key={`farm-list-${farms?.length}-${selectedFarmId}`}
               items={farms.map((f: any) => ({
                 id: f.id || f._id,
                 label: f.name || f.farmName,

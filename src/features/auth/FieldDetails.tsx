@@ -66,6 +66,14 @@ const FieldDetails = () => {
     }
   }, [fieldData]);
 
+  const [bgImage, setBgImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    import('@/features/auth/asset/filed info.png').then((module) => {
+      setBgImage(module.default);
+    });
+  }, []);
+
   const handleGeolocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -167,11 +175,13 @@ const FieldDetails = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img
-          src="field-details.png" // Placeholder, should be replaced or generic
-          alt="Field view"
-          className="w-full h-full object-cover opacity-80"
-        />
+        {bgImage && (
+          <img
+            src={bgImage} // Placeholder, should be replaced or generic
+            alt="Field view"
+            className="w-full h-full object-cover opacity-80"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
       </div>
 

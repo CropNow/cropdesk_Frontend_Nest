@@ -78,6 +78,14 @@ const FarmerDetails = () => {
     }
   }, [formData]);
 
+  const [bgImage, setBgImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    import('@/features/auth/asset/personal-info.png').then((module) => {
+      setBgImage(module.default);
+    });
+  }, []);
+
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
     // Navigate to next step
@@ -88,11 +96,13 @@ const FarmerDetails = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img
-          src="personal-info.png"
-          alt="Cattle in field"
-          className="w-full h-full object-cover opacity-80"
-        />
+        {bgImage && (
+          <img
+            src={bgImage}
+            alt="Cattle in field"
+            className="w-full h-full object-cover opacity-80"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
       </div>
 

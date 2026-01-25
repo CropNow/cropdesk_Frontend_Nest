@@ -5,6 +5,8 @@ import { ArrowLeft, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { useAuth } from './useAuth';
+import { saveStoredUser, setCurrentSession } from '@/utils/storage';
 
 const Alert = lazy(() =>
   import('@/components/ui/alert').then((m) => ({ default: m.Alert }))
@@ -18,6 +20,7 @@ const AlertDescription = lazy(() =>
 
 const Register = () => {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -71,7 +74,7 @@ const Register = () => {
       await import('./auth.api').then((m) => m.register(payload));
 
       // Auto-Login
-      const { login } = await import('./auth.api');
+      const { login, getMe } = await import('./auth.api');
       const loginResponse = await login({
         email: payload.email,
         password: payload.password,
@@ -81,19 +84,34 @@ const Register = () => {
         localStorage.setItem('accessToken', loginResponse.accessToken);
         localStorage.setItem('refreshToken', loginResponse.refreshToken);
 
-        // Update user context (handled by AuthProvider usually, but we can do manual trigger or reload)
-        // ideally useAuth() hook's login/setUser if available, but for now we set storage and reload/navigate
-        // We will assume AuthContext reads from storage on mount/update.
+        // Extract User
+        // Fetch full user details to ensure we have firstName/lastName
+        let userResult;
+        try {
+          userResult = await getMe();
+        } catch (error) {
+          console.warn(
+            'Failed to fetch user details after register, using login response:',
+            error
+          );
+          userResult =
+            loginResponse.user ||
+            (loginResponse as any).data?.user ||
+            (loginResponse as any).data;
+        }
 
-        // Force a context update if possible, or just navigate.
-        // We can't easily access setUser here effectively without passing it or using global state correctly.
-        // Assuming wrapping Register in useAuth() is done but we might need to call a function.
-        // For now, simple storage set and navigation to onboarding.
+        if (userResult) {
+          // Save to local storage collection and current session
+          saveStoredUser(userResult);
+          setCurrentSession(userResult);
+          // Update Context
+          setUser(userResult);
+        }
 
         setSuccess('Account created! Redirecting to setup...');
         setTimeout(() => {
           // Redirect to first step of profile creation
-          navigate('/farmer-details');
+          navigate('/register/farmer-details');
         }, 1000);
       } else {
         setSuccess('Account created successfully! Please log in.');

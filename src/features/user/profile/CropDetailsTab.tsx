@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Sprout, Calendar, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Subheading } from '@/components/common/Heading';
 import { ListBox } from '@/components/ui/list-box';
 import { useProfile } from './context/useProfile';
+import { useAuth } from '../../auth/useAuth';
 
 const CropDetailsTab = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     selectedField,
     selectedCrop,
@@ -44,9 +48,10 @@ const CropDetailsTab = () => {
       setIsEditing(true);
     } else if (selectedCrop) {
       setFormData({
-        cropName: selectedCrop.cropName || '',
+        cropName: selectedCrop.cropName || selectedCrop.name || '',
         plantingDate: selectedCrop.plantingDate || '',
-        harvestingDate: selectedCrop.harvestingDate || '',
+        harvestingDate:
+          selectedCrop.harvestingDate || selectedCrop.expectedHarvestDate || '',
         area: selectedCrop.area || '',
       });
       setIsEditing(false);
@@ -72,11 +77,17 @@ const CropDetailsTab = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const payload = {
+        ...formData,
+        name: formData.cropName,
+        expectedHarvestDate: formData.harvestingDate,
+      };
+
       if (isAdding) {
-        await addCrop(formData);
+        await addCrop(payload);
         setIsAdding(false);
       } else if (isEditing && selectedCropId) {
-        await updateCrop(selectedCropId, { ...selectedCrop, ...formData });
+        await updateCrop(selectedCropId, { ...selectedCrop, ...payload });
         setIsEditing(false);
       } else {
         setIsEditing(true);
@@ -93,8 +104,21 @@ const CropDetailsTab = () => {
       setIsAdding(false);
       setIsEditing(false);
     } else {
+      // Requirement: Redirect new users to registration wizard if they haven't completed it
+      if (!user?.isOnboardingComplete && (!crops || crops.length === 0)) {
+        navigate('/register/crop-details'); // Redirect to crop step
+        return;
+      }
       setIsAdding(true);
     }
+  };
+
+  const startEditing = () => {
+    if (!user?.isOnboardingComplete && (!crops || crops.length === 0)) {
+      navigate('/register/crop-details');
+      return;
+    }
+    setIsEditing(true);
   };
 
   // No Crop Selected View
@@ -214,7 +238,7 @@ const CropDetailsTab = () => {
               <div className="pt-4 border-t border-border flex gap-4">
                 <Button
                   variant="link"
-                  onClick={() => setIsEditing(true)}
+                  onClick={startEditing}
                   className="text-primary hover:underline font-medium p-0 h-auto"
                 >
                   Edit
@@ -356,11 +380,10 @@ const CropDetailsTab = () => {
               Select Crop
             </Label>
             <ListBox
-              key={`crop-list-${crops?.length}-${selectedCropId}`}
               items={crops.map((c: any) => {
                 const item: { id: string; label: string; subLabel?: string } = {
                   id: c.id || c._id,
-                  label: c.cropName || 'Unnamed Crop',
+                  label: c.cropName || c.name || 'Unnamed Crop',
                 };
                 if (c.plantingDate) {
                   item.subLabel = `Planted: ${c.plantingDate}`;

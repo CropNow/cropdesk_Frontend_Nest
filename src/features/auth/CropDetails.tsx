@@ -42,6 +42,14 @@ const CropDetails = () => {
     }
   }, [cropData]);
 
+  const [bgImage, setBgImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    import('@/features/auth/asset/filed info.png').then((module) => {
+      setBgImage(module.default);
+    });
+  }, []);
+
   /* API Imports handled at top of file, ensuring we have them */
 
   const finalizeRegistration = async (finalCropData?: any) => {
@@ -348,11 +356,13 @@ const CropDetails = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img
-          src="crop-details.png" // Placeholder
-          alt="Crops"
-          className="w-full h-full object-cover opacity-80"
-        />
+        {bgImage && (
+          <img
+            src={bgImage} // Placeholder
+            alt="Crops"
+            className="w-full h-full object-cover opacity-80"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
       </div>
 

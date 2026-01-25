@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layers, Droplets, FlaskConical, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import LocationPicker from '@/components/common/LocationPicker';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,8 +8,11 @@ import { Label } from '@/components/ui/label';
 import { ListBox } from '@/components/ui/list-box';
 import { Subheading } from '@/components/common/Heading';
 import { useProfile } from './context/useProfile';
+import { useAuth } from '../../auth/useAuth';
 
 const FieldDetailsTab = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     selectedFarm,
     selectedField,
@@ -56,11 +60,15 @@ const FieldDetailsTab = () => {
         name: selectedField.name || selectedField.fieldName || '',
         description: selectedField.description || '',
         area: selectedField.area || '',
-        units: selectedField.units || '',
-        boundaryType: selectedField.boundaryType || '',
-        soilType: selectedField.soilType || '',
-        phLevel: selectedField.phLevel || '',
-        irrigationMethod: selectedField.irrigationMethod || '',
+        units: selectedField.units || selectedField.unit || 'acres',
+        boundaryType:
+          selectedField.boundaryType || selectedField.boundary?.type || '',
+        soilType: selectedField.soilType || selectedField.soil?.type || '',
+        phLevel: selectedField.phLevel || selectedField.soil?.ph || '',
+        irrigationMethod:
+          selectedField.irrigationMethod ||
+          selectedField.irrigation?.type ||
+          '',
         coordinates: selectedField.coordinates || '',
       });
       setIsEditing(false);
@@ -80,10 +88,43 @@ const FieldDetailsTab = () => {
     setIsSaving(true);
     try {
       if (isAdding) {
-        await addField(fieldData);
+        // Construct payload for creation (nested structure)
+        const payload = {
+          ...fieldData,
+          unit: fieldData.units, // Backend often expects 'unit'
+          soil: {
+            type: fieldData.soilType,
+            ph: fieldData.phLevel,
+          },
+          irrigation: {
+            type: fieldData.irrigationMethod,
+          },
+          boundary: {
+            type: fieldData.boundaryType || 'Polygon',
+          },
+        };
+        await addField(payload);
         setIsAdding(false);
       } else if (isEditing && selectedFieldId) {
-        await updateField(selectedFieldId, { ...selectedField, ...fieldData });
+        // Construct payload for update (nested structure)
+        const payload = {
+          name: fieldData.name,
+          description: fieldData.description,
+          area: fieldData.area,
+          unit: fieldData.units,
+          soil: {
+            type: fieldData.soilType,
+            ph: fieldData.phLevel,
+          },
+          irrigation: {
+            type: fieldData.irrigationMethod,
+          },
+          boundary: {
+            type: fieldData.boundaryType,
+          },
+          coordinates: fieldData.coordinates,
+        };
+        await updateField(selectedFieldId, payload);
         setIsEditing(false);
       } else {
         setIsEditing(true);
@@ -100,8 +141,21 @@ const FieldDetailsTab = () => {
       setIsAdding(false);
       setIsEditing(false);
     } else {
+      // Requirement: Redirect new users to registration wizard if they haven't completed it
+      if (!user?.isOnboardingComplete && (!fields || fields.length === 0)) {
+        navigate('/register/field-details'); // Redirect to field step
+        return;
+      }
       setIsAdding(true);
     }
+  };
+
+  const startEditing = () => {
+    if (!user?.isOnboardingComplete && (!fields || fields.length === 0)) {
+      navigate('/register/field-details');
+      return;
+    }
+    setIsEditing(true);
   };
 
   if (!selectedField && !isAdding) {
@@ -219,7 +273,7 @@ const FieldDetailsTab = () => {
               <div className="pt-4 border-t border-border flex gap-4">
                 <Button
                   variant="link"
-                  onClick={() => setIsEditing(true)}
+                  onClick={startEditing}
                   className="text-primary hover:underline font-medium p-0 h-auto"
                 >
                   Edit
@@ -447,7 +501,6 @@ const FieldDetailsTab = () => {
               Select Field
             </Label>
             <ListBox
-              key={`field-list-${fields?.length}-${selectedFieldId}`}
               items={fields.map((f: any) => {
                 const item: { id: string; label: string; subLabel?: string } = {
                   id: f.id || f._id,

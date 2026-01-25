@@ -54,7 +54,7 @@ export interface Farm {
   id: string;
   name: string;
   farmerId?: string; // Relation ID
-  location?: string;
+  location?: any; // Was string, but backend uses Object (address, city, coordinates etc)
   area?: string;
   units?: string;
   fields: Field[];
@@ -67,6 +67,10 @@ export interface Field {
   units: string; // e.g., "acres"
   soilType?: string;
   irrigationMethod?: string;
+  boundary?: any; // GeoJSON
+  coordinates?: any; // Legacy/Frontend prop
+  soil?: any; // Backend prop
+  irrigation?: any; // Backend prop
   crops: Crop[];
 }
 

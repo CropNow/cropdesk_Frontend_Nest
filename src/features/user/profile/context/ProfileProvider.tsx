@@ -17,17 +17,18 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
   const [loading, setLoading] = useState<boolean>(true);
 
   // Derived Selected Objects
+  // Using String comparison to avoid type mismatches (number vs string) which causes UI to "lose" the selected item
   const selectedFarmer = farmers.find(
-    (f) => f.id === selectedFarmerId || f._id === selectedFarmerId
+    (f) => String(f.id || f._id) === String(selectedFarmerId)
   );
   const selectedFarm = selectedFarmer?.farms?.find(
-    (f: any) => f.id === selectedFarmId || f._id === selectedFarmId
+    (f: any) => String(f.id || f._id) === String(selectedFarmId)
   );
   const selectedField = selectedFarm?.fields?.find(
-    (f: any) => f.id === selectedFieldId || f._id === selectedFieldId
+    (f: any) => String(f.id || f._id) === String(selectedFieldId)
   );
   const selectedCrop = selectedField?.crops?.find(
-    (c: any) => c.id === selectedCropId || c._id === selectedCropId
+    (c: any) => String(c.id || c._id) === String(selectedCropId)
   );
 
   // Persistence Helper
@@ -68,15 +69,27 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
       user.fields = allFields;
       user.crops = allCrops;
 
-      // Update single object refs if they were deleted (optional, but good for consistency)
-      if (!allFarms.find((f) => f.id === user.farmDetails?.id))
-        user.farmDetails = {};
-      if (!allFields.find((f) => f.id === user.fieldDetails?.id))
-        user.fieldDetails = {};
-      if (!allCrops.find((c) => c.id === user.cropDetails?.id))
-        user.cropDetails = {};
-
       saveStoredUser(user);
+    }
+  };
+
+  // Helper to ensure ID consistency
+  const normalizeData = (data: any[]) => {
+    return data.map((item) => ({
+      ...item,
+      id: item.id || item._id, // Ensure 'id' property exists
+    }));
+  };
+
+  // Fetch Crops for a specific field on demand
+  const fetchCropsForField = async (fieldId: string) => {
+    try {
+      const { getCropsByField } = await import('@/features/auth/api/crop.api');
+      const rawCrops = await getCropsByField(fieldId);
+      return normalizeData(rawCrops || []);
+    } catch (e) {
+      console.warn(`Failed to fetch crops for field ${fieldId}`, e);
+      return [];
     }
   };
 
@@ -91,7 +104,8 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
         // Fetch Deep Hierarchy Manually
         const { getAllFarmers } =
           await import('@/features/auth/api/farmer.api');
-        const apiFarmers = await getAllFarmers();
+        const rawFarmers = await getAllFarmers();
+        const apiFarmers = normalizeData(rawFarmers || []);
 
         if (apiFarmers && apiFarmers.length > 0) {
           // Filter Farmers to only show those belonging to the current user
@@ -100,7 +114,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
             enrichedFarmers = apiFarmers.filter((f: any) => {
               const fUserId =
                 f.userId && typeof f.userId === 'object'
-                  ? f.userId._id
+                  ? f.userId._id || f.userId.id
                   : f.userId;
               return (
                 String(fUserId) === String(currentUser.id) ||
@@ -114,61 +128,46 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
           }
 
           // A. Fetch Farms
+          let allFarms: any[] = [];
           try {
             const { getFarms } = await import('@/features/auth/api/farm.api');
             const farmsResponse = await getFarms(1, 100);
-            const allFarms = farmsResponse.farms || [];
-
-            if (allFarms.length > 0) {
-              // Map Farms to Farmers
-              enrichedFarmers = enrichedFarmers.map((farmer: any) => {
-                const farmerId = farmer.id || (farmer as any)._id;
-                const myFarms = allFarms.filter((farm: any) => {
-                  const fOwner = farm.farmerId || (farm as any).farmer;
-                  const fOwnerId =
-                    typeof fOwner === 'object' && fOwner
-                      ? fOwner.id || fOwner._id
-                      : fOwner;
-                  return String(fOwnerId) === String(farmerId);
-                });
-                return { ...farmer, farms: myFarms };
-              });
-            }
+            allFarms = normalizeData(farmsResponse.farms || []);
           } catch (err) {
             console.error('Error fetching farms:', err);
           }
 
+          // Map Farms to Farmers
+          if (allFarms.length > 0) {
+            enrichedFarmers = enrichedFarmers.map((farmer: any) => {
+              const farmerId = farmer.id;
+              const myFarms = allFarms.filter((farm: any) => {
+                const fOwner = farm.farmerId || (farm as any).farmer;
+                const fOwnerId =
+                  typeof fOwner === 'object' && fOwner
+                    ? fOwner.id || fOwner._id
+                    : fOwner;
+                return String(fOwnerId) === String(farmerId);
+              });
+              return { ...farmer, farms: myFarms };
+            });
+          }
+
           // B. Fetch Fields (Global fetch)
+          // We fetch all fields but optimize matching
           try {
             const { getFields } = await import('@/features/auth/api/field.api');
-            const allFields = await getFields({}); // Fetch all fields for user
+            const rawFields = await getFields({});
+            const allFields = normalizeData(rawFields || []);
 
             if (allFields.length > 0) {
-              // C. Fetch Crops for these fields (N+1 but necessary if no global crop endpoint)
-              const { getCropsByField } =
-                await import('@/features/auth/api/crop.api');
-
-              // Promise.all to fetch crops for each field
-              const fieldsWithCrops = await Promise.all(
-                allFields.map(async (field: any) => {
-                  const fieldId = field.id || (field as any)._id;
-                  try {
-                    const crops = await getCropsByField(fieldId);
-                    return { ...field, crops: crops || [] };
-                  } catch (e) {
-                    // console.warn(`Failed to fetch crops for field ${fieldId}`, e);
-                    return { ...field, crops: [] };
-                  }
-                })
-              );
-
-              // Map Fields (with crops) to Farms
+              // Map Fields to Farms
               enrichedFarmers = enrichedFarmers.map((farmer: any) => {
                 if (!farmer.farms) return farmer;
 
                 const enrichedFarms = farmer.farms.map((farm: any) => {
-                  const farmId = farm.id || (farm as any)._id;
-                  const myFields = fieldsWithCrops.filter((field: any) => {
+                  const farmId = farm.id;
+                  const myFields = allFields.filter((field: any) => {
                     const fFarm = field.farmId || field.farm;
                     const fFarmId =
                       typeof fFarm === 'object' && fFarm
@@ -176,13 +175,20 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
                         : fFarm;
                     return String(fFarmId) === String(farmId);
                   });
-                  return { ...farm, fields: myFields };
+
+                  // Initialize crops array but DO NOT fetch them yet
+                  const fieldsWithPlaceholders = myFields.map((field: any) => ({
+                    ...field,
+                    crops: [], // Placeholder, will be fetched on select
+                  }));
+
+                  return { ...farm, fields: fieldsWithPlaceholders };
                 });
                 return { ...farmer, farms: enrichedFarms };
               });
             }
           } catch (err) {
-            console.error('Error fetching fields/crops:', err);
+            console.error('Error fetching fields:', err);
           }
 
           setFarmers(enrichedFarmers);
@@ -191,32 +197,15 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
           if (enrichedFarmers.length > 0) {
             const firstFarmer = enrichedFarmers[0];
             if (firstFarmer) {
-              const firstFarmerId = firstFarmer.id || (firstFarmer as any)._id;
-              setSelectedFarmerId(firstFarmerId);
-
-              if (firstFarmer.farms && firstFarmer.farms.length > 0) {
+              handleSetSelectedFarmerId(firstFarmer.id);
+              if (firstFarmer.farms?.length > 0) {
                 const firstFarm = firstFarmer.farms[0];
-                if (firstFarm) {
-                  const firstFarmId = firstFarm.id || (firstFarm as any)._id;
-                  setSelectedFarmId(firstFarmId);
-
-                  if (firstFarm.fields && firstFarm.fields.length > 0) {
-                    const firstField = firstFarm.fields[0];
-                    if (firstField) {
-                      const firstFieldId =
-                        firstField.id || (firstField as any)._id;
-                      setSelectedFieldId(firstFieldId);
-
-                      if (firstField.crops && firstField.crops.length > 0) {
-                        const firstCrop = firstField.crops[0];
-                        if (firstCrop) {
-                          const firstCropId =
-                            firstCrop.id || (firstCrop as any)._id;
-                          setSelectedCropId(firstCropId);
-                        }
-                      }
-                    }
-                  }
+                handleSetSelectedFarmId(firstFarm.id);
+                if (firstFarm.fields?.length > 0) {
+                  const firstField = firstFarm.fields[0];
+                  // Only set ID, which will trigger lazy load if we implement it in effect
+                  // For now, simple set
+                  handleSetSelectedFieldId(firstField.id);
                 }
               }
             }
@@ -240,13 +229,16 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
     try {
       const { createFarmer } = await import('@/features/auth/api/farmer.api');
       const createdFarmer = await createFarmer(newFarmer);
+      const normalizedFarmer = {
+        ...createdFarmer,
+        id: createdFarmer.id || (createdFarmer as any)._id,
+      };
 
-      const updated = [...farmers, { ...createdFarmer, farms: [] }];
+      const updated = [...farmers, { ...normalizedFarmer, farms: [] }];
       setFarmers(updated);
       persistFarmers(updated);
 
-      const newId = createdFarmer.id || (createdFarmer as any)._id;
-      setSelectedFarmerId(newId);
+      handleSetSelectedFarmerId(normalizedFarmer.id);
     } catch (error) {
       console.error('Failed to create farmer', error);
       alert('Failed to create farmer.');
@@ -257,9 +249,13 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
     try {
       const { updateFarmer } = await import('@/features/auth/api/farmer.api');
       const updatedFarmerRes = await updateFarmer(id, updates);
+      const normalizedRes = {
+        ...updatedFarmerRes,
+        id: updatedFarmerRes.id || (updatedFarmerRes as any)._id,
+      };
 
       const updated = farmers.map((f) =>
-        f.id === id || f._id === id ? { ...f, ...updatedFarmerRes } : f
+        f.id === id || f._id === id ? { ...f, ...normalizedRes } : f
       );
       setFarmers(updated);
       persistFarmers(updated);
@@ -280,9 +276,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
 
       if (selectedFarmerId === id) {
         if (updated.length > 0) {
-          const nextId = updated[0].id || updated[0]._id;
-          setSelectedFarmerId(nextId);
-          // Need to cascade select down logic here technically but simplified for now
+          handleSetSelectedFarmerId(updated[0].id || updated[0]._id);
         } else {
           setSelectedFarmerId('');
           setSelectedFarmId('');
@@ -303,42 +297,77 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
     try {
       const { createFarm } = await import('@/features/auth/api/farm.api');
 
-      // Sanitize location to string if it's an object, to satisfy backend expectation
       const farmPayload = { ...newFarm, farmerId: selectedFarmerId };
-      if (farmPayload.location && typeof farmPayload.location === 'object') {
-        farmPayload.location = JSON.stringify(farmPayload.location);
-      }
 
-      // Ensure area is a number
-      if (farmPayload.area) {
+      // Sanitize Area
+      if (
+        farmPayload.area !== undefined &&
+        farmPayload.area !== '' &&
+        !isNaN(Number(farmPayload.area))
+      ) {
         farmPayload.area = Number(farmPayload.area);
+      } else {
+        delete farmPayload.area; // Remove if empty/invalid
       }
 
-      console.log(
-        'DEBUG: Sending createFarm payload:',
-        JSON.stringify(farmPayload, null, 2)
-      );
+      // Sanitize Location Data for Backend
+      if (farmPayload.location) {
+        const loc = { ...farmPayload.location };
+
+        // Latitude
+        if (
+          loc.latitude !== undefined &&
+          loc.latitude !== '' &&
+          !isNaN(Number(loc.latitude))
+        ) {
+          loc.latitude = Number(loc.latitude);
+        } else {
+          delete loc.latitude;
+        }
+
+        // Longitude
+        if (
+          loc.longitude !== undefined &&
+          loc.longitude !== '' &&
+          !isNaN(Number(loc.longitude))
+        ) {
+          loc.longitude = Number(loc.longitude);
+        } else {
+          delete loc.longitude;
+        }
+
+        farmPayload.location = loc;
+      }
+
+      console.log('Creating Farm Payload:', farmPayload);
 
       const createdFarm = await createFarm(farmPayload);
-      console.log('DEBUG: Create Farm Success:', createdFarm);
-      const createdFarmId = createdFarm.id || (createdFarm as any)._id;
+      const normalizedFarm = {
+        ...createdFarm,
+        id: createdFarm.id || (createdFarm as any)._id,
+        fields: [],
+      };
 
       const updated = farmers.map((f) => {
         if (f.id === selectedFarmerId || f._id === selectedFarmerId) {
-          // Initialize fields array for the new farm
-          const farmWithStats = { ...createdFarm, fields: [] };
-          return { ...f, farms: [...(f.farms || []), farmWithStats] };
+          return { ...f, farms: [...(f.farms || []), normalizedFarm] };
         }
         return f;
       });
       setFarmers(updated);
       persistFarmers(updated);
-      setSelectedFarmId(createdFarmId);
+
+      handleSetSelectedFarmId(normalizedFarm.id);
     } catch (error: any) {
-      console.error('DEBUG: Create Farm Error Response:', error.response?.data);
-      console.error('DEBUG: Create Farm Error Status:', error.response?.status);
-      console.error('Failed to create farm', error);
-      alert('Failed to create farm.');
+      console.error(
+        'Failed to create farm. Payload:',
+        newFarm,
+        'Error:',
+        error
+      );
+      alert(
+        `Failed to create farm: ${error.response?.data?.message || error.message}`
+      );
     }
   };
 
@@ -347,22 +376,37 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
       const { updateFarm } = await import('@/features/auth/api/farm.api');
 
       const farmPayload = { ...updates };
-      if (farmPayload.location && typeof farmPayload.location === 'object') {
-        farmPayload.location = JSON.stringify(farmPayload.location);
-      }
 
-      // Ensure area is a number
-      if (farmPayload.area) {
+      // Sanitize Area
+      if (
+        farmPayload.area !== undefined &&
+        farmPayload.area !== '' &&
+        !isNaN(Number(farmPayload.area))
+      ) {
         farmPayload.area = Number(farmPayload.area);
       }
 
+      // Sanitize Location (if updating location)
+      if (farmPayload.location) {
+        const loc = { ...farmPayload.location };
+        if (loc.latitude && !isNaN(Number(loc.latitude)))
+          loc.latitude = Number(loc.latitude);
+        if (loc.longitude && !isNaN(Number(loc.longitude)))
+          loc.longitude = Number(loc.longitude);
+        farmPayload.location = loc;
+      }
+
       const updatedFarm = await updateFarm(id, farmPayload);
+      const normalizedRes = {
+        ...updatedFarm,
+        id: updatedFarm.id || (updatedFarm as any)._id,
+      };
 
       const updated = farmers.map((farmer) => {
         if (farmer.id === selectedFarmerId || farmer._id === selectedFarmerId) {
           const updatedFarms = farmer.farms.map((farm: any) =>
             farm.id === id || farm._id === id
-              ? { ...farm, ...updatedFarm }
+              ? { ...farm, ...normalizedRes }
               : farm
           );
           return { ...farmer, farms: updatedFarms };
@@ -410,23 +454,44 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
 
     try {
       const { createField } = await import('@/features/auth/api/field.api');
-
       const fieldPayload = { ...newField };
-      if (fieldPayload.area) {
+
+      // Sanitize Area
+      if (
+        fieldPayload.area !== undefined &&
+        fieldPayload.area !== '' &&
+        !isNaN(Number(fieldPayload.area))
+      ) {
         fieldPayload.area = Number(fieldPayload.area);
+      } else {
+        delete fieldPayload.area;
       }
 
-      console.log(
-        'DEBUG: Sending createField payload:',
-        JSON.stringify(fieldPayload, null, 2),
-        'for farmId:',
-        selectedFarmId
-      );
+      // Ensure coordinates is sent as Object if it's a a JSON string
+      if (fieldPayload.coordinates) {
+        if (typeof fieldPayload.coordinates === 'string') {
+          try {
+            fieldPayload.coordinates = JSON.parse(fieldPayload.coordinates);
+          } catch (e) {
+            console.warn(
+              'Invalid coordinates string, removing:',
+              fieldPayload.coordinates
+            );
+            delete fieldPayload.coordinates;
+          }
+        }
+      } else {
+        delete fieldPayload.coordinates;
+      }
+
+      console.log('Creating Field Payload:', fieldPayload);
 
       const createdField = await createField(selectedFarmId, fieldPayload);
-      console.log('DEBUG: Create Field Success:', createdField);
-
-      const createdFieldId = createdField.id || (createdField as any)._id;
+      const normalizedField = {
+        ...createdField,
+        id: createdField.id || (createdField as any)._id,
+        crops: [],
+      };
 
       const updated = farmers.map((farmer) => {
         if (farmer.id === selectedFarmerId || farmer._id === selectedFarmerId) {
@@ -434,8 +499,10 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
             ...farmer,
             farms: farmer.farms.map((farm: any) => {
               if (farm.id === selectedFarmId || farm._id === selectedFarmId) {
-                const field = { ...createdField, crops: [] };
-                return { ...farm, fields: [...(farm.fields || []), field] };
+                return {
+                  ...farm,
+                  fields: [...(farm.fields || []), normalizedField],
+                };
               }
               return farm;
             }),
@@ -445,25 +512,35 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
       });
       setFarmers(updated);
       persistFarmers(updated);
-      setSelectedFieldId(createdFieldId);
+
+      handleSetSelectedFieldId(normalizedField.id);
     } catch (error: any) {
-      console.error(
-        'DEBUG: Create Field Error Response:',
-        error.response?.data
-      );
-      console.error(
-        'DEBUG: Create Field Error Status:',
-        error.response?.status
-      );
       console.error('Failed to create field', error);
-      alert('Failed to create field.');
+      alert(
+        `Failed to create field: ${error.response?.data?.message || 'Unknown error'}`
+      );
     }
   };
 
   const updateField = async (id: string, updates: any) => {
     try {
       const { updateField } = await import('@/features/auth/api/field.api');
-      const updatedField = await updateField(id, updates);
+
+      const fieldPayload = { ...updates };
+      if (
+        fieldPayload.coordinates &&
+        typeof fieldPayload.coordinates === 'string'
+      ) {
+        try {
+          fieldPayload.coordinates = JSON.parse(fieldPayload.coordinates);
+        } catch (e) {}
+      }
+
+      const updatedField = await updateField(id, fieldPayload);
+      const normalizedRes = {
+        ...updatedField,
+        id: updatedField.id || (updatedField as any)._id,
+      };
 
       const updated = farmers.map((farmer) => {
         if (farmer.id === selectedFarmerId || farmer._id === selectedFarmerId) {
@@ -475,7 +552,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
                   ...farm,
                   fields: farm.fields.map((field: any) =>
                     field.id === id || field._id === id
-                      ? { ...field, ...updatedField }
+                      ? { ...field, ...normalizedRes }
                       : field
                   ),
                 };
@@ -535,9 +612,13 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
     if (!selectedFieldId || !selectedFarmId || !selectedFarmerId) return;
 
     try {
+      console.log('Creating Crop Payload:', newCrop);
       const { createCrop } = await import('@/features/auth/api/crop.api');
       const createdCrop = await createCrop(selectedFieldId, newCrop);
-      const createdCropId = createdCrop.id || (createdCrop as any)._id;
+      const normalizedCrop = {
+        ...createdCrop,
+        id: createdCrop.id || (createdCrop as any)._id,
+      };
 
       const updated = farmers.map((farmer) => {
         if (farmer.id === selectedFarmerId || farmer._id === selectedFarmerId) {
@@ -554,7 +635,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
                     ) {
                       return {
                         ...field,
-                        crops: [...(field.crops || []), createdCrop],
+                        crops: [...(field.crops || []), normalizedCrop],
                       };
                     }
                     return field;
@@ -569,10 +650,12 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
       });
       setFarmers(updated);
       persistFarmers(updated);
-      setSelectedCropId(createdCropId);
-    } catch (error) {
+      handleSetSelectedCropId(normalizedCrop.id);
+    } catch (error: any) {
       console.error('Failed to create crop', error);
-      alert('Failed to create crop.');
+      alert(
+        `Failed to create crop: ${error.response?.data?.message || 'Unknown error'}`
+      );
     }
   };
 
@@ -580,6 +663,10 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
     try {
       const { updateCrop } = await import('@/features/auth/api/crop.api');
       const updatedCropRes = await updateCrop(id, updates);
+      const normalizedRes = {
+        ...updatedCropRes,
+        id: updatedCropRes.id || (updatedCropRes as any)._id,
+      };
 
       const updated = farmers.map((farmer) => {
         if (farmer.id === selectedFarmerId || farmer._id === selectedFarmerId) {
@@ -598,7 +685,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
                         ...field,
                         crops: field.crops.map((crop: any) =>
                           crop.id === id || crop._id === id
-                            ? { ...crop, ...updatedCropRes }
+                            ? { ...crop, ...normalizedRes }
                             : crop
                         ),
                       };
@@ -665,40 +752,171 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
     }
   };
 
-  // Wrapper for selecting Logic to handle hierarchy selection
-  const handleSetSelectedFarmerId = (id: string) => {
-    setSelectedFarmerId(id);
-    // Logic from Profile.tsx handleFarmerSelect
-    const farmer = farmers.find((f) => f.id === id || f._id === id);
-    if (farmer && farmer.farms && farmer.farms.length > 0) {
-      const firstFarm = farmer.farms[0];
-      const firstFarmId = firstFarm.id || firstFarm._id;
-      setSelectedFarmId(firstFarmId);
-      if (firstFarm.fields && firstFarm.fields.length > 0) {
-        const firstField = firstFarm.fields[0];
-        const firstFieldId = firstField.id || firstField._id;
-        setSelectedFieldId(firstFieldId);
-      } else {
-        setSelectedFieldId('');
+  // Wrapper for selecting Logic to handle hierarchy selection & FRESH FETCH
+  const handleSetSelectedFarmerId = async (id: string) => {
+    setSelectedFarmerId(String(id));
+    setSelectedFarmId('');
+    setSelectedFieldId('');
+    setSelectedCropId('');
+
+    if (!id) return;
+
+    try {
+      // FRESH FETCH for Details
+      const { getFarmerById } = await import('@/features/auth/api/farmer.api');
+      const freshFarmer = await getFarmerById(id);
+
+      // Update this farmer in the state with fresh details
+      setFarmers((prev) =>
+        prev.map((f) =>
+          String(f.id || f._id) === String(id) ? { ...f, ...freshFarmer } : f
+        )
+      );
+
+      // Auto Select First Farm logic
+      if (freshFarmer && freshFarmer.farms && freshFarmer.farms.length > 0) {
+        const firstFarm = freshFarmer.farms[0];
+        if (firstFarm) {
+          handleSetSelectedFarmId(firstFarm.id || (firstFarm as any)._id);
+        }
       }
-    } else {
-      setSelectedFarmId('');
-      setSelectedFieldId('');
+    } catch (e) {
+      console.error('Failed to fetch fresh farmer details', e);
     }
   };
 
-  const handleSetSelectedFarmId = (id: string) => {
-    setSelectedFarmId(id);
-    // Logic from Profile.tsx handleFarmSelect
-    const farm = selectedFarmer?.farms?.find(
-      (f: any) => f.id === id || f._id === id
-    );
-    if (farm && farm.fields && farm.fields.length > 0) {
-      const firstField = farm.fields[0];
-      const firstFieldId = firstField.id || firstField._id;
-      setSelectedFieldId(firstFieldId);
-    } else {
-      setSelectedFieldId('');
+  const handleSetSelectedFarmId = async (id: string) => {
+    setSelectedFarmId(String(id));
+    setSelectedFieldId('');
+    setSelectedCropId('');
+
+    if (!id) return;
+
+    try {
+      const { getFarmById } = await import('@/features/auth/api/farm.api');
+      const freshFarm = await getFarmById(id);
+
+      setFarmers((prev) => {
+        return prev.map((farmer) => {
+          if (String(farmer.id || farmer._id) === String(selectedFarmerId)) {
+            return {
+              ...farmer,
+              farms: farmer.farms.map((f: any) =>
+                String(f.id || f._id) === String(id)
+                  ? { ...f, ...freshFarm }
+                  : f
+              ),
+            };
+          }
+          return farmer;
+        });
+      });
+
+      // Auto Select First Field
+      if (freshFarm && freshFarm.fields && freshFarm.fields.length > 0) {
+        const firstField = freshFarm.fields[0];
+        if (firstField) {
+          handleSetSelectedFieldId(firstField.id || (firstField as any)._id);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch fresh farm details', e);
+    }
+  };
+
+  const handleSetSelectedFieldId = async (id: string) => {
+    setSelectedFieldId(String(id));
+    setSelectedCropId('');
+
+    if (!id) return;
+
+    try {
+      const { getFieldById } = await import('@/features/auth/api/field.api');
+      // We also need crops for this field since we optimized them away!
+      const { getCropsByField } = await import('@/features/auth/api/crop.api');
+
+      const freshField = await getFieldById(id);
+      const freshCropsRaw = await getCropsByField(id);
+      const freshCrops = normalizeData(freshCropsRaw || []);
+
+      setFarmers((prev) => {
+        return prev.map((farmer) => {
+          if (String(farmer.id || farmer._id) === String(selectedFarmerId)) {
+            return {
+              ...farmer,
+              farms: farmer.farms.map((farm: any) => {
+                if (String(farm.id || farm._id) === String(selectedFarmId)) {
+                  return {
+                    ...farm,
+                    fields: farm.fields.map((field: any) =>
+                      String(field.id || field._id) === String(id)
+                        ? { ...field, ...freshField, crops: freshCrops }
+                        : field
+                    ),
+                  };
+                }
+                return farm;
+              }),
+            };
+          }
+          return farmer;
+        });
+      });
+
+      // Auto Select First Crop
+      if (freshCrops && freshCrops.length > 0) {
+        handleSetSelectedCropId(freshCrops[0].id);
+      }
+    } catch (e) {
+      console.error('Failed to fetch fresh field details', e);
+    }
+  };
+
+  const handleSetSelectedCropId = async (id: string) => {
+    setSelectedCropId(String(id));
+
+    if (!id) return;
+
+    try {
+      const { getCropById } = await import('@/features/auth/api/crop.api');
+      const freshCrop = await getCropById(id);
+
+      setFarmers((prev) => {
+        return prev.map((farmer) => {
+          if (String(farmer.id || farmer._id) === String(selectedFarmerId)) {
+            return {
+              ...farmer,
+              farms: farmer.farms.map((farm: any) => {
+                if (String(farm.id || farm._id) === String(selectedFarmId)) {
+                  return {
+                    ...farm,
+                    fields: farm.fields.map((field: any) => {
+                      if (
+                        String(field.id || field._id) ===
+                        String(selectedFieldId)
+                      ) {
+                        return {
+                          ...field,
+                          crops: field.crops.map((crop: any) =>
+                            String(crop.id || crop._id) === String(id)
+                              ? { ...crop, ...freshCrop }
+                              : crop
+                          ),
+                        };
+                      }
+                      return field;
+                    }),
+                  };
+                }
+                return farm;
+              }),
+            };
+          }
+          return farmer;
+        });
+      });
+    } catch (e) {
+      console.error('Failed to fetch fresh crop details', e);
     }
   };
 
@@ -717,8 +935,8 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
         selectedCrop,
         setSelectedFarmerId: handleSetSelectedFarmerId,
         setSelectedFarmId: handleSetSelectedFarmId,
-        setSelectedFieldId,
-        setSelectedCropId,
+        setSelectedFieldId: handleSetSelectedFieldId,
+        setSelectedCropId: handleSetSelectedCropId,
         addFarmer,
         updateFarmer,
         deleteFarmer,

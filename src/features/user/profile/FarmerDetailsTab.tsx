@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { User, Phone, Mail, Plus } from 'lucide-react';
+import { User as UserIcon, Phone, Mail, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ListBox } from '@/components/ui/list-box';
 import { Subheading } from '@/components/common/Heading';
 import { useProfile } from './context/useProfile';
+import { useAuth } from '../../auth/useAuth';
 
-const FarmerDetailsTab = (
-  {
-    // Keep props optional or remove if not needed at all.
-    // To minimize breaking changes in parent, we can keep them optional but ignore them,
-    // OR we fully remove them since parent (Profile.tsx) is also under our control.
-    // I will remove them to enforce context usage as per plan.
-  }
-) => {
+const FarmerDetailsTab = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     farmers,
     selectedFarmer,
@@ -104,8 +101,22 @@ const FarmerDetailsTab = (
       setIsAdding(false);
       setIsEditing(false);
     } else {
+      // Requirement: Redirect new users to registration wizard if they haven't completed it
+      if (!user?.isOnboardingComplete && (!farmers || farmers.length === 0)) {
+        console.log('User incomplete, redirecting to Onboarding...');
+        navigate('/register/farmer-details');
+        return;
+      }
       setIsAdding(true);
     }
+  };
+
+  const startEditing = () => {
+    if (!user?.isOnboardingComplete && (!farmers || farmers.length === 0)) {
+      navigate('/register/farmer-details');
+      return;
+    }
+    setIsEditing(true);
   };
 
   return (
@@ -195,7 +206,7 @@ const FarmerDetailsTab = (
               <div className="pt-4 border-t border-border flex gap-4">
                 <Button
                   variant="link"
-                  onClick={() => setIsEditing(true)}
+                  onClick={startEditing}
                   className="text-primary hover:underline font-medium p-0 h-auto"
                 >
                   Edit
@@ -224,7 +235,7 @@ const FarmerDetailsTab = (
                 </Label>
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-muted rounded-xl">
-                    <User size={18} className="text-foreground" />
+                    <UserIcon size={18} className="text-foreground" />
                   </div>
                   <Input
                     type="text"
@@ -392,7 +403,6 @@ const FarmerDetailsTab = (
               Select Farmer
             </Label>
             <ListBox
-              key={`farmer-list-${farmers.length}-${selectedFarmerId}`}
               items={farmers.map((f, index) => ({
                 id: f.id || f._id || `temp-${index}`,
                 label: f.name || 'Unnamed',
