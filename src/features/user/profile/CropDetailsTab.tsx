@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sprout, Calendar, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
+import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Subheading } from '@/components/common/Heading';
@@ -70,11 +70,27 @@ const CropDetailsTab = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.cropName.trim()) newErrors.cropName = 'Crop name is required';
+    if (!formData.plantingDate.trim()) newErrors.plantingDate = 'Planting date is required';
+    if (!formData.harvestingDate.trim()) newErrors.harvestingDate = 'Harvesting date is required';
+    if (!formData.area.toString().trim()) newErrors.area = 'Area is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
+    if (!validateForm()) return;
+
     setIsSaving(true);
     try {
       const payload = {
@@ -269,13 +285,14 @@ const CropDetailsTab = () => {
                     <div className="p-3 bg-muted rounded-xl">
                       <Sprout size={18} className="text-foreground" />
                     </div>
-                    <Input
+                    <FormInput
                       type="text"
                       name="cropName"
                       value={formData.cropName}
                       onChange={handleChange}
                       className="w-full font-semibold px-4 py-3 text-sm"
                       placeholder="e.g. Wheat, Corn"
+                      error={errors.cropName || ''}
                     />
                   </div>
                 </div>
@@ -290,12 +307,13 @@ const CropDetailsTab = () => {
                       <div className="p-3 bg-muted rounded-xl">
                         <Calendar size={18} className="text-foreground" />
                       </div>
-                      <Input
+                      <FormInput
                         type="date"
                         name="plantingDate"
                         value={formData.plantingDate}
                         onChange={handleChange}
                         className="w-full font-semibold px-4 py-3 text-sm"
+                        error={errors.plantingDate || ''}
                       />
                     </div>
                   </div>
@@ -309,12 +327,13 @@ const CropDetailsTab = () => {
                       <div className="p-3 bg-muted rounded-xl">
                         <Calendar size={18} className="text-foreground" />
                       </div>
-                      <Input
+                      <FormInput
                         type="date"
                         name="harvestingDate"
                         value={formData.harvestingDate}
                         onChange={handleChange}
                         className="w-full font-semibold px-4 py-3 text-sm"
+                        error={errors.harvestingDate || ''}
                       />
                     </div>
                   </div>
@@ -325,12 +344,13 @@ const CropDetailsTab = () => {
                   <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
                     Cultivation Area (Acres)
                   </Label>
-                  <Input
+                  <FormInput
                     type="text"
                     name="area"
                     value={formData.area}
                     onChange={handleChange}
                     className="w-full font-semibold px-4 py-3 text-sm"
+                    error={errors.area || ''}
                   />
                 </div>
               </div>

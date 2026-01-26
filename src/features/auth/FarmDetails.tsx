@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus } from 'lucide-react';
 import LocationPicker from '@/components/common/LocationPicker';
-import { Input } from '@/components/ui/input';
+import { FormInput } from '@/components/common/FormInput';
+import { FormTextarea } from '@/components/common/FormTextarea';
+import { FormDropdown } from '@/components/common/FormDropdown';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Dropdown } from '@/components/ui/dropdown';
 
 const FarmDetails = () => {
   const navigate = useNavigate();
@@ -53,6 +53,20 @@ const FarmDetails = () => {
       },
     };
   });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!farmData.farmName.trim()) newErrors.farmName = 'This field is not filled';
+    if (!farmData.area.toString().trim()) newErrors.area = 'This field is not filled';
+    if (!farmData.location.address.trim()) newErrors.address = 'This field is not filled';
+    if (!farmData.location.city.trim()) newErrors.city = 'This field is not filled';
+    if (!farmData.location.country.trim()) newErrors.country = 'This field is not filled';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   useEffect(() => {
     const tempStr = localStorage.getItem('tempRegistrationData');
@@ -141,10 +155,12 @@ const FarmDetails = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Farm Info:', farmData);
 
-    // Navigate to next step
-    navigate('/register/field-details');
+    if (validateForm()) {
+      console.log('Farm Info:', farmData);
+      // Navigate to next step
+      navigate('/register/field-details');
+    }
   };
 
   return (
@@ -182,50 +198,56 @@ const FarmDetails = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Input
+            <FormInput
               type="text"
               placeholder="Farm Name"
               value={farmData.farmName}
-              onChange={(e) =>
-                setFarmData({ ...farmData, farmName: e.target.value })
-              }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
+              onChange={(e) => {
+                setFarmData({ ...farmData, farmName: e.target.value });
+                if (errors.farmName) setErrors({ ...errors, farmName: '' });
+              }}
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              error={errors.farmName || ''}
             />
           </div>
 
           <div>
-            <Textarea
+            <FormTextarea
               placeholder="Description (Optional)"
               value={farmData.description}
               onChange={(e) =>
                 setFarmData({ ...farmData, description: e.target.value })
               }
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors resize-none h-20"
+            // No error prop needed as it's optional
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              type="number"
-              placeholder="Area / Size"
-              value={farmData.area}
-              onChange={(e) => {
-                const val = parseFloat(e.target.value);
-                if (val >= 0 || e.target.value === '') {
-                  setFarmData({ ...farmData, area: e.target.value });
-                }
-              }}
-              min="0"
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
-            />
-            <Dropdown
+            <div>
+              <FormInput
+                type="number"
+                placeholder="Area / Size"
+                value={farmData.area}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (val >= 0 || e.target.value === '') {
+                    setFarmData({ ...farmData, area: e.target.value });
+                  }
+                  if (errors.area) setErrors({ ...errors, area: '' });
+                }}
+                min="0"
+                className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+                error={errors.area || ''}
+              />
+            </div>
+            <FormDropdown
               value={farmData.units}
               onChange={(e) =>
                 setFarmData({ ...farmData, units: e.target.value })
               }
               className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
+            // No error handling logic shown for units but if needed add error prop
             >
               <option value="acres" className="bg-gray-800">
                 Acres
@@ -236,7 +258,7 @@ const FarmDetails = () => {
               <option value="sq_ft" className="bg-gray-800">
                 Sq Ft
               </option>
-            </Dropdown>
+            </FormDropdown>
           </div>
 
           <hr className="border-white/10 my-4" />
@@ -245,33 +267,46 @@ const FarmDetails = () => {
           </p>
 
           <div>
-            <Input
+            <FormInput
               type="text"
               placeholder="Address / Landmark"
               value={farmData.location.address}
-              onChange={(e) => handleLocationChange('address', e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
+              onChange={(e) => {
+                handleLocationChange('address', e.target.value);
+                if (errors.address) setErrors({ ...errors, address: '' });
+              }}
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              error={errors.address || ''}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              type="text"
-              placeholder="City"
-              value={farmData.location.city}
-              onChange={(e) => handleLocationChange('city', e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
-            />
-            <Input
-              type="text"
-              placeholder="Country"
-              value={farmData.location.country}
-              onChange={(e) => handleLocationChange('country', e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
-            />
+            <div>
+              <FormInput
+                type="text"
+                placeholder="City"
+                value={farmData.location.city}
+                onChange={(e) => {
+                  handleLocationChange('city', e.target.value);
+                  if (errors.city) setErrors({ ...errors, city: '' });
+                }}
+                className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+                error={errors.city || ''}
+              />
+            </div>
+            <div>
+              <FormInput
+                type="text"
+                placeholder="Country"
+                value={farmData.location.country}
+                onChange={(e) => {
+                  handleLocationChange('country', e.target.value);
+                  if (errors.country) setErrors({ ...errors, country: '' });
+                }}
+                className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+                error={errors.country || ''}
+              />
+            </div>
           </div>
 
           <div className="relative border border-white/20 rounded-lg p-3 bg-white/5">

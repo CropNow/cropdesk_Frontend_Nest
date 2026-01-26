@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useAuth } from './useAuth';
@@ -28,6 +28,19 @@ const CropDetails = () => {
       area: '',
     };
   });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!cropData.cropName.trim()) newErrors.cropName = 'This field is not filled';
+    if (!cropData.plantingDate.trim()) newErrors.plantingDate = 'This field is not filled';
+    if (!cropData.harvestingDate.trim()) newErrors.harvestingDate = 'This field is not filled';
+    if (!cropData.area.toString().trim()) newErrors.area = 'This field is not filled';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   useEffect(() => {
     const tempStr = localStorage.getItem('tempRegistrationData');
@@ -239,7 +252,7 @@ const CropDetails = () => {
             // Verify format and swap to [lon, lat] if needed?
             // Usually map tools give [lat, lng]. standard GeoJSON is [lon, lat].
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const { createField } = await import('@/features/auth/api/field.api');
@@ -336,6 +349,9 @@ const CropDetails = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) return;
+
     console.log('Crop Details:', cropData);
 
     const success = await finalizeRegistration(cropData);
@@ -388,19 +404,21 @@ const CropDetails = () => {
         </div>
 
         {/* Form */}
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Crop Name */}
           <div className="space-y-2">
             <Label className="text-white/60 ml-1">Crop Name</Label>
-            <Input
+            <FormInput
               type="text"
               placeholder="e.g. Wheat, Rice, Tomato"
               value={cropData.cropName}
-              onChange={(e) =>
-                setCropData({ ...cropData, cropName: e.target.value })
-              }
+              onChange={(e) => {
+                setCropData({ ...cropData, cropName: e.target.value });
+                if (errors.cropName) setErrors({ ...errors, cropName: '' });
+              }}
               className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-green-500 focus:ring-green-500"
-              required
+              error={errors.cropName || ''}
             />
           </div>
 
@@ -408,26 +426,28 @@ const CropDetails = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-white/60 ml-1">Planting Date</Label>
-              <Input
+              <FormInput
                 type="date"
                 value={cropData.plantingDate}
-                onChange={(e) =>
-                  setCropData({ ...cropData, plantingDate: e.target.value })
-                }
+                onChange={(e) => {
+                  setCropData({ ...cropData, plantingDate: e.target.value });
+                  if (errors.plantingDate) setErrors({ ...errors, plantingDate: '' });
+                }}
                 className="h-12 bg-white/10 border-white/20 text-white appearance-none focus:border-green-500 focus:ring-green-500"
-                required
+                error={errors.plantingDate || ''}
               />
             </div>
             <div className="space-y-2">
               <Label className="text-white/60 ml-1">Exp. Harvest</Label>
-              <Input
+              <FormInput
                 type="date"
                 value={cropData.harvestingDate}
-                onChange={(e) =>
-                  setCropData({ ...cropData, harvestingDate: e.target.value })
-                }
+                onChange={(e) => {
+                  setCropData({ ...cropData, harvestingDate: e.target.value });
+                  if (errors.harvestingDate) setErrors({ ...errors, harvestingDate: '' });
+                }}
                 className="h-12 bg-white/10 border-white/20 text-white appearance-none focus:border-green-500 focus:ring-green-500"
-                required
+                error={errors.harvestingDate || ''}
               />
             </div>
           </div>
@@ -437,15 +457,16 @@ const CropDetails = () => {
             <Label className="text-white/60 ml-1">
               Cultivation Area (Acres)
             </Label>
-            <Input
+            <FormInput
               type="number"
               placeholder="Area for this crop"
               value={cropData.area}
-              onChange={(e) =>
-                setCropData({ ...cropData, area: e.target.value })
-              }
+              onChange={(e) => {
+                setCropData({ ...cropData, area: e.target.value });
+                if (errors.area) setErrors({ ...errors, area: '' });
+              }}
               className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-green-500 focus:ring-green-500"
-              required
+              error={errors.area || ''}
             />
           </div>
 

@@ -104,8 +104,17 @@ const LocationPicker = ({
   const [mapCenter, setMapCenter] = useState<[number, number]>(
     defaultCenter || [20.5937, 78.9629]
   ); // Default to India center
-  const [zoom, setZoom] = useState(5);
+  const [zoom, setZoom] = useState(defaultCenter ? 16 : 5);
   const featureGroupRef = useRef<any>(null);
+
+  // Sync map center when prop changes (e.g. selecting a farm)
+  useEffect(() => {
+    if (defaultCenter) {
+      setMapCenter(defaultCenter);
+      setZoom(18);
+    }
+  }, [defaultCenter]);
+
 
   // Initialize state from value
   useEffect(() => {

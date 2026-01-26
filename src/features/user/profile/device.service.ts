@@ -1,6 +1,6 @@
 export const VALID_SERIAL_NUMBER =
   '6CjCgqHUM3uEJVUSDvPP1zCwUu86aF6XKApZXTmOBu2YcLVvx1wGhEvT8K8-3Akm';
-const API_URL = 'https://ggespl.com/api/machine/data/?api_key=';
+const API_URL = '/api-proxy/machine/data/?api_key=';
 
 // Helper to safely get value or default
 const getSensorValue = (
@@ -11,7 +11,7 @@ const getSensorValue = (
   const sensor = sensors.find((s: any) => s.name === name);
   return sensor && sensor.readings && sensor.readings.length > 0
     ? String(sensor.readings[0].value)
-    : defaultValue;
+    : '0'; // Force 0 if no readings found (Zero State)
 };
 
 // Helper to get raw readings array
@@ -20,21 +20,149 @@ const getReadings = (sensors: any[], name: string): any[] => {
   return sensor && sensor.readings ? sensor.readings : [];
 };
 
-export const connectDevice = async (serialNumber: string) => {
-  if (serialNumber !== VALID_SERIAL_NUMBER) {
-    throw new Error('Invalid Serial Number. Connection Refused.');
+import { http } from '@/services/http';
+
+// Helper to Register Device in Backend
+const registerDevice = async (
+  fieldId: string,
+  deviceData: any
+) => {
+  try {
+    console.log('Registering/Ensuring device exists in backend...', deviceData);
+    await http.post(`/fields/${fieldId}/sensors`, deviceData);
+    console.log('Device registered successfully.');
+  } catch (error: any) {
+    // If error is 400 and message contains 'duplicate' or similar, strict check might be needed.
+    // But for now we assume validation error means it might already exist or invalid data.
+    console.warn('Device registration skipped/failed (might already exist):', error.response?.data || error.message);
+  }
+};
+
+export const deleteDevice = async (fieldId: string, serialNumber: string) => {
+  try {
+    console.log(`Deleting device ${serialNumber} from field ${fieldId}...`);
+    await http.delete(`/fields/${fieldId}/sensors/${serialNumber}`);
+    console.log('Device deleted successfully.');
+    return true;
+  } catch (error: any) {
+    console.error('Failed to delete device:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const connectDevice = async (
+  apiKey: string,
+  registrationInfo?: {
+    fieldId: string;
+    name: string;
+    type: string;
+    manufacturer?: string;
+    model?: string;
+    firmwareVersion?: string;
+    status?: string;
+  }
+) => {
+  if (apiKey !== VALID_SERIAL_NUMBER) {
+    throw new Error('Invalid User API Key. Connection Refused.');
   }
 
   try {
-    const response = await fetch(`${API_URL}${serialNumber}`);
+    const response = await fetch(`${API_URL}${apiKey}`);
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      throw new Error(`External Device API Error: ${response.status} ${response.statusText}`);
     }
     const data = await response.json();
     const sensors = data.sensors || [];
+    const realSerialNumber = data.machine?.id || apiKey;
+
+    // 1. Register Device if Info Provided
+    if (registrationInfo && registrationInfo.fieldId) {
+      // Backend Schema ONLY allows 'NEST' or 'SEED'. Map logical types to these.
+      const typeMapping: Record<string, string> = {
+        'WEATHER_STATION': 'NEST',
+        'NEST': 'NEST',
+        'VALVE_CONTROLLER': 'NEST',
+        'SENSOR_NODE': 'SEED'
+      };
+      const backendType = typeMapping[registrationInfo.type] || 'NEST';
+
+      const sensorPayload = {
+        name: registrationInfo.name || data.machine?.name || 'Unknown Device',
+        type: backendType,
+        // fieldId: registrationInfo.fieldId, // REMOVED: Passed in URL, not allowed in body
+        serialNumber: realSerialNumber, // The CRITICAL link
+        manufacturer: registrationInfo.manufacturer || data.machine?.manufacturer || 'Generic',
+        model: registrationInfo.model || 'Standard',
+        firmwareVersion: registrationInfo.firmwareVersion || '1.0.0',
+        unit: 'Multi', // Default unit for a multi-sensor station
+        // status: registrationInfo.status?.toLowerCase() || 'active', // REMOVED: Not allowed in body
+        location: {
+          section: 'Main',
+          coordinates: {
+            type: "Point",
+            coordinates: [0, 0] // Default
+          }
+        }
+      };
+
+      try {
+        await registerDevice(registrationInfo.fieldId, sensorPayload);
+      } catch (regErr: any) {
+        alert(`Device Registration Failed: ${regErr.response?.data?.message || regErr.message}. Data might not sync.`);
+      }
+    }
+
+    // 2. Sync Data to Backend
+    try {
+      // Map External Names to Backend 'Type' strings
+      const sensorTypeMap: Record<string, string> = {
+        'Temp Sensor': 'Temp',
+        'Humidity Sensor': 'Humidity',
+        'Light Sensor': 'Light',
+        'Rainfall Sensor': 'Rainfall',
+        'Wind Speed Sensor': 'Wind Speed',
+        'Wind Direction Sensor': 'Wind Direction',
+        'PM2.5 Sensor': 'PM2.5',
+        'PM10 Sensor': 'PM10',
+        'CO2 Sensor': 'CO2',
+        'SOX Sensor': 'SOX',
+        'NOX Sensor': 'NOX',
+        'SH Sensor': 'SH',
+        'SHR Sensor': 'SHR',
+        'ST Sensor': 'ST',
+        'STR Sensor': 'STR', // Correctly map to STR for soil_temperature_2
+        'Pressure Sensor': 'Pressure',
+        'Leaf Wetness Sensor': 'Leaf Wetness',
+        'Radiation Sensor': 'Radiation',
+        'O3 Sensor': 'O3'
+      };
+
+      const payload = {
+        machine: {
+          id: realSerialNumber, // Use real ID not API Key
+          name: data.machine?.name,
+          is_online: data.machine?.is_online,
+          installed_at: data.machine?.installed_at,
+          location: data.machine?.location || ""
+        },
+        sensors: sensors.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          type: sensorTypeMap[s.name] || s.type || s.name.replace(' Sensor', ''),
+          unit: s.unit,
+          readings: s.readings || []
+        }))
+      };
+
+      console.log('Syncing sensor data to backend...', payload);
+      await http.post('/sensor-data', payload);
+      console.log('Sensor data synced successfully.');
+    } catch (syncError: any) {
+      console.error('Failed to sync sensor data to backend (UI still updating):', syncError);
+      // alert(`Sensor Data Sync Failed: ${syncError.response?.data?.message || syncError.message}`); // Optional: Uncomment if user wants explicit sync error
+    }
 
     // Map API data to our fixed Category Structure
-
     // 1. Weather
     const windSpeed = getSensorValue(sensors, 'Wind Speed Sensor');
     const windDir = getSensorValue(sensors, 'Wind Direction Sensor');
@@ -284,7 +412,8 @@ export const connectDevice = async (serialNumber: string) => {
         manufacturer: 'CropNow Systems',
         model: 'Pro-X',
         status: data.machine?.is_online ? 'Active' : 'Offline', // Use API status
-        serialNumber: serialNumber,
+        serialNumber: realSerialNumber,
+        apiKey: apiKey, // STORE API KEY for future polling
         connectedAt: new Date().toISOString(),
       },
       sensorData: mappedData,

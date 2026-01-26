@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/ui/button';
 
 const FarmerDetails = () => {
@@ -65,6 +65,21 @@ const FarmerDetails = () => {
     };
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) newErrors.name = 'This field is not filled';
+    if (!formData.phone.trim()) newErrors.phone = 'This field is not filled';
+    if (!formData.email.trim()) newErrors.email = 'This field is not filled';
+    if (!formData.address.village.trim()) newErrors.village = 'This field is not filled';
+    if (!formData.address.district.trim()) newErrors.district = 'This field is not filled';
+    if (!formData.address.state.trim()) newErrors.state = 'This field is not filled';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   useEffect(() => {
     const tempStr = localStorage.getItem('tempRegistrationData');
     const tempData = tempStr ? JSON.parse(tempStr) : {};
@@ -88,8 +103,11 @@ const FarmerDetails = () => {
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Navigate to next step
-    navigate('/register/farm-details');
+
+    if (validateForm()) {
+      // Navigate to next step
+      navigate('/register/farm-details');
+    }
   };
 
   return (
@@ -131,88 +149,98 @@ const FarmerDetails = () => {
         {/* Form */}
         <form onSubmit={handleNext} className="space-y-4">
           <div>
-            <Input
+            <FormInput
               type="text"
               placeholder="Full Name"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                if (errors.name) setErrors({ ...errors, name: '' });
+              }}
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              error={errors.name || ''}
             />
           </div>
 
           <div>
-            <Input
+            <FormInput
               type="tel"
               placeholder="Phone Number"
               value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
+              onChange={(e) => {
+                setFormData({ ...formData, phone: e.target.value });
+                if (errors.phone) setErrors({ ...errors, phone: '' });
+              }}
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              error={errors.phone || ''}
             />
           </div>
 
           <div>
-            <Input
+            <FormInput
               type="email"
               placeholder="Email Address"
               value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                if (errors.email) setErrors({ ...errors, email: '' });
+              }}
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              error={errors.email || ''}
             />
           </div>
 
           {/* Address generic field removed as per schema */}
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              type="text"
-              placeholder="Village"
-              value={formData.address.village}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  address: { ...formData.address, village: e.target.value },
-                })
-              }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
-            />
-            <Input
-              type="text"
-              placeholder="District"
-              value={formData.address.district}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  address: { ...formData.address, district: e.target.value },
-                })
-              }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
-            />
+            <div>
+              <FormInput
+                type="text"
+                placeholder="Village"
+                value={formData.address.village}
+                onChange={(e) => {
+                  setFormData({
+                    ...formData,
+                    address: { ...formData.address, village: e.target.value },
+                  });
+                  if (errors.village) setErrors({ ...errors, village: '' });
+                }}
+                className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+                error={errors.village || ''}
+              />
+            </div>
+            <div>
+              <FormInput
+                type="text"
+                placeholder="District"
+                value={formData.address.district}
+                onChange={(e) => {
+                  setFormData({
+                    ...formData,
+                    address: { ...formData.address, district: e.target.value },
+                  });
+                  if (errors.district) setErrors({ ...errors, district: '' });
+                }}
+                className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+                error={errors.district || ''}
+              />
+            </div>
           </div>
 
           <div>
-            <Input
+            <FormInput
               type="text"
               placeholder="State"
               value={formData.address.state}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({
                   ...formData,
                   address: { ...formData.address, state: e.target.value },
-                })
-              }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
+                });
+                if (errors.state) setErrors({ ...errors, state: '' });
+              }}
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              error={errors.state || ''}
             />
           </div>
 

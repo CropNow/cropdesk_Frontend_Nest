@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User, Map, Leaf, Droplets, Cpu } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { User, Map, Leaf, Droplets, Cpu, Trash2 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
 import FarmerDetailsTab from './FarmerDetailsTab';
 import FarmDetailsTab from './FarmDetailsTab';
@@ -8,19 +8,28 @@ import FieldDetailsTab from './FieldDetailsTab';
 import CropDetailsTab from './CropDetailsTab';
 import AddDeviceModal from './AddDeviceModal';
 import { Switch } from '../../../components/ui/switch';
-import { Input } from '@/components/ui/input';
+import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { FormTextarea } from '@/components/common/FormTextarea';
 import { ProfileProvider } from './context/ProfileProvider';
 import { useProfile } from './context/useProfile';
-import { connectDevice } from './device.service';
+import { connectDevice, deleteDevice } from './device.service';
 
 // Inner Profile Component that consumes the context
 const ProfileContent = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, setUser } = useAuth();
-  const { selectedFarm, selectedField } = useProfile();
+
+  // Consuming Profile Context for validation
+  const {
+    selectedFarmer,
+    selectedFarm,
+    selectedField,
+    selectedCrop,
+    loading: profileLoading
+  } = useProfile();
 
   const [activeTab, setActiveTab] = useState('Profile');
 
@@ -45,6 +54,25 @@ const ProfileContent = () => {
     bio: '',
   });
 
+  // Check for profile completeness to allow Device Addition
+  const checkProfileCompleteness = (): { complete: boolean; missingTab?: string; message?: string } => {
+    if (!selectedFarmer) return { complete: false, missingTab: 'Farmer Details', message: 'Please add Farmer Details first.' };
+    if (!selectedFarm) return { complete: false, missingTab: 'Farm Details', message: 'Please add Farm Details first.' };
+    if (!selectedField) return { complete: false, missingTab: 'Field Details', message: 'Please add Field Details first.' };
+    if (!selectedCrop) return { complete: false, missingTab: 'Crop Details', message: 'Please add Crop Details first.' };
+    return { complete: true };
+  };
+
+  const handleAttemptAddDevice = () => {
+    const status = checkProfileCompleteness();
+    if (status.complete) {
+      setIsAddDeviceModalOpen(true);
+    } else {
+      alert(status.message);
+      if (status.missingTab) setActiveTab(status.missingTab);
+    }
+  };
+
   // Load User Data
   useEffect(() => {
     const sessionStr = localStorage.getItem('user');
@@ -65,12 +93,27 @@ const ProfileContent = () => {
       });
     }
 
+    // Check for redirect state to open Add Device modal
+    // Only run this check if profile data is done loading to avoid false positives
+    if (location.state?.openAddDevice && !profileLoading) {
+      const status = checkProfileCompleteness();
+      if (status.complete) {
+        setIsAddDeviceModalOpen(true);
+      } else {
+        // If incomplete, redirect to the missing tab automatically
+        alert(`To add a device, ${status.message}`);
+        if (status.missingTab) setActiveTab(status.missingTab);
+      }
+      // Clear state
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+
     // Load Devices
     const storedDevices = localStorage.getItem('connected_devices');
     if (storedDevices) {
       setDevices(JSON.parse(storedDevices));
     }
-  }, [user]);
+  }, [user, location.state, profileLoading, selectedFarmer, selectedFarm, selectedField, selectedCrop]);
 
   const tabs = [
     'Profile',
@@ -82,8 +125,21 @@ const ProfileContent = () => {
 
   // Edit & Delete Logic
   const [isEditing, setIsEditing] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!userDetails.name.trim()) newErrors.name = 'This field is not filled';
+    // Bio is optional? Let's say name is required.
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleEditToggle = () => {
     if (isEditing) {
+      if (!validateForm()) return;
+
       const sessionStr = localStorage.getItem('user');
       const currentUser = sessionStr ? JSON.parse(sessionStr) : {};
       const updatedUser = {
@@ -121,7 +177,7 @@ const ProfileContent = () => {
     try {
       // Connect to the device service
       // @ts-ignore
-      const response: any = await connectDevice(deviceData.serialNumber);
+      const response: any = await connectDevice(deviceData.serialNumber, deviceData);
 
       if (response.success) {
         // 1. Update Devices List
@@ -145,10 +201,51 @@ const ProfileContent = () => {
     } catch (error: any) {
       alert(
         error.message ||
-          'Failed to connect device. Please check the serial number.'
+        'Failed to connect device. Please check the serial number.'
       );
     } finally {
       setIsAddingDevice(false);
+    }
+  };
+
+  const handleDeleteDevice = async (device: any) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete the device "${device.name}"? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      // If the device has a fieldId, try to delete from backend
+      if (device.fieldId && device.serialNumber) {
+        await deleteDevice(device.fieldId, device.serialNumber);
+      }
+
+      // Update Local State
+      const updatedDevices = devices.filter(
+        (d) => d.serialNumber !== device.serialNumber
+      );
+      setDevices(updatedDevices);
+      localStorage.setItem('connected_devices', JSON.stringify(updatedDevices)); // Persist
+
+      // If no devices left, maybe clear IoT data?
+      if (updatedDevices.length === 0) {
+        localStorage.removeItem('iot_device_data');
+      }
+
+      alert('Device deleted successfully.');
+    } catch (error: any) {
+      console.error('Failed to delete device:', error);
+      alert('Failed to delete device from backend, but removing locally.');
+
+      // Fallback: Remove locally even if backend fails (to unblock user)
+      const updatedDevices = devices.filter(
+        (d) => d.serialNumber !== device.serialNumber
+      );
+      setDevices(updatedDevices);
+      localStorage.setItem('connected_devices', JSON.stringify(updatedDevices));
     }
   };
 
@@ -163,11 +260,10 @@ const ProfileContent = () => {
                 key={tab}
                 variant="ghost"
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 md:px-6 rounded-xl text-xs md:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${
-                  activeTab === tab
-                    ? 'bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20 hover:text-green-500'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent'
-                }`}
+                className={`px-4 py-2 md:px-6 rounded-xl text-xs md:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${activeTab === tab
+                  ? 'bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20 hover:text-green-500'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent'
+                  }`}
               >
                 {tab}
               </Button>
@@ -189,7 +285,7 @@ const ProfileContent = () => {
                         <Label className="text-xs font-bold text-muted-foreground uppercase">
                           Name
                         </Label>
-                        <Input
+                        <FormInput
                           value={userDetails.name}
                           onChange={(e) =>
                             setUserDetails({
@@ -198,6 +294,7 @@ const ProfileContent = () => {
                             })
                           }
                           className="h-9"
+                          error={errors.name || ''}
                         />
                       </div>
                     ) : (
@@ -215,7 +312,7 @@ const ProfileContent = () => {
                         <Label className="text-xs font-bold text-muted-foreground uppercase">
                           Bio
                         </Label>
-                        <Textarea
+                        <FormTextarea
                           value={userDetails.bio}
                           onChange={(e) =>
                             setUserDetails({
@@ -239,7 +336,7 @@ const ProfileContent = () => {
                     size="icon"
                     className="rounded-xl w-10 h-10 bg-green-500 hover:bg-green-600 shadow-lg"
                     title="Add Device"
-                    onClick={() => setIsAddDeviceModalOpen(true)}
+                    onClick={handleAttemptAddDevice}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -279,10 +376,10 @@ const ProfileContent = () => {
                           ? parseFloat(selectedFarm.area) > 0
                             ? selectedFarm.area
                             : selectedFarm.fields?.reduce(
-                                (acc: number, f: any) =>
-                                  acc + (parseFloat(f.area) || 0),
-                                0
-                              ) || '0'
+                              (acc: number, f: any) =>
+                                acc + (parseFloat(f.area) || 0),
+                              0
+                            ) || '0'
                           : '0'}
                       </h3>
                       <p className="text-xs font-bold text-white/60 uppercase tracking-wider">
@@ -329,7 +426,7 @@ const ProfileContent = () => {
                 </div>
               </div>
 
-              {/* Device Details */}
+              {/* Device Section - List or Empty State */}
               <div className="border-t border-border pt-8 mt-8">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-bold text-foreground">
@@ -337,7 +434,7 @@ const ProfileContent = () => {
                   </h3>
                 </div>
 
-                {devices.length > 0 ? (
+                {devices.length > 0 && checkProfileCompleteness().complete ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {devices.map((device, index) => (
                       <div
@@ -359,22 +456,30 @@ const ProfileContent = () => {
                             </div>
                           </div>
                           <div
-                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                              device.status === 'Active'
-                                ? 'bg-green-500/10 text-green-500'
-                                : 'bg-red-500/10 text-red-500'
-                            }`}
+                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${device.status === 'Active'
+                              ? 'bg-green-500/10 text-green-500'
+                              : 'bg-red-500/10 text-red-500'
+                              }`}
                           >
                             {device.status}
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 -mt-1 -mr-2"
+                            onClick={() => handleDeleteDevice(device)}
+                            title="Delete Device"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                          <div>
+                          <div className="overflow-hidden">
                             <p className="text-[10px] text-muted-foreground uppercase font-bold">
                               Serial Number
                             </p>
-                            <p className="text-xs font-mono text-foreground mt-0.5">
+                            <p className="text-xs font-mono text-foreground mt-0.5 break-all">
                               {device.serialNumber}
                             </p>
                           </div>
@@ -417,8 +522,8 @@ const ProfileContent = () => {
                             <p className="text-xs text-foreground mt-0.5">
                               {device.connectedAt
                                 ? new Date(
-                                    device.connectedAt
-                                  ).toLocaleDateString()
+                                  device.connectedAt
+                                ).toLocaleDateString()
                                 : 'Just now'}
                             </p>
                           </div>
@@ -427,35 +532,16 @@ const ProfileContent = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-muted/50 rounded-2xl p-8 text-center border border-dashed border-border flex flex-col items-center justify-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-muted-foreground"
-                      >
-                        <rect width="18" height="12" x="3" y="10" rx="2" />
-                        <path d="M12 2v2" />
-                        <path d="M12 22v-2" />
-                        <path d="m17 7 2-2" />
-                        <path d="m7 7-2-2" />
-                      </svg>
+                  <div className="bg-muted/30 border border-dashed border-border rounded-2xl p-12 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground mb-4">
+                      <Cpu size={32} />
                     </div>
-                    <div>
-                      <p className="text-muted-foreground font-medium">
-                        No devices connected yet
-                      </p>
-                      <p className="text-xs text-muted-foreground/60 mt-1">
-                        Add a device to start monitoring your farm
-                      </p>
-                    </div>
+                    <h3 className="text-lg font-bold text-foreground">
+                      No devices connected yet
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                      Add a device to start monitoring your farm
+                    </p>
                   </div>
                 )}
               </div>

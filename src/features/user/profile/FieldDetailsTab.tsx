@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Layers, Droplets, FlaskConical, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LocationPicker from '@/components/common/LocationPicker';
-import { Input } from '@/components/ui/input';
+import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ListBox } from '@/components/ui/list-box';
@@ -56,6 +56,37 @@ const FieldDetailsTab = () => {
       });
       setIsEditing(true);
     } else if (selectedField) {
+      let coords = selectedField.coordinates || '';
+
+      // If no explicit coordinates string, try to parse from boundary (GeoJSON)
+      if (!coords && selectedField.boundary) {
+        try {
+          // Backend usually sends GeoJSON: { type: 'Polygon', coordinates: [[[lon, lat], ...]] }
+          // Frontend LocationPicker expects: { type: 'Polygon', points: [{lat, lng}, ...] } or [[lat, lng], ...]
+
+          if (selectedField.boundary.type === 'Polygon' && selectedField.boundary.coordinates) {
+            const geoJsonCoords = selectedField.boundary.coordinates[0]; // Outer ring
+            if (Array.isArray(geoJsonCoords)) {
+              // Convert [lon, lat] to {lat, lng} or [lat, lng]
+              const points = geoJsonCoords.map((pt: any) => {
+                if (Array.isArray(pt) && pt.length >= 2) {
+                  return { lat: pt[1], lng: pt[0] };
+                }
+                return pt;
+              });
+
+              const shapeData = {
+                type: 'Polygon',
+                points: points
+              };
+              coords = JSON.stringify(shapeData);
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to parse boundary for coordinates', e);
+        }
+      }
+
       setFieldData({
         name: selectedField.name || selectedField.fieldName || '',
         description: selectedField.description || '',
@@ -69,7 +100,7 @@ const FieldDetailsTab = () => {
           selectedField.irrigationMethod ||
           selectedField.irrigation?.type ||
           '',
-        coordinates: selectedField.coordinates || '',
+        coordinates: coords,
       });
       setIsEditing(false);
     }
@@ -80,11 +111,29 @@ const FieldDetailsTab = () => {
   ) => {
     const { name, value } = e.target;
     setFieldData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!fieldData.name.trim()) newErrors.name = 'Field name is required';
+    if (!fieldData.area.toString().trim()) newErrors.area = 'Area is required';
+    // Soil type, boundary type might be dropdowns with defaults or empty strings.
+    // If they are required:
+    if (!fieldData.boundaryType.trim()) newErrors.boundaryType = 'Boundary Type is required';
+    if (!fieldData.soilType.trim()) newErrors.soilType = 'Soil Type is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
+    if (!validateForm()) return;
+
     setIsSaving(true);
     try {
       if (isAdding) {
@@ -300,12 +349,14 @@ const FieldDetailsTab = () => {
                   <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
                     Field Name
                   </Label>
-                  <Input
+
+                  <FormInput
                     type="text"
                     name="name"
                     value={fieldData.name || ''}
                     onChange={handleChange}
                     className="w-full font-semibold px-4 py-3 text-sm"
+                    error={errors.name || ''}
                   />
                 </div>
 
@@ -315,13 +366,14 @@ const FieldDetailsTab = () => {
                     <Label className="block text-xs font-bold text-white uppercase mb-2">
                       Area
                     </Label>
-                    <Input
+                    <FormInput
                       type="text"
                       name="area"
-                      value={fieldData.area || ''}
+                      value={fieldData.area ? `${fieldData.area}` : ''}
                       onChange={handleChange}
-                      placeholder="Area"
+                      placeholder="Area (e.g. 5)"
                       className="w-full font-semibold px-4 py-3 text-sm"
+                      error={errors.area || ''}
                     />
                   </div>
                   {/* Boundary */}
@@ -329,12 +381,13 @@ const FieldDetailsTab = () => {
                     <Label className="block text-xs font-bold text-white uppercase mb-2">
                       Boundary Type
                     </Label>
-                    <Input
+                    <FormInput
                       type="text"
                       name="boundaryType"
                       value={fieldData.boundaryType || ''}
                       onChange={handleChange}
                       className="w-full font-semibold px-4 py-3 text-sm"
+                      error={errors.boundaryType || ''}
                     />
                   </div>
                 </div>
@@ -361,16 +414,16 @@ const FieldDetailsTab = () => {
                               updates.boundaryType = 'Circle';
                             else updates.boundaryType = 'Polygon';
                           }
-                        } catch (e) {}
+                        } catch (e) { }
                         return updates;
                       });
                     }}
                     center={
                       parentFarmLocation && parentFarmLocation.latitude
                         ? [
-                            parseFloat(parentFarmLocation.latitude),
-                            parseFloat(parentFarmLocation.longitude),
-                          ]
+                          parseFloat(parentFarmLocation.latitude),
+                          parseFloat(parentFarmLocation.longitude),
+                        ]
                         : undefined
                     }
                     onAreaCalculated={(sqFt) => {
@@ -400,12 +453,13 @@ const FieldDetailsTab = () => {
                       <div className="p-3 bg-muted rounded-xl">
                         <Layers size={18} className="text-foreground" />
                       </div>
-                      <Input
+                      <FormInput
                         type="text"
                         name="soilType"
                         value={fieldData.soilType || ''}
                         onChange={handleChange}
                         className="w-full font-semibold px-4 py-3 text-sm"
+                        error={errors.soilType || ''}
                       />
                     </div>
                   </div>
@@ -419,12 +473,13 @@ const FieldDetailsTab = () => {
                       <div className="p-3 bg-muted rounded-xl">
                         <FlaskConical size={18} className="text-foreground" />
                       </div>
-                      <Input
+                      <FormInput
                         type="text"
                         name="phLevel"
                         value={fieldData.phLevel || ''}
                         onChange={handleChange}
                         className="w-full font-semibold px-4 py-3 text-sm"
+                        error={errors.phLevel || ''}
                       />
                     </div>
                   </div>
@@ -438,12 +493,13 @@ const FieldDetailsTab = () => {
                       <div className="p-3 bg-muted rounded-xl">
                         <Droplets size={18} className="text-foreground" />
                       </div>
-                      <Input
+                      <FormInput
                         type="text"
                         name="irrigationMethod"
                         value={fieldData.irrigationMethod || ''}
                         onChange={handleChange}
                         className="w-full font-semibold px-4 py-3 text-sm"
+                        error={errors.irrigationMethod || ''}
                       />
                     </div>
                   </div>

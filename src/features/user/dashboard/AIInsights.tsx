@@ -9,36 +9,19 @@ const AIInsights = ({
 }) => {
   const navigate = useNavigate();
 
-  if (showEmptyState) {
-    return (
-      <section className="flex flex-col gap-4 border border-border p-3 lg:p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 via-background to-background dark:bg-card relative overflow-hidden h-full min-h-[220px] items-center justify-center text-center">
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-          <button
-            onClick={() => navigate('/register/farmer-details')}
-            className="group flex flex-col items-center gap-4 transition-transform hover:scale-105 active:scale-95"
-          >
-            <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow">
-              <Plus className="w-5 h-5 lg:w-8 lg:h-8 text-white" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-lg font-bold text-foreground">
-                Add Farm Details
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Unlock AI-powered insights
-              </span>
-            </div>
-          </button>
-        </div>
-        <div className="opacity-20 blur-sm pointer-events-none w-full h-full flex items-center justify-center">
-          <Sparkles size={64} className="text-muted-foreground" />
-        </div>
-      </section>
-    );
-  }
+  const hasData = !showEmptyState;
+
+  const handleInteraction = () => {
+    if (!hasData) {
+      navigate('/profile', { state: { openAddDevice: true } });
+    }
+  };
 
   return (
-    <section className="flex flex-col gap-4">
+    <section
+      onClick={handleInteraction}
+      className={`flex flex-col gap-4 ${!hasData ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+    >
       <div className="bg-[#0f0f0f]/90 backdrop-blur-sm rounded-2xl p-5">
         {/* Header */}
         <div className="flex justify-between items-center mb-5">
@@ -63,21 +46,21 @@ const AIInsights = ({
             {/* Soil Conditions */}
             <div className="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
               <div className="flex items-center gap-3 flex-1">
-                <div className="p-1.5 bg-orange-500/10 rounded-md">
-                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                <div className={`p-1.5 rounded-md ${hasData ? 'bg-orange-500/10' : 'bg-gray-500/10'}`}>
+                  <div className={`w-2 h-2 rounded-full ${hasData ? 'bg-orange-500' : 'bg-gray-500'}`}></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-semibold text-white mb-0.5">
                     Soil Conditions
                   </div>
                   <div className="text-[10px] text-gray-400 truncate">
-                    moderate moisture, ideal temperature
+                    {hasData ? 'moderate moisture, ideal temperature' : 'No data available'}
                   </div>
                 </div>
               </div>
-              <div className="px-2.5 py-1 bg-orange-500/10 rounded-md ml-2 shrink-0">
-                <span className="text-[10px] font-bold text-orange-500">
-                  Optimal
+              <div className={`px-2.5 py-1 rounded-md ml-2 shrink-0 ${hasData ? 'bg-orange-500/10' : 'bg-gray-500/10'}`}>
+                <span className={`text-[10px] font-bold ${hasData ? 'text-orange-500' : 'text-gray-500'}`}>
+                  {hasData ? 'Optimal' : '-'}
                 </span>
               </div>
             </div>
@@ -85,21 +68,21 @@ const AIInsights = ({
             {/* Weather Conditions */}
             <div className="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
               <div className="flex items-center gap-3 flex-1">
-                <div className="p-1.5 bg-green-500/10 rounded-md">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                <div className={`p-1.5 rounded-md ${hasData ? 'bg-green-500/10' : 'bg-gray-500/10'}`}>
+                  <div className={`w-2 h-2 rounded-full ${hasData ? 'bg-green-500' : 'bg-gray-500'}`}></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-semibold text-white mb-0.5">
                     Weather Conditions
                   </div>
                   <div className="text-[10px] text-gray-400 truncate">
-                    UV safe, Wind: calm
+                    {hasData ? 'UV safe, Wind: calm' : 'No data available'}
                   </div>
                 </div>
               </div>
-              <div className="px-2.5 py-1 bg-green-500/10 rounded-md ml-2 shrink-0">
-                <span className="text-[10px] font-bold text-green-500">
-                  Excellent
+              <div className={`px-2.5 py-1 rounded-md ml-2 shrink-0 ${hasData ? 'bg-green-500/10' : 'bg-gray-500/10'}`}>
+                <span className={`text-[10px] font-bold ${hasData ? 'text-green-500' : 'text-gray-500'}`}>
+                  {hasData ? 'Excellent' : '-'}
                 </span>
               </div>
             </div>
@@ -107,21 +90,21 @@ const AIInsights = ({
             {/* Air Quality */}
             <div className="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
               <div className="flex items-center gap-3 flex-1">
-                <div className="p-1.5 bg-cyan-500/10 rounded-md">
-                  <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
+                <div className={`p-1.5 rounded-md ${hasData ? 'bg-cyan-500/10' : 'bg-gray-500/10'}`}>
+                  <div className={`w-2 h-2 rounded-full ${hasData ? 'bg-cyan-500' : 'bg-gray-500'}`}></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-semibold text-white mb-0.5">
                     Air Quality
                   </div>
                   <div className="text-[10px] text-gray-400 truncate">
-                    excellent (100 ppm)
+                    {hasData ? 'excellent (100 ppm)' : 'No data available'}
                   </div>
                 </div>
               </div>
-              <div className="px-2.5 py-1 bg-cyan-500/10 rounded-md ml-2 shrink-0">
-                <span className="text-[10px] font-bold text-cyan-500">
-                  Good
+              <div className={`px-2.5 py-1 rounded-md ml-2 shrink-0 ${hasData ? 'bg-cyan-500/10' : 'bg-gray-500/10'}`}>
+                <span className={`text-[10px] font-bold ${hasData ? 'text-cyan-500' : 'text-gray-500'}`}>
+                  {hasData ? 'Good' : '-'}
                 </span>
               </div>
             </div>
@@ -131,7 +114,7 @@ const AIInsights = ({
         {/* Last Updated */}
         <div className="flex items-center gap-1.5 mb-5 ml-0.5">
           <div className="w-1 h-1 rounded-full bg-blue-400"></div>
-          <p className="text-[9px] text-gray-500">Last updated: 7:03:52 pm</p>
+          <p className="text-[9px] text-gray-500">Last updated: {hasData ? '7:03:52 pm' : 'Never'}</p>
         </div>
 
         {/* Smart Analysis Section */}
@@ -146,32 +129,27 @@ const AIInsights = ({
           <div className="space-y-3">
             {/* Analysis Item 1 */}
             <div className="flex items-start gap-2.5">
-              <div className="p-1 bg-yellow-500/10 rounded-sm mt-0.5 shrink-0">
-                <div className="w-1.5 h-1.5 rounded-full bg-yellow-500"></div>
+              <div className={`p-1 rounded-sm mt-0.5 shrink-0 ${hasData ? 'bg-yellow-500/10' : 'bg-gray-500/10'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${hasData ? 'bg-yellow-500' : 'bg-gray-500'}`}></div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] text-gray-300 leading-relaxed mb-1">
-                  Current conditions are{' '}
-                  <span className="text-white font-semibold">
-                    optimal for crop growth
-                  </span>
+                  {hasData ? <>Current conditions are <span className="text-white font-semibold">optimal for crop growth</span></> : 'Connect a device to receive analysis'}
                 </div>
                 <div className="text-[10px] text-gray-500 leading-relaxed">
-                  Soil moisture levels are balanced, and temperature ranges
-                  support healthy development.
+                  {hasData ? 'Soil moisture levels are balanced, and temperature ranges support healthy development.' : ''}
                 </div>
               </div>
             </div>
 
             {/* Analysis Item 2 */}
             <div className="flex items-start gap-2.5">
-              <div className="p-1 bg-green-500/10 rounded-sm mt-0.5 shrink-0">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+              <div className={`p-1 rounded-sm mt-0.5 shrink-0 ${hasData ? 'bg-green-500/10' : 'bg-gray-500/10'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${hasData ? 'bg-green-500' : 'bg-gray-500'}`}></div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] text-gray-300 leading-relaxed">
-                  Consider light irrigation in the next 24 hours to maintain
-                  ideal moisture levels.
+                  {hasData ? 'Consider light irrigation in the next 24 hours to maintain ideal moisture levels.' : 'AI will analyze your sensor data here.'}
                 </div>
               </div>
             </div>

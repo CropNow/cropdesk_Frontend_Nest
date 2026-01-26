@@ -193,10 +193,11 @@ const IOTDashboard = ({
         if (storedDevices) {
           const devices = JSON.parse(storedDevices);
           if (devices.length > 0) {
-            const serial = devices[0].serialNumber;
+            // Use API Key if available (for external fetch), otherwise serial (fallback)
+            const serial = devices[0].apiKey || devices[0].serialNumber;
             // Fetch fresh data
             // @ts-ignore
-            const response: any = await connectDevice(serial);
+            const response: any = await connectDevice(serial, devices[0]);
             if (response.success) {
               // Update Local Storage
               localStorage.setItem(
@@ -250,40 +251,73 @@ const IOTDashboard = ({
   // If showEmptyState is explicitly passed (e.g. from Dashboard Home which might want to force it), we respect it.
   // BUT: if we are on the dedicated IOT page, we want to show empty state if NO DATA is present.
 
-  const finalCategories = sensorCategories;
-  const showEmpty = showEmptyState || finalCategories.length === 0;
+  // Ensure profile is complete before showing real data
+  const [isProfileComplete, setIsProfileComplete] = React.useState(false);
 
-  if (showEmpty) {
-    return (
-      <section className="flex flex-col gap-4 border border-border p-3 lg:p-4 rounded-2xl bg-gradient-to-br from-green-500/10 via-background to-background dark:bg-card relative overflow-hidden h-full min-h-[220px] items-center justify-center text-center">
-        {/* Blurred Content Placeholder */}
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-          <button
-            onClick={() => navigate('/register/farmer-details')}
-            className="group flex flex-col items-center gap-4 transition-transform hover:scale-105 active:scale-95"
-          >
-            <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/20 group-hover:shadow-green-500/40 transition-shadow">
-              <Plus className="w-5 h-5 lg:w-8 lg:h-8 text-white" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-lg font-bold text-foreground">
-                Add Farm Details
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Setup your IoT Dashboard
-              </span>
-            </div>
-          </button>
-        </div>
-        <div className="opacity-20 blur-sm pointer-events-none w-full h-full flex items-center justify-center">
-          <Activity size={64} className="text-muted-foreground" />
-        </div>
-      </section>
-    );
-  }
+  React.useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        // Simple check: does the user have at least one farmer, farm, field, crop?
+        // Or checking derived flags if available.
+        // Based on Profile.tsx logic:
+        const hasFarmer = user.farmers && user.farmers.length > 0;
+        const hasFarm = user.farms && user.farms.length > 0;
+        const hasField = user.fields && user.fields.length > 0;
+        const hasCrop = user.crops && user.crops.length > 0;
+
+        // Checking legacy/flat structure just in case or strict hierarchy
+        const complete = hasFarmer && hasFarm && hasField && hasCrop;
+        setIsProfileComplete(complete);
+      } catch (e) {
+        setIsProfileComplete(false);
+      }
+    } else {
+      setIsProfileComplete(false);
+    }
+  }, []);
+
+  const hasData = sensorCategories.length > 0 && isProfileComplete;
+
+  const finalCategories = hasData ? sensorCategories : [
+    {
+      id: 'weather',
+      name: 'Weather Station',
+      count: 0,
+      color: 'blue',
+      icon: <Cloud size={20} />,
+      previewSensors: [
+        { name: 'Temperature', value: '0°C', icon: <Thermometer size={12} /> },
+        { name: 'Humidity', value: '0%', icon: <Droplets size={12} /> },
+      ],
+      details: [],
+    },
+    {
+      id: 'soil',
+      name: 'Soil Sensors',
+      count: 0,
+      color: 'green',
+      icon: <Sprout size={20} />,
+      previewSensors: [
+        { name: 'Moisture', value: '0%', icon: <Droplets size={12} /> },
+        { name: 'pH Level', value: '0.0', icon: <Activity size={12} /> },
+      ],
+      details: [],
+    },
+  ];
+
+  const handleInteraction = () => {
+    if (!hasData) {
+      navigate('/profile', { state: { openAddDevice: true } });
+    }
+  };
 
   return (
-    <section className="flex flex-col gap-4 p-0 lg:p-4 rounded-2xl">
+    <section
+      onClick={handleInteraction}
+      className={`flex flex-col gap-4 p-0 lg:p-4 rounded-2xl ${!hasData ? 'cursor-pointer' : ''}`}
+    >
       <div className="bg-gradient-to-br from-background to-green-500/5 dark:bg-card rounded-2xl p-3 lg:p-6 shadow-sm hover:shadow-md transition-shadow duration-300 border border-border">
         <div className="flex justify-between items-start mb-3 lg:mb-8">
           <div className="flex gap-2 lg:gap-4">
@@ -334,10 +368,10 @@ const IOTDashboard = ({
               {
                 icon: <Activity size={32} />,
                 label: 'Sensors',
-                value: '19',
+                value: hasData ? '19' : '0',
                 subValue: (
                   <div className="flex items-center gap-1 text-xs text-purple-400 mt-2 uppercase font-bold tracking-tighter">
-                    <Activity size={12} /> Active
+                    <Activity size={12} /> {hasData ? 'Active' : 'No Devices'}
                   </div>
                 ),
               },
@@ -369,9 +403,9 @@ const IOTDashboard = ({
                   <div className={`text-${cat.color}-500 mb-1 lg:mb-2`}>
                     {React.isValidElement(cat.icon)
                       ? React.cloneElement(
-                          cat.icon as React.ReactElement<any>,
-                          { size: 24 }
-                        )
+                        cat.icon as React.ReactElement<any>,
+                        { size: 24 }
+                      )
                       : cat.icon}
                   </div>
                   <span className="text-[10px] lg:text-sm font-bold text-foreground group-hover:text-primary transition-colors">
@@ -472,11 +506,10 @@ const SensorCategoryModal = ({
                           onClick={() =>
                             setSelectedSensor(isSelected ? null : sensor.name)
                           }
-                          className={`p-3 lg:p-4 rounded-xl lg:rounded-2xl bg-background border transition-all cursor-pointer group shadow-sm w-full ${
-                            isSelected
-                              ? 'border-primary ring-1 ring-primary/20 bg-primary/5 shadow-md'
-                              : 'border-border hover:border-primary/50 hover:shadow-md'
-                          }`}
+                          className={`p-3 lg:p-4 rounded-xl lg:rounded-2xl bg-background border transition-all cursor-pointer group shadow-sm w-full ${isSelected
+                            ? 'border-primary ring-1 ring-primary/20 bg-primary/5 shadow-md'
+                            : 'border-border hover:border-primary/50 hover:shadow-md'
+                            }`}
                         >
                           <div className="flex justify-between items-start mb-2 lg:mb-3">
                             <div
@@ -484,9 +517,9 @@ const SensorCategoryModal = ({
                             >
                               {React.isValidElement(sensor.icon)
                                 ? React.cloneElement(
-                                    sensor.icon as React.ReactElement<any>,
-                                    { size: 24 }
-                                  )
+                                  sensor.icon as React.ReactElement<any>,
+                                  { size: 24 }
+                                )
                                 : sensor.icon}
                             </div>
                           </div>
@@ -503,30 +536,27 @@ const SensorCategoryModal = ({
                           </div>
                           <div className="mt-2 flex items-center gap-1">
                             <span
-                              className={`w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full ${
-                                sensor.status === 'Good'
-                                  ? 'bg-green-500'
-                                  : sensor.status === 'Warning'
-                                    ? 'bg-yellow-500'
-                                    : 'bg-red-500'
-                              }`}
+                              className={`w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full ${sensor.status === 'Good'
+                                ? 'bg-green-500'
+                                : sensor.status === 'Warning'
+                                  ? 'bg-yellow-500'
+                                  : 'bg-red-500'
+                                }`}
                             ></span>
                             <span
-                              className={`text-[10px] lg:text-xs font-bold uppercase ${
-                                sensor.status === 'Good'
-                                  ? 'text-green-500'
-                                  : sensor.status === 'Warning'
-                                    ? 'text-yellow-500'
-                                    : 'text-red-500'
-                              }`}
+                              className={`text-[10px] lg:text-xs font-bold uppercase ${sensor.status === 'Good'
+                                ? 'text-green-500'
+                                : sensor.status === 'Warning'
+                                  ? 'text-yellow-500'
+                                  : 'text-red-500'
+                                }`}
                             >
                               {sensor.status}
                             </span>
                             <ChevronDown
                               size={10}
-                              className={`ml-auto text-muted-foreground transition-transform duration-300 ${
-                                isSelected ? 'rotate-180' : ''
-                              }`}
+                              className={`ml-auto text-muted-foreground transition-transform duration-300 ${isSelected ? 'rotate-180' : ''
+                                }`}
                             />
                           </div>
                         </div>
@@ -630,11 +660,10 @@ const ChartCard = ({
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
-            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all ${
-              activeTab === tab
-                ? 'bg-primary/10 text-primary ring-1 ring-primary/20 dark:bg-[#15231c] dark:text-[#4ade80] dark:ring-[#4ade80]/20'
-                : 'text-muted-foreground hover:text-foreground dark:text-gray-500 dark:hover:text-gray-300'
-            }`}
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all ${activeTab === tab
+              ? 'bg-primary/10 text-primary ring-1 ring-primary/20 dark:bg-[#15231c] dark:text-[#4ade80] dark:ring-[#4ade80]/20'
+              : 'text-muted-foreground hover:text-foreground dark:text-gray-500 dark:hover:text-gray-300'
+              }`}
           >
             {tab}
           </button>

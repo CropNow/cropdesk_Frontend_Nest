@@ -99,25 +99,14 @@ const SmartInfo = () => {
     fetchCalendarData();
   }, [currentDate]);
 
-  if (!isProfileComplete) {
-    return (
-      <div className="min-h-screen bg-background text-foreground p-8 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Smart Information Unavailable</h1>
-          <p className="text-muted-foreground">
-            Please complete your profile to access smart insights and alerts.
-          </p>
-          <Button
-            onClick={() => navigate('/register/farmer-details')}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-all"
-          >
-            <Plus size={20} />
-            Complete Profile
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Check for device/profile completeness
+  const hasData = isProfileComplete;
+
+  const handleInteraction = () => {
+    if (!hasData) {
+      navigate('/profile', { state: { openAddDevice: true } });
+    }
+  };
 
   const months = [
     'Jan',
@@ -134,6 +123,7 @@ const SmartInfo = () => {
     'Dec',
   ];
 
+  /* ... rest of calendar logic ... */
   const handlePrevMonth = () => {
     setCurrentDate(
       new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
@@ -157,43 +147,43 @@ const SmartInfo = () => {
     1
   ).getDay();
 
-  // Metric Data
+  // Metric Data - Zeroed if no data
   const metrics = [
     {
       icon: <Droplets size={18} />,
-      value: '45',
+      value: hasData ? '45' : '0',
       unit: '%',
       label: 'Soil Moisture',
       color: 'orange',
-      trend: 'Low',
-      progress: 45,
+      trend: hasData ? 'Low' : '-',
+      progress: hasData ? 45 : 0,
     },
     {
       icon: <Thermometer size={18} />,
-      value: '28',
+      value: hasData ? '28' : '0',
       unit: '°C',
       label: 'Temperature',
       color: 'cyan',
-      trend: 'Optimal',
-      progress: 70,
+      trend: hasData ? 'Optimal' : '-',
+      progress: hasData ? 70 : 0,
     },
     {
       icon: <Sun size={18} />,
-      value: '6.0',
+      value: hasData ? '6.0' : '0.0',
       unit: '',
       label: 'UV Index',
       color: 'green',
-      trend: 'Safe',
-      progress: 60,
+      trend: hasData ? 'Safe' : '-',
+      progress: hasData ? 60 : 0,
     },
     {
       icon: <Wind size={18} />,
-      value: '5.0',
+      value: hasData ? '5.0' : '0.0',
       unit: 'm/s',
       label: 'Wind Speed',
       color: 'indigo',
-      trend: 'High',
-      progress: 85,
+      trend: hasData ? 'High' : '-',
+      progress: hasData ? 85 : 0,
     },
   ];
 
@@ -300,11 +290,10 @@ const SmartInfo = () => {
                     <div
                       key={i}
                       onClick={() => setSelectedDay(day)}
-                      className={`aspect-square flex items-center justify-center rounded-lg cursor-pointer transition-all hover:bg-muted relative text-[11px] lg:text-sm ${
-                        selectedDay === day
-                          ? 'bg-primary/10 text-primary font-bold border border-primary/20'
-                          : 'text-muted-foreground'
-                      }`}
+                      className={`aspect-square flex items-center justify-center rounded-lg cursor-pointer transition-all hover:bg-muted relative text-[11px] lg:text-sm ${selectedDay === day
+                        ? 'bg-primary/10 text-primary font-bold border border-primary/20'
+                        : 'text-muted-foreground'
+                        }`}
                     >
                       {day}
                       {dotColor && (
@@ -334,7 +323,10 @@ const SmartInfo = () => {
             </div>
 
             {/* Overall Farm Status */}
-            <div className="bg-card border border-border rounded-3xl p-4 lg:p-6">
+            <div
+              onClick={handleInteraction}
+              className={`bg-card border border-border rounded-3xl p-4 lg:p-6 ${!hasData ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''}`}
+            >
               <div className="flex justify-between items-start mb-4 lg:mb-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 lg:p-3 bg-green-500/10 rounded-xl text-green-500">
@@ -387,14 +379,19 @@ const SmartInfo = () => {
           </div>
 
           <div className="lg:col-span-9 flex flex-col gap-6">
-            <FISAlertEngine metrics={metrics} />
+            <div onClick={handleInteraction} className={!hasData ? 'cursor-pointer' : ''}>
+              <FISAlertEngine metrics={metrics} />
+            </div>
 
             {/* BOTTOM SECTION */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* LEFT COLUMN: Water Savings */}
               <div className="flex flex-col gap-6">
                 {/* WATER SAVINGS */}
-                <div className="bg-card border border-border rounded-3xl p-4 lg:p-8">
+                <div
+                  onClick={handleInteraction}
+                  className={`bg-card border border-border rounded-3xl p-4 lg:p-8 ${!hasData ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''}`}
+                >
                   <div className="flex justify-between items-center mb-4 lg:mb-8">
                     <div className="flex items-center gap-3">
                       <div className="p-2 lg:p-3 bg-cyan-500/10 rounded-xl text-cyan-500">
@@ -423,7 +420,7 @@ const SmartInfo = () => {
                         </span>
                       </div>
                       <div className="text-2xl lg:text-4xl font-bold text-cyan-400 mb-1">
-                        250 L
+                        {hasData ? '250 L' : '0 L'}
                       </div>
                       <div className="text-[10px] lg:text-xs text-muted-foreground">
                         This Month
@@ -438,7 +435,7 @@ const SmartInfo = () => {
                         </span>
                       </div>
                       <div className="text-2xl lg:text-4xl font-bold text-green-400 mb-1">
-                        8.3 L
+                        {hasData ? '8.3 L' : '0 L'}
                       </div>
                       <div className="text-[10px] lg:text-xs text-muted-foreground">
                         Per Day

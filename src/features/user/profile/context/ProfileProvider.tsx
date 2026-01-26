@@ -203,11 +203,60 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
                 handleSetSelectedFarmId(firstFarm.id);
                 if (firstFarm.fields?.length > 0) {
                   const firstField = firstFarm.fields[0];
-                  // Only set ID, which will trigger lazy load if we implement it in effect
-                  // For now, simple set
-                  handleSetSelectedFieldId(firstField.id);
+
+                  // Pre-fetch crops for the first field so they appear immediately
+                  try {
+                    const { getCropsByField } = await import('@/features/auth/api/crop.api');
+                    const rawCrops = await getCropsByField(firstField.id || (firstField as any)._id);
+                    const initialCrops = normalizeData(rawCrops || []);
+
+                    // Inject into the farmers tree
+                    enrichedFarmers = enrichedFarmers.map(f => {
+                      if (f.id === firstFarmer.id) {
+                        return {
+                          ...f,
+                          farms: f.farms.map((fm: any) => {
+                            if (fm.id === firstFarm.id) {
+                              return {
+                                ...fm,
+                                fields: fm.fields.map((fd: any) => {
+                                  if (fd.id === firstField.id) {
+                                    return { ...fd, crops: initialCrops };
+                                  }
+                                  return fd;
+                                })
+                              };
+                            }
+                            return fm;
+                          })
+                        };
+                      }
+                      return f;
+                    });
+
+                    // Update state with the enriched data including crops
+                    setFarmers(enrichedFarmers);
+
+                    // Now set selection IDs
+                    setSelectedFieldId(firstField.id);
+                    if (initialCrops.length > 0) {
+                      setSelectedCropId(initialCrops[0].id);
+                    }
+                  } catch (e) {
+                    console.warn('Initial crop fetch failed', e);
+                    // Fallback if fetch fails
+                    setFarmers(enrichedFarmers);
+                    setSelectedFieldId(firstField.id);
+                  }
+                } else {
+                  // No fields, just set farmers
+                  setFarmers(enrichedFarmers);
                 }
+              } else {
+                setFarmers(enrichedFarmers);
               }
+            } else {
+              setFarmers(enrichedFarmers);
             }
           }
         } else {
@@ -533,7 +582,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
       ) {
         try {
           fieldPayload.coordinates = JSON.parse(fieldPayload.coordinates);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const updatedField = await updateField(id, fieldPayload);

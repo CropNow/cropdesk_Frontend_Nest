@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User as UserIcon, Phone, Mail, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
+import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ListBox } from '@/components/ui/list-box';
@@ -73,8 +73,24 @@ const FarmerDetailsTab = () => {
   };
 
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) newErrors.name = 'This field is not filled';
+    if (!formData.phone.trim()) newErrors.phone = 'This field is not filled';
+    if (!formData.email.trim()) newErrors.email = 'This field is not filled';
+    if (!formData.address.village.trim()) newErrors.village = 'This field is not filled';
+    if (!formData.address.district.trim()) newErrors.district = 'This field is not filled';
+    if (!formData.address.state.trim()) newErrors.state = 'This field is not filled';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSave = async () => {
+    if (!validateForm()) return;
+
     setIsSaving(true);
     try {
       if (isAdding) {
@@ -118,6 +134,23 @@ const FarmerDetailsTab = () => {
     }
     setIsEditing(true);
   };
+
+  if (!selectedFarmer && !isAdding) {
+    return (
+      <div className="bg-card border border-border rounded-3xl p-8 flex items-center justify-center min-h-[400px] flex-col gap-4">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">No farmer details found.</p>
+          <Button
+            className="rounded-xl font-bold flex items-center gap-2 mx-auto"
+            onClick={toggleAddMode}
+          >
+            <Plus size={16} />
+            Add New Farmer
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card border border-border rounded-3xl p-8">
@@ -166,8 +199,8 @@ const FarmerDetailsTab = () => {
               {/* Details Section */}
               <div className="space-y-2 text-foreground">
                 {formData.address.village ||
-                formData.address.district ||
-                formData.address.state ? (
+                  formData.address.district ||
+                  formData.address.state ? (
                   <p className="text-base">
                     {[
                       formData.address.village,
@@ -229,6 +262,7 @@ const FarmerDetailsTab = () => {
             // EDIT MODE - Form Display
             <div className="space-y-6 max-w-4xl">
               {/* Name */}
+              {/* Name */}
               <div>
                 <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
                   Full Name
@@ -237,12 +271,16 @@ const FarmerDetailsTab = () => {
                   <div className="p-3 bg-muted rounded-xl">
                     <UserIcon size={18} className="text-foreground" />
                   </div>
-                  <Input
+                  <FormInput
                     type="text"
                     name="name"
                     value={formData.name || ''}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      setFormData((prev) => ({ ...prev, name: e.target.value }));
+                      if (errors.name) setErrors({ ...errors, name: '' });
+                    }}
                     className="w-full font-semibold px-4 py-3 text-sm"
+                    error={errors.name || ''}
                   />
                 </div>
               </div>
@@ -257,14 +295,16 @@ const FarmerDetailsTab = () => {
                     <div className="p-3 bg-muted rounded-xl">
                       <Phone size={18} className="text-foreground" />
                     </div>
-                    <Input
+                    <FormInput
                       type="text"
                       name="phone"
                       value={formData.phone || ''}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setFormData((prev) => ({ ...prev, phone: e.target.value }));
+                        if (errors.phone) setErrors({ ...errors, phone: '' });
+                      }}
                       className="w-full font-semibold px-4 py-3 text-sm"
+                      error={errors.phone || ''}
                     />
                   </div>
                 </div>
@@ -278,12 +318,13 @@ const FarmerDetailsTab = () => {
                     <div className="p-3 bg-muted rounded-xl">
                       <Mail size={18} className="text-foreground" />
                     </div>
-                    <Input
+                    <FormInput
                       type="text"
                       name="email"
                       value={formData.email || ''}
                       onChange={handleChange}
                       className="w-full font-semibold px-4 py-3 text-sm"
+                      error={errors.email || ''}
                     />
                   </div>
                 </div>
@@ -297,20 +338,22 @@ const FarmerDetailsTab = () => {
                   <Label className="block text-xs font-bold text-white uppercase mb-2">
                     Village
                   </Label>
-                  <Input
+                  <FormInput
                     type="text"
                     name="village"
                     value={formData.address.village || ''}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData({
                         ...formData,
                         address: {
                           ...formData.address,
                           village: e.target.value,
                         },
-                      })
-                    }
+                      });
+                      if (errors.village) setErrors({ ...errors, village: '' });
+                    }}
                     className="w-full font-semibold px-4 py-3 text-sm"
+                    error={errors.village || ''}
                   />
                 </div>
                 {/* District */}
@@ -318,20 +361,22 @@ const FarmerDetailsTab = () => {
                   <Label className="block text-xs font-bold text-white uppercase mb-2">
                     District
                   </Label>
-                  <Input
+                  <FormInput
                     type="text"
                     name="district"
                     value={formData.address.district || ''}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData({
                         ...formData,
                         address: {
                           ...formData.address,
                           district: e.target.value,
                         },
-                      })
-                    }
+                      });
+                      if (errors.district) setErrors({ ...errors, district: '' });
+                    }}
                     className="w-full font-semibold px-4 py-3 text-sm"
+                    error={errors.district || ''}
                   />
                 </div>
                 {/* State */}
@@ -339,17 +384,19 @@ const FarmerDetailsTab = () => {
                   <Label className="block text-xs font-bold text-white uppercase mb-2">
                     State
                   </Label>
-                  <Input
+                  <FormInput
                     type="text"
                     name="state"
                     value={formData.address.state || ''}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData({
                         ...formData,
                         address: { ...formData.address, state: e.target.value },
-                      })
-                    }
+                      });
+                      if (errors.state) setErrors({ ...errors, state: '' });
+                    }}
                     className="w-full font-semibold px-4 py-3 text-sm"
+                    error={errors.state || ''}
                   />
                 </div>
               </div>

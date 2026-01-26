@@ -4,11 +4,11 @@ import { ArrowLeft } from 'lucide-react';
 import { convertAreaToSqFt } from '@/utils/unitConversion';
 import { isLocationValid } from '@/utils/geoUtils';
 import LocationPicker from '@/components/common/LocationPicker';
-import { Input } from '@/components/ui/input';
+import { FormInput } from '@/components/common/FormInput';
+import { FormTextarea } from '@/components/common/FormTextarea';
+import { FormDropdown } from '@/components/common/FormDropdown';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Dropdown } from '@/components/ui/dropdown';
 
 const FieldDetails = () => {
   const navigate = useNavigate();
@@ -53,6 +53,26 @@ const FieldDetails = () => {
     };
   });
 
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!fieldData.fieldName.trim()) newErrors.fieldName = 'This field is not filled';
+    if (!fieldData.area.toString().trim()) newErrors.area = 'This field is not filled';
+    if (!fieldData.boundaryType.trim()) newErrors.boundaryType = 'This field is not filled';
+    if (!fieldData.soilType.trim()) newErrors.soilType = 'This field is not filled';
+
+    // Coordinates validation is trickier as it might be complex object or string
+    // But let's at least check if it's there? 
+    // Usually handled by the picker, but let's strictly require it?
+    // The previous implementation didn't strictly block in UI except via 'required' on hidden inputs potentially?
+    // Actually LocationPicker might update it.
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   useEffect(() => {
     const tempStr = localStorage.getItem('tempRegistrationData');
     const tempData = tempStr ? JSON.parse(tempStr) : {};
@@ -95,6 +115,9 @@ const FieldDetails = () => {
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) return;
+
     console.log('Field Details Submitting:', fieldData);
 
     try {
@@ -211,19 +234,20 @@ const FieldDetails = () => {
         <form onSubmit={handleNext} className="space-y-4">
           {/* Field Name & Description */}
           <div>
-            <Input
+            <FormInput
               type="text"
               placeholder="Field Name"
               value={fieldData.fieldName}
-              onChange={(e) =>
-                setFieldData({ ...fieldData, fieldName: e.target.value })
-              }
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
+              onChange={(e) => {
+                setFieldData({ ...fieldData, fieldName: e.target.value });
+                if (errors.fieldName) setErrors({ ...errors, fieldName: '' });
+              }}
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              error={errors.fieldName || ''}
             />
           </div>
           <div>
-            <Textarea
+            <FormTextarea
               placeholder="Description (Optional)"
               value={fieldData.description}
               onChange={(e) =>
@@ -235,31 +259,34 @@ const FieldDetails = () => {
 
           {/* Area & Units */}
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              type="number"
-              placeholder="Area"
-              value={fieldData.area}
-              onChange={(e) => {
-                const val = parseFloat(e.target.value);
-                if (val >= 0 || e.target.value === '') {
-                  setFieldData({ ...fieldData, area: e.target.value });
-                }
-              }}
-              min="0"
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
-              required
-            />
-            <Dropdown
+            <div className="flex flex-col">
+              <FormInput
+                type="number"
+                placeholder="Area"
+                value={fieldData.area}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (val >= 0 || e.target.value === '') {
+                    setFieldData({ ...fieldData, area: e.target.value });
+                  }
+                  if (errors.area) setErrors({ ...errors, area: '' });
+                }}
+                min="0"
+                className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+                error={errors.area || ''}
+              />
+            </div>
+            <FormDropdown
               value={fieldData.units}
               onChange={(e) =>
                 setFieldData({ ...fieldData, units: e.target.value })
               }
               className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
-              <option value="acres">Acres</option>
-              <option value="hectares">Hectares</option>
-              <option value="sq_ft">Sq Ft</option>
-            </Dropdown>
+              <option value="acres" className="bg-gray-800">Acres</option>
+              <option value="hectares" className="bg-gray-800">Hectares</option>
+              <option value="sq_ft" className="bg-gray-800">Sq Ft</option>
+            </FormDropdown>
           </div>
 
           {/* Boundary Type */}
@@ -267,18 +294,19 @@ const FieldDetails = () => {
             <Label className="text-xs text-white/60 mb-1 block ml-1">
               Boundary Shape
             </Label>
-            <Dropdown
+            <FormDropdown
               value={fieldData.boundaryType}
               onChange={(e) =>
                 setFieldData({ ...fieldData, boundaryType: e.target.value })
               }
               className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
+              error={errors.boundaryType || ''}
             >
               <option value="Polygon">Polygon (Irregular)</option>
               <option value="Rectangle">Rectangle</option>
               <option value="Square">Square</option>
               <option value="Circle">Circle</option>
-            </Dropdown>
+            </FormDropdown>
           </div>
 
           {/* Coordinates / Map */}
@@ -316,7 +344,7 @@ const FieldDetails = () => {
                       }));
                     }
                   }
-                } catch (e) {}
+                } catch (e) { }
               }}
               height="350px"
             />
@@ -327,24 +355,28 @@ const FieldDetails = () => {
             <Label className="text-xs text-white/60 mb-1 block ml-1">
               Soil Type
             </Label>
-            <Dropdown
-              value={fieldData.soilType}
-              onChange={(e) =>
-                setFieldData({ ...fieldData, soilType: e.target.value })
-              }
-              className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
-            >
-              <option value="Clay">Clay</option>
-              <option value="Sandy">Sandy</option>
-              <option value="Loamy">Loamy</option>
-              <option value="Chalky">Chalky</option>
-              <option value="Mixed">Mixed</option>
-            </Dropdown>
+            <div className="flex flex-col">
+              <FormDropdown
+                value={fieldData.soilType}
+                onChange={(e) => {
+                  setFieldData({ ...fieldData, soilType: e.target.value });
+                  if (errors.soilType) setErrors({ ...errors, soilType: '' });
+                }}
+                className="w-full px-4 py-3 h-auto bg-white/10 border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
+                error={errors.soilType || ''}
+              >
+                <option value="Clay">Clay</option>
+                <option value="Sandy">Sandy</option>
+                <option value="Loamy">Loamy</option>
+                <option value="Chalky">Chalky</option>
+                <option value="Mixed">Mixed</option>
+              </FormDropdown>
+            </div>
           </div>
 
           {/* pH Level & Irrigation */}
           <div className="grid grid-cols-2 gap-4">
-            <Input
+            <FormInput
               type="number"
               step="0.1"
               min="0"
@@ -357,9 +389,9 @@ const FieldDetails = () => {
                   setFieldData({ ...fieldData, phLevel: e.target.value });
                 }
               }}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
             />
-            <Dropdown
+            <FormDropdown
               value={fieldData.irrigationMethod}
               onChange={(e) =>
                 setFieldData({ ...fieldData, irrigationMethod: e.target.value })
@@ -370,7 +402,7 @@ const FieldDetails = () => {
               <option value="Sprinkler">Sprinkler</option>
               <option value="Flood">Flood</option>
               <option value="Manual">Manual</option>
-            </Dropdown>
+            </FormDropdown>
           </div>
 
           <Button

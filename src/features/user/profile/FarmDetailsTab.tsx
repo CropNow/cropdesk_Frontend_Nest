@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Map, Ruler, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LocationPicker from '@/components/common/LocationPicker';
-import { Input } from '@/components/ui/input';
+import { FormInput } from '@/components/common/FormInput';
+import { FormTextarea } from '@/components/common/FormTextarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Subheading } from '@/components/common/Heading';
 import { ListBox } from '@/components/ui/list-box';
 import { useProfile } from './context/useProfile';
@@ -60,6 +60,9 @@ const FarmDetailsTab = () => {
       });
       setIsEditing(true);
     } else if (selectedFarm) {
+      console.log('Selected Farm Data:', selectedFarm);
+      console.log('Selected Farm Location:', selectedFarm.location);
+
       let loc: any = {
         address: '',
         city: '',
@@ -105,6 +108,20 @@ const FarmDetailsTab = () => {
     }
   }, [selectedFarm, isAdding]);
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!farmData.name.trim()) newErrors.name = 'Farm name is required';
+    if (!farmData.area.toString().trim()) newErrors.area = 'Area is required';
+    if (!farmData.location.address.trim()) newErrors.address = 'Address is required';
+    if (!farmData.location.city.trim()) newErrors.city = 'City is required';
+    if (!farmData.location.country.trim()) newErrors.country = 'Country is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -126,11 +143,20 @@ const FarmDetailsTab = () => {
         [name]: value,
       };
     });
+    // Clear error for the changed field
+    if (name.startsWith('location.')) {
+      const errorKey = name.split('.')[1];
+      if (errorKey && errors[errorKey]) setErrors((prev) => ({ ...prev, [errorKey]: '' }));
+    } else if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
+    if (!validateForm()) return;
+
     setIsSaving(true);
     try {
       if (isAdding) {
@@ -153,6 +179,7 @@ const FarmDetailsTab = () => {
     if (isAdding) {
       setIsAdding(false);
       setIsEditing(false);
+      setErrors({}); // Clear errors when canceling add mode
     } else {
       // Requirement: Redirect new users to registration wizard if they haven't completed it
       if (!user?.isOnboardingComplete && (!farms || farms.length === 0)) {
@@ -160,6 +187,7 @@ const FarmDetailsTab = () => {
         return;
       }
       setIsAdding(true);
+      setErrors({}); // Clear errors when starting add mode
     }
   };
 
@@ -169,6 +197,7 @@ const FarmDetailsTab = () => {
       return;
     }
     setIsEditing(true);
+    setErrors({}); // Clear errors when starting edit mode
   };
 
   // Show "No Farm Selected" only if NOT adding AND no farm
@@ -301,16 +330,21 @@ const FarmDetailsTab = () => {
             <>
               <div className="space-y-6 max-w-4xl">
                 {/* Farm Name */}
+                {/* Farm Name */}
                 <div>
                   <Label className="block text-xs font-bold text-white uppercase mb-2">
                     Farm Name
                   </Label>
-                  <Input
+                  <FormInput
                     type="text"
                     name="name"
                     value={farmData.name || ''}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      setFarmData((prev) => ({ ...prev, name: e.target.value }));
+                      if (errors.name) setErrors({ ...errors, name: '' });
+                    }}
                     className="w-full font-semibold px-4 py-3 text-sm"
+                    error={errors.name || ''}
                   />
                 </div>
 
@@ -319,7 +353,7 @@ const FarmDetailsTab = () => {
                   <Label className="block text-xs font-bold text-white uppercase mb-2">
                     Description
                   </Label>
-                  <Textarea
+                  <FormTextarea
                     name="description"
                     value={farmData.description || ''}
                     onChange={handleChange}
@@ -337,13 +371,17 @@ const FarmDetailsTab = () => {
                       <div className="p-3 bg-muted rounded-xl">
                         <Ruler size={18} className="text-foreground" />
                       </div>
-                      <Input
+                      <FormInput
                         type="text"
                         name="area"
                         value={farmData.area ? `${farmData.area}` : ''}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          setFarmData((prev) => ({ ...prev, area: e.target.value }));
+                          if (errors.area) setErrors({ ...errors, area: '' });
+                        }}
                         placeholder="Area (e.g. 10)"
                         className="w-full font-semibold px-4 py-3 text-sm"
+                        error={errors.area || ''}
                       />
                     </div>
                   </div>
@@ -364,12 +402,16 @@ const FarmDetailsTab = () => {
                       <div className="p-3 bg-muted rounded-xl">
                         <Map size={18} className="text-foreground" />
                       </div>
-                      <Input
+                      <FormInput
                         type="text"
                         name="location.address"
                         value={farmData.location?.address || ''}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          setFarmData((prev) => ({ ...prev, location: { ...prev.location, address: e.target.value } }));
+                          if (errors.address) setErrors({ ...errors, address: '' });
+                        }}
                         className="w-full font-semibold px-4 py-3 text-sm"
+                        error={errors.address || ''}
                       />
                     </div>
                   </div>
@@ -377,24 +419,32 @@ const FarmDetailsTab = () => {
                     <Label className="block text-xs font-bold text-white uppercase mb-2">
                       City
                     </Label>
-                    <Input
+                    <FormInput
                       type="text"
                       name="location.city"
                       value={farmData.location?.city || ''}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                        setFarmData((prev) => ({ ...prev, location: { ...prev.location, city: e.target.value } }));
+                        if (errors.city) setErrors({ ...errors, city: '' });
+                      }}
                       className="w-full font-semibold px-4 py-3 text-sm"
+                      error={errors.city || ''}
                     />
                   </div>
                   <div>
                     <Label className="block text-xs font-bold text-white uppercase mb-2">
                       Country
                     </Label>
-                    <Input
+                    <FormInput
                       type="text"
                       name="location.country"
                       value={farmData.location?.country || ''}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                        setFarmData((prev) => ({ ...prev, location: { ...prev.location, country: e.target.value } }));
+                        if (errors.country) setErrors({ ...errors, country: '' });
+                      }}
                       className="w-full font-semibold px-4 py-3 text-sm"
+                      error={errors.country || ''}
                     />
                   </div>
                 </div>
@@ -410,7 +460,7 @@ const FarmDetailsTab = () => {
                     readOnly={false}
                     value={
                       farmData.location?.latitude &&
-                      farmData.location?.longitude
+                        farmData.location?.longitude
                         ? `${farmData.location.latitude}, ${farmData.location.longitude}`
                         : ''
                     }
