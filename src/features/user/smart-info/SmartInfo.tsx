@@ -1,23 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Camera,
-  MessageSquare,
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-  Zap,
-  Wind,
   Droplets,
-  Leaf,
-  ChevronDown,
-  Eye,
-  AlertTriangle,
   Sprout,
   TrendingUp,
   TrendingDown,
   Thermometer,
   Sun,
-  Plus,
+  Wind,
+  Sparkles,
 } from 'lucide-react';
 import FISAlertEngine from './FISAlertEngine';
 import { getCalendarStatus, DailyStatus } from './smart-info.api';
@@ -25,6 +18,8 @@ import { getCalendarStatus, DailyStatus } from './smart-info.api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/useAuth';
 import { Button } from '@/components/ui/button';
+import { getLatestPrediction } from '../dashboard/ml.service';
+import { MLPrediction } from '@/types/ml.types';
 
 const SmartInfo = () => {
   const navigate = useNavigate();
@@ -32,12 +27,7 @@ const SmartInfo = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
   const [calendarData, setCalendarData] = useState<DailyStatus[]>([]);
-
-  const handleAction = async (actionName: string) => {
-    console.log(`Action triggered: ${actionName}`);
-    // Simulate backend call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  };
+  const [mlPrediction, setMlPrediction] = useState<MLPrediction | null>(null);
 
   const { user } = useAuth();
 
@@ -100,7 +90,309 @@ const SmartInfo = () => {
   }, [currentDate]);
 
   // Check for device/profile completeness
-  const hasData = isProfileComplete;
+  const [hasDevices, setHasDevices] = useState(false);
+
+  useEffect(() => {
+    const checkDevices = () => {
+      const devices = localStorage.getItem('connected_devices');
+      if (devices && JSON.parse(devices).length > 0) {
+        setHasDevices(true);
+      } else {
+        setHasDevices(false);
+      }
+    };
+    checkDevices();
+  }, []);
+
+  // Fetch real IoT Data (shared with IOTDashboard)
+  const [realIotData, setRealIotData] = useState<any>(null);
+
+  useEffect(() => {
+    const dataStr = localStorage.getItem('iot_device_data');
+    if (dataStr) {
+      try {
+        const parsed = JSON.parse(dataStr);
+        setRealIotData(parsed);
+      } catch (e) {
+        console.error('SmartInfo: Failed to parse IoT Data');
+      }
+    }
+  }, []);
+
+  const hasData = isProfileComplete && hasDevices && realIotData;
+
+  // Helper to extract value safely
+  const getSensorValue = (category: string, sensorName: string): string => {
+    if (!realIotData) return '0';
+    const cat = realIotData.find((c: any) => c.id === category);
+    if (!cat) return '0';
+    const sens = cat.details.find((d: any) => d.name.includes(sensorName));
+    return sens ? sens.value : '0';
+  };
+
+  // Helper to average sensor values (e.g. Root + Surface)
+  const getAverageSensorValue = (
+    category: string,
+    sensorNames: string[]
+  ): string => {
+    if (!realIotData) return '0';
+    const cat = realIotData.find((c: any) => c.id === category);
+    if (!cat) return '0';
+
+    let total = 0;
+    let count = 0;
+
+    sensorNames.forEach((name) => {
+      const sens = cat.details.find((d: any) => d.name.includes(name));
+      if (sens && !isNaN(parseFloat(sens.value))) {
+        total += parseFloat(sens.value);
+        count++;
+      }
+    });
+
+    return count > 0 ? (total / count).toFixed(1) : '0';
+  };
+
+  // Extract readings
+  // Averaging Soil Moisture (Surface + Root)
+  const soilMoisture = getAverageSensorValue('soil', [
+    'Soil Moisture at Surface',
+    'Soil Moisture at Root',
+  ]);
+  // Averaging Soil Temperature (Surface + Root)
+  const soilTemp = getAverageSensorValue('soil', [
+    'Soil Temperature at Surface',
+    'Soil Temperature at Root',
+  ]);
+  const windSpeed = getSensorValue('weather', 'Wind Speed');
+  // UV is not in our default "Weather" category (we have Wind, Rain).
+  // We have "Light" category with "Radiation".
+  const uvIndex = getSensorValue('light', 'Radiation'); // Using Radiation as proxy for UV or placeholder
+
+  // Fetch ML Prediction
+  useEffect(() => {
+    const fetchML = async () => {
+      if (user && user.id) {
+        try {
+          // 1. Try to get latest from DB
+          const pred = await getLatestPrediction(user.id);
+
+          // 2. If we have real IoT data and the DB prediction is mock/missing/old,
+          //    run a fresh analysis against the external ML Model.
+          if (realIotData && (!pred || pred._id?.startsWith('pred_mock'))) {
+            console.log('Fetching fresh analysis from ML Model...');
+            const { analyzeCropHealth } =
+              await import('../dashboard/ml.service');
+
+            // Let's construct a cleaner payload
+            const analysisPayload = {
+              soilTemperature: soilTemp,
+              soilMoisture: soilMoisture,
+              windSpeed: windSpeed,
+              // Add others if available or let them default
+              temperature: getSensorValue('weather', 'Temperature'),
+              humidity: getSensorValue('weather', 'Humidity'),
+              rainfall: getSensorValue('weather', 'Rain'),
+              pm2_5: getSensorValue('air', 'PM 2.5'),
+              pm10: getSensorValue('air', 'PM 10'),
+              co2: getSensorValue('air', 'CO2'),
+              lightIntensity: getSensorValue('light', 'Light'),
+              solarRadiation: getSensorValue('light', 'Radiation'),
+            };
+
+            const externalPred = await analyzeCropHealth(
+              analysisPayload,
+              user.id
+            );
+
+            // Try to assign real farmId if available
+            if (user.farmers && user.farmers.length > 0) {
+              const fId = (user.farmers[0] as any).farmId; // Cast to any to avoid potential type mismatch if type is incomplete
+              if (fId)
+                externalPred.farmId = typeof fId === 'object' ? fId._id : fId;
+            }
+
+            setMlPrediction(externalPred);
+            return;
+          }
+
+          // Only set if different to avoid loops if objects are new refs
+          setMlPrediction((prev) => {
+            if (prev?._id === pred?._id) return prev;
+            return pred;
+          });
+        } catch (e) {
+          console.error('Failed to fetch ML prediction', e);
+        }
+      }
+    };
+    if (user) {
+      fetchML();
+    }
+  }, [user, realIotData]); // Added realIotData dependency
+
+  // Metric Data - Zeroed if no data
+  const metrics = React.useMemo(
+    () => [
+      {
+        icon: <Droplets size={18} />,
+        value: hasData ? soilMoisture : '0',
+        unit: '%',
+        label: 'Soil Moisture',
+        color: 'orange',
+        trend: '', // Removed hardcoded label
+        progress: hasData ? parseInt(soilMoisture) || 0 : 0,
+      },
+      {
+        icon: <Thermometer size={18} />,
+        value: hasData ? soilTemp : '0',
+        unit: '°C',
+        label: 'Temperature',
+        color: 'cyan',
+        trend: '', // Removed hardcoded label
+        progress: hasData ? parseInt(soilTemp) || 0 : 0,
+      },
+      {
+        icon: <Sun size={18} />,
+        value: hasData ? uvIndex : '0',
+        unit: '',
+        label: 'UV Index',
+        color: 'green',
+        trend: '', // Removed hardcoded label
+        progress: hasData ? parseInt(uvIndex) || 0 : 0,
+      },
+      {
+        icon: <Wind size={18} />,
+        value: hasData ? windSpeed : '0',
+        unit: 'm/s',
+        label: 'Wind Speed',
+        color: 'indigo',
+        trend: '', // Removed hardcoded label
+        progress: hasData ? parseInt(windSpeed) || 0 : 0,
+      },
+    ],
+    [hasData, soilMoisture, soilTemp, uvIndex, windSpeed]
+  );
+
+  // Calculate Overall Status
+  const [averageScore, statusText, statusStyles] = React.useMemo(() => {
+    // If we have ML prediction, derive logic from that first
+    if (mlPrediction?.farm_status) {
+      const score = mlPrediction.farm_status.farm_health_percentage;
+      const condition = mlPrediction.farm_status.farm_condition.toUpperCase();
+
+      // Request: Green if Healthy, Red if Unhealthy
+      if (
+        score >= 70 ||
+        condition.includes('HEALTH') ||
+        condition.includes('GOOD')
+      ) {
+        return [
+          score,
+          mlPrediction.farm_status.farm_condition,
+          {
+            color: 'text-green-500',
+            bg: 'bg-green-500/10',
+            border: 'border-green-500/20',
+          },
+        ];
+      } else {
+        return [
+          score,
+          mlPrediction.farm_status.farm_condition,
+          {
+            color: 'text-red-500',
+            bg: 'bg-red-500/10',
+            border: 'border-red-500/20',
+          },
+        ];
+      }
+    }
+
+    // Fallback Legacy Calculation
+    const totalProgress = metrics.reduce((acc, curr) => acc + curr.progress, 0);
+    const avg = metrics.length ? Math.round(totalProgress / metrics.length) : 0;
+
+    let text = 'Unknown';
+    let styles = {
+      color: 'text-muted-foreground',
+      bg: 'bg-muted',
+      border: 'border-border',
+    };
+
+    if (avg >= 90) {
+      text = 'Excellent';
+      styles = {
+        color: 'text-green-500',
+        bg: 'bg-green-500/10',
+        border: 'border-green-500/20',
+      };
+    } else if (avg >= 70) {
+      text = 'Good';
+      styles = {
+        color: 'text-teal-400',
+        bg: 'bg-teal-400/10',
+        border: 'border-teal-400/20',
+      };
+    } else if (avg >= 50) {
+      text = 'Average';
+      styles = {
+        color: 'text-yellow-500',
+        bg: 'bg-yellow-500/10',
+        border: 'border-yellow-500/20',
+      };
+    } else if (avg >= 30) {
+      text = 'Bad';
+      styles = {
+        color: 'text-orange-500',
+        bg: 'bg-orange-500/10',
+        border: 'border-orange-500/20',
+      };
+    } else {
+      text = 'Very Bad';
+      styles = {
+        color: 'text-red-500',
+        bg: 'bg-red-500/10',
+        border: 'border-red-500/20',
+      };
+    }
+
+    return [avg, text, styles];
+  }, [metrics, mlPrediction]);
+
+  const {
+    color: statusColor,
+    bg: statusBg,
+    border: statusBorder,
+  } = statusStyles;
+
+  // Sync Prediction & Status to Backend
+  useEffect(() => {
+    const syncToBackend = async () => {
+      if (!user || !user.id || !mlPrediction || !hasData) return;
+
+      const isTemporary =
+        mlPrediction._id?.startsWith('pred_mock') ||
+        mlPrediction._id?.startsWith('pred_external');
+
+      if (mlPrediction.generatedBy === 'automatic' && !isTemporary) return;
+
+      try {
+        const { createPrediction } = await import('../dashboard/ml.service');
+        console.log('Syncing Prediction & Farm Status...');
+        const realPred = await createPrediction({
+          ...mlPrediction,
+          userId: user.id,
+        });
+        setMlPrediction(realPred);
+      } catch (e) {
+        console.error('Sync failed', e);
+      }
+    };
+
+    const timeout = setTimeout(syncToBackend, 2000); // Debounce check
+    return () => clearTimeout(timeout);
+  }, [user, mlPrediction, hasData]);
 
   const handleInteraction = () => {
     if (!hasData) {
@@ -146,82 +438,6 @@ const SmartInfo = () => {
     currentDate.getMonth(),
     1
   ).getDay();
-
-  // Metric Data - Zeroed if no data
-  const metrics = [
-    {
-      icon: <Droplets size={18} />,
-      value: hasData ? '45' : '0',
-      unit: '%',
-      label: 'Soil Moisture',
-      color: 'orange',
-      trend: hasData ? 'Low' : '-',
-      progress: hasData ? 45 : 0,
-    },
-    {
-      icon: <Thermometer size={18} />,
-      value: hasData ? '28' : '0',
-      unit: '°C',
-      label: 'Temperature',
-      color: 'cyan',
-      trend: hasData ? 'Optimal' : '-',
-      progress: hasData ? 70 : 0,
-    },
-    {
-      icon: <Sun size={18} />,
-      value: hasData ? '6.0' : '0.0',
-      unit: '',
-      label: 'UV Index',
-      color: 'green',
-      trend: hasData ? 'Safe' : '-',
-      progress: hasData ? 60 : 0,
-    },
-    {
-      icon: <Wind size={18} />,
-      value: hasData ? '5.0' : '0.0',
-      unit: 'm/s',
-      label: 'Wind Speed',
-      color: 'indigo',
-      trend: hasData ? 'High' : '-',
-      progress: hasData ? 85 : 0,
-    },
-  ];
-
-  // Calculate Overall Status
-  const totalProgress = metrics.reduce((acc, curr) => acc + curr.progress, 0);
-  const averageScore = Math.round(totalProgress / metrics.length);
-
-  let statusText = 'Unknown';
-  let statusColor = 'text-muted-foreground';
-  let statusBg = 'bg-muted';
-  let statusBorder = 'border-border';
-
-  if (averageScore >= 90) {
-    statusText = 'Excellent';
-    statusColor = 'text-green-500';
-    statusBg = 'bg-green-500/10';
-    statusBorder = 'border-green-500/20';
-  } else if (averageScore >= 70) {
-    statusText = 'Good';
-    statusColor = 'text-teal-400';
-    statusBg = 'bg-teal-400/10';
-    statusBorder = 'border-teal-400/20';
-  } else if (averageScore >= 50) {
-    statusText = 'Average';
-    statusColor = 'text-yellow-500';
-    statusBg = 'bg-yellow-500/10';
-    statusBorder = 'border-yellow-500/20';
-  } else if (averageScore >= 30) {
-    statusText = 'Bad';
-    statusColor = 'text-orange-500';
-    statusBg = 'bg-orange-500/10';
-    statusBorder = 'border-orange-500/20';
-  } else {
-    statusText = 'Very Bad';
-    statusColor = 'text-red-500';
-    statusBg = 'bg-red-500/10';
-    statusBorder = 'border-red-500/20';
-  }
 
   return (
     <main className="min-h-screen bg-background text-foreground pb-20 pt-20 lg:pt-8 p-4 lg:p-8 font-sans">
@@ -290,10 +506,11 @@ const SmartInfo = () => {
                     <div
                       key={i}
                       onClick={() => setSelectedDay(day)}
-                      className={`aspect-square flex items-center justify-center rounded-lg cursor-pointer transition-all hover:bg-muted relative text-[11px] lg:text-sm ${selectedDay === day
-                        ? 'bg-primary/10 text-primary font-bold border border-primary/20'
-                        : 'text-muted-foreground'
-                        }`}
+                      className={`aspect-square flex items-center justify-center rounded-lg cursor-pointer transition-all hover:bg-muted relative text-[11px] lg:text-sm ${
+                        selectedDay === day
+                          ? 'bg-primary/10 text-primary font-bold border border-primary/20'
+                          : 'text-muted-foreground'
+                      }`}
                     >
                       {day}
                       {dotColor && (
@@ -329,7 +546,9 @@ const SmartInfo = () => {
             >
               <div className="flex justify-between items-start mb-4 lg:mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 lg:p-3 bg-green-500/10 rounded-xl text-green-500">
+                  <div
+                    className={`p-2 lg:p-3 rounded-xl ${statusColor} ${statusBg}`}
+                  >
                     <Sprout size={20} />
                   </div>
                   <div>
@@ -379,8 +598,121 @@ const SmartInfo = () => {
           </div>
 
           <div className="lg:col-span-9 flex flex-col gap-6">
-            <div onClick={handleInteraction} className={!hasData ? 'cursor-pointer' : ''}>
-              <FISAlertEngine metrics={metrics} />
+            <div
+              onClick={handleInteraction}
+              className={!hasData ? 'cursor-pointer' : ''}
+            >
+              {/* ML Prediction Summary Card - visible if prediction exists */}
+              {mlPrediction && mlPrediction.farm_status && (
+                <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-3xl p-6 mb-6 text-white relative overflow-hidden">
+                  <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2 bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                        <Sparkles size={12} />
+                        AI Farm Health Analysis
+                      </div>
+                      <h2 className="text-3xl font-bold mb-1">
+                        {mlPrediction.farm_status.farm_health_percentage}%{' '}
+                        <span className="text-lg font-medium opacity-80">
+                          Score
+                        </span>
+                      </h2>
+                      <p className="text-sm opacity-90">
+                        Condition:{' '}
+                        <span className="font-bold">
+                          {mlPrediction.farm_status.farm_condition}
+                        </span>{' '}
+                        • Valid until{' '}
+                        {new Date(
+                          mlPrediction.validUntil || ''
+                        ).toLocaleDateString()}
+                      </p>
+                    </div>
+
+                    <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/20 min-w-[200px]">
+                      <h4 className="text-sm font-bold mb-3 border-b border-white/20 pb-2">
+                        Stress Breakdown
+                      </h4>
+                      {mlPrediction.farm_status.stress_breakdown && (
+                        <>
+                          <div className="flex justify-between items-center text-xs mb-1.5">
+                            <span>Pest</span>
+                            <span
+                              className={
+                                mlPrediction.farm_status.stress_breakdown
+                                  .pest_stress > 0
+                                  ? 'text-red-300'
+                                  : 'text-green-300'
+                              }
+                            >
+                              {
+                                mlPrediction.farm_status.stress_breakdown
+                                  .pest_stress
+                              }
+                              %
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs mb-1.5">
+                            <span>Fungal</span>
+                            <span
+                              className={
+                                mlPrediction.farm_status.stress_breakdown
+                                  .fungal_stress > 0
+                                  ? 'text-red-300'
+                                  : 'text-green-300'
+                              }
+                            >
+                              {
+                                mlPrediction.farm_status.stress_breakdown
+                                  .fungal_stress
+                              }
+                              %
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs mb-1.5">
+                            <span>Irrigation</span>
+                            <span
+                              className={
+                                mlPrediction.farm_status.stress_breakdown
+                                  .irrigation_stress > 0
+                                  ? 'text-red-300'
+                                  : 'text-green-300'
+                              }
+                            >
+                              {
+                                mlPrediction.farm_status.stress_breakdown
+                                  .irrigation_stress
+                              }
+                              %
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs mb-1.5">
+                            <span>AQI</span>
+                            <span
+                              className={
+                                mlPrediction.farm_status.stress_breakdown
+                                  .aqi_stress > 0
+                                  ? 'text-red-300'
+                                  : 'text-green-300'
+                              }
+                            >
+                              {
+                                mlPrediction.farm_status.stress_breakdown
+                                  .aqi_stress
+                              }
+                              %
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {/* Background decoration */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                </div>
+              )}
+
+              <FISAlertEngine metrics={metrics} prediction={mlPrediction} />
             </div>
 
             {/* BOTTOM SECTION */}
@@ -406,7 +738,7 @@ const SmartInfo = () => {
                     <div className="px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-2">
                       <TrendingUp size={12} className="text-green-500" />
                       <span className="text-xs font-bold text-green-500">
-                        15.0%
+                        {hasData ? '15.0%' : '0%'}
                       </span>
                     </div>
                   </div>
@@ -420,7 +752,7 @@ const SmartInfo = () => {
                         </span>
                       </div>
                       <div className="text-2xl lg:text-4xl font-bold text-cyan-400 mb-1">
-                        {hasData ? '250 L' : '0 L'}
+                        {hasData ? '0 L' : '0 L'}
                       </div>
                       <div className="text-[10px] lg:text-xs text-muted-foreground">
                         This Month
@@ -435,7 +767,7 @@ const SmartInfo = () => {
                         </span>
                       </div>
                       <div className="text-2xl lg:text-4xl font-bold text-green-400 mb-1">
-                        {hasData ? '8.3 L' : '0 L'}
+                        {hasData ? '0 L' : '0 L'}
                       </div>
                       <div className="text-[10px] lg:text-xs text-muted-foreground">
                         Per Day
@@ -483,9 +815,11 @@ const MetricCard = ({
         <div className={`p-2 lg:p-2.5 rounded-lg ${colorMap[color]}`}>
           {icon}
         </div>
-        <div className="px-2 py-1 bg-background/50 rounded-full text-[10px] lg:text-xs font-bold text-muted-foreground">
-          {trend}
-        </div>
+        {trend && (
+          <div className="px-2 py-1 bg-background/50 rounded-full text-[10px] lg:text-xs font-bold text-muted-foreground">
+            {trend}
+          </div>
+        )}
       </div>
       <div className="flex items-baseline gap-1 mb-1">
         <span className="text-xl lg:text-2xl font-bold text-foreground">

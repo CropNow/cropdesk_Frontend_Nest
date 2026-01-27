@@ -18,6 +18,7 @@ import {
   Compass,
   Leaf,
   Sprout,
+  RefreshCw,
   Plus,
 } from 'lucide-react';
 
@@ -57,6 +58,7 @@ const IOTDashboard = ({
     name: 'My Farm',
     location: 'Unknown Location',
   });
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   React.useEffect(() => {
     const userStr = localStorage.getItem('registeredUser');
@@ -183,68 +185,105 @@ const IOTDashboard = ({
         console.error('Failed to parse IoT Data', e);
       }
     }
+
+    const lastRefresh = localStorage.getItem('last_iot_refresh');
+    if (lastRefresh) {
+      setLastUpdated(new Date(parseInt(lastRefresh)).toLocaleString());
+    }
   }, []);
 
-  // Auto-Refresh Logic
-  useEffect(() => {
-    const fetchFreshData = async () => {
-      try {
-        const storedDevices = localStorage.getItem('connected_devices');
-        if (storedDevices) {
-          const devices = JSON.parse(storedDevices);
-          if (devices.length > 0) {
-            // Use API Key if available (for external fetch), otherwise serial (fallback)
-            const serial = devices[0].apiKey || devices[0].serialNumber;
-            // Fetch fresh data
-            // @ts-ignore
-            const response: any = await connectDevice(serial, devices[0]);
-            if (response.success) {
-              // Update Local Storage
-              localStorage.setItem(
-                'iot_device_data',
-                JSON.stringify(response.sensorData)
-              );
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-              // Manually trigger the parsing logic again or just set state directly?
-              // We can replicate the parsing logic here or better yet, make the parsing logic a function.
-              // For now, let's just duplicate the hydration logic to ensure it updates.
+  // Manual Refresh Logic
+  const handleRefresh = async () => {
+    const lastRefresh = localStorage.getItem('last_iot_refresh');
+    const now = Date.now();
+    const cooldown = 45 * 60 * 1000; // 45 minutes
 
-              const storedData = JSON.stringify(response.sensorData);
-              const parsedData = JSON.parse(storedData);
+    if (lastRefresh && now - parseInt(lastRefresh) < cooldown) {
+      const remaining = Math.ceil(
+        (cooldown - (now - parseInt(lastRefresh))) / 60000
+      );
+      alert(`Please wait ${remaining} minutes before refreshing again.`);
+      return;
+    }
 
-              const hydratedData = parsedData.map((cat: any) => ({
-                ...cat,
-                icon: (
-                  <div
-                    className={`p-2 bg-${cat.color}-500/10 rounded-lg text-${cat.color}-500`}
-                  >
-                    {resolveCategoryIcon(cat.id)}
-                  </div>
-                ),
-                previewSensors: cat.previewSensors.map((s: any) => ({
-                  ...s,
-                  icon: resolveIcon(s.name, 12),
-                })),
-                details: cat.details.map((d: any) => ({
-                  ...d,
-                  icon: resolveIcon(d.name, 20),
-                })),
-              }));
-              setSensorCategories(hydratedData);
-            }
+    setIsRefreshing(true);
+    await fetchFreshData();
+    setIsRefreshing(false);
+  };
+
+  const fetchFreshData = async () => {
+    try {
+      const storedDevices = localStorage.getItem('connected_devices');
+      if (storedDevices) {
+        const devices = JSON.parse(storedDevices);
+        if (devices.length > 0) {
+          // Use API Key if available (for external fetch), otherwise serial (fallback)
+          const serial = devices[0].apiKey || devices[0].serialNumber;
+          // Fetch fresh data
+          // @ts-ignore
+          const response: any = await connectDevice(serial, devices[0]);
+          if (response.success) {
+            // Update Local Storage
+            localStorage.setItem(
+              'iot_device_data',
+              JSON.stringify(response.sensorData)
+            );
+            const nowStr = Date.now().toString();
+            localStorage.setItem('last_iot_refresh', nowStr);
+            setLastUpdated(new Date(parseInt(nowStr)).toLocaleString());
+
+            // Manually trigger the parsing logic again or just set state directly?
+            // We can replicate the parsing logic here or better yet, make the parsing logic a function.
+            // For now, let's just duplicate the hydration logic to ensure it updates.
+
+            const storedData = JSON.stringify(response.sensorData);
+            const parsedData = JSON.parse(storedData);
+
+            const hydratedData = parsedData.map((cat: any) => ({
+              ...cat,
+              icon: (
+                <div
+                  className={`p-2 bg-${cat.color}-500/10 rounded-lg text-${cat.color}-500`}
+                >
+                  {resolveCategoryIcon(cat.id)}
+                </div>
+              ),
+              previewSensors: cat.previewSensors.map((s: any) => ({
+                ...s,
+                icon: resolveIcon(s.name, 12),
+              })),
+              details: cat.details.map((d: any) => ({
+                ...d,
+                icon: resolveIcon(d.name, 20),
+              })),
+            }));
+            setSensorCategories(hydratedData);
+            alert('Sensor data refreshed successfully.');
           }
         }
-      } catch (e) {
-        console.error('Auto-refresh failed', e);
       }
-    };
+    } catch (e) {
+      console.error('Refresh failed', e);
+      alert('Failed to refresh data. Please try again.');
+    }
+  };
 
-    // Initial Fetch on Mount (to refresh stale data from "Add Device" time)
-    fetchFreshData();
+  // Initial Fetch on Mount (ONLY if never fetched or stale? No, user requested manual refresh control)
+  // But we should probably load what we have. We already load from localStorage in the first useEffect.
+  // So we don't strictly need to auto-fetch on mount if we trust the localStorage cache from the last profile load.
+  // HOWEVER, if the user just logged in, we might want fresh data.
+  // Let's keep the initial fetch but maybe update the timestamp?
+  // User said: "if i open the iot dashbord and click refresh then again... alert"
+  // This implies the standard load doesn't count as a "refresh" action that blocks them, OR it does?
+  // "if a person refreshedd the page at 11:00 am... from then only it will be considered"
+  // This usually implies explicit action. Let's stick to explicit button click for the cooldown constraint.
+  // Removing auto-poll.
 
-    // Poll every 30 seconds
-    const interval = setInterval(fetchFreshData, 30000);
-    return () => clearInterval(interval);
+  useEffect(() => {
+    // Optional: We could do one initial check if data is totally missing?
+    // For now, relying on the hydration useEffect above.
   }, []);
 
   // Use the loaded categories if available, otherwise check if we should show empty state
@@ -252,72 +291,250 @@ const IOTDashboard = ({
   // BUT: if we are on the dedicated IOT page, we want to show empty state if NO DATA is present.
 
   // Ensure profile is complete before showing real data
-  const [isProfileComplete, setIsProfileComplete] = React.useState(false);
+  // const [isProfileComplete, setIsProfileComplete] = React.useState(false);
 
-  React.useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        // Simple check: does the user have at least one farmer, farm, field, crop?
-        // Or checking derived flags if available.
-        // Based on Profile.tsx logic:
-        const hasFarmer = user.farmers && user.farmers.length > 0;
-        const hasFarm = user.farms && user.farms.length > 0;
-        const hasField = user.fields && user.fields.length > 0;
-        const hasCrop = user.crops && user.crops.length > 0;
+  // React.useEffect(() => {
+  //   const userStr = localStorage.getItem('user');
+  //   if (userStr) {
+  //     try {
+  //       const user = JSON.parse(userStr);
+  //       // Simple check: does the user have at least one farmer, farm, field, crop?
+  //       // Or checking derived flags if available.
+  //       // Based on Profile.tsx logic:
+  //       const hasFarmer = user.farmers && user.farmers.length > 0;
+  //       const hasFarm = user.farms && user.farms.length > 0;
+  //       const hasField = user.fields && user.fields.length > 0;
+  //       const hasCrop = user.crops && user.crops.length > 0;
 
-        // Checking legacy/flat structure just in case or strict hierarchy
-        const complete = hasFarmer && hasFarm && hasField && hasCrop;
-        setIsProfileComplete(complete);
-      } catch (e) {
-        setIsProfileComplete(false);
-      }
-    } else {
-      setIsProfileComplete(false);
-    }
-  }, []);
+  //       // Checking legacy/flat structure just in case or strict hierarchy
+  //       const complete = hasFarmer && hasFarm && hasField && hasCrop;
+  //       // setIsProfileComplete(complete);
+  //     } catch (e) {
+  //       // setIsProfileComplete(false);
+  //     }
+  //   } else {
+  //     // setIsProfileComplete(false);
+  //   }
+  // }, []);
 
-  const hasData = sensorCategories.length > 0 && isProfileComplete;
+  const hasData = sensorCategories.length > 0;
 
-  const finalCategories = hasData ? sensorCategories : [
-    {
-      id: 'weather',
-      name: 'Weather Station',
-      count: 0,
-      color: 'blue',
-      icon: <Cloud size={20} />,
-      previewSensors: [
-        { name: 'Temperature', value: '0°C', icon: <Thermometer size={12} /> },
-        { name: 'Humidity', value: '0%', icon: <Droplets size={12} /> },
-      ],
-      details: [],
-    },
-    {
-      id: 'soil',
-      name: 'Soil Sensors',
-      count: 0,
-      color: 'green',
-      icon: <Sprout size={20} />,
-      previewSensors: [
-        { name: 'Moisture', value: '0%', icon: <Droplets size={12} /> },
-        { name: 'pH Level', value: '0.0', icon: <Activity size={12} /> },
-      ],
-      details: [],
-    },
-  ];
-
-  const handleInteraction = () => {
-    if (!hasData) {
-      navigate('/profile', { state: { openAddDevice: true } });
-    }
-  };
+  const finalCategories = hasData
+    ? sensorCategories
+    : [
+        {
+          id: 'weather',
+          name: 'Weather Station',
+          count: 0,
+          color: 'blue',
+          icon: <Cloud size={20} />,
+          previewSensors: [
+            {
+              name: 'Temperature',
+              value: '0°C',
+              icon: <Thermometer size={12} />,
+            },
+            { name: 'Humidity', value: '0%', icon: <Droplets size={12} /> },
+          ],
+          details: [
+            {
+              name: 'Wind Direction',
+              value: '0',
+              unit: '°',
+              icon: <Compass size={20} />,
+              color: 'purple',
+              status: 'Good' as const,
+            },
+            {
+              name: 'Wind Speed',
+              value: '0',
+              unit: 'm/s',
+              icon: <Wind size={20} />,
+              color: 'blue',
+              status: 'Good' as const,
+            },
+            {
+              name: 'Rain Fall',
+              value: '0',
+              unit: 'mm',
+              icon: <CloudRain size={20} />,
+              color: 'cyan',
+              status: 'Good' as const,
+            },
+          ],
+        },
+        {
+          id: 'soil',
+          name: 'Soil Sensors',
+          count: 0,
+          color: 'green',
+          icon: <Sprout size={20} />,
+          previewSensors: [
+            { name: 'Moisture', value: '0%', icon: <Droplets size={12} /> },
+            { name: 'pH Level', value: '0.0', icon: <Activity size={12} /> },
+          ],
+          details: [
+            {
+              name: 'Soil Temperature at Surface',
+              value: '0',
+              unit: '°C',
+              icon: <Thermometer size={20} />,
+              color: 'orange',
+              status: 'Good' as const,
+            },
+            {
+              name: 'Soil Moisture at Surface',
+              value: '0',
+              unit: '%',
+              icon: <Droplets size={20} />,
+              color: 'blue',
+              status: 'Good' as const,
+            },
+            {
+              name: 'Soil Temperature at Root',
+              value: '0',
+              unit: '°C',
+              icon: <Thermometer size={20} />,
+              color: 'orange',
+              status: 'Good' as const,
+            },
+            {
+              name: 'Soil Moisture at Root',
+              value: '0',
+              unit: '%',
+              icon: <Droplets size={20} />,
+              color: 'blue',
+              status: 'Good' as const,
+            },
+          ],
+        },
+        {
+          id: 'air',
+          name: 'Air Sensors',
+          count: 0,
+          color: 'blue',
+          icon: <Wind size={20} />,
+          previewSensors: [
+            { name: 'PM 2.5', value: '0µg', icon: <Activity size={12} /> },
+            { name: 'CO2', value: '0ppm', icon: <Cloud size={12} /> },
+            { name: 'Temp', value: '0°C', icon: <Thermometer size={12} /> },
+          ],
+          details: [
+            {
+              name: 'PM 2.5',
+              value: '0',
+              unit: 'µg/m³',
+              icon: <Activity size={20} />,
+              color: 'blue',
+              status: 'Good' as const,
+            },
+            {
+              name: 'PM 10',
+              value: '0',
+              unit: 'µg/m³',
+              icon: <Activity size={20} />,
+              color: 'cyan',
+              status: 'Good' as const,
+            },
+            {
+              name: 'CO2',
+              value: '0',
+              unit: 'ppm',
+              icon: <Cloud size={20} />,
+              color: 'gray',
+              status: 'Good' as const,
+            },
+            {
+              name: 'Air Temperature',
+              value: '0',
+              unit: '°C',
+              icon: <Thermometer size={20} />,
+              color: 'orange',
+              status: 'Good' as const,
+            },
+            {
+              name: 'Humidity',
+              value: '0',
+              unit: '%',
+              icon: <Droplets size={20} />,
+              color: 'cyan',
+              status: 'Good' as const,
+            },
+            {
+              name: 'Air Pressure',
+              value: '0',
+              unit: 'hPa',
+              icon: <Activity size={20} />,
+              color: 'blue',
+              status: 'Good' as const,
+            },
+            {
+              name: 'SOX',
+              value: '0',
+              unit: 'ppm',
+              icon: <Cloud size={20} />,
+              color: 'yellow',
+              status: 'Good' as const,
+            },
+            {
+              name: 'NOX',
+              value: '0',
+              unit: 'ppm',
+              icon: <Cloud size={20} />,
+              color: 'orange',
+              status: 'Good' as const,
+            },
+            {
+              name: 'O3',
+              value: '0',
+              unit: 'ppm',
+              icon: <Cloud size={20} />,
+              color: 'green',
+              status: 'Good' as const,
+            },
+            {
+              name: 'Leaf Wetness',
+              value: '0',
+              unit: '%',
+              icon: <Leaf size={20} />,
+              color: 'green',
+              status: 'Good' as const,
+            },
+          ],
+        },
+        {
+          id: 'light',
+          name: 'Light Sensors',
+          count: 0,
+          color: 'yellow',
+          icon: <Sun size={20} />,
+          previewSensors: [
+            { name: 'Light', value: '0 Lux', icon: <Sun size={12} /> },
+            { name: 'Radiation', value: '0 W/m²', icon: <Sun size={12} /> },
+          ],
+          details: [
+            {
+              name: 'Light',
+              value: '0',
+              unit: 'Lux',
+              icon: <Sun size={20} />,
+              color: 'orange',
+              status: 'Good' as const,
+            },
+            {
+              name: 'Radiation',
+              value: '0',
+              unit: 'W/m²',
+              icon: <Sun size={20} />,
+              color: 'yellow',
+              status: 'Good' as const,
+            },
+          ],
+        },
+      ];
 
   return (
-    <section
-      onClick={handleInteraction}
-      className={`flex flex-col gap-4 p-0 lg:p-4 rounded-2xl ${!hasData ? 'cursor-pointer' : ''}`}
-    >
+    <section className={`flex flex-col gap-4 p-0 lg:p-4 rounded-2xl`}>
       <div className="bg-gradient-to-br from-background to-green-500/5 dark:bg-card rounded-2xl p-3 lg:p-6 shadow-sm hover:shadow-md transition-shadow duration-300 border border-border">
         <div className="flex justify-between items-start mb-3 lg:mb-8">
           <div className="flex gap-2 lg:gap-4">
@@ -326,15 +543,34 @@ const IOTDashboard = ({
               <Wifi size={32} className="hidden lg:block" />
             </div>
             <div>
-              <h4 className="text-xs lg:text-lg font-medium text-foreground leading-none mb-1">
-                {farmInfo.name}
-              </h4>
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs lg:text-lg font-medium text-foreground leading-none mb-1">
+                  {farmInfo.name}
+                </h4>
+              </div>
               <p className="text-[10px] lg:text-xs text-muted-foreground uppercase tracking-wider">
                 {farmInfo.location}
               </p>
+              {lastUpdated && (
+                <p className="text-[9px] lg:text-[10px] text-green-500 font-medium">
+                  Last updated: {lastUpdated}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2 lg:gap-3">
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className={`p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors ${
+                isRefreshing
+                  ? 'animate-spin text-primary'
+                  : 'text-muted-foreground'
+              }`}
+              title="Refresh Sensor Data"
+            >
+              <RefreshCw size={18} />
+            </button>
             <div className="flex items-center gap-2 lg:gap-3 text-muted-foreground">
               <Signal
                 size={18}
@@ -403,9 +639,9 @@ const IOTDashboard = ({
                   <div className={`text-${cat.color}-500 mb-1 lg:mb-2`}>
                     {React.isValidElement(cat.icon)
                       ? React.cloneElement(
-                        cat.icon as React.ReactElement<any>,
-                        { size: 24 }
-                      )
+                          cat.icon as React.ReactElement<any>,
+                          { size: 24 }
+                        )
                       : cat.icon}
                   </div>
                   <span className="text-[10px] lg:text-sm font-bold text-foreground group-hover:text-primary transition-colors">
@@ -442,8 +678,15 @@ const SensorCategoryModal = ({
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
-      if (width >= 640)
-        setCols(3); // sm
+      // if (width >= 1024) setCols(4); // lg -> 4 cols (User Request)
+      // else if (width >= 768) setCols(3); // md -> 3 cols
+      // else if (width >= 480) setCols(2); // xs -> 2 cols
+      // else setCols(1);
+
+      // Actually, let's just make it 4 columns on large screens as requested.
+      if (width >= 1024) setCols(4);
+      else if (width >= 768)
+        setCols(3); // md
       else if (width >= 480)
         setCols(2); // xs (approx)
       else setCols(1);
@@ -497,7 +740,7 @@ const SensorCategoryModal = ({
               return (
                 <React.Fragment key={rowIdx}>
                   {/* Grid Row */}
-                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {rowSensors.map((sensor, idx) => {
                       const isSelected = selectedSensor === sensor.name;
                       return (
@@ -506,10 +749,11 @@ const SensorCategoryModal = ({
                           onClick={() =>
                             setSelectedSensor(isSelected ? null : sensor.name)
                           }
-                          className={`p-3 lg:p-4 rounded-xl lg:rounded-2xl bg-background border transition-all cursor-pointer group shadow-sm w-full ${isSelected
-                            ? 'border-primary ring-1 ring-primary/20 bg-primary/5 shadow-md'
-                            : 'border-border hover:border-primary/50 hover:shadow-md'
-                            }`}
+                          className={`p-3 lg:p-4 rounded-xl lg:rounded-2xl bg-background border transition-all cursor-pointer group shadow-sm w-full ${
+                            isSelected
+                              ? 'border-primary ring-1 ring-primary/20 bg-primary/5 shadow-md'
+                              : 'border-border hover:border-primary/50 hover:shadow-md'
+                          }`}
                         >
                           <div className="flex justify-between items-start mb-2 lg:mb-3">
                             <div
@@ -517,9 +761,9 @@ const SensorCategoryModal = ({
                             >
                               {React.isValidElement(sensor.icon)
                                 ? React.cloneElement(
-                                  sensor.icon as React.ReactElement<any>,
-                                  { size: 24 }
-                                )
+                                    sensor.icon as React.ReactElement<any>,
+                                    { size: 24 }
+                                  )
                                 : sensor.icon}
                             </div>
                           </div>
@@ -536,27 +780,30 @@ const SensorCategoryModal = ({
                           </div>
                           <div className="mt-2 flex items-center gap-1">
                             <span
-                              className={`w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full ${sensor.status === 'Good'
-                                ? 'bg-green-500'
-                                : sensor.status === 'Warning'
-                                  ? 'bg-yellow-500'
-                                  : 'bg-red-500'
-                                }`}
+                              className={`w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full ${
+                                sensor.status === 'Good'
+                                  ? 'bg-green-500'
+                                  : sensor.status === 'Warning'
+                                    ? 'bg-yellow-500'
+                                    : 'bg-red-500'
+                              }`}
                             ></span>
                             <span
-                              className={`text-[10px] lg:text-xs font-bold uppercase ${sensor.status === 'Good'
-                                ? 'text-green-500'
-                                : sensor.status === 'Warning'
-                                  ? 'text-yellow-500'
-                                  : 'text-red-500'
-                                }`}
+                              className={`text-[10px] lg:text-xs font-bold uppercase ${
+                                sensor.status === 'Good'
+                                  ? 'text-green-500'
+                                  : sensor.status === 'Warning'
+                                    ? 'text-yellow-500'
+                                    : 'text-red-500'
+                              }`}
                             >
                               {sensor.status}
                             </span>
                             <ChevronDown
                               size={10}
-                              className={`ml-auto text-muted-foreground transition-transform duration-300 ${isSelected ? 'rotate-180' : ''
-                                }`}
+                              className={`ml-auto text-muted-foreground transition-transform duration-300 ${
+                                isSelected ? 'rotate-180' : ''
+                              }`}
                             />
                           </div>
                         </div>
@@ -567,31 +814,25 @@ const SensorCategoryModal = ({
                   {/* Expanded Graph Row */}
                   {isRowActive && selectedSensor && (
                     <div className="mt-3 animate-in slide-in-from-top-4 fade-in duration-500 cursor-default">
-                      {selectedSensor === 'Wind Direction' ? (
-                        <WindRadarChart
-                          onClose={() => setSelectedSensor(null)}
-                        />
-                      ) : (
-                        <SensorTrendChart
-                          sensorName={selectedSensor}
-                          value={
-                            category.details.find(
-                              (s) => s.name === selectedSensor
-                            )?.value || ''
-                          }
-                          unit={
-                            category.details.find(
-                              (s) => s.name === selectedSensor
-                            )?.unit || ''
-                          }
-                          readings={
-                            category.details.find(
-                              (s) => s.name === selectedSensor
-                            )?.readings || []
-                          }
-                          onClose={() => setSelectedSensor(null)}
-                        />
-                      )}
+                      <SensorTrendChart
+                        sensorName={selectedSensor}
+                        value={
+                          category.details.find(
+                            (s) => s.name === selectedSensor
+                          )?.value || ''
+                        }
+                        unit={
+                          category.details.find(
+                            (s) => s.name === selectedSensor
+                          )?.unit || ''
+                        }
+                        readings={
+                          category.details.find(
+                            (s) => s.name === selectedSensor
+                          )?.readings || []
+                        }
+                        onClose={() => setSelectedSensor(null)}
+                      />
                     </div>
                   )}
                 </React.Fragment>
@@ -660,10 +901,11 @@ const ChartCard = ({
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
-            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all ${activeTab === tab
-              ? 'bg-primary/10 text-primary ring-1 ring-primary/20 dark:bg-[#15231c] dark:text-[#4ade80] dark:ring-[#4ade80]/20'
-              : 'text-muted-foreground hover:text-foreground dark:text-gray-500 dark:hover:text-gray-300'
-              }`}
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all ${
+              activeTab === tab
+                ? 'bg-primary/10 text-primary ring-1 ring-primary/20 dark:bg-[#15231c] dark:text-[#4ade80] dark:ring-[#4ade80]/20'
+                : 'text-muted-foreground hover:text-foreground dark:text-gray-500 dark:hover:text-gray-300'
+            }`}
           >
             {tab}
           </button>
@@ -672,107 +914,6 @@ const ChartCard = ({
 
       {children}
     </div>
-  );
-};
-
-const WindRadarChart = ({ onClose }: { onClose: () => void }) => {
-  const [activeTab, setActiveTab] = useState('24 Hours');
-
-  // Octagonal points calculation
-  const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  const radius = 100;
-  const center = 120;
-
-  const getPoint = (angle: number, r: number) => {
-    const rad = (angle - 90) * (Math.PI / 180);
-    return `${center + r * Math.cos(rad)},${center + r * Math.sin(rad)}`;
-  };
-
-  // Sample data for the polygon based on active tab
-  const getPointsData = () => {
-    switch (activeTab) {
-      case '7 Days':
-        return [60, 40, 30, 50, 80, 70, 50, 55];
-      case '1 Month':
-        return [70, 50, 40, 60, 85, 80, 60, 65];
-      case '24 Hours':
-      default:
-        return [50, 25, 25, 45, 95, 75, 45, 60];
-    }
-  };
-
-  const pointsData = getPointsData();
-  const polygonPath = directions
-    .map((_, i) => getPoint(i * 45, pointsData[i] || 0))
-    .join(' ');
-
-  return (
-    <ChartCard
-      title="Wind Direction"
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      valueDisplay={
-        <span className="text-4xl sm:text-6xl font-bold text-red-500">NE</span>
-      }
-      onClose={onClose}
-    >
-      <div className="flex justify-center items-center py-4">
-        <svg width="240" height="240" viewBox="0 0 240 240">
-          {/* Grid lines (Concentric octagons) */}
-          {[20, 40, 60, 80, 100].map((r) => (
-            <polygon
-              key={r}
-              points={directions.map((_, i) => getPoint(i * 45, r)).join(' ')}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1"
-              className="text-border dark:text-white/10"
-            />
-          ))}
-
-          {/* Axes lines */}
-          {directions.map((_, i) => (
-            <line
-              key={i}
-              x1={center}
-              y1={center}
-              x2={center + radius * Math.cos((i * 45 - 90) * (Math.PI / 180))}
-              y2={center + radius * Math.sin((i * 45 - 90) * (Math.PI / 180))}
-              stroke="currentColor"
-              strokeWidth="1"
-              className="text-border dark:text-white/10"
-            />
-          ))}
-
-          {/* Polygon data */}
-          <polygon
-            points={polygonPath}
-            fill="rgba(239, 68, 68, 0.6)"
-            stroke="rgb(239, 68, 68)"
-            strokeWidth="2"
-          />
-
-          {/* Labels */}
-          {directions.map((label, i) => {
-            const pt = getPoint(i * 45, radius + 15).split(',');
-            return (
-              <text
-                key={label}
-                x={pt[0]}
-                y={pt[1]}
-                fontSize="10"
-                fontWeight="bold"
-                textAnchor="middle"
-                alignmentBaseline="middle"
-                className="fill-muted-foreground dark:fill-gray-500"
-              >
-                {label}
-              </text>
-            );
-          })}
-        </svg>
-      </div>
-    </ChartCard>
   );
 };
 

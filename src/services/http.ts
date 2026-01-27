@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 
 export const http: AxiosInstance = axios.create({
@@ -8,7 +9,10 @@ export const http: AxiosInstance = axios.create({
 // Request interceptor for logging
 http.interceptors.request.use(
   (config) => {
-    // console.log(`[HTTP Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
+    console.log(
+      `[HTTP Request] ${config.method?.toUpperCase()} ${config.url}`,
+      config.data
+    );
     return config;
   },
   (error) => {

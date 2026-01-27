@@ -30,7 +30,31 @@ const WeatherSection = ({
     if (!location) return;
 
     const fetchWeatherAndLocation = async () => {
+      const CACHE_KEY = 'weather_cache';
+      const CACHE_DURATION = 3600000; // 1 hour
+
       try {
+        // Check cache first
+        const cachedDataStr = localStorage.getItem(CACHE_KEY);
+        if (cachedDataStr) {
+          const cachedData = JSON.parse(cachedDataStr);
+          const now = Date.now();
+          const isFresh = now - cachedData.timestamp < CACHE_DURATION;
+          const isSameLocation =
+            Math.abs(cachedData.location.lat - location.lat) < 0.01 &&
+            Math.abs(cachedData.location.lon - location.lon) < 0.01;
+
+          if (isFresh && isSameLocation) {
+            console.log('Using cached weather data');
+            setWeather(cachedData.weather);
+            if (cachedData.locationName) {
+              setLocationName(cachedData.locationName);
+            }
+            setLoading(false);
+            return;
+          }
+        }
+
         // Fetch Weather
         const weatherResponse = await fetch(
           `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m&hourly=visibility`
@@ -39,13 +63,7 @@ const WeatherSection = ({
         setWeather(weatherData);
 
         // Fetch Location Name (Reverse Geocoding)
-        // Only fetch if name is 'Locating...' or coordinates.
-        // If we set a name from localStorage, we might want to keep it or refine it.
-        // Let's only fetch if we don't have a "real" name yet or if we want to confirm.
-        // Simple check: if locationName starts with number (coords) or is 'Locating...', fetch.
-        // BUT, since we set locationName in the first useEffect for stored data, we should probably respect that.
-        // However, the weather might be for a slightly different spot? No, same coords.
-        // Let's just fetch if we haven't set a "good" name in the first effect.
+        let resolvedLocationName = locationName;
         if (
           locationName === 'Locating...' ||
           locationName === 'Field Location' ||
@@ -59,9 +77,21 @@ const WeatherSection = ({
             geoData.city || geoData.locality || geoData.principalSubdivision;
           const country = geoData.countryCode || '';
           if (city) {
-            setLocationName(`${city}${country ? `, ${country}` : ''}`);
+            resolvedLocationName = `${city}${country ? `, ${country}` : ''}`;
+            setLocationName(resolvedLocationName);
           }
         }
+
+        // Save to cache
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            weather: weatherData,
+            locationName: resolvedLocationName,
+            location: location,
+            timestamp: Date.now(),
+          })
+        );
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -71,8 +101,8 @@ const WeatherSection = ({
 
     fetchWeatherAndLocation();
 
-    // Refresh every 15 minutes (900000 ms)
-    const intervalId = setInterval(fetchWeatherAndLocation, 900000);
+    // Refresh every 1 hour (3600000 ms)
+    const intervalId = setInterval(fetchWeatherAndLocation, 3600000);
 
     return () => clearInterval(intervalId);
   }, [location]);

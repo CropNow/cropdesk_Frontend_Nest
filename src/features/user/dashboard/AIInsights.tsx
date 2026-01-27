@@ -1,6 +1,10 @@
+/* eslint-disable no-console */
 import React from 'react';
-import { Sparkles, RefreshCw, MessageSquare, Plus } from 'lucide-react';
+import { Sparkles, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/features/auth/useAuth';
+import { getLatestPrediction } from './ml.service';
+import { MLPrediction } from '@/types/ml.types';
 
 const AIInsights = ({
   showEmptyState = false,
@@ -8,8 +12,24 @@ const AIInsights = ({
   showEmptyState?: boolean;
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [prediction, setPrediction] = React.useState<MLPrediction | null>(null);
 
-  const hasData = !showEmptyState;
+  React.useEffect(() => {
+    const fetchPrediction = async () => {
+      if (user && user.id) {
+        try {
+          const data = await getLatestPrediction(user.id);
+          setPrediction(data);
+        } catch (error) {
+          console.error('Failed to fetch AI prediction:', error);
+        }
+      }
+    };
+    fetchPrediction();
+  }, [user]);
+
+  const hasData = !showEmptyState && !!prediction;
 
   const handleInteraction = () => {
     if (!hasData) {
@@ -31,9 +51,6 @@ const AIInsights = ({
             </div>
             <h4 className="text-base font-bold text-white">AI Insights</h4>
           </div>
-          <button className="p-2 rounded-lg hover:bg-white/5 transition-colors">
-            <RefreshCw size={16} className="text-gray-400" />
-          </button>
         </div>
 
         {/* Key Insights Section */}
@@ -46,43 +63,71 @@ const AIInsights = ({
             {/* Soil Conditions */}
             <div className="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
               <div className="flex items-center gap-3 flex-1">
-                <div className={`p-1.5 rounded-md ${hasData ? 'bg-orange-500/10' : 'bg-gray-500/10'}`}>
-                  <div className={`w-2 h-2 rounded-full ${hasData ? 'bg-orange-500' : 'bg-gray-500'}`}></div>
+                <div
+                  className={`p-1.5 rounded-md ${hasData && prediction?.irrigation?.irrigation_required ? 'bg-orange-500/10' : 'bg-green-500/10'}`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full ${hasData && prediction?.irrigation?.irrigation_required ? 'bg-orange-500' : 'bg-green-500'}`}
+                  ></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-semibold text-white mb-0.5">
                     Soil Conditions
                   </div>
                   <div className="text-[10px] text-gray-400 truncate">
-                    {hasData ? 'moderate moisture, ideal temperature' : 'No data available'}
+                    {hasData && prediction?.irrigation
+                      ? `Moisture: ${(prediction.irrigation.soil_moisture * 100).toFixed(0)}%, Water Req: ${prediction.irrigation.water_requirement_mm}mm`
+                      : 'No data available'}
                   </div>
                 </div>
               </div>
-              <div className={`px-2.5 py-1 rounded-md ml-2 shrink-0 ${hasData ? 'bg-orange-500/10' : 'bg-gray-500/10'}`}>
-                <span className={`text-[10px] font-bold ${hasData ? 'text-orange-500' : 'text-gray-500'}`}>
-                  {hasData ? 'Optimal' : '-'}
+              <div
+                className={`px-2.5 py-1 rounded-md ml-2 shrink-0 ${hasData && prediction?.irrigation?.irrigation_required ? 'bg-orange-500/10' : 'bg-green-500/10'}`}
+              >
+                <span
+                  className={`text-[10px] font-bold ${hasData && prediction?.irrigation?.irrigation_required ? 'text-orange-500' : 'text-green-500'}`}
+                >
+                  {hasData && prediction?.irrigation
+                    ? prediction.irrigation.irrigation_required
+                      ? 'Water Ready'
+                      : 'Optimal'
+                    : '-'}
                 </span>
               </div>
             </div>
 
-            {/* Weather Conditions */}
+            {/* Disease Risk (formerly Weather) */}
             <div className="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
               <div className="flex items-center gap-3 flex-1">
-                <div className={`p-1.5 rounded-md ${hasData ? 'bg-green-500/10' : 'bg-gray-500/10'}`}>
-                  <div className={`w-2 h-2 rounded-full ${hasData ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                <div
+                  className={`p-1.5 rounded-md ${hasData && (prediction?.fungal_disease?.activity_level === 'HIGH' || prediction?.pest?.pest_risk_level === 'HIGH') ? 'bg-red-500/10' : 'bg-green-500/10'}`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full ${hasData && (prediction?.fungal_disease?.activity_level === 'HIGH' || prediction?.pest?.pest_risk_level === 'HIGH') ? 'bg-red-500' : 'bg-green-500'}`}
+                  ></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-semibold text-white mb-0.5">
-                    Weather Conditions
+                    Disease Risk
                   </div>
                   <div className="text-[10px] text-gray-400 truncate">
-                    {hasData ? 'UV safe, Wind: calm' : 'No data available'}
+                    {hasData && prediction?.fungal_disease
+                      ? `Fungal: ${prediction.fungal_disease.activity_level}, Pest: ${prediction.pest?.pest_risk_level}`
+                      : 'No data available'}
                   </div>
                 </div>
               </div>
-              <div className={`px-2.5 py-1 rounded-md ml-2 shrink-0 ${hasData ? 'bg-green-500/10' : 'bg-gray-500/10'}`}>
-                <span className={`text-[10px] font-bold ${hasData ? 'text-green-500' : 'text-gray-500'}`}>
-                  {hasData ? 'Excellent' : '-'}
+              <div
+                className={`px-2.5 py-1 rounded-md ml-2 shrink-0 ${hasData ? 'bg-green-500/10' : 'bg-gray-500/10'}`}
+              >
+                <span
+                  className={`text-[10px] font-bold ${hasData ? 'text-green-500' : 'text-gray-500'}`}
+                >
+                  {hasData &&
+                  prediction?.fungal_disease?.activity_level === 'LOW' &&
+                  prediction?.pest?.pest_risk_level === 'LOW'
+                    ? 'Low Risk'
+                    : 'Monitor'}
                 </span>
               </div>
             </div>
@@ -90,21 +135,31 @@ const AIInsights = ({
             {/* Air Quality */}
             <div className="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
               <div className="flex items-center gap-3 flex-1">
-                <div className={`p-1.5 rounded-md ${hasData ? 'bg-cyan-500/10' : 'bg-gray-500/10'}`}>
-                  <div className={`w-2 h-2 rounded-full ${hasData ? 'bg-cyan-500' : 'bg-gray-500'}`}></div>
+                <div
+                  className={`p-1.5 rounded-md ${hasData && prediction?.aqi?.aqi_level === 'GOOD' ? 'bg-green-500/10' : 'bg-yellow-500/10'}`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full ${hasData && prediction?.aqi?.aqi_level === 'GOOD' ? 'bg-green-500' : 'bg-yellow-500'}`}
+                  ></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-semibold text-white mb-0.5">
                     Air Quality
                   </div>
                   <div className="text-[10px] text-gray-400 truncate">
-                    {hasData ? 'excellent (100 ppm)' : 'No data available'}
+                    {hasData && prediction?.aqi
+                      ? `AQI: ${prediction.aqi.aqi.toFixed(0)} (${prediction.aqi.dominant_pollutant})`
+                      : 'No data available'}
                   </div>
                 </div>
               </div>
-              <div className={`px-2.5 py-1 rounded-md ml-2 shrink-0 ${hasData ? 'bg-cyan-500/10' : 'bg-gray-500/10'}`}>
-                <span className={`text-[10px] font-bold ${hasData ? 'text-cyan-500' : 'text-gray-500'}`}>
-                  {hasData ? 'Good' : '-'}
+              <div
+                className={`px-2.5 py-1 rounded-md ml-2 shrink-0 ${hasData && prediction?.aqi?.aqi_level === 'GOOD' ? 'bg-green-500/10' : 'bg-yellow-500/10'}`}
+              >
+                <span
+                  className={`text-[10px] font-bold ${hasData && prediction?.aqi?.aqi_level === 'GOOD' ? 'text-green-500' : 'text-yellow-500'}`}
+                >
+                  {hasData && prediction?.aqi ? prediction.aqi.aqi_level : '-'}
                 </span>
               </div>
             </div>
@@ -114,7 +169,12 @@ const AIInsights = ({
         {/* Last Updated */}
         <div className="flex items-center gap-1.5 mb-5 ml-0.5">
           <div className="w-1 h-1 rounded-full bg-blue-400"></div>
-          <p className="text-[9px] text-gray-500">Last updated: {hasData ? '7:03:52 pm' : 'Never'}</p>
+          <p className="text-[9px] text-gray-500">
+            Last updated:{' '}
+            {hasData && prediction?.generatedAt
+              ? new Date(prediction.generatedAt).toLocaleTimeString()
+              : 'Never'}
+          </p>
         </div>
 
         {/* Smart Analysis Section */}
@@ -127,30 +187,69 @@ const AIInsights = ({
           </div>
 
           <div className="space-y-3">
-            {/* Analysis Item 1 */}
+            {/* Analysis Item 1 - Farm Status */}
             <div className="flex items-start gap-2.5">
-              <div className={`p-1 rounded-sm mt-0.5 shrink-0 ${hasData ? 'bg-yellow-500/10' : 'bg-gray-500/10'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${hasData ? 'bg-yellow-500' : 'bg-gray-500'}`}></div>
+              <div
+                className={`p-1 rounded-sm mt-0.5 shrink-0 ${hasData ? 'bg-indigo-500/10' : 'bg-gray-500/10'}`}
+              >
+                <div
+                  className={`w-1.5 h-1.5 rounded-full ${hasData ? 'bg-indigo-500' : 'bg-gray-500'}`}
+                ></div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] text-gray-300 leading-relaxed mb-1">
-                  {hasData ? <>Current conditions are <span className="text-white font-semibold">optimal for crop growth</span></> : 'Connect a device to receive analysis'}
+                  {hasData && prediction?.farm_status ? (
+                    <>
+                      Farm Health:{' '}
+                      <span className="text-white font-semibold">
+                        {prediction.farm_status.farm_health_percentage}%
+                      </span>
+                      <span className="ml-2 text-[10px] text-gray-400">
+                        ({prediction.farm_status.farm_condition})
+                      </span>
+                    </>
+                  ) : (
+                    'Connect a device to receive analysis'
+                  )}
                 </div>
                 <div className="text-[10px] text-gray-500 leading-relaxed">
-                  {hasData ? 'Soil moisture levels are balanced, and temperature ranges support healthy development.' : ''}
+                  {hasData && prediction?.farm_status
+                    ? `Stress Analysis: AQI (${prediction.farm_status.stress_breakdown.aqi_stress}%), Water (${prediction.farm_status.stress_breakdown.irrigation_stress}%)`
+                    : ''}
                 </div>
               </div>
             </div>
 
-            {/* Analysis Item 2 */}
+            {/* Analysis Item 2 - Recommendations */}
             <div className="flex items-start gap-2.5">
-              <div className={`p-1 rounded-sm mt-0.5 shrink-0 ${hasData ? 'bg-green-500/10' : 'bg-gray-500/10'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${hasData ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+              <div
+                className={`p-1 rounded-sm mt-0.5 shrink-0 ${hasData ? 'bg-green-500/10' : 'bg-gray-500/10'}`}
+              >
+                <div
+                  className={`w-1.5 h-1.5 rounded-full ${hasData ? 'bg-green-500' : 'bg-gray-500'}`}
+                ></div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] text-gray-300 leading-relaxed">
-                  {hasData ? 'Consider light irrigation in the next 24 hours to maintain ideal moisture levels.' : 'AI will analyze your sensor data here.'}
+                  {hasData && prediction?.prescription?.actions?.length ? (
+                    <>
+                      Action:{' '}
+                      <span className="text-white">
+                        {prediction.prescription.actions[0]}
+                      </span>
+                    </>
+                  ) : hasData ? (
+                    'No urgent actions required.'
+                  ) : (
+                    'AI will analyze your sensor data here.'
+                  )}
                 </div>
+                {hasData && prediction?.prescription?.actions?.length > 1 && (
+                  <div className="text-[10px] text-gray-500 mt-1">
+                    + {prediction.prescription.actions.length - 1} more
+                    recommendations
+                  </div>
+                )}
               </div>
             </div>
           </div>
