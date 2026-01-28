@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Plus,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface SensorCategory {
   id: string;
@@ -814,30 +815,61 @@ const SensorCategoryModal = ({
                     })}
                   </div>
 
-                  {/* Expanded Graph Row */}
-                  {isRowActive && selectedSensor && (
-                    <div className="mt-3 animate-in slide-in-from-top-4 fade-in duration-500 cursor-default">
-                      <SensorTrendChart
-                        sensorName={selectedSensor}
-                        value={
-                          category.details.find(
-                            (s) => s.name === selectedSensor
-                          )?.value || ''
-                        }
-                        unit={
-                          category.details.find(
-                            (s) => s.name === selectedSensor
-                          )?.unit || ''
-                        }
-                        readings={
-                          category.details.find(
-                            (s) => s.name === selectedSensor
-                          )?.readings || []
-                        }
-                        onClose={() => setSelectedSensor(null)}
-                      />
-                    </div>
-                  )}
+                  {/* Wind Direction Chart */}
+                  {isRowActive &&
+                    selectedSensor &&
+                    (selectedSensor.includes('Wind Direction') ||
+                      selectedSensor.includes('Compass')) && (
+                      <div className="mt-3 animate-in slide-in-from-top-4 fade-in duration-500 cursor-default">
+                        <WindDirectionChart
+                          sensorName={selectedSensor}
+                          value={
+                            category.details.find(
+                              (s) => s.name === selectedSensor
+                            )?.value || ''
+                          }
+                          unit={
+                            category.details.find(
+                              (s) => s.name === selectedSensor
+                            )?.unit || ''
+                          }
+                          readings={
+                            category.details.find(
+                              (s) => s.name === selectedSensor
+                            )?.readings || []
+                          }
+                          onClose={() => setSelectedSensor(null)}
+                        />
+                      </div>
+                    )}
+
+                  {/* Standard Expanded Graph Row (Exclude Wind Direction) */}
+                  {isRowActive &&
+                    selectedSensor &&
+                    !selectedSensor.includes('Wind Direction') &&
+                    !selectedSensor.includes('Compass') && (
+                      <div className="mt-3 animate-in slide-in-from-top-4 fade-in duration-500 cursor-default">
+                        <SensorTrendChart
+                          sensorName={selectedSensor}
+                          value={
+                            category.details.find(
+                              (s) => s.name === selectedSensor
+                            )?.value || ''
+                          }
+                          unit={
+                            category.details.find(
+                              (s) => s.name === selectedSensor
+                            )?.unit || ''
+                          }
+                          readings={
+                            category.details.find(
+                              (s) => s.name === selectedSensor
+                            )?.readings || []
+                          }
+                          onClose={() => setSelectedSensor(null)}
+                        />
+                      </div>
+                    )}
                 </React.Fragment>
               );
             })}
@@ -867,6 +899,7 @@ const ChartCard = ({
   onClose,
   activeTab,
   onTabChange,
+  tabs = ['24 Hours', '7 Days', '1 Month'],
   children,
 }: {
   title: string;
@@ -875,6 +908,7 @@ const ChartCard = ({
   onClose: () => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
+  tabs?: string[];
   children: React.ReactNode;
 }) => {
   return (
@@ -900,7 +934,7 @@ const ChartCard = ({
       </div>
 
       <div className="flex flex-wrap gap-2 sm:gap-4 mb-6 sm:mb-10">
-        {['24 Hours', '7 Days', '1 Month'].map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
@@ -917,6 +951,184 @@ const ChartCard = ({
 
       {children}
     </div>
+  );
+};
+
+const WindDirectionChart = ({
+  sensorName,
+  value,
+  unit,
+  readings,
+  onClose,
+}: {
+  sensorName: string;
+  value: string;
+  unit: string;
+  readings: { value: number; timestamp: string }[];
+  onClose: () => void;
+}) => {
+  const [activeTab, setActiveTab] = useState('24 Hours');
+  const tabs = ['24 Hours', '7 Weeks', '1 Month'];
+
+  // Helper to filter readings
+  const getFilteredData = () => {
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    let startTime = now;
+    if (activeTab === '24 Hours') {
+      startTime = now - oneDay;
+    } else if (activeTab === '7 Weeks') {
+      startTime = now - 49 * oneDay;
+    } else if (activeTab === '1 Month') {
+      startTime = now - 30 * oneDay;
+    }
+
+    return readings.filter((r) => new Date(r.timestamp).getTime() >= startTime);
+  };
+
+  const chartData = getFilteredData();
+
+  // Process data into frequency bins for Radar
+  // Directions: N, NE, E, SE, S, SW, W, NW (0, 45, 90, 135, 180, 225, 270, 315)
+  // We'll use 8 bins.
+  // Each bin covers +/- 22.5 degrees.
+  const bins = [0, 0, 0, 0, 0, 0, 0, 0];
+  const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+
+  chartData.forEach((r) => {
+    // Normalize degree 0-360
+    let deg = r.value % 360;
+    if (deg < 0) deg += 360;
+
+    // Shift so N (0) is at index 0 (which corresponds to -22.5 to 22.5)
+    // Formula: round(deg / 45) % 8
+    const binIdx = Math.round(deg / 45) % 8;
+    if (bins[binIdx] !== undefined) {
+      bins[binIdx]++;
+    }
+  });
+
+  const maxCount = Math.max(...bins) || 1;
+  const normalizedBins = bins.map((c) => c / maxCount);
+
+  // Parse current value for display
+  let currentVal = parseFloat(value);
+  if (isNaN(currentVal)) currentVal = 0;
+  const currentDirIdx = Math.round(currentVal / 45) % 8;
+  const currentDir = directions[currentDirIdx] || 'N';
+
+  // Generate Polygon Path
+  const generatePath = (data: number[]) => {
+    if (data.every((v) => v === 0)) return 'M 100,100 Z';
+
+    const points = data
+      .map((val, i) => {
+        // SVGs have 0 degrees at 3 o'clock (Right). We want 0 at Top (N).
+        // So subtract 90 degrees.
+        const angle = (i * 45 - 90) * (Math.PI / 180);
+        const r = val * 80;
+        const x = 100 + r * Math.cos(angle);
+        const y = 100 + r * Math.sin(angle);
+        return `${x},${y}`;
+      })
+      .join(' ');
+    return `M ${points} Z`;
+  };
+
+  return (
+    <ChartCard
+      title="Wind Direction"
+      subTitle="Direction Distribution"
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      tabs={tabs}
+      valueDisplay={
+        <div className="flex flex-col items-end">
+          <span className="text-3xl sm:text-5xl font-bold text-purple-500">
+            {currentDir}
+          </span>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+            <span className="font-mono">{value}°</span>
+            <Wind
+              size={12}
+              className="text-purple-500"
+              style={{ transform: `rotate(${value}deg)` }}
+            />
+          </div>
+        </div>
+      }
+      onClose={onClose}
+    >
+      <div className="flex justify-center items-center h-56 sm:h-72 w-full mt-4">
+        <svg viewBox="0 0 200 200" className="w-full h-full max-w-[280px]">
+          {/* Grid Polygons */}
+          {[0.25, 0.5, 0.75, 1].map((scale, idx) => (
+            <polygon
+              key={scale}
+              points={Array.from({ length: 8 }, (_, i) => {
+                const angle = (i * 45 - 90) * (Math.PI / 180);
+                const r = 80 * scale;
+                return `${100 + r * Math.cos(angle)},${100 + r * Math.sin(angle)}`;
+              }).join(' ')}
+              fill="none"
+              stroke="currentColor"
+              strokeOpacity={0.1 + idx * 0.1}
+              className="text-border dark:text-gray-700"
+              strokeWidth="1"
+            />
+          ))}
+
+          {/* Axes */}
+          {Array.from({ length: 8 }, (_, i) => {
+            const angle = (i * 45 - 90) * (Math.PI / 180);
+            return (
+              <line
+                key={i}
+                x1="100"
+                y1="100"
+                x2={100 + 85 * Math.cos(angle)}
+                y2={100 + 85 * Math.sin(angle)}
+                stroke="currentColor"
+                strokeOpacity="0.2"
+                className="text-border dark:text-gray-700"
+                strokeWidth="1"
+              />
+            );
+          })}
+
+          {/* Labels */}
+          {directions.map((d, i) => {
+            const angle = (i * 45 - 90) * (Math.PI / 180);
+            const x = 100 + 98 * Math.cos(angle);
+            const y = 100 + 98 * Math.sin(angle);
+            return (
+              <text
+                key={d}
+                x={x}
+                y={y}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="text-[8px] font-bold fill-muted-foreground uppercase"
+              >
+                {d}
+              </text>
+            );
+          })}
+
+          {/* Data Polygon */}
+          <motion.path
+            initial={{ d: 'M 100 100 Z' }}
+            animate={{ d: generatePath(normalizedBins) }}
+            transition={{ duration: 0.8, ease: 'backOut' }}
+            fill="rgba(168, 85, 247, 0.3)"
+            stroke="#a855f7"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+    </ChartCard>
   );
 };
 
