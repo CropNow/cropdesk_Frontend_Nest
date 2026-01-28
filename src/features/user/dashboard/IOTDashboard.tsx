@@ -234,6 +234,9 @@ const IOTDashboard = ({
             localStorage.setItem('last_iot_refresh', nowStr);
             setLastUpdated(new Date(parseInt(nowStr)).toLocaleString());
 
+            // Dispatch event to notify other components (AIInsights, SmartInfo)
+            window.dispatchEvent(new Event('iot-data-updated'));
+
             // Manually trigger the parsing logic again or just set state directly?
             // We can replicate the parsing logic here or better yet, make the parsing logic a function.
             // For now, let's just duplicate the hydration logic to ensure it updates.

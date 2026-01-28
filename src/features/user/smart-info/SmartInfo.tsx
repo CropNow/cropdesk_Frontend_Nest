@@ -107,7 +107,7 @@ const SmartInfo = () => {
   // Fetch real IoT Data (shared with IOTDashboard)
   const [realIotData, setRealIotData] = useState<any>(null);
 
-  useEffect(() => {
+  const loadIotData = React.useCallback(() => {
     const dataStr = localStorage.getItem('iot_device_data');
     if (dataStr) {
       try {
@@ -118,6 +118,12 @@ const SmartInfo = () => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    loadIotData();
+    window.addEventListener('iot-data-updated', loadIotData);
+    return () => window.removeEventListener('iot-data-updated', loadIotData);
+  }, [loadIotData]);
 
   const hasData = isProfileComplete && hasDevices && realIotData;
 
@@ -603,114 +609,6 @@ const SmartInfo = () => {
               className={!hasData ? 'cursor-pointer' : ''}
             >
               {/* ML Prediction Summary Card - visible if prediction exists */}
-              {mlPrediction && mlPrediction.farm_status && (
-                <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-3xl p-6 mb-6 text-white relative overflow-hidden">
-                  <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2 bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                        <Sparkles size={12} />
-                        AI Farm Health Analysis
-                      </div>
-                      <h2 className="text-3xl font-bold mb-1">
-                        {mlPrediction.farm_status.farm_health_percentage}%{' '}
-                        <span className="text-lg font-medium opacity-80">
-                          Score
-                        </span>
-                      </h2>
-                      <p className="text-sm opacity-90">
-                        Condition:{' '}
-                        <span className="font-bold">
-                          {mlPrediction.farm_status.farm_condition}
-                        </span>{' '}
-                        • Valid until{' '}
-                        {new Date(
-                          mlPrediction.validUntil || ''
-                        ).toLocaleDateString()}
-                      </p>
-                    </div>
-
-                    <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/20 min-w-[200px]">
-                      <h4 className="text-sm font-bold mb-3 border-b border-white/20 pb-2">
-                        Stress Breakdown
-                      </h4>
-                      {mlPrediction.farm_status.stress_breakdown && (
-                        <>
-                          <div className="flex justify-between items-center text-xs mb-1.5">
-                            <span>Pest</span>
-                            <span
-                              className={
-                                mlPrediction.farm_status.stress_breakdown
-                                  .pest_stress > 0
-                                  ? 'text-red-300'
-                                  : 'text-green-300'
-                              }
-                            >
-                              {
-                                mlPrediction.farm_status.stress_breakdown
-                                  .pest_stress
-                              }
-                              %
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs mb-1.5">
-                            <span>Fungal</span>
-                            <span
-                              className={
-                                mlPrediction.farm_status.stress_breakdown
-                                  .fungal_stress > 0
-                                  ? 'text-red-300'
-                                  : 'text-green-300'
-                              }
-                            >
-                              {
-                                mlPrediction.farm_status.stress_breakdown
-                                  .fungal_stress
-                              }
-                              %
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs mb-1.5">
-                            <span>Irrigation</span>
-                            <span
-                              className={
-                                mlPrediction.farm_status.stress_breakdown
-                                  .irrigation_stress > 0
-                                  ? 'text-red-300'
-                                  : 'text-green-300'
-                              }
-                            >
-                              {
-                                mlPrediction.farm_status.stress_breakdown
-                                  .irrigation_stress
-                              }
-                              %
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs mb-1.5">
-                            <span>AQI</span>
-                            <span
-                              className={
-                                mlPrediction.farm_status.stress_breakdown
-                                  .aqi_stress > 0
-                                  ? 'text-red-300'
-                                  : 'text-green-300'
-                              }
-                            >
-                              {
-                                mlPrediction.farm_status.stress_breakdown
-                                  .aqi_stress
-                              }
-                              %
-                            </span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  {/* Background decoration */}
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                </div>
-              )}
 
               <FISAlertEngine metrics={metrics} prediction={mlPrediction} />
             </div>

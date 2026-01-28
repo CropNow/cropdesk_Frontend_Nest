@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 
 export const http: AxiosInstance = axios.create({
