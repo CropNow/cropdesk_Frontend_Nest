@@ -512,7 +512,7 @@ const SmartInfo = () => {
                     <div
                       key={i}
                       onClick={() => setSelectedDay(day)}
-                      className={`aspect-square flex items-center justify-center rounded-lg cursor-pointer transition-all hover:bg-muted relative text-[11px] lg:text-sm ${
+                      className={`h-8 lg:h-10 w-full flex items-center justify-center rounded-lg cursor-pointer transition-all hover:bg-muted relative text-[11px] lg:text-sm ${
                         selectedDay === day
                           ? 'bg-primary/10 text-primary font-bold border border-primary/20'
                           : 'text-muted-foreground'

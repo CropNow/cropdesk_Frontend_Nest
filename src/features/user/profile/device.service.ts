@@ -23,10 +23,7 @@ const getReadings = (sensors: any[], name: string): any[] => {
 import { http } from '@/services/http';
 
 // Helper to Register Device in Backend
-const registerDevice = async (
-  fieldId: string,
-  deviceData: any
-) => {
+const registerDevice = async (fieldId: string, deviceData: any) => {
   try {
     console.log('Registering/Ensuring device exists in backend...', deviceData);
     await http.post(`/fields/${fieldId}/sensors`, deviceData);
@@ -34,7 +31,10 @@ const registerDevice = async (
   } catch (error: any) {
     // If error is 400 and message contains 'duplicate' or similar, strict check might be needed.
     // But for now we assume validation error means it might already exist or invalid data.
-    console.warn('Device registration skipped/failed (might already exist):', error.response?.data || error.message);
+    console.warn(
+      'Device registration skipped/failed (might already exist):',
+      error.response?.data || error.message
+    );
   }
 };
 
@@ -45,7 +45,10 @@ export const deleteDevice = async (fieldId: string, serialNumber: string) => {
     console.log('Device deleted successfully.');
     return true;
   } catch (error: any) {
-    console.error('Failed to delete device:', error.response?.data || error.message);
+    console.error(
+      'Failed to delete device:',
+      error.response?.data || error.message
+    );
     throw error;
   }
 };
@@ -69,7 +72,9 @@ export const connectDevice = async (
   try {
     const response = await fetch(`${API_URL}${apiKey}`);
     if (!response.ok) {
-      throw new Error(`External Device API Error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `External Device API Error: ${response.status} ${response.statusText}`
+      );
     }
     const data = await response.json();
     const sensors = data.sensors || [];
@@ -79,10 +84,10 @@ export const connectDevice = async (
     if (registrationInfo && registrationInfo.fieldId) {
       // Backend Schema ONLY allows 'NEST' or 'SEED'. Map logical types to these.
       const typeMapping: Record<string, string> = {
-        'WEATHER_STATION': 'NEST',
-        'NEST': 'NEST',
-        'VALVE_CONTROLLER': 'NEST',
-        'SENSOR_NODE': 'SEED'
+        WEATHER_STATION: 'NEST',
+        NEST: 'NEST',
+        VALVE_CONTROLLER: 'NEST',
+        SENSOR_NODE: 'SEED',
       };
       const backendType = typeMapping[registrationInfo.type] || 'NEST';
 
@@ -91,7 +96,10 @@ export const connectDevice = async (
         type: backendType,
         // fieldId: registrationInfo.fieldId, // REMOVED: Passed in URL, not allowed in body
         serialNumber: realSerialNumber, // The CRITICAL link
-        manufacturer: registrationInfo.manufacturer || data.machine?.manufacturer || 'Generic',
+        manufacturer:
+          registrationInfo.manufacturer ||
+          data.machine?.manufacturer ||
+          'Generic',
         model: registrationInfo.model || 'Standard',
         firmwareVersion: registrationInfo.firmwareVersion || '1.0.0',
         unit: 'Multi', // Default unit for a multi-sensor station
@@ -99,16 +107,18 @@ export const connectDevice = async (
         location: {
           section: 'Main',
           coordinates: {
-            type: "Point",
-            coordinates: [0, 0] // Default
-          }
-        }
+            type: 'Point',
+            coordinates: [0, 0], // Default
+          },
+        },
       };
 
       try {
         await registerDevice(registrationInfo.fieldId, sensorPayload);
       } catch (regErr: any) {
-        alert(`Device Registration Failed: ${regErr.response?.data?.message || regErr.message}. Data might not sync.`);
+        alert(
+          `Device Registration Failed: ${regErr.response?.data?.message || regErr.message}. Data might not sync.`
+        );
       }
     }
 
@@ -134,7 +144,7 @@ export const connectDevice = async (
         'Pressure Sensor': 'Pressure',
         'Leaf Wetness Sensor': 'Leaf Wetness',
         'Radiation Sensor': 'Radiation',
-        'O3 Sensor': 'O3'
+        'O3 Sensor': 'O3',
       };
 
       const payload = {
@@ -143,22 +153,26 @@ export const connectDevice = async (
           name: data.machine?.name,
           is_online: data.machine?.is_online,
           installed_at: data.machine?.installed_at,
-          location: data.machine?.location || ""
+          location: data.machine?.location || '',
         },
         sensors: sensors.map((s: any) => ({
           id: s.id,
           name: s.name,
-          type: sensorTypeMap[s.name] || s.type || s.name.replace(' Sensor', ''),
+          type:
+            sensorTypeMap[s.name] || s.type || s.name.replace(' Sensor', ''),
           unit: s.unit,
-          readings: s.readings || []
-        }))
+          readings: s.readings || [],
+        })),
       };
 
       console.log('Syncing sensor data to backend...', payload);
       await http.post('/sensor-data', payload);
       console.log('Sensor data synced successfully.');
     } catch (syncError: any) {
-      console.error('Failed to sync sensor data to backend (UI still updating):', syncError);
+      console.error(
+        'Failed to sync sensor data to backend (UI still updating):',
+        syncError
+      );
       // alert(`Sensor Data Sync Failed: ${syncError.response?.data?.message || syncError.message}`); // Optional: Uncomment if user wants explicit sync error
     }
 
@@ -404,6 +418,23 @@ export const connectDevice = async (
       lightCategory,
     ];
 
+    // Calculate latest activity timestamp
+    let latestTimestamp = data.machine?.installed_at; // Default to install time
+    if (sensors && sensors.length > 0) {
+      sensors.forEach((s: any) => {
+        if (s.readings && s.readings.length > 0) {
+          const readingTime = s.readings[0].timestamp;
+          if (
+            readingTime &&
+            (!latestTimestamp ||
+              new Date(readingTime) > new Date(latestTimestamp))
+          ) {
+            latestTimestamp = readingTime;
+          }
+        }
+      });
+    }
+
     return {
       success: true,
       device: {
@@ -415,6 +446,7 @@ export const connectDevice = async (
         serialNumber: realSerialNumber,
         apiKey: apiKey, // STORE API KEY for future polling
         connectedAt: new Date().toISOString(),
+        lastActiveAt: latestTimestamp, // Return the calculated last active time
       },
       sensorData: mappedData,
     };

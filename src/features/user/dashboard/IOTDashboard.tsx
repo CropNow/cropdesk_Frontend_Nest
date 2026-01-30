@@ -82,7 +82,6 @@ const IOTDashboard = ({
     }
   }, []);
 
-  // Battery Hook
   const [battery, setBattery] = useState({ level: 1, charging: false });
   useEffect(() => {
     // @ts-ignore
@@ -99,7 +98,6 @@ const IOTDashboard = ({
     }
   }, []);
 
-  // Network Hook
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -187,9 +185,23 @@ const IOTDashboard = ({
       }
     }
 
-    const lastRefresh = localStorage.getItem('last_iot_refresh');
-    if (lastRefresh) {
-      setLastUpdated(new Date(parseInt(lastRefresh)).toLocaleString());
+    const lastActive = localStorage.getItem('iot_last_active_at');
+    if (lastActive) {
+      // Check if it's a timestamp string or ISO string
+      // New logic stores ISO string usually from API, but let's be safe.
+      // Actually 'lastActiveAt' is likely ISO.
+      const dateObj = new Date(lastActive);
+      if (!isNaN(dateObj.getTime())) {
+        setLastUpdated(dateObj.toLocaleString());
+      } else {
+        setLastUpdated(lastActive); // Fallback
+      }
+    } else {
+      // Fallback for migration: use old refresh time if new one not present
+      const lastRefresh = localStorage.getItem('last_iot_refresh');
+      if (lastRefresh) {
+        setLastUpdated(new Date(parseInt(lastRefresh)).toLocaleString());
+      }
     }
   }, []);
 
@@ -199,7 +211,7 @@ const IOTDashboard = ({
   const handleRefresh = async () => {
     const lastRefresh = localStorage.getItem('last_iot_refresh');
     const now = Date.now();
-    const cooldown = 45 * 60 * 1000; // 45 minutes
+    const cooldown = 45 * 60 * 1000;
 
     if (lastRefresh && now - parseInt(lastRefresh) < cooldown) {
       const remaining = Math.ceil(
@@ -231,9 +243,26 @@ const IOTDashboard = ({
               'iot_device_data',
               JSON.stringify(response.sensorData)
             );
+
+            // Handle Last Active Time
+            const lastActive = response.device.lastActiveAt;
+            if (lastActive) {
+              localStorage.setItem('iot_last_active_at', lastActive);
+              // Convert UTC timestamp to local readable string
+              const dateObj = new Date(lastActive);
+              setLastUpdated(dateObj.toLocaleString()); // Use device time
+            } else {
+              // Fallback if no device time (shouldn't happen with new logic)
+              const nowStr = Date.now().toString();
+              setLastUpdated(new Date(parseInt(nowStr)).toLocaleString());
+            }
+
+            // Record the *refresh action* time for cooldown check separately if needed?
+            // The cooldown logic uses 'last_iot_refresh' which is the time of *fetch*.
+            // We should KEEP 'last_iot_refresh' for cooldowns, but visual shows device time.
             const nowStr = Date.now().toString();
+            // We still update this to track when the USER last refreshed
             localStorage.setItem('last_iot_refresh', nowStr);
-            setLastUpdated(new Date(parseInt(nowStr)).toLocaleString());
 
             // Dispatch event to notify other components (AIInsights, SmartInfo)
             window.dispatchEvent(new Event('iot-data-updated'));
@@ -557,7 +586,7 @@ const IOTDashboard = ({
               </p>
               {lastUpdated && (
                 <p className="text-[9px] lg:text-[10px] text-green-500 font-medium">
-                  Last updated: {lastUpdated}
+                  Last Active: {lastUpdated}
                 </p>
               )}
             </div>

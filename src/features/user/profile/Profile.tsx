@@ -28,7 +28,7 @@ const ProfileContent = () => {
     selectedFarm,
     selectedField,
     selectedCrop,
-    loading: profileLoading
+    loading: profileLoading,
   } = useProfile();
 
   const [activeTab, setActiveTab] = useState('Profile');
@@ -55,11 +55,35 @@ const ProfileContent = () => {
   });
 
   // Check for profile completeness to allow Device Addition
-  const checkProfileCompleteness = (): { complete: boolean; missingTab?: string; message?: string } => {
-    if (!selectedFarmer) return { complete: false, missingTab: 'Farmer Details', message: 'Please add Farmer Details first.' };
-    if (!selectedFarm) return { complete: false, missingTab: 'Farm Details', message: 'Please add Farm Details first.' };
-    if (!selectedField) return { complete: false, missingTab: 'Field Details', message: 'Please add Field Details first.' };
-    if (!selectedCrop) return { complete: false, missingTab: 'Crop Details', message: 'Please add Crop Details first.' };
+  const checkProfileCompleteness = (): {
+    complete: boolean;
+    missingTab?: string;
+    message?: string;
+  } => {
+    if (!selectedFarmer)
+      return {
+        complete: false,
+        missingTab: 'Farmer Details',
+        message: 'Please add Farmer Details first.',
+      };
+    if (!selectedFarm)
+      return {
+        complete: false,
+        missingTab: 'Farm Details',
+        message: 'Please add Farm Details first.',
+      };
+    if (!selectedField)
+      return {
+        complete: false,
+        missingTab: 'Field Details',
+        message: 'Please add Field Details first.',
+      };
+    if (!selectedCrop)
+      return {
+        complete: false,
+        missingTab: 'Crop Details',
+        message: 'Please add Crop Details first.',
+      };
     return { complete: true };
   };
 
@@ -113,7 +137,15 @@ const ProfileContent = () => {
     if (storedDevices) {
       setDevices(JSON.parse(storedDevices));
     }
-  }, [user, location.state, profileLoading, selectedFarmer, selectedFarm, selectedField, selectedCrop]);
+  }, [
+    user,
+    location.state,
+    profileLoading,
+    selectedFarmer,
+    selectedFarm,
+    selectedField,
+    selectedCrop,
+  ]);
 
   const tabs = [
     'Profile',
@@ -177,7 +209,10 @@ const ProfileContent = () => {
     try {
       // Connect to the device service
       // @ts-ignore
-      const response: any = await connectDevice(deviceData.serialNumber, deviceData);
+      const response: any = await connectDevice(
+        deviceData.serialNumber,
+        deviceData
+      );
 
       if (response.success) {
         // 1. Update Devices List
@@ -201,7 +236,7 @@ const ProfileContent = () => {
     } catch (error: any) {
       alert(
         error.message ||
-        'Failed to connect device. Please check the serial number.'
+          'Failed to connect device. Please check the serial number.'
       );
     } finally {
       setIsAddingDevice(false);
@@ -260,10 +295,11 @@ const ProfileContent = () => {
                 key={tab}
                 variant="ghost"
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 md:px-6 rounded-xl text-xs md:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${activeTab === tab
-                  ? 'bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20 hover:text-green-500'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent'
-                  }`}
+                className={`px-4 py-2 md:px-6 rounded-xl text-xs md:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${
+                  activeTab === tab
+                    ? 'bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20 hover:text-green-500'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent'
+                }`}
               >
                 {tab}
               </Button>
@@ -274,15 +310,16 @@ const ProfileContent = () => {
           {activeTab === 'Profile' && (
             <div className="bg-card border border-border rounded-3xl p-4 md:p-8">
               {/* Header */}
-              <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-8">
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center bg-green-500 text-black flex-shrink-0 shadow-lg">
-                    <User size={40} />
+              {/* Header */}
+              <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-8 relative">
+                <div className="flex items-start gap-4 flex-1 pr-12">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center bg-green-500 text-black flex-shrink-0 shadow-lg">
+                    <User size={32} />
                   </div>
-                  <div className="flex-1 space-y-2 mt-1">
+                  <div className="flex-1 space-y-1 mt-1">
                     {isEditing ? (
                       <div className="space-y-1">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase">
                           Name
                         </Label>
                         <FormInput
@@ -293,23 +330,23 @@ const ProfileContent = () => {
                               name: e.target.value,
                             })
                           }
-                          className="h-9"
+                          className="h-8 text-sm"
                           error={errors.name || ''}
                         />
                       </div>
                     ) : (
-                      <h2 className="text-2xl font-bold text-foreground">
+                      <h2 className="text-xl md:text-2xl font-bold text-foreground">
                         {userDetails.name}
                       </h2>
                     )}
 
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>{userDetails.email}</span>
                     </div>
 
                     {isEditing ? (
                       <div className="space-y-1 w-full max-w-md">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase">
                           Bio
                         </Label>
                         <FormTextarea
@@ -320,28 +357,28 @@ const ProfileContent = () => {
                               bio: e.target.value,
                             })
                           }
-                          className="h-20 resize-none"
+                          className="h-16 resize-none text-sm"
                         />
                       </div>
                     ) : (
-                      <p className="text-sm text-foreground/80 max-w-lg leading-relaxed">
+                      <p className="text-xs md:text-sm text-foreground/80 max-w-lg leading-relaxed">
                         {userDetails.bio}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="absolute top-0 right-0 md:static">
                   <Button
                     size="icon"
-                    className="rounded-xl w-10 h-10 bg-green-500 hover:bg-green-600 shadow-lg"
+                    className="rounded-xl w-8 h-8 md:w-10 md:h-10 bg-green-500 hover:bg-green-600 shadow-lg"
                     title="Add Device"
                     onClick={handleAttemptAddDevice}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
+                      width="20"
+                      height="20"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -359,66 +396,66 @@ const ProfileContent = () => {
 
               {/* Stats Cards */}
               <div className="mb-8">
-                <h3 className="text-sm font-bold text-muted-foreground uppercase mb-4 md:hidden">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3 md:hidden">
                   Farm Statistics
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                <div className="grid grid-cols-3 gap-3 md:gap-6">
                   {/* Total Land */}
-                  <div className="bg-[#1e40af] rounded-2xl p-6 relative overflow-hidden group hover:shadow-xl transition-all">
-                    <div className="flex justify-between items-start mb-6 relative z-10">
-                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                        <Map size={24} className="text-white" />
+                  <div className="bg-[#1e40af] rounded-2xl p-3 md:p-6 relative overflow-hidden group hover:shadow-xl transition-all">
+                    <div className="flex justify-between items-start mb-2 md:mb-6 relative z-10">
+                      <div className="p-1.5 md:p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <Map className="w-4 h-4 md:w-6 md:h-6 text-white" />
                       </div>
                     </div>
                     <div className="relative z-10">
-                      <h3 className="text-4xl font-bold text-white mb-0.5">
+                      <h3 className="text-lg md:text-4xl font-bold text-white mb-0.5">
                         {selectedFarm
                           ? parseFloat(selectedFarm.area) > 0
                             ? selectedFarm.area
                             : selectedFarm.fields?.reduce(
-                              (acc: number, f: any) =>
-                                acc + (parseFloat(f.area) || 0),
-                              0
-                            ) || '0'
+                                (acc: number, f: any) =>
+                                  acc + (parseFloat(f.area) || 0),
+                                0
+                              ) || '0'
                           : '0'}
                       </h3>
-                      <p className="text-xs font-bold text-white/60 uppercase tracking-wider">
+                      <p className="text-[9px] md:text-xs font-bold text-white/60 uppercase tracking-wider">
                         Total Land
                       </p>
                     </div>
                   </div>
 
                   {/* Cultivable */}
-                  <div className="bg-[#16a34a] rounded-2xl p-6 relative overflow-hidden group hover:shadow-xl transition-all">
-                    <div className="flex justify-between items-start mb-6 relative z-10">
-                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                        <Leaf size={24} className="text-white" />
+                  <div className="bg-[#16a34a] rounded-2xl p-3 md:p-6 relative overflow-hidden group hover:shadow-xl transition-all">
+                    <div className="flex justify-between items-start mb-2 md:mb-6 relative z-10">
+                      <div className="p-1.5 md:p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <Leaf className="w-4 h-4 md:w-6 md:h-6 text-white" />
                       </div>
                     </div>
                     <div className="relative z-10">
-                      <h3 className="text-4xl font-bold text-white mb-0.5">
+                      <h3 className="text-lg md:text-4xl font-bold text-white mb-0.5">
                         {selectedField ? selectedField.area : '0'}
                       </h3>
-                      <p className="text-xs font-bold text-white/60 uppercase tracking-wider">
+                      <p className="text-[9px] md:text-xs font-bold text-white/60 uppercase tracking-wider">
                         Cultivable
                       </p>
                     </div>
                   </div>
 
                   {/* Water Source */}
-                  <div className="bg-[#06b6d4] rounded-2xl p-6 relative overflow-hidden group hover:shadow-xl transition-all">
-                    <div className="flex justify-between items-start mb-6 relative z-10">
-                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                        <Droplets size={24} className="text-white" />
+                  <div className="bg-[#06b6d4] rounded-2xl p-3 md:p-6 relative overflow-hidden group hover:shadow-xl transition-all">
+                    <div className="flex justify-between items-start mb-2 md:mb-6 relative z-10">
+                      <div className="p-1.5 md:p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <Droplets className="w-4 h-4 md:w-6 md:h-6 text-white" />
                       </div>
                     </div>
                     <div className="relative z-10">
-                      <h3 className="text-xl font-bold text-white mb-0.5 capitalize truncate">
+                      <h3 className="text-base md:text-xl font-bold text-white mb-0.5 capitalize leading-tight">
                         {selectedField && selectedField.irrigationMethod
                           ? selectedField.irrigationMethod
                           : 'No Source'}
                       </h3>
-                      <p className="text-xs font-bold text-white/60 uppercase tracking-wider">
+                      <p className="text-[9px] md:text-xs font-bold text-white/60 uppercase tracking-wider">
                         Water Source
                       </p>
                     </div>
@@ -456,10 +493,11 @@ const ProfileContent = () => {
                             </div>
                           </div>
                           <div
-                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${device.status === 'Active'
-                              ? 'bg-green-500/10 text-green-500'
-                              : 'bg-red-500/10 text-red-500'
-                              }`}
+                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              device.status === 'Active'
+                                ? 'bg-green-500/10 text-green-500'
+                                : 'bg-red-500/10 text-red-500'
+                            }`}
                           >
                             {device.status}
                           </div>
@@ -522,8 +560,8 @@ const ProfileContent = () => {
                             <p className="text-xs text-foreground mt-0.5">
                               {device.connectedAt
                                 ? new Date(
-                                  device.connectedAt
-                                ).toLocaleDateString()
+                                    device.connectedAt
+                                  ).toLocaleDateString()
                                 : 'Just now'}
                             </p>
                           </div>
