@@ -1,29 +1,19 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
+import welcomeBackBg from '@/features/auth/asset/welcome_back.png';
 
 const Welcome = () => {
   const navigate = useNavigate();
-
-  const [bgImage, setBgImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    import('@/features/auth/asset/welcome_back.png').then((module) => {
-      setBgImage(module.default);
-    });
-  }, []);
 
   return (
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        {bgImage && (
-          <img
-            src={bgImage}
-            alt="Farmer on tractor"
-            className="w-full h-full object-cover opacity-80"
-          />
-        )}
+        <img
+          src={welcomeBackBg}
+          alt="Farmer on tractor"
+          className="w-full h-full object-cover opacity-80"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
       </div>
 

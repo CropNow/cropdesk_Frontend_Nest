@@ -94,181 +94,158 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
   };
 
   // Load Data
-  useEffect(() => {
-    const fetchProfileData = async () => {
-      setLoading(true);
-      try {
-        const sessionStr = localStorage.getItem('user');
-        let currentUser = sessionStr ? JSON.parse(sessionStr) : null;
+  const refreshProfile = async () => {
+    setLoading(true);
+    try {
+      const sessionStr = localStorage.getItem('user');
+      let currentUser = sessionStr ? JSON.parse(sessionStr) : null;
 
-        // Fetch Deep Hierarchy Manually
-        const { getAllFarmers } =
-          await import('@/features/auth/api/farmer.api');
-        const rawFarmers = await getAllFarmers();
-        const apiFarmers = normalizeData(rawFarmers || []);
+      // Fetch Deep Hierarchy Manually
+      const { getAllFarmers } = await import('@/features/auth/api/farmer.api');
+      const rawFarmers = await getAllFarmers();
+      const apiFarmers = normalizeData(rawFarmers || []);
 
-        if (apiFarmers && apiFarmers.length > 0) {
-          // Filter Farmers to only show those belonging to the current user
-          let enrichedFarmers = apiFarmers;
-          if (currentUser && currentUser.id) {
-            enrichedFarmers = apiFarmers.filter((f: any) => {
-              const fUserId =
-                f.userId && typeof f.userId === 'object'
-                  ? f.userId._id || f.userId.id
-                  : f.userId;
-              return (
-                String(fUserId) === String(currentUser.id) ||
-                String(f.farmerUserId) === String(currentUser.id)
-              );
+      if (apiFarmers && apiFarmers.length > 0) {
+        // Filter Farmers to only show those belonging to the current user
+        let enrichedFarmers = apiFarmers;
+        if (currentUser && currentUser.id) {
+          enrichedFarmers = apiFarmers.filter((f: any) => {
+            const fUserId =
+              f.userId && typeof f.userId === 'object'
+                ? f.userId._id || f.userId.id
+                : f.userId;
+            return (
+              String(fUserId) === String(currentUser.id) ||
+              String(f.farmerUserId) === String(currentUser.id)
+            );
+          });
+        }
+
+        if (enrichedFarmers.length === 0) {
+          console.warn('No farmers found for current user.');
+        }
+
+        // A. Fetch Farms
+        let allFarms: any[] = [];
+        try {
+          const { getFarms } = await import('@/features/auth/api/farm.api');
+          const farmsResponse = await getFarms(1, 100);
+          allFarms = normalizeData(farmsResponse.farms || []);
+        } catch (err) {
+          console.error('Error fetching farms:', err);
+        }
+
+        // Map Farms to Farmers
+        if (allFarms.length > 0) {
+          enrichedFarmers = enrichedFarmers.map((farmer: any) => {
+            const farmerId = farmer.id;
+            const myFarms = allFarms.filter((farm: any) => {
+              const fOwner = farm.farmerId || (farm as any).farmer;
+              const fOwnerId =
+                typeof fOwner === 'object' && fOwner
+                  ? fOwner.id || fOwner._id
+                  : fOwner;
+              return String(fOwnerId) === String(farmerId);
             });
-          }
+            return { ...farmer, farms: myFarms };
+          });
+        }
 
-          if (enrichedFarmers.length === 0) {
-            console.warn('No farmers found for current user.');
-          }
+        // B. Fetch Fields (Global fetch)
+        // We fetch all fields but optimize matching
+        try {
+          const { getFields } = await import('@/features/auth/api/field.api');
+          const rawFields = await getFields({});
+          const allFields = normalizeData(rawFields || []);
 
-          // A. Fetch Farms
-          let allFarms: any[] = [];
-          try {
-            const { getFarms } = await import('@/features/auth/api/farm.api');
-            const farmsResponse = await getFarms(1, 100);
-            allFarms = normalizeData(farmsResponse.farms || []);
-          } catch (err) {
-            console.error('Error fetching farms:', err);
-          }
-
-          // Map Farms to Farmers
-          if (allFarms.length > 0) {
-            enrichedFarmers = enrichedFarmers.map((farmer: any) => {
-              const farmerId = farmer.id;
-              const myFarms = allFarms.filter((farm: any) => {
-                const fOwner = farm.farmerId || (farm as any).farmer;
-                const fOwnerId =
-                  typeof fOwner === 'object' && fOwner
-                    ? fOwner.id || fOwner._id
-                    : fOwner;
-                return String(fOwnerId) === String(farmerId);
-              });
-              return { ...farmer, farms: myFarms };
-            });
-          }
-
-          // B. Fetch Fields (Global fetch)
-          // We fetch all fields but optimize matching
-          try {
-            const { getFields } = await import('@/features/auth/api/field.api');
-            const rawFields = await getFields({});
-            const allFields = normalizeData(rawFields || []);
-
-            if (allFields.length > 0) {
-              // Map Fields to Farms
-              enrichedFarmers = enrichedFarmers.map((farmer: any) => {
+          if (allFields.length > 0) {
+            // Map Fields to Farms
+            // Map Fields to Farms
+            enrichedFarmers = await Promise.all(
+              enrichedFarmers.map(async (farmer: any) => {
                 if (!farmer.farms) return farmer;
 
-                const enrichedFarms = farmer.farms.map((farm: any) => {
-                  const farmId = farm.id;
-                  const myFields = allFields.filter((field: any) => {
-                    const fFarm = field.farmId || field.farm;
-                    const fFarmId =
-                      typeof fFarm === 'object' && fFarm
-                        ? fFarm.id || fFarm._id
-                        : fFarm;
-                    return String(fFarmId) === String(farmId);
-                  });
-
-                  // Initialize crops array but DO NOT fetch them yet
-                  const fieldsWithPlaceholders = myFields.map((field: any) => ({
-                    ...field,
-                    crops: [], // Placeholder, will be fetched on select
-                  }));
-
-                  return { ...farm, fields: fieldsWithPlaceholders };
-                });
-                return { ...farmer, farms: enrichedFarms };
-              });
-            }
-          } catch (err) {
-            console.error('Error fetching fields:', err);
-          }
-
-          setFarmers(enrichedFarmers);
-
-          // Auto-Select Logic
-          if (enrichedFarmers.length > 0) {
-            const firstFarmer = enrichedFarmers[0];
-            if (firstFarmer) {
-              handleSetSelectedFarmerId(firstFarmer.id);
-              if (firstFarmer.farms?.length > 0) {
-                const firstFarm = firstFarmer.farms[0];
-                handleSetSelectedFarmId(firstFarm.id);
-                if (firstFarm.fields?.length > 0) {
-                  const firstField = firstFarm.fields[0];
-
-                  // Pre-fetch crops for the first field so they appear immediately
-                  try {
-                    const { getCropsByField } = await import('@/features/auth/api/crop.api');
-                    const rawCrops = await getCropsByField(firstField.id || (firstField as any)._id);
-                    const initialCrops = normalizeData(rawCrops || []);
-
-                    // Inject into the farmers tree
-                    enrichedFarmers = enrichedFarmers.map(f => {
-                      if (f.id === firstFarmer.id) {
-                        return {
-                          ...f,
-                          farms: f.farms.map((fm: any) => {
-                            if (fm.id === firstFarm.id) {
-                              return {
-                                ...fm,
-                                fields: fm.fields.map((fd: any) => {
-                                  if (fd.id === firstField.id) {
-                                    return { ...fd, crops: initialCrops };
-                                  }
-                                  return fd;
-                                })
-                              };
-                            }
-                            return fm;
-                          })
-                        };
-                      }
-                      return f;
+                // Initialize enriched farms with fields and crops
+                const enrichedFarms = await Promise.all(
+                  farmer.farms.map(async (farm: any) => {
+                    const farmId = farm.id;
+                    const myFields = allFields.filter((field: any) => {
+                      const fFarm = field.farmId || field.farm;
+                      const fFarmId =
+                        typeof fFarm === 'object' && fFarm
+                          ? fFarm.id || fFarm._id
+                          : fFarm;
+                      return String(fFarmId) === String(farmId);
                     });
 
-                    // Update state with the enriched data including crops
-                    setFarmers(enrichedFarmers);
+                    // Fetch crops for ALL fields to ensure correct counts globally
+                    const fieldsWithCrops = await Promise.all(
+                      myFields.map(async (field: any) => {
+                        try {
+                          const { getCropsByField } =
+                            await import('@/features/auth/api/crop.api');
+                          const rawCrops = await getCropsByField(
+                            field.id || (field as any)._id
+                          );
+                          const normalizedCrops = normalizeData(rawCrops || []);
+                          return {
+                            ...field,
+                            crops: normalizedCrops,
+                          };
+                        } catch (e) {
+                          console.warn(
+                            `Failed to fetch crops for field ${field.id}`,
+                            e
+                          );
+                          return { ...field, crops: [] };
+                        }
+                      })
+                    );
 
-                    // Now set selection IDs
-                    setSelectedFieldId(firstField.id);
-                    if (initialCrops.length > 0) {
-                      setSelectedCropId(initialCrops[0].id);
-                    }
-                  } catch (e) {
-                    console.warn('Initial crop fetch failed', e);
-                    // Fallback if fetch fails
-                    setFarmers(enrichedFarmers);
-                    setSelectedFieldId(firstField.id);
-                  }
-                } else {
-                  // No fields, just set farmers
-                  setFarmers(enrichedFarmers);
+                    return { ...farm, fields: fieldsWithCrops };
+                  })
+                );
+                return { ...farmer, farms: enrichedFarms };
+              })
+            );
+          }
+        } catch (err) {
+          console.error('Error fetching fields:', err);
+        }
+
+        setFarmers(enrichedFarmers);
+
+        // Auto-Select Logic
+        if (enrichedFarmers.length > 0) {
+          const firstFarmer = enrichedFarmers[0];
+          if (firstFarmer) {
+            handleSetSelectedFarmerId(firstFarmer.id);
+            if (firstFarmer.farms?.length > 0) {
+              const firstFarm = firstFarmer.farms[0];
+              handleSetSelectedFarmId(firstFarm.id);
+              if (firstFarm.fields?.length > 0) {
+                const firstField = firstFarm.fields[0];
+                // Set selection IDs
+                setSelectedFieldId(firstField.id);
+                if (firstField.crops?.length > 0) {
+                  setSelectedCropId(firstField.crops[0].id);
                 }
-              } else {
-                setFarmers(enrichedFarmers);
               }
-            } else {
-              setFarmers(enrichedFarmers);
             }
           }
-        } else {
-          setFarmers([]);
         }
-      } catch (e) {
-        console.error('Profile Data Fetch Error:', e);
-      } finally {
-        setLoading(false);
+      } else {
+        setFarmers([]);
       }
-    };
-    fetchProfileData();
+    } catch (e) {
+      console.error('Profile Data Fetch Error:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshProfile();
   }, []);
 
   // CRUD Handlers
@@ -582,7 +559,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
       ) {
         try {
           fieldPayload.coordinates = JSON.parse(fieldPayload.coordinates);
-        } catch (e) { }
+        } catch (e) {}
       }
 
       const updatedField = await updateField(id, fieldPayload);
@@ -998,6 +975,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
         addCrop,
         updateCrop,
         deleteCrop,
+        refreshProfile,
       }}
     >
       {children}

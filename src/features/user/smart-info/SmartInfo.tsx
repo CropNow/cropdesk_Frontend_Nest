@@ -20,6 +20,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { getLatestPrediction } from '../dashboard/ml.service';
 import { MLPrediction } from '@/types/ml.types';
+import { RegistrationPlaceholder } from '@/components/common/RegistrationPlaceholder';
 
 const SmartInfo = () => {
   const navigate = useNavigate();
@@ -210,13 +211,6 @@ const SmartInfo = () => {
               analysisPayload,
               user.id
             );
-
-            // Try to assign real farmId if available
-            if (user.farmers && user.farmers.length > 0) {
-              const fId = (user.farmers[0] as any).farmId; // Cast to any to avoid potential type mismatch if type is incomplete
-              if (fId)
-                externalPred.farmId = typeof fId === 'object' ? fId._id : fId;
-            }
 
             setMlPrediction(externalPred);
             return;
@@ -445,9 +439,39 @@ const SmartInfo = () => {
     1
   ).getDay();
 
+  const handleNoDeviceClick = () => {
+    if (!hasDevices) {
+      navigate('/profile');
+    }
+  };
+
+  if (!isProfileComplete) {
+    return (
+      <main className="min-h-screen bg-background text-foreground pb-20 pt-20 lg:pt-8 p-4 lg:p-8 font-sans flex items-center justify-center">
+        <RegistrationPlaceholder
+          title="Smart Information Unavailable"
+          description="Please complete your profile to access smart insights and alerts."
+          route="/register/farmer-details"
+          variant="button"
+          color="green"
+          className="w-full max-w-lg"
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground pb-20 pt-20 lg:pt-8 p-4 lg:p-8 font-sans">
-      <div className="max-w-[1600px] mx-auto">
+      <div
+        className={`max-w-[1600px] mx-auto ${!hasDevices ? 'cursor-pointer relative' : ''}`}
+        onClick={handleNoDeviceClick}
+      >
+        {!hasDevices && (
+          <div
+            className="absolute inset-0 z-50 bg-transparent"
+            title="Add a device to see Smart Info"
+          />
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* LEFT SIDEBAR */}
           <div className="lg:col-span-3 flex flex-col gap-6">
@@ -610,7 +634,10 @@ const SmartInfo = () => {
             >
               {/* ML Prediction Summary Card - visible if prediction exists */}
 
-              <FISAlertEngine metrics={metrics} prediction={mlPrediction} />
+              <FISAlertEngine
+                metrics={metrics}
+                prediction={hasDevices ? mlPrediction : null}
+              />
             </div>
 
             {/* BOTTOM SECTION */}

@@ -12,9 +12,20 @@ import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { FormTextarea } from '@/components/common/FormTextarea';
-import { ProfileProvider } from './context/ProfileProvider';
+// import { ProfileProvider } from './context/ProfileProvider';
 import { useProfile } from './context/useProfile';
 import { connectDevice, deleteDevice } from './device.service';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Inner Profile Component that consumes the context
 const ProfileContent = () => {
@@ -54,6 +65,26 @@ const ProfileContent = () => {
     bio: '',
   });
 
+  // Alert & Confirm Dialog State
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'info' | 'warning' | 'error';
+    onConfirm?: () => void;
+    isConfirm?: boolean;
+    confirmLabel?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+    isConfirm: false,
+  });
+
+  const closeAlert = () =>
+    setAlertConfig((prev) => ({ ...prev, isOpen: false }));
+
   // Check for profile completeness to allow Device Addition
   const checkProfileCompleteness = (): {
     complete: boolean;
@@ -92,8 +123,16 @@ const ProfileContent = () => {
     if (status.complete) {
       setIsAddDeviceModalOpen(true);
     } else {
-      alert(status.message);
-      if (status.missingTab) setActiveTab(status.missingTab);
+      setAlertConfig({
+        isOpen: true,
+        title: 'Profile Incomplete',
+        message: status.message || 'Please complete your profile first.',
+        type: 'warning',
+        onConfirm: () => {
+          if (status.missingTab) setActiveTab(status.missingTab);
+          closeAlert();
+        },
+      });
     }
   };
 
@@ -125,8 +164,16 @@ const ProfileContent = () => {
         setIsAddDeviceModalOpen(true);
       } else {
         // If incomplete, redirect to the missing tab automatically
-        alert(`To add a device, ${status.message}`);
-        if (status.missingTab) setActiveTab(status.missingTab);
+        setAlertConfig({
+          isOpen: true,
+          title: 'Direct Link Warning',
+          message: `To add a device, ${status.message}`,
+          type: 'warning',
+          onConfirm: () => {
+            if (status.missingTab) setActiveTab(status.missingTab);
+            closeAlert();
+          },
+        });
       }
       // Clear state
       navigate(location.pathname, { replace: true, state: {} });
@@ -136,6 +183,26 @@ const ProfileContent = () => {
     const storedDevices = localStorage.getItem('connected_devices');
     if (storedDevices) {
       setDevices(JSON.parse(storedDevices));
+    } else if (selectedField && selectedField.id) {
+      // Fallback: Try to fetch from backend if local storage is empty (Fresh Login)
+      import('./device.service').then(({ getDevicesForField }) => {
+        getDevicesForField(selectedField.id).then((fetchedDevices) => {
+          if (fetchedDevices && fetchedDevices.length > 0) {
+            // Map backend sensor to frontend Device format if needed
+            // This assumes backend returns compatible structure or we just use it
+            // We might need to map 'serialNumber' if backend uses 'code' or 'id'
+            const mapped = fetchedDevices.map((d: any) => ({
+              ...d,
+              serialNumber: d.serialNumber || d.code || d.id, // Ensure serial matches
+              status: d.status || (d.isOnline ? 'Active' : 'Offline'),
+              connectedAt: d.createdAt || new Date().toISOString(),
+            }));
+
+            setDevices(mapped);
+            localStorage.setItem('connected_devices', JSON.stringify(mapped));
+          }
+        });
+      });
     }
   }, [
     user,
@@ -187,21 +254,32 @@ const ProfileContent = () => {
   };
 
   const handleDeleteAccount = () => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete your account? This action cannot be undone.'
-      )
-    ) {
-      localStorage.removeItem('user');
-      localStorage.removeItem('registeredUser');
-      setUser(null);
-      navigate('/login');
-    }
+    setAlertConfig({
+      isOpen: true,
+      isConfirm: true,
+      title: 'Delete Account',
+      message:
+        'Are you sure you want to delete your account? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      type: 'error',
+      onConfirm: () => {
+        localStorage.removeItem('user');
+        localStorage.removeItem('registeredUser');
+        setUser(null);
+        navigate('/login');
+        closeAlert(); // Although navigating away usually unmounts
+      },
+    });
   };
 
   const handleAddDevice = async (deviceData: any) => {
     if (!deviceData.serialNumber) {
-      alert('Please enter a serial number.');
+      setAlertConfig({
+        isOpen: true,
+        title: 'Missing Information',
+        message: 'Please enter a serial number.',
+        type: 'warning',
+      });
       return;
     }
 
@@ -231,57 +309,98 @@ const ProfileContent = () => {
         );
 
         setIsAddDeviceModalOpen(false);
-        alert('Device Connected Successfully! IoT Dashboard is now live.');
+
+        // Show success or warning message
+        if (response.warning) {
+          setAlertConfig({
+            isOpen: true,
+            title: 'Device Connected with Warning',
+            message: `${response.warning}`,
+            type: 'warning',
+          });
+        } else {
+          setAlertConfig({
+            isOpen: true,
+            title: 'Success',
+            message:
+              'Device Connected Successfully! IoT Dashboard is now live.',
+            type: 'info',
+          });
+        }
       }
     } catch (error: any) {
-      alert(
-        error.message ||
-          'Failed to connect device. Please check the serial number.'
-      );
+      setAlertConfig({
+        isOpen: true,
+        title: 'Connection Failed',
+        message:
+          error.message ||
+          'Failed to connect device. Please check the serial number.',
+        type: 'error',
+      });
     } finally {
       setIsAddingDevice(false);
     }
   };
 
   const handleDeleteDevice = async (device: any) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete the device "${device.name}"? This action cannot be undone.`
-      )
-    ) {
-      return;
-    }
+    setAlertConfig({
+      isOpen: true,
+      isConfirm: true,
+      title: 'Delete Device',
+      message: `Are you sure you want to delete the device "${device.name}"? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      type: 'error',
+      onConfirm: async () => {
+        closeAlert();
+        try {
+          // If the device has a fieldId, try to delete from backend
+          if (device.fieldId && device.serialNumber) {
+            await deleteDevice(device.fieldId, device.serialNumber);
+          }
 
-    try {
-      // If the device has a fieldId, try to delete from backend
-      if (device.fieldId && device.serialNumber) {
-        await deleteDevice(device.fieldId, device.serialNumber);
-      }
+          // Update Local State
+          const updatedDevices = devices.filter(
+            (d) => d.serialNumber !== device.serialNumber
+          );
+          setDevices(updatedDevices);
+          localStorage.setItem(
+            'connected_devices',
+            JSON.stringify(updatedDevices)
+          ); // Persist
 
-      // Update Local State
-      const updatedDevices = devices.filter(
-        (d) => d.serialNumber !== device.serialNumber
-      );
-      setDevices(updatedDevices);
-      localStorage.setItem('connected_devices', JSON.stringify(updatedDevices)); // Persist
+          // If no devices left, maybe clear IoT data?
+          if (updatedDevices.length === 0) {
+            localStorage.removeItem('iot_device_data');
+          }
 
-      // If no devices left, maybe clear IoT data?
-      if (updatedDevices.length === 0) {
-        localStorage.removeItem('iot_device_data');
-      }
+          setAlertConfig({
+            isOpen: true,
+            title: 'Deleted',
+            message: 'Device deleted successfully.',
+            type: 'info',
+          });
+        } catch (error: any) {
+          console.error('Failed to delete device:', error);
+          // Fallback: Remove locally even if backend fails (to unblock user)
+          const updatedDevices = devices.filter(
+            (d) => d.serialNumber !== device.serialNumber
+          );
+          setDevices(updatedDevices);
+          localStorage.setItem(
+            'connected_devices',
+            JSON.stringify(updatedDevices)
+          );
 
-      alert('Device deleted successfully.');
-    } catch (error: any) {
-      console.error('Failed to delete device:', error);
-      alert('Failed to delete device from backend, but removing locally.');
-
-      // Fallback: Remove locally even if backend fails (to unblock user)
-      const updatedDevices = devices.filter(
-        (d) => d.serialNumber !== device.serialNumber
-      );
-      setDevices(updatedDevices);
-      localStorage.setItem('connected_devices', JSON.stringify(updatedDevices));
-    }
+          setAlertConfig({
+            isOpen: true,
+            title: 'Partial Delete',
+            message:
+              'Failed to delete device from backend, but removed locally.',
+            type: 'warning',
+          });
+        }
+      },
+    });
   };
 
   return (
@@ -706,17 +825,58 @@ const ProfileContent = () => {
         onClose={() => setIsAddDeviceModalOpen(false)}
         onAdd={handleAddDevice}
       />
+
+      {/* Global Alert/Confirm Dialog */}
+      <AlertDialog
+        open={alertConfig.isOpen}
+        onOpenChange={(open) => {
+          if (!open) closeAlert();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertConfig.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertConfig.isConfirm ? (
+              <>
+                <AlertDialogCancel onClick={closeAlert}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={alertConfig.onConfirm}
+                  className={
+                    alertConfig.type === 'error'
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : ''
+                  }
+                >
+                  {alertConfig.confirmLabel || 'Confirm'}
+                </AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction
+                onClick={() => {
+                  if (alertConfig.onConfirm) alertConfig.onConfirm();
+                  closeAlert();
+                }}
+              >
+                Okay
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 };
 
-// Main Profile Component Wrapped in Provider
+// Main Profile Component (Wrapper) - Now just renders content as Provider is up a level
 const Profile = () => {
-  return (
-    <ProfileProvider>
-      <ProfileContent />
-    </ProfileProvider>
-  );
+  return <ProfileContent />;
 };
 
 export default Profile;

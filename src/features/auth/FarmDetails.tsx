@@ -7,10 +7,26 @@ import { FormTextarea } from '@/components/common/FormTextarea';
 import { FormDropdown } from '@/components/common/FormDropdown';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import fieldInfoBg from '@/features/auth/asset/field_info.png';
+
+interface FarmData {
+  farmName: string;
+  description: string;
+  area: string;
+  units: string;
+  soilType: string;
+  location: {
+    address: string;
+    city: string;
+    country: string;
+    latitude: string;
+    longitude: string;
+  };
+}
 
 const FarmDetails = () => {
   const navigate = useNavigate();
-  const [farmData, setFarmData] = useState(() => {
+  const [farmData, setFarmData] = useState<FarmData>(() => {
     const tempStr = localStorage.getItem('tempRegistrationData');
     if (tempStr) {
       try {
@@ -58,11 +74,16 @@ const FarmDetails = () => {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!farmData.farmName.trim()) newErrors.farmName = 'This field is not filled';
-    if (!farmData.area.toString().trim()) newErrors.area = 'This field is not filled';
-    if (!farmData.location.address.trim()) newErrors.address = 'This field is not filled';
-    if (!farmData.location.city.trim()) newErrors.city = 'This field is not filled';
-    if (!farmData.location.country.trim()) newErrors.country = 'This field is not filled';
+    if (!farmData.farmName.trim())
+      newErrors.farmName = 'This field is not filled';
+    if (!farmData.area.toString().trim())
+      newErrors.area = 'This field is not filled';
+    if (!farmData.location.address.trim())
+      newErrors.address = 'This field is not filled';
+    if (!farmData.location.city.trim())
+      newErrors.city = 'This field is not filled';
+    if (!farmData.location.country.trim())
+      newErrors.country = 'This field is not filled';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -80,14 +101,6 @@ const FarmDetails = () => {
       localStorage.setItem('tempRegistrationData', JSON.stringify(updatedTemp));
     }
   }, [farmData]);
-
-  const [bgImage, setBgImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    import('@/features/auth/asset/filed info.png').then((module) => {
-      setBgImage(module.default);
-    });
-  }, []);
 
   useEffect(() => {
     // Only run geo if no location data exists to avoid overwriting
@@ -167,13 +180,11 @@ const FarmDetails = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        {bgImage && (
-          <img
-            src={bgImage}
-            alt="Aerial view of fields"
-            className="w-full h-full object-cover opacity-80"
-          />
-        )}
+        <img
+          src={fieldInfoBg}
+          alt="Aerial view of fields"
+          className="w-full h-full object-cover opacity-80"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
       </div>
 
@@ -219,7 +230,7 @@ const FarmDetails = () => {
                 setFarmData({ ...farmData, description: e.target.value })
               }
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors resize-none h-20"
-            // No error prop needed as it's optional
+              // No error prop needed as it's optional
             />
           </div>
 
@@ -247,7 +258,7 @@ const FarmDetails = () => {
                 setFarmData({ ...farmData, units: e.target.value })
               }
               className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
-            // No error handling logic shown for units but if needed add error prop
+              // No error handling logic shown for units but if needed add error prop
             >
               <option value="acres" className="bg-gray-800">
                 Acres
@@ -322,7 +333,9 @@ const FarmDetails = () => {
                     : ''
                 }
                 onChange={(val: string) => {
-                  const [lat, lng] = val.split(',').map((s) => s.trim());
+                  const [lat = '', lng = ''] = val
+                    .split(',')
+                    .map((s) => s.trim());
                   setFarmData({
                     ...farmData,
                     location: {
@@ -331,6 +344,17 @@ const FarmDetails = () => {
                       longitude: lng,
                     },
                   });
+                }}
+                onLocationDataChange={(data) => {
+                  // Auto-fill city and country from reverse geocoding
+                  setFarmData((prev) => ({
+                    ...prev,
+                    location: {
+                      ...prev.location,
+                      city: data.city || prev.location.city || '',
+                      country: data.country || prev.location.country || '',
+                    },
+                  }));
                 }}
                 height="300px"
               />

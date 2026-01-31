@@ -1,97 +1,49 @@
-import { useState, useEffect, useRef } from 'react';
+/// <reference types="google.maps" />
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
-  MapContainer,
-  TileLayer,
+  GoogleMap,
+  useJsApiLoader,
   Marker,
-  Popup,
-  useMap,
-  FeatureGroup,
-  useMapEvents,
-} from 'react-leaflet';
-import { EditControl } from 'react-leaflet-draw';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-draw/dist/leaflet.draw.css';
+  Polygon,
+  DrawingManager,
+  Circle,
+  Rectangle,
+} from '@react-google-maps/api';
 
-// Fix Leaflet marker icon issue
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+const GOOGLE_MAPS_API_KEY = 'AIzaSyAv4C8ghcCodw5X525A-BzfPMWmRkOjVek';
 
-let DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
+const libraries: ('drawing' | 'geometry' | 'places')[] = [
+  'drawing',
+  'geometry',
+  'places',
+];
 
-L.Marker.prototype.options.icon = DefaultIcon;
+declare global {
+  interface Window {
+    google: typeof google;
+  }
+}
 
 interface LocationPickerProps {
   mode: 'point' | 'polygon';
-  value: any; // string for point "lat,lng", stringified JSON for polygon
-  onChange: (value: any) => void; // returns "lat,lng" or stringified GeoJSON/latlngs
-  height?: string;
+  value: any; // string "lat,lng" OR stringified JSON for shapes
+  onChange: (value: any) => void;
+  height?: string | undefined;
   readOnly?: boolean | undefined;
-  center?: [number, number] | undefined; // Default center if no value
+  center?: [number, number] | undefined; // [lat, lng]
   onAreaCalculated?: ((sqFt: number) => void) | undefined;
+  onLocationDataChange?:
+    | ((data: { city?: string; state?: string; country?: string }) => void)
+    | undefined;
 }
 
-// Component to handle map clicks for Point mode
-const LocationMarker = ({ position, setPosition, onChange, readOnly }: any) => {
-  const map = useMap();
-
-  useMapEvents({
-    click(e) {
-      if (readOnly) return;
-      const { lat, lng } = e.latlng;
-      setPosition([lat, lng]);
-      onChange(`${lat}, ${lng}`);
-      map.flyTo(e.latlng, map.getZoom());
-    },
-  });
-
-  return position ? (
-    <Marker position={position}>
-      <Popup>Selected Location</Popup>
-    </Marker>
-  ) : null;
-};
-
-// Component to handle "Locate Me" or centering
-const RecenterMap = ({
-  center,
-  zoom,
-}: {
-  center: [number, number];
-  zoom?: number;
-}) => {
-  const map = useMap();
-  useEffect(() => {
-    if (center) {
-      map.setView(center, zoom || 15);
-    }
-  }, [center, map, zoom]);
-  return null;
-};
-
-// Helper for spherical area calculation (fallback if L.GeometryUtil not available)
-const calculateGeodesicArea = (latLngs: L.LatLng[]) => {
-  // Try to use Leaflet.GeometryUtil if available (from leaflet-draw)
-  if ((L as any).GeometryUtil && (L as any).GeometryUtil.geodesicArea) {
-    return (L as any).GeometryUtil.geodesicArea(latLngs);
-  }
-
-  // Simple fallback for spherical area (Shoelace formula-ish approximation for small areas or proper implementation)
-  // Using a simplified version for now, essentially assuming planar for very small fields if util missing,
-  // but ideally we want spherical.
-  // Let's rely on the fact that leaflet-draw is installed and usually patches L.
-  console.warn(
-    'L.GeometryUtil.geodesicArea not found, area calculation might be inaccurate.'
-  );
-  return 0;
-};
-
-const LocationPicker = ({
+const LocationPicker: React.FC<LocationPickerProps> = ({
   mode,
   value,
   onChange,
@@ -99,149 +51,413 @@ const LocationPicker = ({
   readOnly = false,
   center: defaultCenter,
   onAreaCalculated,
-}: LocationPickerProps) => {
-  const [position, setPosition] = useState<[number, number] | null>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number]>(
-    defaultCenter || [20.5937, 78.9629]
-  ); // Default to India center
-  const [zoom, setZoom] = useState(defaultCenter ? 16 : 5);
-  const featureGroupRef = useRef<any>(null);
+  onLocationDataChange,
+}) => {
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries,
+  });
 
-  // Sync map center when prop changes (e.g. selecting a farm)
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [markerPosition, setMarkerPosition] =
+    useState<google.maps.LatLngLiteral | null>(null);
+
+  // Polygon/Shape State
+  const [shapePath, setShapePath] = useState<google.maps.LatLngLiteral[]>([]);
+  const [shapeType, setShapeType] = useState<
+    'Polygon' | 'Rectangle' | 'Circle' | null
+  >(null);
+  const [circleCenter, setCircleCenter] =
+    useState<google.maps.LatLngLiteral | null>(null);
+  const [circleRadius, setCircleRadius] = useState<number>(0);
+  const [rectangleBounds, setRectangleBounds] =
+    useState<google.maps.LatLngBoundsLiteral | null>(null);
+
+  const drawingManagerRef = useRef<google.maps.drawing.DrawingManager | null>(
+    null
+  );
+
+  // Default center (India)
+  const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>({
+    lat: 20.5937,
+    lng: 78.9629,
+  });
+
+  // 1. Sync Center Prop
   useEffect(() => {
     if (defaultCenter) {
-      setMapCenter(defaultCenter);
-      setZoom(18);
+      setMapCenter({ lat: defaultCenter[0], lng: defaultCenter[1] });
     }
   }, [defaultCenter]);
 
-
-  // Initialize state from value
+  // 2. Initialize from Value
   useEffect(() => {
-    if (mode === 'point' && value) {
-      const [lat, lng] = value
-        .split(',')
-        .map((c: string) => parseFloat(c.trim()));
-      if (!isNaN(lat) && !isNaN(lng)) {
-        setPosition([lat, lng]);
-        setMapCenter([lat, lng]);
-        setZoom(15);
+    if (!value || !isLoaded || !window.google) return;
+
+    if (mode === 'point' && typeof value === 'string') {
+      const parts = value.split(',').map((v) => parseFloat(v.trim()));
+      if (parts.length >= 2) {
+        const lat = parts[0];
+        const lng = parts[1];
+        if (
+          lat !== undefined &&
+          lng !== undefined &&
+          !isNaN(lat) &&
+          !isNaN(lng)
+        ) {
+          const pos = { lat, lng };
+          setMarkerPosition(pos);
+          setMapCenter(pos);
+        }
+      }
+    } else if (mode === 'polygon') {
+      try {
+        const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+        if (parsed.type === 'Polygon' && parsed.points) {
+          // Points could be [{lat, lng}] or [[lat, lng]] (leaflet style)
+          // Standardize to [{lat, lng}]
+          let path: google.maps.LatLngLiteral[] = [];
+          if (Array.isArray(parsed.points) && parsed.points.length > 0) {
+            if (Array.isArray(parsed.points[0])) {
+              // [[lat, lng]]
+              path = parsed.points.map((p: any) => ({ lat: p[0], lng: p[1] }));
+            } else if ('lat' in parsed.points[0]) {
+              // [{lat, lng}]
+              path = parsed.points;
+            }
+          }
+          setShapeType('Polygon');
+          setShapePath(path);
+          const firstPoint = path[0];
+          if (path.length > 0 && firstPoint) setMapCenter(firstPoint);
+        } else if (parsed.type === 'Circle') {
+          setShapeType('Circle');
+          setCircleCenter(parsed.center);
+          setCircleRadius(parsed.radius);
+          setMapCenter(parsed.center);
+        } else if (parsed.type === 'Rectangle') {
+          // Check if bounds provided or points
+          if (parsed.bounds) {
+            setRectangleBounds(parsed.bounds);
+          } else if (parsed.points && parsed.points.length === 2) {
+            // Reconstruct bounds from corners if stored that way
+            const bounds = new window.google.maps.LatLngBounds(
+              parsed.points[0],
+              parsed.points[1]
+            );
+            setRectangleBounds(bounds.toJSON());
+          }
+          setShapeType('Rectangle');
+        }
+      } catch (e) {
+        console.warn('Failed to parse polygon value', e);
       }
     }
-    // For polygon, we handle initialization in Draw onCreated/onEdited if possible or separate layer logic
-    // Handling pre-loaded polygon display requires parsing the value causing Draw control initialization issues
-    // For now simpler implementation mainly focuses on CREATING new.
-  }, [value, mode]);
+  }, [value, mode, isLoaded]);
 
-  const handleCreated = (e: any) => {
-    const layer = e.layer;
-    if (mode === 'polygon') {
-      // Capture the shape logic
-      // We can store as GeoJSON or just latlngs.
-      // For simplicity/compatibility with "coordinates" text field, we'll store latlngs array string
-      // Or checking if it is rectangle/circle
-      const type = e.layerType;
-      let coords;
+  const onLoad = useCallback((mapInstance: google.maps.Map) => {
+    setMap(mapInstance);
+  }, []);
 
-      if (type === 'circle') {
-        const latlng = layer.getLatLng();
-        const rad = layer.getRadius();
-        coords = { type: 'Circle', center: latlng, radius: rad };
+  const onUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
 
-        if (onAreaCalculated) {
-          // Area of circle = PI * r^2 (in sq meters)
-          const areaSqM = Math.PI * Math.pow(rad, 2);
-          const areaSqFt = areaSqM * 10.7639;
-          onAreaCalculated(areaSqFt);
+  // Reverse Geocoding: Convert coordinates to city, state, country
+  const reverseGeocode = useCallback(
+    async (lat: number, lng: number) => {
+      if (!window.google || !onLocationDataChange) return;
+
+      const geocoder = new window.google.maps.Geocoder();
+      const latlng = { lat, lng };
+
+      try {
+        const response = await geocoder.geocode({ location: latlng });
+        if (response.results[0]) {
+          const addressComponents = response.results[0].address_components;
+
+          // Extract city (locality or administrative_area_level_2)
+          const city = addressComponents.find(
+            (c) =>
+              c.types.includes('locality') ||
+              c.types.includes('administrative_area_level_2')
+          )?.long_name;
+
+          // Extract state (administrative_area_level_1)
+          const state = addressComponents.find((c) =>
+            c.types.includes('administrative_area_level_1')
+          )?.long_name;
+
+          // Extract country
+          const country = addressComponents.find((c) =>
+            c.types.includes('country')
+          )?.long_name;
+
+          // Only pass defined values
+          const locationData: {
+            city?: string;
+            state?: string;
+            country?: string;
+          } = {};
+          if (city) locationData.city = city;
+          if (state) locationData.state = state;
+          if (country) locationData.country = country;
+
+          onLocationDataChange(locationData);
         }
-      } else {
-        // Polygon, Rectangle
-        // latlngs is array of array for polygon
-        const latlngs = layer.getLatLngs()[0];
-        coords = {
-          type: type === 'rectangle' ? 'Rectangle' : 'Polygon',
-          points: latlngs,
-        };
+      } catch (error) {
+        console.error('Reverse geocoding failed:', error);
+      }
+    },
+    [onLocationDataChange]
+  );
+
+  // Point Mode: Handle Map Click
+  const handleMapClick = (e: google.maps.MapMouseEvent) => {
+    if (readOnly || mode !== 'point' || !e.latLng) return;
+
+    const lat = e.latLng.lat();
+    const lng = e.latLng.lng();
+    setMarkerPosition({ lat, lng });
+    onChange(`${lat}, ${lng}`);
+
+    // Trigger reverse geocoding
+    reverseGeocode(lat, lng);
+  };
+
+  // Polygon Mode: Handle Drawing Complete
+  const onOverlayComplete = (e: google.maps.drawing.OverlayCompleteEvent) => {
+    const overlay = e.overlay;
+    // Clear existing shape drawing manually if needed (to allow only one shape?)
+    // For now, let's assume one shape per field.
+    // We should ideally remove the overlay from map to avoid duplicates visually
+    // since we will render it via state (Polygon/Circle component).
+    overlay?.setMap(null);
+
+    // Guard against missing window.google just in case
+    if (!window.google) return;
+
+    if (e.type === window.google.maps.drawing.OverlayType.POLYGON) {
+      const poly = overlay as google.maps.Polygon;
+      const path = poly
+        .getPath()
+        .getArray()
+        .map((p) => ({ lat: p.lat(), lng: p.lng() }));
+      setShapeType('Polygon');
+      setShapePath(path);
+
+      onChange(JSON.stringify({ type: 'Polygon', points: path }));
+
+      if (onAreaCalculated) {
+        const areaSqM = window.google.maps.geometry.spherical.computeArea(
+          poly.getPath()
+        );
+        onAreaCalculated(areaSqM * 10.7639); // Convert to SqFt
+      }
+    } else if (e.type === window.google.maps.drawing.OverlayType.RECTANGLE) {
+      const rect = overlay as google.maps.Rectangle;
+      const bounds = rect.getBounds();
+      if (bounds) {
+        const ne = bounds.getNorthEast();
+        const sw = bounds.getSouthWest();
+        setShapeType('Rectangle');
+        setRectangleBounds(bounds.toJSON());
+
+        onChange(
+          JSON.stringify({
+            type: 'Rectangle',
+            bounds: bounds.toJSON(),
+            points: [
+              { lat: sw.lat(), lng: sw.lng() },
+              { lat: ne.lat(), lng: ne.lng() },
+            ],
+          })
+        );
 
         if (onAreaCalculated) {
-          const areaSqM = calculateGeodesicArea(latlngs);
-          const areaSqFt = areaSqM * 10.7639;
-          onAreaCalculated(areaSqFt);
+          // Approximate area
+          const areaSqM = window.google.maps.geometry.spherical.computeArea([
+            sw,
+            new window.google.maps.LatLng(sw.lat(), ne.lng()),
+            ne,
+            new window.google.maps.LatLng(ne.lat(), sw.lng()),
+          ]);
+          onAreaCalculated(areaSqM * 10.7639);
         }
       }
-      onChange(JSON.stringify(coords));
+    } else if (e.type === window.google.maps.drawing.OverlayType.CIRCLE) {
+      const circ = overlay as google.maps.Circle;
+      const center = circ.getCenter();
+      const radius = circ.getRadius();
+
+      if (center) {
+        setShapeType('Circle');
+        setCircleCenter({ lat: center.lat(), lng: center.lng() });
+        setCircleRadius(radius);
+
+        onChange(
+          JSON.stringify({
+            type: 'Circle',
+            center: { lat: center.lat(), lng: center.lng() },
+            radius,
+          })
+        );
+
+        if (onAreaCalculated) {
+          const areaSqM = Math.PI * Math.pow(radius, 2);
+          onAreaCalculated(areaSqM * 10.7639);
+        }
+      }
     }
   };
 
-  const getUserLocation = () => {
+  const handleUserLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((pos) => {
         const { latitude, longitude } = pos.coords;
-        const userPos: [number, number] = [latitude, longitude];
+        const userPos = { lat: latitude, lng: longitude };
         setMapCenter(userPos);
-        setZoom(16);
+        map?.panTo(userPos);
+        map?.setZoom(18); // Zoom in close for field marking
+
         if (mode === 'point' && !readOnly) {
-          setPosition(userPos);
+          setMarkerPosition(userPos);
           onChange(`${latitude}, ${longitude}`);
+
+          // Trigger reverse geocoding
+          reverseGeocode(latitude, longitude);
         }
       });
-    } else {
-      alert('Geolocation not supported');
     }
   };
+
+  // Drawing Manager Options (must be defined outside of conditional rendering)
+  const drawingManagerOptions = useMemo(() => {
+    if (!isLoaded || !window.google) return null;
+    return {
+      drawingControl: true,
+      drawingControlOptions: {
+        position: window.google.maps.ControlPosition.TOP_CENTER,
+        drawingModes: [
+          window.google.maps.drawing.OverlayType.POLYGON,
+          window.google.maps.drawing.OverlayType.RECTANGLE,
+          window.google.maps.drawing.OverlayType.CIRCLE,
+        ],
+      },
+      polygonOptions: {
+        fillColor: '#2196F3',
+        fillOpacity: 0.4,
+        strokeWeight: 2,
+        clickable: true,
+        editable: true,
+        zIndex: 1,
+      },
+    };
+  }, [isLoaded]);
+
+  if (loadError) {
+    return (
+      <div className="text-red-500 p-4 border border-red-500 rounded">
+        Error loading maps
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center bg-muted h-full w-full rounded-lg">
+        Loading Maps...
+      </div>
+    );
+  }
 
   return (
     <div
       className="relative rounded-lg overflow-hidden border border-white/20"
       style={{ height }}
     >
-      <MapContainer
+      <GoogleMap
+        mapContainerStyle={{ width: '100%', height: '100%' }}
         center={mapCenter}
-        zoom={zoom}
-        style={{ height: '100%', width: '100%' }}
-        className="z-0"
+        zoom={defaultCenter ? 18 : 10}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+        onClick={handleMapClick}
+        options={{
+          mapTypeId: 'hybrid', // Best for farming (Satellite + Labels)
+          streetViewControl: false,
+          fullscreenControl: true,
+          mapTypeControl: true,
+        }}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        <RecenterMap center={mapCenter} zoom={zoom} />
-
-        {mode === 'point' && (
-          <LocationMarker
-            position={position}
-            setPosition={setPosition}
-            onChange={onChange}
-            readOnly={readOnly}
-          />
+        {/* Render Marker (Point Mode) */}
+        {mode === 'point' && markerPosition && (
+          <Marker position={markerPosition} />
         )}
 
-        {mode === 'polygon' && !readOnly && (
-          <FeatureGroup ref={featureGroupRef}>
-            <EditControl
-              position="topright"
-              onCreated={handleCreated}
-              // onEdited={...} // Complex to sync back to state for now
-              // onDeleted={...}
-              draw={{
-                rectangle: true,
-                polygon: true,
-                circle: true,
-                marker: false,
-                polyline: false,
-                circlemarker: false,
-              }}
-            />
-          </FeatureGroup>
+        {/* Render Shapes (Polygon Mode) */}
+        {mode === 'polygon' && (
+          <>
+            {shapeType === 'Polygon' && shapePath.length > 0 && (
+              <Polygon
+                paths={shapePath}
+                options={{
+                  fillColor: '#2196F3',
+                  fillOpacity: 0.4,
+                  strokeColor: '#2196F3',
+                  strokeWeight: 2,
+                  editable: !readOnly, // Allow editing if not readOnly
+                  draggable: !readOnly,
+                }}
+                // Handle edits to update state? Requires events (onMouseUp, onDragEnd)
+                // For MVP, keep editing simple (re-draw) or just visualization
+              />
+            )}
+            {shapeType === 'Rectangle' && rectangleBounds && (
+              <Rectangle
+                bounds={rectangleBounds}
+                options={{
+                  fillColor: '#2196F3',
+                  fillOpacity: 0.4,
+                  strokeColor: '#2196F3',
+                  strokeWeight: 2,
+                  editable: !readOnly,
+                  draggable: !readOnly,
+                }}
+              />
+            )}
+            {shapeType === 'Circle' && circleCenter && (
+              <Circle
+                center={circleCenter}
+                radius={circleRadius}
+                options={{
+                  fillColor: '#2196F3',
+                  fillOpacity: 0.4,
+                  strokeColor: '#2196F3',
+                  strokeWeight: 2,
+                  editable: !readOnly,
+                  draggable: !readOnly,
+                }}
+              />
+            )}
+
+            {/* Drawing Controls */}
+            {!readOnly && (
+              <DrawingManager
+                onLoad={(dm) => (drawingManagerRef.current = dm)}
+                onOverlayComplete={onOverlayComplete}
+                options={drawingManagerOptions as any}
+              />
+            )}
+          </>
         )}
-      </MapContainer>
+      </GoogleMap>
 
       {!readOnly && (
         <button
           type="button"
-          onClick={getUserLocation}
-          className="absolute bottom-4 left-4 z-[999] bg-white text-black p-2 rounded shadow-lg text-xs font-bold flex items-center gap-1 hover:bg-gray-100"
+          onClick={handleUserLocation}
+          className="absolute bottom-6 left-4 z-[50] bg-white text-black p-2 rounded shadow-lg text-xs font-bold flex items-center gap-1 hover:bg-gray-100"
         >
           📍 Use My Location
         </button>

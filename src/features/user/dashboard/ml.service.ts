@@ -24,10 +24,9 @@ export const getLatestPrediction = async (
 
 // Helper to ensure payload matches Schema strictly
 const sanitizePayload = (data: any): any => {
-  return {
+  const payload: any = {
     // Top level fields
     userId: data.userId,
-    farmId: data.farmId,
     generatedAt: data.generatedAt || new Date().toISOString(),
     generatedBy: data.generatedBy || 'automatic',
     validUntil: data.validUntil,
@@ -106,6 +105,8 @@ const sanitizePayload = (data: any): any => {
         }
       : undefined,
   };
+
+  return payload;
 };
 
 export const createPrediction = async (data: any) => {

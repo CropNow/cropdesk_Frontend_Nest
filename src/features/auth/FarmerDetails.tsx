@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/ui/button';
+import personalInfoBg from '@/features/auth/asset/personal-info.png';
 
 const FarmerDetails = () => {
   const navigate = useNavigate();
@@ -72,9 +73,12 @@ const FarmerDetails = () => {
     if (!formData.name.trim()) newErrors.name = 'This field is not filled';
     if (!formData.phone.trim()) newErrors.phone = 'This field is not filled';
     if (!formData.email.trim()) newErrors.email = 'This field is not filled';
-    if (!formData.address.village.trim()) newErrors.village = 'This field is not filled';
-    if (!formData.address.district.trim()) newErrors.district = 'This field is not filled';
-    if (!formData.address.state.trim()) newErrors.state = 'This field is not filled';
+    if (!formData.address.village.trim())
+      newErrors.village = 'This field is not filled';
+    if (!formData.address.district.trim())
+      newErrors.district = 'This field is not filled';
+    if (!formData.address.state.trim())
+      newErrors.state = 'This field is not filled';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -93,14 +97,6 @@ const FarmerDetails = () => {
     }
   }, [formData]);
 
-  const [bgImage, setBgImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    import('@/features/auth/asset/personal-info.png').then((module) => {
-      setBgImage(module.default);
-    });
-  }, []);
-
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -114,13 +110,11 @@ const FarmerDetails = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        {bgImage && (
-          <img
-            src={bgImage}
-            alt="Cattle in field"
-            className="w-full h-full object-cover opacity-80"
-          />
-        )}
+        <img
+          src={personalInfoBg}
+          alt="Cattle in field"
+          className="w-full h-full object-cover opacity-80"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
       </div>
 

@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useEffect } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 
@@ -8,6 +8,7 @@ import { login, getMe } from './auth.api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import loginBg from '@/features/auth/asset/login.png';
 
 const Alert = lazy(() =>
   import('@/components/ui/alert').then((m) => ({ default: m.Alert }))
@@ -24,14 +25,6 @@ const Login = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { setUser } = useAuth();
-  const [bgImage, setBgImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Dynamic import to "lazy load" the asset reference
-    import('@/features/auth/asset/login.png').then((module) => {
-      setBgImage(module.default);
-    });
-  }, []);
 
   const logoutMessage =
     location.state?.logoutMessage ||
@@ -186,14 +179,12 @@ const Login = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        {bgImage && (
-          <img
-            src={bgImage}
-            alt="Farmer in field"
-            className="w-full h-full object-cover opacity-80"
-            loading="lazy"
-          />
-        )}
+        <img
+          src={loginBg}
+          alt="Farmer in field"
+          className="w-full h-full object-cover opacity-80"
+          loading="lazy"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
       </div>
 

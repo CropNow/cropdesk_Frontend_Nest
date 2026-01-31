@@ -147,6 +147,9 @@ const DesktopNavbar = () => {
                       localStorage.removeItem('refreshToken');
                       localStorage.removeItem('user');
                       localStorage.removeItem('isAuthenticated');
+                      // Clear device data to prevent state leakage to next user
+                      localStorage.removeItem('connected_devices');
+                      localStorage.removeItem('iot_device_data');
                       setUser(null);
 
                       navigate('/login?logout=success');

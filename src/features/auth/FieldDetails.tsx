@@ -9,6 +9,7 @@ import { FormTextarea } from '@/components/common/FormTextarea';
 import { FormDropdown } from '@/components/common/FormDropdown';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import fieldInfoBg from '@/features/auth/asset/field_info.png';
 
 const FieldDetails = () => {
   const navigate = useNavigate();
@@ -53,18 +54,21 @@ const FieldDetails = () => {
     };
   });
 
-
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!fieldData.fieldName.trim()) newErrors.fieldName = 'This field is not filled';
-    if (!fieldData.area.toString().trim()) newErrors.area = 'This field is not filled';
-    if (!fieldData.boundaryType.trim()) newErrors.boundaryType = 'This field is not filled';
-    if (!fieldData.soilType.trim()) newErrors.soilType = 'This field is not filled';
+    if (!fieldData.fieldName.trim())
+      newErrors.fieldName = 'This field is not filled';
+    if (!fieldData.area.toString().trim())
+      newErrors.area = 'This field is not filled';
+    if (!fieldData.boundaryType.trim())
+      newErrors.boundaryType = 'This field is not filled';
+    if (!fieldData.soilType.trim())
+      newErrors.soilType = 'This field is not filled';
 
     // Coordinates validation is trickier as it might be complex object or string
-    // But let's at least check if it's there? 
+    // But let's at least check if it's there?
     // Usually handled by the picker, but let's strictly require it?
     // The previous implementation didn't strictly block in UI except via 'required' on hidden inputs potentially?
     // Actually LocationPicker might update it.
@@ -85,14 +89,6 @@ const FieldDetails = () => {
       localStorage.setItem('tempRegistrationData', JSON.stringify(updatedTemp));
     }
   }, [fieldData]);
-
-  const [bgImage, setBgImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    import('@/features/auth/asset/filed info.png').then((module) => {
-      setBgImage(module.default);
-    });
-  }, []);
 
   const handleGeolocation = () => {
     if (navigator.geolocation) {
@@ -198,13 +194,11 @@ const FieldDetails = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        {bgImage && (
-          <img
-            src={bgImage} // Placeholder, should be replaced or generic
-            alt="Field view"
-            className="w-full h-full object-cover opacity-80"
-          />
-        )}
+        <img
+          src={fieldInfoBg}
+          alt="Field view"
+          className="w-full h-full object-cover opacity-80"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
       </div>
 
@@ -283,9 +277,15 @@ const FieldDetails = () => {
               }
               className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
-              <option value="acres" className="bg-gray-800">Acres</option>
-              <option value="hectares" className="bg-gray-800">Hectares</option>
-              <option value="sq_ft" className="bg-gray-800">Sq Ft</option>
+              <option value="acres" className="bg-gray-800">
+                Acres
+              </option>
+              <option value="hectares" className="bg-gray-800">
+                Hectares
+              </option>
+              <option value="sq_ft" className="bg-gray-800">
+                Sq Ft
+              </option>
             </FormDropdown>
           </div>
 
@@ -344,7 +344,7 @@ const FieldDetails = () => {
                       }));
                     }
                   }
-                } catch (e) { }
+                } catch (e) {}
               }}
               height="350px"
             />

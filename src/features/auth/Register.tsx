@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useEffect } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useAuth } from './useAuth';
 import { saveStoredUser, setCurrentSession } from '@/utils/storage';
+import createAccountBg from '@/features/auth/asset/creat_account.png';
 
 const Alert = lazy(() =>
   import('@/components/ui/alert').then((m) => ({ default: m.Alert }))
@@ -26,14 +27,6 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [bgImage, setBgImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Dynamic import to "lazy load" the asset reference
-    import('@/features/auth/asset/creat_account.png').then((module) => {
-      setBgImage(module.default);
-    });
-  }, []);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -48,8 +41,10 @@ const Register = () => {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.firstName.trim()) newErrors.firstName = 'This field is not filled';
-    if (!formData.lastName.trim()) newErrors.lastName = 'This field is not filled';
+    if (!formData.firstName.trim())
+      newErrors.firstName = 'This field is not filled';
+    if (!formData.lastName.trim())
+      newErrors.lastName = 'This field is not filled';
     if (!formData.email.trim()) newErrors.email = 'This field is not filled';
     if (!formData.phone.trim()) newErrors.phone = 'This field is not filled';
     if (!formData.password) newErrors.password = 'This field is not filled';
@@ -164,14 +159,12 @@ const Register = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        {bgImage && (
-          <img
-            src={bgImage}
-            alt="Hands holding seedling"
-            className="w-full h-full object-cover opacity-80"
-            loading="lazy"
-          />
-        )}
+        <img
+          src={createAccountBg}
+          alt="Hands holding seedling"
+          className="w-full h-full object-cover opacity-80"
+          loading="lazy"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
       </div>
 
@@ -329,7 +322,7 @@ const Register = () => {
                 variant="ghost"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-0 top-0 h-12 px-3 py-2 hover:bg-transparent text-white/60 hover:text-white transition-colors"
-              // Fixed height to match input height (h-12) so it doesn't cover error
+                // Fixed height to match input height (h-12) so it doesn't cover error
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </Button>
@@ -349,7 +342,8 @@ const Register = () => {
                 autoComplete="new-password"
                 onChange={(e) => {
                   setFormData({ ...formData, rePassword: e.target.value });
-                  if (errors.rePassword) setErrors({ ...errors, rePassword: '' });
+                  if (errors.rePassword)
+                    setErrors({ ...errors, rePassword: '' });
                 }}
                 className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-green-500 focus:ring-green-500 pr-12"
                 error={errors.rePassword || ''}

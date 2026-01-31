@@ -5,10 +5,13 @@ import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useAuth } from './useAuth';
+import { useProfile } from '@/features/user/profile/context/useProfile';
+import fieldInfoBg from '@/features/auth/asset/field_info.png';
 
 const CropDetails = () => {
   const navigate = useNavigate();
   const { setUser, user } = useAuth(); // Get setUser to update context directly
+  const { refreshProfile } = useProfile(); // Get refreshProfile to update global state
   const [cropData, setCropData] = useState(() => {
     const tempStr = localStorage.getItem('tempRegistrationData');
     if (tempStr) {
@@ -30,13 +33,18 @@ const CropDetails = () => {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!cropData.cropName.trim()) newErrors.cropName = 'This field is not filled';
-    if (!cropData.plantingDate.trim()) newErrors.plantingDate = 'This field is not filled';
-    if (!cropData.harvestingDate.trim()) newErrors.harvestingDate = 'This field is not filled';
-    if (!cropData.area.toString().trim()) newErrors.area = 'This field is not filled';
+    if (!cropData.cropName.trim())
+      newErrors.cropName = 'This field is not filled';
+    if (!cropData.plantingDate.trim())
+      newErrors.plantingDate = 'This field is not filled';
+    if (!cropData.harvestingDate.trim())
+      newErrors.harvestingDate = 'This field is not filled';
+    if (!cropData.area.toString().trim())
+      newErrors.area = 'This field is not filled';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -54,14 +62,6 @@ const CropDetails = () => {
       localStorage.setItem('tempRegistrationData', JSON.stringify(updatedTemp));
     }
   }, [cropData]);
-
-  const [bgImage, setBgImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    import('@/features/auth/asset/filed info.png').then((module) => {
-      setBgImage(module.default);
-    });
-  }, []);
 
   /* API Imports handled at top of file, ensuring we have them */
 
@@ -169,7 +169,7 @@ const CropDetails = () => {
           },
         },
         area: tempData.farmDetails?.area || '0', // Keep as string for TS interface
-        unit: tempData.farmDetails?.units || 'acres',
+        unit: tempData.farmDetails?.units || 'acres', // FIXED: 'units' to match type/backend? Checking backend expectation...
         soilType: tempData.farmDetails?.soilType || 'loamy', // Default or from field? Farm schema requires it.
         irrigationType: 'drip',
         farmingType: 'conventional',
@@ -202,7 +202,7 @@ const CropDetails = () => {
         name: tempData.fieldDetails?.fieldName, // DB 'name', FE 'fieldName'
         description: tempData.fieldDetails?.description,
         area: tempData.fieldDetails?.area || '0', // Keep as string
-        unit: tempData.fieldDetails?.units?.toLowerCase() || 'acres',
+        // Note: 'units' field removed - backend doesn't accept it
         soil: {
           type: tempData.fieldDetails?.soilType?.toLowerCase() || 'loamy',
           ph: parseFloat(tempData.fieldDetails?.phLevel || '7'),
@@ -236,27 +236,128 @@ const CropDetails = () => {
           // If valid GeoJSON or points are stored, parse and format for backend
           // Backend expects { type: "Polygon", coordinates: [[[lon, lat], ...]] }
           // User input might be simple string or JSON from LocationPicker
-          // For now, using the fallback above to prevent crash if data is complex
-          const parsedCoords =
-            typeof tempData.fieldDetails.coordinates === 'string'
-              ? JSON.parse(tempData.fieldDetails.coordinates)
-              : tempData.fieldDetails.coordinates;
 
-          // If parsedCoords is just an array of points, wrap it
-          if (
-            Array.isArray(parsedCoords) &&
-            parsedCoords.length > 0 &&
-            Array.isArray(parsedCoords[0])
-          ) {
-            // Assume it's [[lat, lng], ...]
-            // Verify format and swap to [lon, lat] if needed?
-            // Usually map tools give [lat, lng]. standard GeoJSON is [lon, lat].
+          let parsedCoords = tempData.fieldDetails.coordinates;
+          if (typeof parsedCoords === 'string') {
+            try {
+              parsedCoords = JSON.parse(parsedCoords);
+            } catch (e) {
+              console.warn('Failed to parse coordinates string:', e);
+            }
           }
-        } catch (e) { }
+
+          // Case 1: Standard LocationPicker Output { type: 'Polygon', points: [{lat, lng}, ...] }
+          if (parsedCoords?.points && Array.isArray(parsedCoords.points)) {
+            const rings = parsedCoords.points.map((p: any) => [p.lng, p.lat]);
+            // Ensure closed loop for Polygon
+            const firstRing = rings[0];
+            const lastRing = rings[rings.length - 1];
+
+            if (rings.length > 0 && firstRing && lastRing) {
+              if (
+                firstRing[0] !== lastRing[0] ||
+                firstRing[1] !== lastRing[1]
+              ) {
+                rings.push(firstRing);
+              }
+            }
+            fieldPayload.boundary = {
+              type: 'Polygon',
+              coordinates: [rings],
+            };
+          }
+          // Case 2: Rectangle shape { type: 'Rectangle', bounds: {...} }
+          else if (parsedCoords?.type === 'Rectangle' && parsedCoords?.bounds) {
+            const { north, south, east, west } = parsedCoords.bounds;
+            fieldPayload.boundary = {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [west, south],
+                  [east, south],
+                  [east, north],
+                  [west, north],
+                  [west, south], // Close the loop
+                ],
+              ],
+            };
+            console.log(
+              'Converted Rectangle to Polygon:',
+              fieldPayload.boundary
+            );
+          }
+          // Case 3: Circle shape { type: 'Circle', center: {lat, lng}, radius: number }
+          else if (
+            parsedCoords?.type === 'Circle' &&
+            parsedCoords?.center &&
+            parsedCoords?.radius
+          ) {
+            // Convert circle to polygon approximation (32 points for smooth circle)
+            const points = 32;
+            const coordinates: number[][] = [];
+            const { lat, lng } = parsedCoords.center;
+            const radiusInMeters = parsedCoords.radius;
+
+            for (let i = 0; i <= points; i++) {
+              const angle = (i * 360) / points;
+              const angleRad = (angle * Math.PI) / 180;
+
+              // Calculate offset in degrees (approximate)
+              // 1 degree latitude ≈ 111,320 meters
+              // 1 degree longitude ≈ 111,320 * cos(latitude) meters
+              const latOffset = (radiusInMeters / 111320) * Math.cos(angleRad);
+              const lngOffset =
+                (radiusInMeters / (111320 * Math.cos((lat * Math.PI) / 180))) *
+                Math.sin(angleRad);
+
+              coordinates.push([lng + lngOffset, lat + latOffset]);
+            }
+
+            fieldPayload.boundary = {
+              type: 'Polygon',
+              coordinates: [coordinates],
+            };
+            console.log('Converted Circle to Polygon:', fieldPayload.boundary);
+          }
+          // Case 4: Array of points (Leaflet style or raw)
+          else if (Array.isArray(parsedCoords)) {
+            // Assume [[lat, lng]] (Leaflet) or [{lat, lng}]
+            const rings = parsedCoords.map((p: any) => {
+              if (Array.isArray(p)) return [p[1], p[0]]; // Swap lat,lng to lng,lat
+              if (p.lat && p.lng) return [p.lng, p.lat];
+              return [0, 0];
+            });
+            // Ensure closed loop
+            const firstRing = rings[0];
+            if (rings.length > 0 && firstRing) rings.push(firstRing);
+
+            fieldPayload.boundary = {
+              type: 'Polygon',
+              coordinates: [rings],
+            };
+          }
+          // Case 5: Already GeoJSON
+          else if (
+            parsedCoords?.type === 'Polygon' &&
+            parsedCoords?.coordinates
+          ) {
+            fieldPayload.boundary = parsedCoords;
+          }
+        } catch (e) {
+          console.error('Error processing coordinates for backend:', e);
+        }
       }
 
       const { createField } = await import('@/features/auth/api/field.api');
       const farmId = farm.id || (farm as any)._id;
+
+      // Log the complete field payload for verification
+      console.log(
+        'Creating Field with Payload:',
+        JSON.stringify(fieldPayload, null, 2)
+      );
+      console.log('Field Boundary Coordinates:', fieldPayload.boundary);
+
       // We need to cast fieldPayload to any because 'soil', 'irrigation', 'boundary' are not in current Field interface in auth.types.ts
       // Update auth.types.ts is better, but for now cast to avoid error
       const field = await createField(farmId, fieldPayload as any);
@@ -334,12 +435,30 @@ const CropDetails = () => {
         );
       }
 
+      // Refresh Profile Context to ensure all widgets (Profile, Dashboard) have latest data
+      try {
+        console.log('Refreshing Profile Context...');
+        await refreshProfile();
+      } catch (profileErr) {
+        console.warn('Failed to refresh profile context:', profileErr);
+      }
+
       // Navigate is handled by caller or we can do it here if we pass navigate
       return true;
     } catch (error: any) {
       console.error('Finalization Failed:', error);
+      console.error('Error Response Data:', error.response?.data);
+      console.error('Error Status:', error.response?.status);
+
       if (error.response?.status === 401) {
         alert('Session Expired or Unauthorized. Please log in again.');
+      } else if (error.response?.data) {
+        // Show backend validation error
+        const errorMsg =
+          error.response.data.message ||
+          error.response.data.error ||
+          JSON.stringify(error.response.data);
+        alert(`Failed to save data: ${errorMsg}`);
       } else {
         alert(`Failed to save data: ${error.message || 'Unknown error'}`);
       }
@@ -350,15 +469,27 @@ const CropDetails = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubmitting) return;
     if (!validateForm()) return;
 
+    setIsSubmitting(true);
     console.log('Crop Details:', cropData);
 
-    const success = await finalizeRegistration(cropData);
+    try {
+      const success = await finalizeRegistration(cropData);
 
-    // Only navigate on success
-    if (success) {
-      navigate('/');
+      // Only navigate on success
+      if (success) {
+        // Ensure no stale device data exists for the new user
+        localStorage.removeItem('connected_devices');
+        localStorage.removeItem('iot_device_data');
+        navigate('/');
+      } else {
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      console.error('Submission error:', error);
+      setIsSubmitting(false);
     }
   };
 
@@ -372,13 +503,11 @@ const CropDetails = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        {bgImage && (
-          <img
-            src={bgImage} // Placeholder
-            alt="Crops"
-            className="w-full h-full object-cover opacity-80"
-          />
-        )}
+        <img
+          src={fieldInfoBg}
+          alt="Crops"
+          className="w-full h-full object-cover opacity-80"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
       </div>
 
@@ -431,7 +560,8 @@ const CropDetails = () => {
                 value={cropData.plantingDate}
                 onChange={(e) => {
                   setCropData({ ...cropData, plantingDate: e.target.value });
-                  if (errors.plantingDate) setErrors({ ...errors, plantingDate: '' });
+                  if (errors.plantingDate)
+                    setErrors({ ...errors, plantingDate: '' });
                 }}
                 className="h-12 bg-white/10 border-white/20 text-white appearance-none focus:border-green-500 focus:ring-green-500"
                 error={errors.plantingDate || ''}
@@ -444,7 +574,8 @@ const CropDetails = () => {
                 value={cropData.harvestingDate}
                 onChange={(e) => {
                   setCropData({ ...cropData, harvestingDate: e.target.value });
-                  if (errors.harvestingDate) setErrors({ ...errors, harvestingDate: '' });
+                  if (errors.harvestingDate)
+                    setErrors({ ...errors, harvestingDate: '' });
                 }}
                 className="h-12 bg-white/10 border-white/20 text-white appearance-none focus:border-green-500 focus:ring-green-500"
                 error={errors.harvestingDate || ''}
@@ -472,9 +603,10 @@ const CropDetails = () => {
 
           <Button
             type="submit"
-            className="w-full py-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all active:scale-[0.98] mt-4 text-xl"
+            disabled={isSubmitting}
+            className="w-full py-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all active:scale-[0.98] mt-4 text-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Finish Setup
+            {isSubmitting ? 'Setting up...' : 'Finish Setup'}
           </Button>
 
           <p className="text-center text-xs text-white/40 mt-4">

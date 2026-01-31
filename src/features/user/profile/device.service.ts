@@ -53,6 +53,18 @@ export const deleteDevice = async (fieldId: string, serialNumber: string) => {
   }
 };
 
+export const getDevicesForField = async (fieldId: string) => {
+  try {
+    const response = await http.get(`/fields/${fieldId}/sensors`);
+    // Backend returns array of sensors. Map to our Device interface if needed.
+    // Assuming backend returns { id, name, type, serialNumber, ... } or similar
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch devices for field', error);
+    return [];
+  }
+};
+
 export const connectDevice = async (
   apiKey: string,
   registrationInfo?: {
@@ -95,13 +107,14 @@ export const connectDevice = async (
         name: registrationInfo.name || data.machine?.name || 'Unknown Device',
         type: backendType,
         // fieldId: registrationInfo.fieldId, // REMOVED: Passed in URL, not allowed in body
-        serialNumber: realSerialNumber, // The CRITICAL link
-        manufacturer:
+        serialNumber: String(realSerialNumber), // The CRITICAL link: Ensure String
+        manufacturer: String(
           registrationInfo.manufacturer ||
-          data.machine?.manufacturer ||
-          'Generic',
-        model: registrationInfo.model || 'Standard',
-        firmwareVersion: registrationInfo.firmwareVersion || '1.0.0',
+            data.machine?.manufacturer ||
+            'Generic'
+        ),
+        model: String(registrationInfo.model || 'Standard'),
+        firmwareVersion: String(registrationInfo.firmwareVersion || '1.0.0'),
         unit: 'Multi', // Default unit for a multi-sensor station
         // status: registrationInfo.status?.toLowerCase() || 'active', // REMOVED: Not allowed in body
         location: {
@@ -113,12 +126,17 @@ export const connectDevice = async (
         },
       };
 
+      let warningMessage = undefined;
       try {
         await registerDevice(registrationInfo.fieldId, sensorPayload);
       } catch (regErr: any) {
-        alert(
-          `Device Registration Failed: ${regErr.response?.data?.message || regErr.message}. Data might not sync.`
-        );
+        console.error('Device Registration Detailed Error:', regErr);
+        const backendMsg =
+          regErr.response?.data?.message ||
+          JSON.stringify(regErr.response?.data) ||
+          regErr.message;
+
+        warningMessage = `Device Registration Warning: ${backendMsg}. Data might not sync perfectly, but we will proceed.`;
       }
     }
 
@@ -449,6 +467,9 @@ export const connectDevice = async (
         lastActiveAt: latestTimestamp, // Return the calculated last active time
       },
       sensorData: mappedData,
+      // @ts-ignore
+      warning:
+        typeof warningMessage !== 'undefined' ? warningMessage : undefined,
     };
   } catch (error) {
     console.error('Device connection error:', error);
