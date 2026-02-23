@@ -665,7 +665,7 @@ const IOTDashboard = ({
               </p>
               {lastUpdated && (
                 <p className="text-[9px] lg:text-[10px] text-green-500 font-medium">
-                  Last Active: {lastUpdated}
+                  Last Synced: {new Date(lastUpdated).toLocaleString()}
                 </p>
               )}
             </div>

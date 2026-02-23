@@ -1,48 +1,39 @@
 export const VALID_SERIAL_NUMBER =
   '6CjCgqHUM3uEJVUSDvPP1zCwUu86aF6XKApZXTmOBu2YcLVvx1wGhEvT8K8-3Akm';
-const API_URL = '/api-proxy/machine/data/?api_key=';
 
-// Helper to safely get value or default
-const getSensorValue = (
-  sensors: any[],
-  name: string,
-  defaultValue: string = '0'
-) => {
-  const sensor = sensors.find((s: any) => s.name === name);
-  return sensor && sensor.readings && sensor.readings.length > 0
-    ? String(sensor.readings[0].value)
-    : '0'; // Force 0 if no readings found (Zero State)
-};
-
-// Helper to get raw readings array
-const getReadings = (sensors: any[], name: string): any[] => {
-  const sensor = sensors.find((s: any) => s.name === name);
-  return sensor && sensor.readings ? sensor.readings : [];
+const mapDeviceTypeToSensorType = (deviceType: string): 'NEST' | 'SEED' => {
+  const nestTypes = [
+    'NEST (Main Controller)',
+    'NEST',
+    'Weather Station',
+    'Gateway',
+  ];
+  return nestTypes.some((t) =>
+    deviceType.toLowerCase().includes(t.toLowerCase())
+  )
+    ? 'NEST'
+    : 'SEED';
 };
 
 import { http } from '@/services/http';
+import * as sensorApi from '@/api/sensor.api';
+import * as mlApi from '@/api/ml.api';
 
 // Helper to Register Device in Backend
 const registerDevice = async (fieldId: string, deviceData: any) => {
   try {
-    console.log('Registering/Ensuring device exists in backend...', deviceData);
-    await http.post(`/fields/${fieldId}/sensors`, deviceData);
-    console.log('Device registered successfully.');
+    await sensorApi.createSensor(fieldId, deviceData);
   } catch (error: any) {
-    // If error is 400 and message contains 'duplicate' or similar, strict check might be needed.
-    // But for now we assume validation error means it might already exist or invalid data.
     console.warn(
-      'Device registration skipped/failed (might already exist):',
+      'Device registration skipped/failed:',
       error.response?.data || error.message
     );
   }
 };
 
-export const deleteDevice = async (fieldId: string, serialNumber: string) => {
+export const deleteDevice = async (fieldId: string, sensorId: string) => {
   try {
-    console.log(`Deleting device ${serialNumber} from field ${fieldId}...`);
-    await http.delete(`/fields/${fieldId}/sensors/${serialNumber}`);
-    console.log('Device deleted successfully.');
+    await sensorApi.deleteSensor(sensorId);
     return true;
   } catch (error: any) {
     console.error(
@@ -55,9 +46,9 @@ export const deleteDevice = async (fieldId: string, serialNumber: string) => {
 
 export const getDevicesForField = async (fieldId: string) => {
   try {
+    // Re-using the field-level list if backend still supports it,
+    // or we might need to fetch all sensors.
     const response = await http.get(`/fields/${fieldId}/sensors`);
-    // Backend returns array of sensors. Map to our Device interface if needed.
-    // Assuming backend returns { id, name, type, serialNumber, ... } or similar
     return response.data;
   } catch (error) {
     console.error('Failed to fetch devices for field', error);
@@ -82,167 +73,144 @@ export const connectDevice = async (
   }
 
   try {
-    const response = await fetch(`${API_URL}${apiKey}`);
-    if (!response.ok) {
-      throw new Error(
-        `External Device API Error: ${response.status} ${response.statusText}`
+    // Trigger manual sync through backend
+    await mlApi.triggerManualSync(apiKey);
+
+    let data: any = { sensors: [], machine: { id: apiKey } };
+
+    // If registrationInfo is provided and has fieldId, get/create sensors
+    if (registrationInfo?.fieldId) {
+      // Get the list of sensors for this field
+      const sensorsResponse = await http.get(
+        `/fields/${registrationInfo.fieldId}/sensors`
       );
-    }
-    const data = await response.json();
-    const sensors = data.sensors || [];
-    const realSerialNumber = data.machine?.id || apiKey;
+      console.log('Raw sensors response:', sensorsResponse);
+      console.log('Raw sensors response.data:', sensorsResponse.data);
+      // Backend returns {success: true, data: [...]} or just [...]
+      const responseData = sensorsResponse.data;
+      console.log('Parsing sensors - responseData:', responseData);
+      const existingSensors = responseData?.data || responseData || [];
+      console.log('Existing sensors:', existingSensors);
 
-    // 1. Register Device if Info Provided
-    if (registrationInfo && registrationInfo.fieldId) {
-      // Backend Schema ONLY allows 'NEST' or 'SEED'. Map logical types to these.
-      const typeMapping: Record<string, string> = {
-        WEATHER_STATION: 'NEST',
-        NEST: 'NEST',
-        VALVE_CONTROLLER: 'NEST',
-        SENSOR_NODE: 'SEED',
-      };
-      const backendType = typeMapping[registrationInfo.type] || 'NEST';
+      if (existingSensors.length > 0) {
+        const sensorId = existingSensors[0].id || existingSensors[0]._id;
+        console.log('Found sensor ID:', sensorId);
+        if (sensorId) {
+          try {
+            const latestData = await sensorApi.getLatestData(sensorId, 10);
+            console.log('Latest sensor data:', latestData);
+            data = {
+              sensors: latestData,
+              machine: { id: apiKey },
+              sensorId,
+            };
+          } catch (dataErr) {
+            console.warn('Failed to fetch sensor data:', dataErr);
+          }
+        }
+      } else {
+        // No sensors registered yet, create one
+        console.log('No sensors found, registering new sensor...');
+        try {
+          const newSensor = await sensorApi.createSensor(
+            registrationInfo.fieldId,
+            {
+              name: registrationInfo.name || 'Weather Station',
+              type: mapDeviceTypeToSensorType(registrationInfo.type),
+              location: {
+                coordinates: {
+                  type: 'Point',
+                  coordinates: [0, 0],
+                },
+              },
+              unit: 'metric',
+            }
+          );
 
-      const sensorPayload = {
-        name: registrationInfo.name || data.machine?.name || 'Unknown Device',
-        type: backendType,
-        // fieldId: registrationInfo.fieldId, // REMOVED: Passed in URL, not allowed in body
-        serialNumber: String(realSerialNumber), // The CRITICAL link: Ensure String
-        manufacturer: String(
-          registrationInfo.manufacturer ||
-            data.machine?.manufacturer ||
-            'Generic'
-        ),
-        model: String(registrationInfo.model || 'Standard'),
-        firmwareVersion: String(registrationInfo.firmwareVersion || '1.0.0'),
-        unit: 'Multi', // Default unit for a multi-sensor station
-        // status: registrationInfo.status?.toLowerCase() || 'active', // REMOVED: Not allowed in body
-        location: {
-          section: 'Main',
-          coordinates: {
-            type: 'Point',
-            coordinates: [0, 0], // Default
-          },
-        },
-      };
-
-      let warningMessage = undefined;
-      try {
-        await registerDevice(registrationInfo.fieldId, sensorPayload);
-      } catch (regErr: any) {
-        console.error('Device Registration Detailed Error:', regErr);
-        const backendMsg =
-          regErr.response?.data?.message ||
-          JSON.stringify(regErr.response?.data) ||
-          regErr.message;
-
-        warningMessage = `Device Registration Warning: ${backendMsg}. Data might not sync perfectly, but we will proceed.`;
+          const newSensorId = newSensor.id || newSensor._id;
+          if (newSensorId) {
+            const latestData = await sensorApi.getLatestData(newSensorId, 10);
+            data = {
+              sensors: latestData,
+              machine: { id: apiKey },
+              sensorId: newSensorId,
+            };
+          }
+        } catch (sensorErr) {
+          console.warn('Failed to register sensor:', sensorErr);
+        }
       }
     }
 
-    // 2. Sync Data to Backend
-    try {
-      // Map External Names to Backend 'Type' strings
-      const sensorTypeMap: Record<string, string> = {
-        'Temp Sensor': 'Temp',
-        'Humidity Sensor': 'Humidity',
-        'Light Sensor': 'Light',
-        'Rainfall Sensor': 'Rainfall',
-        'Wind Speed Sensor': 'Wind Speed',
-        'Wind Direction Sensor': 'Wind Direction',
-        'PM2.5 Sensor': 'PM2.5',
-        'PM10 Sensor': 'PM10',
-        'CO2 Sensor': 'CO2',
-        'SOX Sensor': 'SOX',
-        'NOX Sensor': 'NOX',
-        'SH Sensor': 'SH',
-        'SHR Sensor': 'SHR',
-        'ST Sensor': 'ST',
-        'STR Sensor': 'STR', // Correctly map to STR for soil_temperature_2
-        'Pressure Sensor': 'Pressure',
-        'Leaf Wetness Sensor': 'Leaf Wetness',
-        'Radiation Sensor': 'Radiation',
-        'O3 Sensor': 'O3',
-      };
+    // The rest of the mapping logic remains to update the UI local storage
+    // using the data returned from our backend.
+    const sensors = data.sensors || [];
+    const realSerialNumber = data.machine?.id || apiKey;
 
-      const payload = {
-        machine: {
-          id: realSerialNumber, // Use real ID not API Key
-          name: data.machine?.name,
-          is_online: data.machine?.is_online,
-          installed_at: data.machine?.installed_at,
-          location: data.machine?.location || '',
-        },
-        sensors: sensors.map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          type:
-            sensorTypeMap[s.name] || s.type || s.name.replace(' Sensor', ''),
-          unit: s.unit,
-          readings: s.readings || [],
-        })),
-      };
+    // Helper to safely get value or default (API uses 'type' not 'name')
+    const getSensorValue = (
+      sensors: any[],
+      type: string,
+      defaultValue: string = '0'
+    ) => {
+      const sensor = sensors.find((s: any) => s.type === type);
+      return sensor && sensor.readings && sensor.readings.length > 0
+        ? String(sensor.readings[0].value)
+        : '0';
+    };
 
-      console.log('Syncing sensor data to backend...', payload);
-      await http.post('/sensor-data', payload);
-      console.log('Sensor data synced successfully.');
-    } catch (syncError: any) {
-      console.error(
-        'Failed to sync sensor data to backend (UI still updating):',
-        syncError
-      );
-      // alert(`Sensor Data Sync Failed: ${syncError.response?.data?.message || syncError.message}`); // Optional: Uncomment if user wants explicit sync error
-    }
+    const getReadings = (sensors: any[], type: string): any[] => {
+      const sensor = sensors.find((s: any) => s.type === type);
+      return sensor && sensor.readings ? sensor.readings : [];
+    };
 
-    // Map API data to our fixed Category Structure
-    // 1. Weather
-    const windSpeed = getSensorValue(sensors, 'Wind Speed Sensor');
-    const windDir = getSensorValue(sensors, 'Wind Direction Sensor');
-    const rainfall = getSensorValue(sensors, 'Rainfall Sensor');
-
+    // Mapping logic remains to preserve the UI structure
     const weatherCategory = {
       id: 'weather',
       name: 'Weather Sensors',
       count: 3,
       color: 'cyan',
       previewSensors: [
-        { name: 'Rain Fall', value: `${rainfall}mm` },
-        { name: 'Wind Spd', value: `${windSpeed}m/s` },
-        { name: 'Wind Dir', value: `${windDir}°` }, // Direction usually degrees
+        {
+          name: 'Rain Fall',
+          value: `${getSensorValue(sensors, 'rainfall')}mm`,
+        },
+        {
+          name: 'Wind Spd',
+          value: `${getSensorValue(sensors, 'wind_speed')}m/s`,
+        },
+        {
+          name: 'Wind Dir',
+          value: `${getSensorValue(sensors, 'wind_direction')}°`,
+        },
       ],
       details: [
         {
           name: 'Wind Direction',
-          value: windDir,
+          value: getSensorValue(sensors, 'wind_direction'),
           unit: '°',
           color: 'purple',
           status: 'Good',
-          readings: getReadings(sensors, 'Wind Direction Sensor'),
+          readings: getReadings(sensors, 'wind_direction'),
         },
         {
           name: 'Wind Speed',
-          value: windSpeed,
+          value: getSensorValue(sensors, 'wind_speed'),
           unit: 'm/s',
           color: 'blue',
           status: 'Good',
-          readings: getReadings(sensors, 'Wind Speed Sensor'),
+          readings: getReadings(sensors, 'wind_speed'),
         },
         {
           name: 'Rain Fall',
-          value: rainfall,
+          value: getSensorValue(sensors, 'rainfall'),
           unit: 'mm',
           color: 'cyan',
           status: 'Good',
-          readings: getReadings(sensors, 'Rainfall Sensor'),
+          readings: getReadings(sensors, 'rainfall'),
         },
       ],
     };
-
-    // 2. Soil
-    const tempSurf = getSensorValue(sensors, 'ST Sensor');
-    const moistSurf = getSensorValue(sensors, 'SH Sensor');
-    const tempRoot = getSensorValue(sensors, 'STR Sensor');
-    const moistRoot = getSensorValue(sensors, 'SHR Sensor');
 
     const soilCategory = {
       id: 'soil',
@@ -250,57 +218,54 @@ export const connectDevice = async (
       count: 4,
       color: 'green',
       previewSensors: [
-        { name: 'Temp Surf', value: `${tempSurf}°C` },
-        { name: 'Moist Surf', value: `${moistSurf}%` },
-        { name: 'Temp Root', value: `${tempRoot}°C` },
+        {
+          name: 'Temp Surf',
+          value: `${getSensorValue(sensors, 'soil_temperature')}°C`,
+        },
+        {
+          name: 'Moist Surf',
+          value: `${getSensorValue(sensors, 'soil_moisture_1')}%`,
+        },
+        {
+          name: 'Temp Root',
+          value: `${getSensorValue(sensors, 'soil_temperature_2')}°C`,
+        },
       ],
       details: [
         {
           name: 'Soil Temperature at Surface',
-          value: tempSurf,
+          value: getSensorValue(sensors, 'soil_temperature'),
           unit: '°C',
           color: 'orange',
           status: 'Good',
-          readings: getReadings(sensors, 'ST Sensor'),
+          readings: getReadings(sensors, 'soil_temperature'),
         },
         {
           name: 'Soil Moisture at Surface',
-          value: moistSurf,
+          value: getSensorValue(sensors, 'soil_moisture_1'),
           unit: '%',
           color: 'blue',
           status: 'Good',
-          readings: getReadings(sensors, 'SH Sensor'),
+          readings: getReadings(sensors, 'soil_moisture_1'),
         },
         {
           name: 'Soil Temperature at Root',
-          value: tempRoot,
+          value: getSensorValue(sensors, 'soil_temperature_2'),
           unit: '°C',
           color: 'orange',
           status: 'Good',
-          readings: getReadings(sensors, 'STR Sensor'),
+          readings: getReadings(sensors, 'soil_temperature_2'),
         },
         {
           name: 'Soil Moisture at Root',
-          value: moistRoot,
+          value: getSensorValue(sensors, 'soil_moisture_2'),
           unit: '%',
           color: 'blue',
           status: 'Good',
-          readings: getReadings(sensors, 'SHR Sensor'),
+          readings: getReadings(sensors, 'soil_moisture_2'),
         },
       ],
     };
-
-    // 3. Air
-    const pm25 = getSensorValue(sensors, 'PM2.5 Sensor');
-    const pm10 = getSensorValue(sensors, 'PM10 Sensor');
-    const co2 = getSensorValue(sensors, 'CO2 Sensor');
-    const tempAir = getSensorValue(sensors, 'Temp Sensor');
-    const humidity = getSensorValue(sensors, 'Humidity Sensor');
-    const pressure = getSensorValue(sensors, 'Pressure Sensor');
-    const sox = getSensorValue(sensors, 'SOX Sensor');
-    const nox = getSensorValue(sensors, 'NOX Sensor');
-    const o3 = getSensorValue(sensors, 'O3 Sensor');
-    const leafWetness = getSensorValue(sensors, 'Leaf Wetness Sensor');
 
     const airCategory = {
       id: 'air',
@@ -308,123 +273,128 @@ export const connectDevice = async (
       count: 10,
       color: 'blue',
       previewSensors: [
-        { name: 'PM 2.5', value: `${pm25}µg` },
-        { name: 'CO2', value: `${co2}ppm` },
-        { name: 'Temp', value: `${tempAir}°C` },
+        {
+          name: 'PM 2.5',
+          value: `${getSensorValue(sensors, 'pm2_5')}µg`,
+        },
+        { name: 'CO2', value: `${getSensorValue(sensors, 'co2')}ppm` },
+        { name: 'Temp', value: `${getSensorValue(sensors, 'temperature')}°C` },
       ],
       details: [
         {
           name: 'PM 2.5',
-          value: pm25,
+          value: getSensorValue(sensors, 'pm2_5'),
           unit: 'µg/m³',
           color: 'blue',
           status: 'Good',
-          readings: getReadings(sensors, 'PM2.5 Sensor'),
+          readings: getReadings(sensors, 'pm2_5'),
         },
         {
           name: 'PM 10',
-          value: pm10,
+          value: getSensorValue(sensors, 'pm10'),
           unit: 'µg/m³',
           color: 'cyan',
           status: 'Good',
-          readings: getReadings(sensors, 'PM10 Sensor'),
+          readings: getReadings(sensors, 'pm10'),
         },
         {
           name: 'CO2',
-          value: co2,
+          value: getSensorValue(sensors, 'co2'),
           unit: 'ppm',
           color: 'gray',
           status: 'Good',
-          readings: getReadings(sensors, 'CO2 Sensor'),
+          readings: getReadings(sensors, 'co2'),
         },
         {
           name: 'Air Temperature',
-          value: tempAir,
+          value: getSensorValue(sensors, 'temperature'),
           unit: '°C',
           color: 'orange',
           status: 'Good',
-          readings: getReadings(sensors, 'Temp Sensor'),
+          readings: getReadings(sensors, 'temperature'),
         },
         {
           name: 'Humidity',
-          value: humidity,
+          value: getSensorValue(sensors, 'humidity'),
           unit: '%',
           color: 'cyan',
           status: 'Good',
-          readings: getReadings(sensors, 'Humidity Sensor'),
+          readings: getReadings(sensors, 'humidity'),
         },
         {
           name: 'Air Pressure',
-          value: pressure,
+          value: getSensorValue(sensors, 'pressure'),
           unit: 'hPa',
           color: 'blue',
           status: 'Good',
-          readings: getReadings(sensors, 'Pressure Sensor'),
+          readings: getReadings(sensors, 'pressure'),
         },
         {
           name: 'SOX',
-          value: sox,
+          value: getSensorValue(sensors, 'so2'),
           unit: 'ppm',
           color: 'yellow',
           status: 'Good',
-          readings: getReadings(sensors, 'SOX Sensor'),
+          readings: getReadings(sensors, 'so2'),
         },
         {
           name: 'NOX',
-          value: nox,
+          value: getSensorValue(sensors, 'no2'),
           unit: 'ppm',
           color: 'orange',
           status: 'Good',
-          readings: getReadings(sensors, 'NOX Sensor'),
+          readings: getReadings(sensors, 'no2'),
         },
         {
           name: 'O3',
-          value: o3,
+          value: getSensorValue(sensors, 'o3'),
           unit: 'ppm',
           color: 'green',
           status: 'Good',
-          readings: getReadings(sensors, 'O3 Sensor'),
+          readings: getReadings(sensors, 'o3'),
         },
         {
           name: 'Leaf Wetness',
-          value: leafWetness,
+          value: getSensorValue(sensors, 'leaf_wetness'),
           unit: '%',
           color: 'green',
           status: 'Good',
-          readings: getReadings(sensors, 'Leaf Wetness Sensor'),
+          readings: getReadings(sensors, 'leaf_wetness'),
         },
       ],
     };
 
-    // 4. Light
-    const light = getSensorValue(sensors, 'Light Sensor');
-    const radiation = getSensorValue(sensors, 'Radiation Sensor');
-
     const lightCategory = {
       id: 'light',
       name: 'Light Sensors',
-      count: 2, // Only 2 provided in your API list for now
+      count: 2,
       color: 'yellow',
       previewSensors: [
-        { name: 'Light', value: `${light} Lux` },
-        { name: 'Radiation', value: `${radiation} W/m²` },
+        {
+          name: 'Light',
+          value: `${getSensorValue(sensors, 'illuminance')} Lux`,
+        },
+        {
+          name: 'Radiation',
+          value: `${getSensorValue(sensors, 'solar_radiation')} W/m²`,
+        },
       ],
       details: [
         {
           name: 'Light',
-          value: light,
+          value: getSensorValue(sensors, 'illuminance'),
           unit: 'Lux',
           color: 'orange',
           status: 'Good',
-          readings: getReadings(sensors, 'Light Sensor'),
+          readings: getReadings(sensors, 'illuminance'),
         },
         {
           name: 'Radiation',
-          value: radiation,
+          value: getSensorValue(sensors, 'solar_radiation'),
           unit: 'W/m²',
           color: 'yellow',
           status: 'Good',
-          readings: getReadings(sensors, 'Radiation Sensor'),
+          readings: getReadings(sensors, 'solar_radiation'),
         },
       ],
     };
@@ -436,8 +406,9 @@ export const connectDevice = async (
       lightCategory,
     ];
 
-    // Calculate latest activity timestamp
-    let latestTimestamp = data.machine?.installed_at; // Default to install time
+    let latestTimestamp = data.machine?.installed_at;
+    const currentTime = new Date().toISOString();
+
     if (sensors && sensors.length > 0) {
       sensors.forEach((s: any) => {
         if (s.readings && s.readings.length > 0) {
@@ -460,16 +431,14 @@ export const connectDevice = async (
         type: 'STATION',
         manufacturer: 'CropNow Systems',
         model: 'Pro-X',
-        status: data.machine?.is_online ? 'Active' : 'Offline', // Use API status
+        status: data.machine?.is_online ? 'Active' : 'Offline',
         serialNumber: realSerialNumber,
-        apiKey: apiKey, // STORE API KEY for future polling
+        apiKey: apiKey,
+        sensorId: data.sensorId,
         connectedAt: new Date().toISOString(),
-        lastActiveAt: latestTimestamp, // Return the calculated last active time
+        lastActiveAt: latestTimestamp || currentTime,
       },
       sensorData: mappedData,
-      // @ts-ignore
-      warning:
-        typeof warningMessage !== 'undefined' ? warningMessage : undefined,
     };
   } catch (error) {
     console.error('Device connection error:', error);

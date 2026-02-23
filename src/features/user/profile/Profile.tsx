@@ -12,9 +12,11 @@ import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { FormTextarea } from '@/components/common/FormTextarea';
+import { RegistrationPlaceholder } from '@/components/common/RegistrationPlaceholder';
 // import { ProfileProvider } from './context/ProfileProvider';
 import { useProfile } from './context/useProfile';
 import { connectDevice, deleteDevice } from './device.service';
+import { useTheme } from '@/hooks/useTheme';
 
 import {
   AlertDialog,
@@ -44,11 +46,28 @@ const ProfileContent = () => {
 
   const [activeTab, setActiveTab] = useState('Profile');
 
+  // Theme
+  const { theme, toggleTheme } = useTheme();
+
   // Preferences State
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(theme === 'dark');
   const [isPublicProfile, setIsPublicProfile] = useState(false);
+
+  // Sync isDarkMode with theme
+  useEffect(() => {
+    setIsDarkMode(theme === 'dark');
+  }, [theme]);
+
+  const handleDarkModeToggle = (checked: boolean) => {
+    setIsDarkMode(checked);
+    if (checked && theme !== 'dark') {
+      toggleTheme();
+    } else if (!checked && theme !== 'light') {
+      toggleTheme();
+    }
+  };
 
   // Add Device Modal State
   const [isAddDeviceModalOpen, setIsAddDeviceModalOpen] = useState(false);
@@ -118,6 +137,10 @@ const ProfileContent = () => {
     return { complete: true };
   };
 
+  const registrationCompleted = profileLoading
+    ? false
+    : checkProfileCompleteness().complete;
+
   const handleAttemptAddDevice = () => {
     const status = checkProfileCompleteness();
     if (status.complete) {
@@ -125,13 +148,9 @@ const ProfileContent = () => {
     } else {
       setAlertConfig({
         isOpen: true,
-        title: 'Profile Incomplete',
-        message: status.message || 'Please complete your profile first.',
+        title: 'Registration Incomplete',
+        message: 'Please complete your registration details to add a device.',
         type: 'warning',
-        onConfirm: () => {
-          if (status.missingTab) setActiveTab(status.missingTab);
-          closeAlert();
-        },
       });
     }
   };
@@ -353,9 +372,9 @@ const ProfileContent = () => {
       onConfirm: async () => {
         closeAlert();
         try {
-          // If the device has a fieldId, try to delete from backend
-          if (device.fieldId && device.serialNumber) {
-            await deleteDevice(device.fieldId, device.serialNumber);
+          // If the device has a fieldId and sensorId, try to delete from backend
+          if (device.fieldId && device.sensorId) {
+            await deleteDevice(device.fieldId, device.sensorId);
           }
 
           // Update Local State
@@ -770,7 +789,7 @@ const ProfileContent = () => {
                         </div>
                         <Switch
                           checked={isDarkMode}
-                          onCheckedChange={setIsDarkMode}
+                          onCheckedChange={handleDarkModeToggle}
                         />
                       </div>
                       <div className="w-full h-px bg-border/50"></div>
@@ -813,10 +832,25 @@ const ProfileContent = () => {
             </div>
           )}
 
-          {activeTab === 'Farmer Details' && <FarmerDetailsTab />}
-          {activeTab === 'Farm Details' && <FarmDetailsTab />}
-          {activeTab === 'Field Details' && <FieldDetailsTab />}
-          {activeTab === 'Crop Details' && <CropDetailsTab />}
+          {!registrationCompleted ? (
+            <div className="bg-card border border-border rounded-3xl p-8">
+              <RegistrationPlaceholder
+                title="No registration completed"
+                description={`Complete your registration to view and manage your ${activeTab === 'Profile' ? 'farm' : activeTab.toLowerCase().replace(' details', '')} details.`}
+                route="/register/farmer-details"
+                variant="button"
+                color="green"
+                className="w-full max-w-md mx-auto"
+              />
+            </div>
+          ) : (
+            <>
+              {activeTab === 'Farmer Details' && <FarmerDetailsTab />}
+              {activeTab === 'Farm Details' && <FarmDetailsTab />}
+              {activeTab === 'Field Details' && <FieldDetailsTab />}
+              {activeTab === 'Crop Details' && <CropDetailsTab />}
+            </>
+          )}
         </div>
       </div>
 
