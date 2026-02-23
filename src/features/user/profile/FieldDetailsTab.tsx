@@ -64,7 +64,10 @@ const FieldDetailsTab = () => {
           // Backend usually sends GeoJSON: { type: 'Polygon', coordinates: [[[lon, lat], ...]] }
           // Frontend LocationPicker expects: { type: 'Polygon', points: [{lat, lng}, ...] } or [[lat, lng], ...]
 
-          if (selectedField.boundary.type === 'Polygon' && selectedField.boundary.coordinates) {
+          if (
+            selectedField.boundary.type === 'Polygon' &&
+            selectedField.boundary.coordinates
+          ) {
             const geoJsonCoords = selectedField.boundary.coordinates[0]; // Outer ring
             if (Array.isArray(geoJsonCoords)) {
               // Convert [lon, lat] to {lat, lng} or [lat, lng]
@@ -77,7 +80,7 @@ const FieldDetailsTab = () => {
 
               const shapeData = {
                 type: 'Polygon',
-                points: points
+                points: points,
               };
               coords = JSON.stringify(shapeData);
             }
@@ -122,8 +125,10 @@ const FieldDetailsTab = () => {
     if (!fieldData.area.toString().trim()) newErrors.area = 'Area is required';
     // Soil type, boundary type might be dropdowns with defaults or empty strings.
     // If they are required:
-    if (!fieldData.boundaryType.trim()) newErrors.boundaryType = 'Boundary Type is required';
-    if (!fieldData.soilType.trim()) newErrors.soilType = 'Soil Type is required';
+    if (!fieldData.boundaryType.trim())
+      newErrors.boundaryType = 'Boundary Type is required';
+    if (!fieldData.soilType.trim())
+      newErrors.soilType = 'Soil Type is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -414,16 +419,16 @@ const FieldDetailsTab = () => {
                               updates.boundaryType = 'Circle';
                             else updates.boundaryType = 'Polygon';
                           }
-                        } catch (e) { }
+                        } catch (e) {}
                         return updates;
                       });
                     }}
                     center={
                       parentFarmLocation && parentFarmLocation.latitude
-                        ? [
-                          parseFloat(parentFarmLocation.latitude),
-                          parseFloat(parentFarmLocation.longitude),
-                        ]
+                        ? ([
+                            parseFloat(parentFarmLocation.latitude),
+                            parseFloat(parentFarmLocation.longitude),
+                          ] as [number, number])
                         : undefined
                     }
                     onAreaCalculated={(sqFt) => {

@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/features/auth/ProtectedRoute';
 import { PublicRoute } from '@/features/auth/PublicRoute';
 import NotFound from '@/features/common/NotFound';
 import Loader from '@/components/common/Loader';
+import { ProfileProvider } from '@/features/user/profile/context/ProfileProvider';
 
 // Lazy loaded auth pages
 const Welcome = lazy(() => import('@/features/auth/Welcome'));
@@ -48,7 +49,9 @@ export const AppRouter = () => {
         <Route
           element={
             <ProtectedRoute>
-              <Outlet />
+              <ProfileProvider>
+                <Outlet />
+              </ProfileProvider>
             </ProtectedRoute>
           }
         >

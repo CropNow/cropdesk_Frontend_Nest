@@ -1,23 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { resetPassword } from './auth.api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import welcomeBackBg from '@/features/auth/asset/welcome_back.png';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [bgImage, setBgImage] = useState<string | null>(null);
 
-  useEffect(() => {
-    import('@/features/auth/asset/welcome_back.png').then((module) => {
-      setBgImage(module.default);
-    });
-  }, []);
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'info' | 'warning' | 'error' | 'success';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const closeAlert = () =>
+    setAlertConfig((prev) => ({ ...prev, isOpen: false }));
 
   const [formData, setFormData] = useState({
     password: '',
@@ -28,12 +46,22 @@ const ResetPassword = () => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      setAlertConfig({
+        isOpen: true,
+        title: 'Password Mismatch',
+        message: "Passwords don't match!",
+        type: 'warning',
+      });
       return;
     }
 
     if (formData.password.length < 6) {
-      alert('Password must be at least 6 characters long');
+      setAlertConfig({
+        isOpen: true,
+        title: 'Invalid Password',
+        message: 'Password must be at least 6 characters long',
+        type: 'warning',
+      });
       return;
     }
 
@@ -45,24 +73,35 @@ const ResetPassword = () => {
         confirmPassword: formData.confirmPassword,
       });
 
-      // Success
-      alert('Password reset successful! Please login with your new password.');
-      navigate('/login');
+      setAlertConfig({
+        isOpen: true,
+        title: 'Success',
+        message:
+          'Password reset successful! Please login with your new password.',
+        type: 'success',
+      });
+      setTimeout(() => navigate('/login'), 1500);
     } catch (error: any) {
       console.error('Reset Password Error:', error);
-      // In case of 404/500 in dev without real backend support for this endpoint:
-      // We simulate success if it's just a mock environment issue,
-      // but normally we'd show the error.
-      // For now, let's treat it as success if it's just a 404 on the mock
       if (error.response && error.response.status === 404) {
         console.warn('API 404, simulating success for demo');
-        alert('Password reset successful! (Simulated)');
-        navigate('/login');
+        setAlertConfig({
+          isOpen: true,
+          title: 'Success',
+          message: 'Password reset successful! (Simulated)',
+          type: 'success',
+        });
+        setTimeout(() => navigate('/login'), 1500);
       } else {
         const message =
           error.response?.data?.message ||
           'Failed to reset password. Please try again.';
-        alert(message);
+        setAlertConfig({
+          isOpen: true,
+          title: 'Error',
+          message: message,
+          type: 'error',
+        });
       }
     } finally {
       setLoading(false);
@@ -73,13 +112,11 @@ const ResetPassword = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        {bgImage && (
-          <img
-            src={bgImage}
-            alt="Background"
-            className="w-full h-full object-cover opacity-80"
-          />
-        )}
+        <img
+          src={welcomeBackBg}
+          alt="Background"
+          className="w-full h-full object-cover opacity-80"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
       </div>
 
@@ -185,6 +222,20 @@ const ResetPassword = () => {
           </Button>
         </form>
       </div>
+
+      <AlertDialog open={alertConfig.isOpen} onOpenChange={closeAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertConfig.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={closeAlert}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

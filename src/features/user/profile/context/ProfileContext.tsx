@@ -38,6 +38,8 @@ export interface ProfileContextValue {
   addCrop: (newCrop: any) => void;
   updateCrop: (id: string, updates: any) => Promise<void>;
   deleteCrop: (id: string) => Promise<void>;
+
+  refreshProfile: () => Promise<void>;
 }
 
 export const ProfileContext = createContext<ProfileContextValue | null>(null);

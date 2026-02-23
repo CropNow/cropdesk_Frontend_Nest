@@ -9,6 +9,16 @@ import { FormTextarea } from '@/components/common/FormTextarea';
 import { FormDropdown } from '@/components/common/FormDropdown';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import fieldInfoBg from '@/features/auth/asset/field_info.png';
 
 const FieldDetails = () => {
   const navigate = useNavigate();
@@ -53,18 +63,36 @@ const FieldDetails = () => {
     };
   });
 
-
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'info' | 'warning' | 'error';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const closeAlert = () =>
+    setAlertConfig((prev) => ({ ...prev, isOpen: false }));
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!fieldData.fieldName.trim()) newErrors.fieldName = 'This field is not filled';
-    if (!fieldData.area.toString().trim()) newErrors.area = 'This field is not filled';
-    if (!fieldData.boundaryType.trim()) newErrors.boundaryType = 'This field is not filled';
-    if (!fieldData.soilType.trim()) newErrors.soilType = 'This field is not filled';
+    if (!fieldData.fieldName.trim())
+      newErrors.fieldName = 'This field is not filled';
+    if (!fieldData.area.toString().trim())
+      newErrors.area = 'This field is not filled';
+    if (!fieldData.boundaryType.trim())
+      newErrors.boundaryType = 'This field is not filled';
+    if (!fieldData.soilType.trim())
+      newErrors.soilType = 'This field is not filled';
 
     // Coordinates validation is trickier as it might be complex object or string
-    // But let's at least check if it's there? 
+    // But let's at least check if it's there?
     // Usually handled by the picker, but let's strictly require it?
     // The previous implementation didn't strictly block in UI except via 'required' on hidden inputs potentially?
     // Actually LocationPicker might update it.
@@ -86,14 +114,6 @@ const FieldDetails = () => {
     }
   }, [fieldData]);
 
-  const [bgImage, setBgImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    import('@/features/auth/asset/filed info.png').then((module) => {
-      setBgImage(module.default);
-    });
-  }, []);
-
   const handleGeolocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -105,11 +125,21 @@ const FieldDetails = () => {
         },
         (error) => {
           console.error('Error detecting location', error);
-          alert('Unable to retrieve your location.');
+          setAlertConfig({
+            isOpen: true,
+            title: 'Location Error',
+            message: 'Unable to retrieve your location.',
+            type: 'warning',
+          });
         }
       );
     } else {
-      alert('Geolocation is not supported by your browser.');
+      setAlertConfig({
+        isOpen: true,
+        title: 'Not Supported',
+        message: 'Geolocation is not supported by your browser.',
+        type: 'warning',
+      });
     }
   };
 
@@ -156,9 +186,12 @@ const FieldDetails = () => {
               !isNaN(fieldAreaSqFt) &&
               fieldAreaSqFt > farmAreaSqFt
             ) {
-              alert(
-                `Field area (${fieldData.area} ${fieldData.units}) cannot exceed the total Farm area (${farmDetails.area} ${farmDetails.units})!`
-              );
+              setAlertConfig({
+                isOpen: true,
+                title: 'Area Validation Error',
+                message: `Field area (${fieldData.area} ${fieldData.units}) cannot exceed the total Farm area (${farmDetails.area} ${farmDetails.units})!`,
+                type: 'warning',
+              });
               return; // Stop execution
             }
 
@@ -176,7 +209,12 @@ const FieldDetails = () => {
                 10 // Max 10km radius
               );
               if (!locValidation.valid) {
-                alert(locValidation.error || 'Location validation failed');
+                setAlertConfig({
+                  isOpen: true,
+                  title: 'Location Validation Error',
+                  message: locValidation.error || 'Location validation failed',
+                  type: 'warning',
+                });
                 return;
               }
             }
@@ -198,13 +236,11 @@ const FieldDetails = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        {bgImage && (
-          <img
-            src={bgImage} // Placeholder, should be replaced or generic
-            alt="Field view"
-            className="w-full h-full object-cover opacity-80"
-          />
-        )}
+        <img
+          src={fieldInfoBg}
+          alt="Field view"
+          className="w-full h-full object-cover opacity-80"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
       </div>
 
@@ -261,17 +297,16 @@ const FieldDetails = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col">
               <FormInput
-                type="number"
+                type="text"
                 placeholder="Area"
                 value={fieldData.area}
                 onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  if (val >= 0 || e.target.value === '') {
-                    setFieldData({ ...fieldData, area: e.target.value });
+                  const val = e.target.value;
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                    setFieldData({ ...fieldData, area: val });
+                    if (errors.area) setErrors({ ...errors, area: '' });
                   }
-                  if (errors.area) setErrors({ ...errors, area: '' });
                 }}
-                min="0"
                 className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
                 error={errors.area || ''}
               />
@@ -281,17 +316,23 @@ const FieldDetails = () => {
               onChange={(e) =>
                 setFieldData({ ...fieldData, units: e.target.value })
               }
-              className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
+              className="px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
-              <option value="acres" className="bg-gray-800">Acres</option>
-              <option value="hectares" className="bg-gray-800">Hectares</option>
-              <option value="sq_ft" className="bg-gray-800">Sq Ft</option>
+              <option value="acres" className="bg-gray-800">
+                Acres
+              </option>
+              <option value="hectares" className="bg-gray-800">
+                Hectares
+              </option>
+              <option value="sq_ft" className="bg-gray-800">
+                Sq Ft
+              </option>
             </FormDropdown>
           </div>
 
           {/* Boundary Type */}
           <div>
-            <Label className="text-xs text-white/60 mb-1 block ml-1">
+            <Label className="text-xs text-white/60 mb-1 block">
               Boundary Shape
             </Label>
             <FormDropdown
@@ -299,13 +340,11 @@ const FieldDetails = () => {
               onChange={(e) =>
                 setFieldData({ ...fieldData, boundaryType: e.target.value })
               }
-              className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
+              className="px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
               error={errors.boundaryType || ''}
             >
-              <option value="Polygon">Polygon (Irregular)</option>
-              <option value="Rectangle">Rectangle</option>
+              <option value="Polygon">Polygon</option>
               <option value="Square">Square</option>
-              <option value="Circle">Circle</option>
             </FormDropdown>
           </div>
 
@@ -344,7 +383,14 @@ const FieldDetails = () => {
                       }));
                     }
                   }
-                } catch (e) { }
+                } catch (e) {}
+              }}
+              onAreaCalculated={(sqFt: number) => {
+                const acres = (sqFt / 43560).toString();
+                setFieldData((prev: any) => ({
+                  ...prev,
+                  area: acres,
+                }));
               }}
               height="350px"
             />
@@ -396,7 +442,7 @@ const FieldDetails = () => {
               onChange={(e) =>
                 setFieldData({ ...fieldData, irrigationMethod: e.target.value })
               }
-              className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
+              className="px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
               <option value="Drip">Drip</option>
               <option value="Sprinkler">Sprinkler</option>
@@ -413,6 +459,33 @@ const FieldDetails = () => {
           </Button>
         </form>
       </div>
+
+      <AlertDialog
+        open={alertConfig.isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAlertConfig((prev) => ({ ...prev, isOpen: false }));
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertConfig.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() =>
+                setAlertConfig((prev) => ({ ...prev, isOpen: false }))
+              }
+            >
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

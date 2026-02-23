@@ -1,7 +1,10 @@
 import React, { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from '@/features/auth/useAuth';
+import { useProfile } from '../profile/context/useProfile';
 import WelcomeBanner from './WelcomeBanner';
 import AgricultureNews from './AgricultureNews';
+import { RegistrationPlaceholder } from '@/components/common/RegistrationPlaceholder';
+import { useNavigate } from 'react-router-dom';
 
 const AIInsights = lazy(() => import('./AIInsights'));
 const IOTDashboard = lazy(() => import('./IOTDashboard'));
@@ -27,8 +30,36 @@ const Dashboard = () => {
   const [userName, setUserName] = React.useState('Farmer');
   const [activeCropsCount, setActiveCropsCount] = React.useState(0);
 
+  // Access Profile Context for shared state
+  const {
+    selectedFarmer,
+    selectedFarm,
+    selectedField,
+    selectedCrop,
+    loading: profileLoading,
+  } = useProfile();
+
   // useAuth provides the reactive user state and loading status
   const { user, loading } = useAuth();
+
+  // Check profile completion from context
+  React.useEffect(() => {
+    if (!profileLoading) {
+      const isComplete = !!(
+        selectedFarmer &&
+        selectedFarm &&
+        selectedField &&
+        selectedCrop
+      );
+      setIsProfileComplete(isComplete);
+    }
+  }, [
+    selectedFarmer,
+    selectedFarm,
+    selectedField,
+    selectedCrop,
+    profileLoading,
+  ]);
 
   useEffect(() => {
     // If we are still loading authentication state, do not attempt to fetch yet.
@@ -119,6 +150,9 @@ const Dashboard = () => {
               if (!firstFarm) return; // Safety check
               const farmId = firstFarm.id || (firstFarm as any)._id; // Handle _id vs id
 
+              // Store farms in localStorage for ML service to access
+              localStorage.setItem('farms', JSON.stringify(farms));
+
               if (farmId) {
                 const { getFarmStatistics } =
                   await import('@/features/auth/api/farm.api');
@@ -126,14 +160,16 @@ const Dashboard = () => {
                 console.log('Dashboard: Farm Stats:', stats);
 
                 if (stats && stats.overview) {
-                  setActiveCropsCount(stats.overview.totalCrops || 0);
+                  // DUPLICATE SOURCE OF TRUTH:
+                  // We now derive this from ProfileContext (selectedFarm) to ensure immediate updates.
+                  // setActiveCropsCount(stats.overview.totalCrops || 0);
                 }
                 setIsProfileComplete(true); // If we found farm and stats, consider active
               }
             } else {
               // No farms found
               setIsProfileComplete(false);
-              setActiveCropsCount(0);
+              // setActiveCropsCount(0);
             }
           } else {
             // No matching farmer found for user
@@ -142,12 +178,12 @@ const Dashboard = () => {
               { currentUserId, farmersSample: farmers.slice(0, 3) } // Log debug info
             );
             setIsProfileComplete(false);
-            setActiveCropsCount(0);
+            // setActiveCropsCount(0);
           }
         } else {
           // No farmers returned at all
           setIsProfileComplete(false);
-          setActiveCropsCount(0);
+          // setActiveCropsCount(0);
         }
       } catch (e) {
         console.error('Error fetching dashboard data', e);
@@ -161,10 +197,106 @@ const Dashboard = () => {
     fetchDashboardData();
   }, [user, loading]); // Re-run when user or loading state changes
 
+  // REACTIVE CROP COUNT
+  // When ProfileProvider updates 'selectedFarm' (either initially or after user adds a crop),
+  // we recalculate this count immediately.
+  useEffect(() => {
+    if (selectedFarm && selectedFarm.fields) {
+      const liveCount = selectedFarm.fields.reduce(
+        (acc: number, field: any) => {
+          return acc + (field.crops ? field.crops.length : 0);
+        },
+        0
+      );
+      setActiveCropsCount(liveCount);
+    }
+  }, [selectedFarm]);
+
+  // Check for connected devices to determine "Device Added" vs "Registered Only" state
+  const [hasDevices, setHasDevices] = React.useState(false);
+  const navigate = useNavigate();
+
+  // Check for connected devices and restore if needed (Persistence Logic)
+  useEffect(() => {
+    const checkDevices = async () => {
+      const devicesStr = localStorage.getItem('connected_devices');
+      if (devicesStr && JSON.parse(devicesStr).length > 0) {
+        setHasDevices(true);
+      } else {
+        setHasDevices(false);
+        // Attempt to restore from backend if we have a field selected (from ProfileContext)
+        // This handles the "Fresh Login" or "Clear Cache" scenario
+        if (
+          selectedFarm &&
+          selectedFarm.fields &&
+          selectedFarm.fields.length > 0
+        ) {
+          try {
+            // Use the first field by default for restoration check
+            // In a multi-field scenario, we might want to check all or rely on selectedField,
+            // but we don't have direct access to selectedField ID here easily without props or context hook.
+            // Using the first field of the selected farm is a safe bet for MVP restoration.
+            const fieldId =
+              selectedFarm.fields[0].id || selectedFarm.fields[0]._id;
+            if (fieldId) {
+              const { getDevicesForField } =
+                await import('@/features/user/profile/device.service');
+              const fetchedDevices = await getDevicesForField(fieldId);
+
+              if (fetchedDevices && fetchedDevices.length > 0) {
+                // Map and Save
+                const mapped = fetchedDevices.map((d: any) => ({
+                  ...d,
+                  serialNumber: d.serialNumber || d.code || d.id,
+                  status: d.status || (d.isOnline ? 'Active' : 'Offline'),
+                  connectedAt: d.createdAt || new Date().toISOString(),
+                }));
+
+                localStorage.setItem(
+                  'connected_devices',
+                  JSON.stringify(mapped)
+                );
+                setHasDevices(true);
+                // Dispatch event so IOTDashboard knows to wake up
+                window.dispatchEvent(new Event('storage'));
+                window.dispatchEvent(new Event('items-restored'));
+              }
+            }
+          } catch (restoreErr) {
+            console.warn('Failed to restore devices in Dashboard', restoreErr);
+          }
+        }
+      }
+    };
+
+    checkDevices();
+    // Re-check if profile loads (farm becomes available)
+  }, [selectedFarm]);
+
+  // Listen for storage updates
+  useEffect(() => {
+    const handleStorage = () => {
+      const devices = localStorage.getItem('connected_devices');
+      setHasDevices(devices && JSON.parse(devices).length > 0 ? true : false);
+    };
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('items-restored', handleStorage); // Custom event
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('items-restored', handleStorage);
+    };
+  }, []);
+
   // Block rendering until auth is settled
   if (loading) {
     return <FullScreenLoader />;
   }
+
+  const handleNoDeviceClick = () => {
+    if (!hasDevices) {
+      navigate('/profile');
+    }
+  };
 
   return (
     <main className="min-h-screen bg-background text-foreground pb-20 pt-16 md:pt-0">
@@ -184,12 +316,60 @@ const Dashboard = () => {
 
         {/* Bottom Row: IOT & AI */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-          <Suspense fallback={<WidgetLoader />}>
-            <IOTDashboard showEmptyState={!isProfileComplete} />
-          </Suspense>
-          <Suspense fallback={<WidgetLoader />}>
-            <AIInsights showEmptyState={!isProfileComplete} />
-          </Suspense>
+          {!isProfileComplete ? (
+            // State 1: New User (Unregistered) -> Show Placeholders
+            <>
+              <RegistrationPlaceholder
+                title="Add Farm Details"
+                description="Setup your IoT Dashboard"
+                route="/register/farmer-details"
+                color="green"
+                className="h-full min-h-[400px]"
+              />
+              <RegistrationPlaceholder
+                title="Activate AI Insights"
+                description="Complete your profile to enable AI features"
+                route="/register/farmer-details"
+                color="blue"
+                className="h-full min-h-[400px]"
+              />
+            </>
+          ) : (
+            // State 2 & 3: Registered -> Show Dashboards
+            <>
+              <div
+                className={`relative rounded-xl ${!hasDevices ? 'cursor-pointer' : ''}`}
+                onClick={handleNoDeviceClick}
+              >
+                {/* Overlay to capture clicks when no device */}
+                {!hasDevices && (
+                  <div
+                    className="absolute inset-0 z-50 bg-transparent"
+                    title="Add a device to see live data"
+                  />
+                )}
+                <Suspense fallback={<WidgetLoader />}>
+                  <IOTDashboard showEmptyState={!hasDevices} />
+                </Suspense>
+              </div>
+
+              <div
+                className={`relative rounded-xl ${!hasDevices ? 'cursor-pointer' : ''}`}
+                onClick={handleNoDeviceClick}
+              >
+                {!hasDevices && (
+                  <div
+                    className="absolute inset-0 z-50 bg-transparent"
+                    title="Add a device to see AI insights"
+                  />
+                )}
+
+                <Suspense fallback={<WidgetLoader />}>
+                  <AIInsights showEmptyState={!hasDevices} />
+                </Suspense>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </main>

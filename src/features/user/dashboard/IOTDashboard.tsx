@@ -45,6 +45,16 @@ interface SensorCategory {
 import { useNavigate } from 'react-router-dom';
 import { connectDevice } from '../profile/device.service';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 const IOTDashboard = ({
   showEmptyState = false,
 }: {
@@ -54,6 +64,22 @@ const IOTDashboard = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedCategory, setSelectedCategory] =
     useState<SensorCategory | null>(null);
+
+  // Alert State
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'info' | 'warning' | 'error';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const closeAlert = () =>
+    setAlertConfig((prev) => ({ ...prev, isOpen: false }));
 
   const [farmInfo, setFarmInfo] = useState({
     name: 'My Farm',
@@ -82,7 +108,6 @@ const IOTDashboard = ({
     }
   }, []);
 
-  // Battery Hook
   const [battery, setBattery] = useState({ level: 1, charging: false });
   useEffect(() => {
     // @ts-ignore
@@ -99,7 +124,6 @@ const IOTDashboard = ({
     }
   }, []);
 
-  // Network Hook
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -187,9 +211,23 @@ const IOTDashboard = ({
       }
     }
 
-    const lastRefresh = localStorage.getItem('last_iot_refresh');
-    if (lastRefresh) {
-      setLastUpdated(new Date(parseInt(lastRefresh)).toLocaleString());
+    const lastActive = localStorage.getItem('iot_last_active_at');
+    if (lastActive) {
+      // Check if it's a timestamp string or ISO string
+      // New logic stores ISO string usually from API, but let's be safe.
+      // Actually 'lastActiveAt' is likely ISO.
+      const dateObj = new Date(lastActive);
+      if (!isNaN(dateObj.getTime())) {
+        setLastUpdated(dateObj.toLocaleString());
+      } else {
+        setLastUpdated(lastActive); // Fallback
+      }
+    } else {
+      // Fallback for migration: use old refresh time if new one not present
+      const lastRefresh = localStorage.getItem('last_iot_refresh');
+      if (lastRefresh) {
+        setLastUpdated(new Date(parseInt(lastRefresh)).toLocaleString());
+      }
     }
   }, []);
 
@@ -199,13 +237,18 @@ const IOTDashboard = ({
   const handleRefresh = async () => {
     const lastRefresh = localStorage.getItem('last_iot_refresh');
     const now = Date.now();
-    const cooldown = 45 * 60 * 1000; // 45 minutes
+    const cooldown = 45 * 60 * 1000;
 
     if (lastRefresh && now - parseInt(lastRefresh) < cooldown) {
       const remaining = Math.ceil(
         (cooldown - (now - parseInt(lastRefresh))) / 60000
       );
-      alert(`Please wait ${remaining} minutes before refreshing again.`);
+      setAlertConfig({
+        isOpen: true,
+        title: 'Refresh Cooldown',
+        message: `Please wait ${remaining} minutes before refreshing again. API limits apply.`,
+        type: 'info',
+      });
       return;
     }
 
@@ -231,16 +274,25 @@ const IOTDashboard = ({
               'iot_device_data',
               JSON.stringify(response.sensorData)
             );
+
+            // Handle Last Active Time
+            const lastActive = response.device.lastActiveAt;
+            if (lastActive) {
+              localStorage.setItem('iot_last_active_at', lastActive);
+              // Convert UTC timestamp to local readable string
+              const dateObj = new Date(lastActive);
+              setLastUpdated(dateObj.toLocaleString()); // Use device time
+            } else {
+              // Fallback if no device time (shouldn't happen with new logic)
+              const nowStr = Date.now().toString();
+              setLastUpdated(new Date(parseInt(nowStr)).toLocaleString());
+            }
+
             const nowStr = Date.now().toString();
+
             localStorage.setItem('last_iot_refresh', nowStr);
-            setLastUpdated(new Date(parseInt(nowStr)).toLocaleString());
 
-            // Dispatch event to notify other components (AIInsights, SmartInfo)
             window.dispatchEvent(new Event('iot-data-updated'));
-
-            // Manually trigger the parsing logic again or just set state directly?
-            // We can replicate the parsing logic here or better yet, make the parsing logic a function.
-            // For now, let's just duplicate the hydration logic to ensure it updates.
 
             const storedData = JSON.stringify(response.sensorData);
             const parsedData = JSON.parse(storedData);
@@ -264,64 +316,120 @@ const IOTDashboard = ({
               })),
             }));
             setSensorCategories(hydratedData);
-            alert('Sensor data refreshed successfully.');
+
+            // Show success alert
+            setAlertConfig({
+              isOpen: true,
+              title: 'Data Refreshed',
+              message: 'Sensor data refreshed successfully from the device.',
+              type: 'info',
+            });
           }
         }
       }
     } catch (e) {
       console.error('Refresh failed', e);
-      alert('Failed to refresh data. Please try again.');
+      setAlertConfig({
+        isOpen: true,
+        title: 'Refresh Failed',
+        message:
+          'Failed to refresh sensor data. Please check connection and try again.',
+        type: 'error',
+      });
     }
   };
 
-  // Initial Fetch on Mount (ONLY if never fetched or stale? No, user requested manual refresh control)
-  // But we should probably load what we have. We already load from localStorage in the first useEffect.
-  // So we don't strictly need to auto-fetch on mount if we trust the localStorage cache from the last profile load.
-  // HOWEVER, if the user just logged in, we might want fresh data.
-  // Let's keep the initial fetch but maybe update the timestamp?
-  // User said: "if i open the iot dashbord and click refresh then again... alert"
-  // This implies the standard load doesn't count as a "refresh" action that blocks them, OR it does?
-  // "if a person refreshedd the page at 11:00 am... from then only it will be considered"
-  // This usually implies explicit action. Let's stick to explicit button click for the cooldown constraint.
-  // Removing auto-poll.
-
   useEffect(() => {
-    // Optional: We could do one initial check if data is totally missing?
-    // For now, relying on the hydration useEffect above.
+    // Auto-Fetch if we have devices but no data (Persistence Restoration)
+    const checkAndFetch = async () => {
+      const storedDevices = localStorage.getItem('connected_devices');
+      const storedData = localStorage.getItem('iot_device_data');
+
+      if (storedDevices && JSON.parse(storedDevices).length > 0) {
+        if (!storedData || JSON.parse(storedData).length === 0) {
+          console.log(
+            'IOTDashboard: Devices found but no data. Auto-fetching...'
+          );
+          // We need to call fetchFreshData.
+          // Since fetchFreshData is defined below, we can't call it easily in this effect if it's not hoisted or using useCallback correctly with deps.
+          // We'll trigger it via a small timeout loop or refactor helper.
+          // BETTER: Dispatch a custom event or just reuse the logic from fetchFreshData here cleanly?
+          // Let's reuse logic by calling the button handler or extracting logic.
+          // For safety/speed, we'll just set a flag to trigger the fetch in the main effect or duplicate the fetch call lightly.
+          // Actually, let's just trigger the refresh button logic if possible? No, cleaner to just run the fetch command.
+
+          // We'll implement a self-contained fetch here to ensure it runs on mount.
+          try {
+            const devices = JSON.parse(storedDevices);
+            const serial = devices[0].apiKey || devices[0].serialNumber;
+            // Dynamically import to avoid circular deps or ensure service availability
+            const { connectDevice } =
+              await import('@/features/user/profile/device.service');
+            // @ts-ignore
+            const response: any = await connectDevice(serial, devices[0]);
+
+            if (response.success) {
+              localStorage.setItem(
+                'iot_device_data',
+                JSON.stringify(response.sensorData)
+              );
+              // Update Last Refresh
+              const nowStr = Date.now().toString();
+              localStorage.setItem('last_iot_refresh', nowStr);
+              const lastActive = response.device.lastActiveAt;
+              if (lastActive)
+                localStorage.setItem('iot_last_active_at', lastActive);
+
+              window.dispatchEvent(new Event('iot-data-updated'));
+              // Force reload of state by re-reading or setting state directly?
+              // The main useEffect above reads from localStorage only on mount [].
+              // We need to trigger a re-read.
+              // Simplest way: reload page? No.
+              // Dispatching 'iot-data-updated' might simply trigger other listeners, but won't re-run the main mount effect here easily WITHOUT reloading the component.
+              // The best way is to set state directly here.
+
+              const storedData = JSON.stringify(response.sensorData);
+              const parsedData = JSON.parse(storedData);
+
+              const hydratedData = parsedData.map((cat: any) => ({
+                ...cat,
+                icon: (
+                  <div
+                    className={`p-2 bg-${cat.color}-500/10 rounded-lg text-${cat.color}-500`}
+                  >
+                    {resolveCategoryIcon(cat.id)}
+                  </div>
+                ),
+                previewSensors: cat.previewSensors.map((s: any) => ({
+                  ...s,
+                  icon: resolveIcon(s.name, 12),
+                })),
+                details: cat.details.map((d: any) => ({
+                  ...d,
+                  icon: resolveIcon(d.name, 20),
+                })),
+              }));
+              setSensorCategories(hydratedData);
+              setAlertConfig({
+                isOpen: true,
+                title: 'Data Restored',
+                message: 'Sensor data restored from cloud.',
+                type: 'info',
+              });
+            }
+          } catch (e) {
+            console.error('Auto-fetch failed', e);
+          }
+        }
+      }
+    };
+
+    // Run after a short delay to allow storage to settle
+    const timer = setTimeout(checkAndFetch, 1000);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Use the loaded categories if available, otherwise check if we should show empty state
-  // If showEmptyState is explicitly passed (e.g. from Dashboard Home which might want to force it), we respect it.
-  // BUT: if we are on the dedicated IOT page, we want to show empty state if NO DATA is present.
-
-  // Ensure profile is complete before showing real data
-  // const [isProfileComplete, setIsProfileComplete] = React.useState(false);
-
-  // React.useEffect(() => {
-  //   const userStr = localStorage.getItem('user');
-  //   if (userStr) {
-  //     try {
-  //       const user = JSON.parse(userStr);
-  //       // Simple check: does the user have at least one farmer, farm, field, crop?
-  //       // Or checking derived flags if available.
-  //       // Based on Profile.tsx logic:
-  //       const hasFarmer = user.farmers && user.farmers.length > 0;
-  //       const hasFarm = user.farms && user.farms.length > 0;
-  //       const hasField = user.fields && user.fields.length > 0;
-  //       const hasCrop = user.crops && user.crops.length > 0;
-
-  //       // Checking legacy/flat structure just in case or strict hierarchy
-  //       const complete = hasFarmer && hasFarm && hasField && hasCrop;
-  //       // setIsProfileComplete(complete);
-  //     } catch (e) {
-  //       // setIsProfileComplete(false);
-  //     }
-  //   } else {
-  //     // setIsProfileComplete(false);
-  //   }
-  // }, []);
-
-  const hasData = sensorCategories.length > 0;
+  const hasData = !showEmptyState && sensorCategories.length > 0;
 
   const finalCategories = hasData
     ? sensorCategories
@@ -557,7 +665,7 @@ const IOTDashboard = ({
               </p>
               {lastUpdated && (
                 <p className="text-[9px] lg:text-[10px] text-green-500 font-medium">
-                  Last updated: {lastUpdated}
+                  Last Synced: {new Date(lastUpdated).toLocaleString()}
                 </p>
               )}
             </div>
@@ -578,20 +686,28 @@ const IOTDashboard = ({
             <div className="flex items-center gap-2 lg:gap-3 text-muted-foreground">
               <Signal
                 size={18}
-                className={`lg:hidden ${isOnline ? 'text-green-500' : 'text-red-500'}`}
+                className={`lg:hidden ${
+                  isOnline ? 'text-green-500' : 'text-red-500'
+                }`}
               />
               <Signal
                 size={24}
-                className={`hidden lg:block ${isOnline ? 'text-green-500' : 'text-red-500'}`}
+                className={`hidden lg:block ${
+                  isOnline ? 'text-green-500' : 'text-red-500'
+                }`}
               />
               <div className="flex items-center gap-1">
                 <Battery
                   size={18}
-                  className={`lg:hidden ${battery.charging ? 'text-green-500' : ''}`}
+                  className={`lg:hidden ${
+                    battery.charging ? 'text-green-500' : ''
+                  }`}
                 />
                 <Battery
                   size={24}
-                  className={`hidden lg:block ${battery.charging ? 'text-green-500' : ''}`}
+                  className={`hidden lg:block ${
+                    battery.charging ? 'text-green-500' : ''
+                  }`}
                 />
                 <span className="text-sm lg:text-lg font-bold">
                   {Math.round(battery.level * 100)}%
@@ -657,6 +773,21 @@ const IOTDashboard = ({
           </div>
         </div>
       </div>
+
+      {/* Alert Dialog Component */}
+      <AlertDialog open={alertConfig.isOpen} onOpenChange={closeAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertConfig.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={closeAlert}>Okay</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {selectedCategory && (
         <SensorCategoryModal

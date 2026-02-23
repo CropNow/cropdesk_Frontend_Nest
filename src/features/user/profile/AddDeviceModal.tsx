@@ -1,19 +1,42 @@
-import React, { useState } from 'react';
-import { X, Cpu, Activity, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Cpu, Save, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dropdown } from '@/components/ui/dropdown';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+  CardAction,
+} from '@/components/ui/card';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useProfile } from './context/useProfile';
 
 interface AddDeviceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (device: any) => void;
+  onAdd: (deviceData: any) => void;
 }
 
 const AddDeviceModal = ({ isOpen, onClose, onAdd }: AddDeviceModalProps) => {
+  const { selectedFarmer } = useProfile();
+
   const [formData, setFormData] = useState({
     name: '',
-    type: '',
+    type: 'Soil Sensor', // Default
     fieldId: '',
     status: 'Active',
     manufacturer: '',
@@ -22,10 +45,42 @@ const AddDeviceModal = ({ isOpen, onClose, onAdd }: AddDeviceModalProps) => {
     firmwareVersion: '',
   });
 
-  if (!isOpen) return null;
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [availableFields, setAvailableFields] = useState<any[]>([]);
+
+  // Extract available fields from the selected farmer's farms
+  useEffect(() => {
+    if (selectedFarmer && selectedFarmer.farms) {
+      const fields = selectedFarmer.farms.flatMap((farm: any) =>
+        (farm.fields || []).map((field: any) => ({
+          id: field.id || field._id,
+          name: field.fieldName || field.name || 'Unnamed Field',
+          farmName: farm.name || farm.farmName,
+        }))
+      );
+      setAvailableFields(fields);
+
+      // Auto-select first field if available and not set
+      if (fields.length > 0 && !formData.fieldId) {
+        setFormData((prev) => ({ ...prev, fieldId: fields[0].id }));
+      }
+    }
+  }, [selectedFarmer]);
+
+  const deviceTypes = [
+    'Soil Sensor',
+    'Weather Station',
+    'Camera',
+    'Drone',
+    'Irrigation Controller',
+    'Gateway',
+    'NEST (Main Controller)',
+  ];
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -33,205 +88,260 @@ const AddDeviceModal = ({ isOpen, onClose, onAdd }: AddDeviceModalProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.type || !formData.fieldId) {
-      alert('Please fill in all required fields marked with *');
+    if (
+      !formData.name ||
+      !formData.serialNumber ||
+      !formData.type ||
+      !formData.fieldId
+    ) {
+      setAlertOpen(true);
       return;
     }
     onAdd(formData);
+    // Reset form
+    setFormData({
+      name: '',
+      type: 'Soil Sensor',
+      fieldId: availableFields.length > 0 ? availableFields[0].id : '',
+      status: 'Active',
+      manufacturer: '',
+      model: '',
+      serialNumber: '',
+      firmwareVersion: '',
+    });
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-[#121212] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        {/* Header */}
-        <div className="p-6 border-b border-white/10 flex justify-between items-start bg-[#1a1a1a]">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20">
-              <Cpu className="text-green-500 w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Add New Device</h2>
-              <p className="text-sm text-gray-400 mt-1">
-                Register a new sensor or IoT device
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-red-500 hover:text-red-400 transition-colors p-1 hover:bg-red-500/10 rounded-full"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Scrollable Content */}
-        <div
-          className="p-6 overflow-y-auto flex-1 space-y-8"
-          style={{
-            scrollbarWidth: 'thin',
-            scrollbarColor: '#555 #121212',
-          }}
-        >
-          {/* Core Information Section */}
-          <div>
-            <div className="flex items-center gap-2 mb-4 text-xs font-bold text-white uppercase tracking-wider">
-              <Activity className="w-4 h-4 text-white" />
-              Core Information
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-400 font-semibold">
-                  Device Name *
-                </Label>
-                <Input
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="e.g. Field A Moisture Sensor"
-                  className="bg-[#0a0a0a] border-white/10 text-white placeholder:text-gray-600 focus:border-green-500/50 h-10"
-                  required
-                />
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <Card className="w-full max-w-3xl flex flex-col shadow-2xl p-0 overflow-hidden bg-[#0d0d0d] border-[#1f1f1f] text-white">
+          <CardHeader className="border-b border-[#1f1f1f] py-4 px-6 flex flex-row items-center justify-between bg-[#111111]">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/10 text-green-500">
+                <Cpu size={24} />
               </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-400 font-semibold">
-                  Device Type *
-                </Label>
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  className="flex h-10 w-full rounded-md border bg-[#0a0a0a] border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-transparent placeholder:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
-                  required
-                >
-                  <option value="" disabled>
-                    Select Device Type
-                  </option>
-                  <option value="NEST">NEST (Main Controller)</option>
-                  <option value="SENSOR_NODE">Sensor Node</option>
-                  <option value="VALVE_CONTROLLER">Valve Controller</option>
-                  <option value="WEATHER_STATION">Weather Station</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-400 font-semibold">
-                  Field ID *
-                </Label>
-                <Input
-                  name="fieldId"
-                  value={formData.fieldId}
-                  onChange={handleChange}
-                  placeholder="Enter Field ID"
-                  className="bg-[#0a0a0a] border-white/10 text-white placeholder:text-gray-600 focus:border-green-500/50 h-10"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-400 font-semibold">
-                  Status
-                </Label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="flex h-10 w-full rounded-md border bg-[#0a0a0a] border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-transparent placeholder:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                  <option value="Maintenance">Maintenance</option>
-                </select>
+              <div>
+                <CardTitle className="text-xl font-bold text-white">
+                  Add New Device
+                </CardTitle>
+                <CardDescription className="text-gray-400 text-sm">
+                  Register a new sensor or IoT device
+                </CardDescription>
               </div>
             </div>
-          </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="rounded-full hover:bg-white/10 text-gray-400 hover:text-white"
+            >
+              <X size={20} />
+            </Button>
+          </CardHeader>
 
-          <div className="h-px bg-white/5 w-full"></div>
+          <CardContent className="flex-1 overflow-y-auto p-8 space-y-8">
+            <form
+              id="add-device-form"
+              onSubmit={handleSubmit}
+              className="space-y-8"
+            >
+              {/* CORE INFORMATION */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-gray-400 uppercase text-xs font-bold tracking-wider">
+                  <Activity size={14} />
+                  Core Information
+                </div>
 
-          {/* Hardware Identity Section */}
-          <div>
-            <div className="flex items-center gap-2 mb-4 text-xs font-bold text-white uppercase tracking-wider">
-              <Cpu className="w-4 h-4 text-white" />
-              Hardware Identity
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-400">
+                      Device Name *
+                    </Label>
+                    <Input
+                      name="name"
+                      placeholder="e.g. Field A Moisture Sensor"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="bg-[#1a1a1a] border-[#333] text-white focus:border-green-500 rounded-lg h-11"
+                    />
+                  </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-400 font-semibold">
-                  Manufacturer
-                </Label>
-                <Input
-                  name="manufacturer"
-                  value={formData.manufacturer}
-                  onChange={handleChange}
-                  placeholder="e.g. CropNow Systems"
-                  className="bg-[#0a0a0a] border-white/10 text-white placeholder:text-gray-600 focus:border-green-500/50 h-10"
-                />
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-400">
+                      Device Type *
+                    </Label>
+                    <Dropdown
+                      name="type"
+                      value={formData.type}
+                      onChange={handleChange}
+                      className="bg-[#1a1a1a] border-[#333] text-white focus:border-green-500 rounded-lg h-11"
+                    >
+                      {deviceTypes.map((type) => (
+                        <option
+                          key={type}
+                          value={type}
+                          className="bg-[#1a1a1a]"
+                        >
+                          {type}
+                        </option>
+                      ))}
+                    </Dropdown>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-400">
+                      Field ID *
+                    </Label>
+                    <Dropdown
+                      name="fieldId"
+                      value={formData.fieldId}
+                      onChange={handleChange}
+                      className="bg-[#1a1a1a] border-[#333] text-white focus:border-green-500 rounded-lg h-11"
+                    >
+                      <option value="" disabled className="bg-[#1a1a1a]">
+                        Select Field
+                      </option>
+                      {availableFields.map((field) => (
+                        <option
+                          key={field.id}
+                          value={field.id}
+                          className="bg-[#1a1a1a]"
+                        >
+                          {field.name}
+                        </option>
+                      ))}
+                    </Dropdown>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-400">
+                      Status
+                    </Label>
+                    <Dropdown
+                      name="status"
+                      value={formData.status}
+                      onChange={handleChange}
+                      className="bg-[#1a1a1a] border-[#333] text-white focus:border-green-500 rounded-lg h-11"
+                    >
+                      <option value="Active" className="bg-[#1a1a1a]">
+                        Active
+                      </option>
+                      <option value="Inactive" className="bg-[#1a1a1a]">
+                        Inactive
+                      </option>
+                      <option value="Maintenance" className="bg-[#1a1a1a]">
+                        Maintenance
+                      </option>
+                    </Dropdown>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-400 font-semibold">
-                  Model
-                </Label>
-                <Input
-                  name="model"
-                  value={formData.model}
-                  onChange={handleChange}
-                  placeholder="e.g. MS-200"
-                  className="bg-[#0a0a0a] border-white/10 text-white placeholder:text-gray-600 focus:border-green-500/50 h-10"
-                />
-              </div>
+              {/* HARDWARE IDENTITY */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-gray-400 uppercase text-xs font-bold tracking-wider">
+                  <Cpu size={14} />
+                  Hardware Identity
+                </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-400 font-semibold">
-                  Serial Number
-                </Label>
-                <Input
-                  name="serialNumber"
-                  value={formData.serialNumber}
-                  onChange={handleChange}
-                  placeholder="Unique Serial No."
-                  className="bg-[#0a0a0a] border-white/10 text-white placeholder:text-gray-600 focus:border-green-500/50 h-10"
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-400">
+                      Manufacturer
+                    </Label>
+                    <Input
+                      name="manufacturer"
+                      placeholder="e.g. CropNow Systems"
+                      value={formData.manufacturer}
+                      onChange={handleChange}
+                      className="bg-[#1a1a1a] border-[#333] text-white focus:border-green-500 rounded-lg h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-400">
+                      Model
+                    </Label>
+                    <Input
+                      name="model"
+                      placeholder="e.g. MS-200"
+                      value={formData.model}
+                      onChange={handleChange}
+                      className="bg-[#1a1a1a] border-[#333] text-white focus:border-green-500 rounded-lg h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-400">
+                      Serial Number *
+                    </Label>
+                    <Input
+                      name="serialNumber"
+                      placeholder="Unique Serial No."
+                      value={formData.serialNumber}
+                      onChange={handleChange}
+                      className="bg-[#1a1a1a] border-[#333] text-white focus:border-green-500 rounded-lg h-11 font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-400">
+                      Firmware Version
+                    </Label>
+                    <Input
+                      name="firmwareVersion"
+                      placeholder="e.g. v1.0.4"
+                      value={formData.firmwareVersion}
+                      onChange={handleChange}
+                      className="bg-[#1a1a1a] border-[#333] text-white focus:border-green-500 rounded-lg h-11"
+                    />
+                  </div>
+                </div>
               </div>
+            </form>
+          </CardContent>
 
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-400 font-semibold">
-                  Firmware Version
-                </Label>
-                <Input
-                  name="firmwareVersion"
-                  value={formData.firmwareVersion}
-                  onChange={handleChange}
-                  placeholder="e.g. v1.0.4"
-                  className="bg-[#0a0a0a] border-white/10 text-white placeholder:text-gray-600 focus:border-green-500/50 h-10"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="p-6 border-t border-white/10 bg-[#1a1a1a] flex justify-end gap-3">
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            className="text-gray-400 hover:text-white hover:bg-white/5"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 flex items-center gap-2"
-          >
-            <Save size={18} />
-            Add Device
-          </Button>
-        </div>
+          <CardFooter className="p-6 border-t border-[#1f1f1f] bg-[#111111] flex justify-end gap-3">
+            <Button
+              variant="ghost"
+              onClick={onClose}
+              className="text-gray-400 hover:text-white hover:bg-white/10"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="add-device-form"
+              className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 rounded-lg flex items-center gap-2"
+            >
+              <Save size={18} />
+              Add Device
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
-    </div>
+
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent className="z-[60] bg-[#1a1a1a] border-[#333] text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">
+              Missing Information
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Please fill in all required fields marked with *.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => setAlertOpen(false)}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Okay
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

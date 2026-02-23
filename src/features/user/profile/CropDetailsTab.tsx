@@ -78,8 +78,10 @@ const CropDetailsTab = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.cropName.trim()) newErrors.cropName = 'Crop name is required';
-    if (!formData.plantingDate.trim()) newErrors.plantingDate = 'Planting date is required';
-    if (!formData.harvestingDate.trim()) newErrors.harvestingDate = 'Harvesting date is required';
+    if (!formData.plantingDate.trim())
+      newErrors.plantingDate = 'Planting date is required';
+    if (!formData.harvestingDate.trim())
+      newErrors.harvestingDate = 'Harvesting date is required';
     if (!formData.area.toString().trim()) newErrors.area = 'Area is required';
 
     setErrors(newErrors);

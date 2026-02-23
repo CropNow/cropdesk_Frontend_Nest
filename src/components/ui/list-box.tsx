@@ -29,7 +29,7 @@ export const ListBox = ({
             key={item.id}
             onClick={() => onSelect(item.id)}
             className={cn(
-              'px-4 py-3 text-sm cursor-pointer transition-colors border-b border-border last:border-0',
+              'px-4 py-3 text-lg cursor-pointer transition-colors border-b border-border last:border-0',
               selectedId === item.id
                 ? 'bg-primary/20 text-primary-foreground font-medium'
                 : 'text-foreground hover:bg-muted/50'
@@ -37,7 +37,7 @@ export const ListBox = ({
           >
             <div className="font-medium">{item.label}</div>
             {item.subLabel && (
-              <div className="text-xs text-muted-foreground mt-0.5 opacity-80">
+              <div className="text-sm text-muted-foreground mt-0.5 opacity-80">
                 {item.subLabel}
               </div>
             )}

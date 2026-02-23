@@ -7,10 +7,35 @@ import { FormTextarea } from '@/components/common/FormTextarea';
 import { FormDropdown } from '@/components/common/FormDropdown';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import fieldInfoBg from '@/features/auth/asset/field_info.png';
+
+interface FarmData {
+  farmName: string;
+  description: string;
+  area: string;
+  units: string;
+  soilType: string;
+  location: {
+    address: string;
+    city: string;
+    country: string;
+    latitude: string;
+    longitude: string;
+  };
+}
 
 const FarmDetails = () => {
   const navigate = useNavigate();
-  const [farmData, setFarmData] = useState(() => {
+  const [farmData, setFarmData] = useState<FarmData>(() => {
     const tempStr = localStorage.getItem('tempRegistrationData');
     if (tempStr) {
       try {
@@ -56,13 +81,33 @@ const FarmDetails = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'info' | 'warning' | 'error';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const closeAlert = () =>
+    setAlertConfig((prev) => ({ ...prev, isOpen: false }));
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!farmData.farmName.trim()) newErrors.farmName = 'This field is not filled';
-    if (!farmData.area.toString().trim()) newErrors.area = 'This field is not filled';
-    if (!farmData.location.address.trim()) newErrors.address = 'This field is not filled';
-    if (!farmData.location.city.trim()) newErrors.city = 'This field is not filled';
-    if (!farmData.location.country.trim()) newErrors.country = 'This field is not filled';
+    if (!farmData.farmName.trim())
+      newErrors.farmName = 'This field is not filled';
+    if (!farmData.area.toString().trim())
+      newErrors.area = 'This field is not filled';
+    if (!farmData.location.address.trim())
+      newErrors.address = 'This field is not filled';
+    if (!farmData.location.city.trim())
+      newErrors.city = 'This field is not filled';
+    if (!farmData.location.country.trim())
+      newErrors.country = 'This field is not filled';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -80,14 +125,6 @@ const FarmDetails = () => {
       localStorage.setItem('tempRegistrationData', JSON.stringify(updatedTemp));
     }
   }, [farmData]);
-
-  const [bgImage, setBgImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    import('@/features/auth/asset/filed info.png').then((module) => {
-      setBgImage(module.default);
-    });
-  }, []);
 
   useEffect(() => {
     // Only run geo if no location data exists to avoid overwriting
@@ -108,7 +145,14 @@ const FarmDetails = () => {
 
   const handleGeolocation = (silent = false) => {
     if (!navigator.geolocation) {
-      if (!silent) alert('Geolocation is not supported by your browser.');
+      if (!silent) {
+        setAlertConfig({
+          isOpen: true,
+          title: 'Not Supported',
+          message: 'Geolocation is not supported by your browser.',
+          type: 'warning',
+        });
+      }
       return;
     }
 
@@ -147,7 +191,12 @@ const FarmDetails = () => {
             errorMessage = 'The request to get user location timed out.';
             break;
         }
-        alert(errorMessage);
+        setAlertConfig({
+          isOpen: true,
+          title: 'Location Error',
+          message: errorMessage,
+          type: 'warning',
+        });
       },
       options
     );
@@ -167,13 +216,11 @@ const FarmDetails = () => {
     <div className="min-h-screen w-full flex relative bg-black">
       {/* Background Image */}
       <div className="absolute inset-0">
-        {bgImage && (
-          <img
-            src={bgImage}
-            alt="Aerial view of fields"
-            className="w-full h-full object-cover opacity-80"
-          />
-        )}
+        <img
+          src={fieldInfoBg}
+          alt="Aerial view of fields"
+          className="w-full h-full object-cover opacity-80"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
       </div>
 
@@ -219,7 +266,7 @@ const FarmDetails = () => {
                 setFarmData({ ...farmData, description: e.target.value })
               }
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors resize-none h-20"
-            // No error prop needed as it's optional
+              // No error prop needed as it's optional
             />
           </div>
 
@@ -246,8 +293,7 @@ const FarmDetails = () => {
               onChange={(e) =>
                 setFarmData({ ...farmData, units: e.target.value })
               }
-              className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
-            // No error handling logic shown for units but if needed add error prop
+              className="px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
               <option value="acres" className="bg-gray-800">
                 Acres
@@ -314,6 +360,11 @@ const FarmDetails = () => {
               Coordinates
             </Label>
             <div className="mb-2">
+              {farmData.location.latitude && farmData.location.longitude && (
+                <div className="mb-2 px-3 py-2 bg-white/10 rounded-lg text-xs font-mono text-white/80">
+                  {farmData.location.latitude}, {farmData.location.longitude}
+                </div>
+              )}
               <LocationPicker
                 mode="point"
                 value={
@@ -322,7 +373,9 @@ const FarmDetails = () => {
                     : ''
                 }
                 onChange={(val: string) => {
-                  const [lat, lng] = val.split(',').map((s) => s.trim());
+                  const [lat = '', lng = ''] = val
+                    .split(',')
+                    .map((s) => s.trim());
                   setFarmData({
                     ...farmData,
                     location: {
@@ -331,6 +384,18 @@ const FarmDetails = () => {
                       longitude: lng,
                     },
                   });
+                }}
+                onLocationDataChange={(data) => {
+                  // Auto-fill address, city and country from reverse geocoding
+                  setFarmData((prev) => ({
+                    ...prev,
+                    location: {
+                      ...prev.location,
+                      address: data.address || prev.location.address || '',
+                      city: data.city || prev.location.city || '',
+                      country: data.country || prev.location.country || '',
+                    },
+                  }));
                 }}
                 height="300px"
               />
@@ -345,6 +410,33 @@ const FarmDetails = () => {
           </Button>
         </form>
       </div>
+
+      <AlertDialog
+        open={alertConfig.isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAlertConfig((prev) => ({ ...prev, isOpen: false }));
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertConfig.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() =>
+                setAlertConfig((prev) => ({ ...prev, isOpen: false }))
+              }
+            >
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

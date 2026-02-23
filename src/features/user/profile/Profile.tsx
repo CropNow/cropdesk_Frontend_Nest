@@ -12,9 +12,22 @@ import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { FormTextarea } from '@/components/common/FormTextarea';
-import { ProfileProvider } from './context/ProfileProvider';
+import { RegistrationPlaceholder } from '@/components/common/RegistrationPlaceholder';
+// import { ProfileProvider } from './context/ProfileProvider';
 import { useProfile } from './context/useProfile';
 import { connectDevice, deleteDevice } from './device.service';
+import { useTheme } from '@/hooks/useTheme';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Inner Profile Component that consumes the context
 const ProfileContent = () => {
@@ -28,16 +41,33 @@ const ProfileContent = () => {
     selectedFarm,
     selectedField,
     selectedCrop,
-    loading: profileLoading
+    loading: profileLoading,
   } = useProfile();
 
   const [activeTab, setActiveTab] = useState('Profile');
 
+  // Theme
+  const { theme, toggleTheme } = useTheme();
+
   // Preferences State
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(theme === 'dark');
   const [isPublicProfile, setIsPublicProfile] = useState(false);
+
+  // Sync isDarkMode with theme
+  useEffect(() => {
+    setIsDarkMode(theme === 'dark');
+  }, [theme]);
+
+  const handleDarkModeToggle = (checked: boolean) => {
+    setIsDarkMode(checked);
+    if (checked && theme !== 'dark') {
+      toggleTheme();
+    } else if (!checked && theme !== 'light') {
+      toggleTheme();
+    }
+  };
 
   // Add Device Modal State
   const [isAddDeviceModalOpen, setIsAddDeviceModalOpen] = useState(false);
@@ -54,22 +84,74 @@ const ProfileContent = () => {
     bio: '',
   });
 
+  // Alert & Confirm Dialog State
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'info' | 'warning' | 'error';
+    onConfirm?: () => void;
+    isConfirm?: boolean;
+    confirmLabel?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+    isConfirm: false,
+  });
+
+  const closeAlert = () =>
+    setAlertConfig((prev) => ({ ...prev, isOpen: false }));
+
   // Check for profile completeness to allow Device Addition
-  const checkProfileCompleteness = (): { complete: boolean; missingTab?: string; message?: string } => {
-    if (!selectedFarmer) return { complete: false, missingTab: 'Farmer Details', message: 'Please add Farmer Details first.' };
-    if (!selectedFarm) return { complete: false, missingTab: 'Farm Details', message: 'Please add Farm Details first.' };
-    if (!selectedField) return { complete: false, missingTab: 'Field Details', message: 'Please add Field Details first.' };
-    if (!selectedCrop) return { complete: false, missingTab: 'Crop Details', message: 'Please add Crop Details first.' };
+  const checkProfileCompleteness = (): {
+    complete: boolean;
+    missingTab?: string;
+    message?: string;
+  } => {
+    if (!selectedFarmer)
+      return {
+        complete: false,
+        missingTab: 'Farmer Details',
+        message: 'Please add Farmer Details first.',
+      };
+    if (!selectedFarm)
+      return {
+        complete: false,
+        missingTab: 'Farm Details',
+        message: 'Please add Farm Details first.',
+      };
+    if (!selectedField)
+      return {
+        complete: false,
+        missingTab: 'Field Details',
+        message: 'Please add Field Details first.',
+      };
+    if (!selectedCrop)
+      return {
+        complete: false,
+        missingTab: 'Crop Details',
+        message: 'Please add Crop Details first.',
+      };
     return { complete: true };
   };
+
+  const registrationCompleted = profileLoading
+    ? false
+    : checkProfileCompleteness().complete;
 
   const handleAttemptAddDevice = () => {
     const status = checkProfileCompleteness();
     if (status.complete) {
       setIsAddDeviceModalOpen(true);
     } else {
-      alert(status.message);
-      if (status.missingTab) setActiveTab(status.missingTab);
+      setAlertConfig({
+        isOpen: true,
+        title: 'Registration Incomplete',
+        message: 'Please complete your registration details to add a device.',
+        type: 'warning',
+      });
     }
   };
 
@@ -101,8 +183,16 @@ const ProfileContent = () => {
         setIsAddDeviceModalOpen(true);
       } else {
         // If incomplete, redirect to the missing tab automatically
-        alert(`To add a device, ${status.message}`);
-        if (status.missingTab) setActiveTab(status.missingTab);
+        setAlertConfig({
+          isOpen: true,
+          title: 'Direct Link Warning',
+          message: `To add a device, ${status.message}`,
+          type: 'warning',
+          onConfirm: () => {
+            if (status.missingTab) setActiveTab(status.missingTab);
+            closeAlert();
+          },
+        });
       }
       // Clear state
       navigate(location.pathname, { replace: true, state: {} });
@@ -112,8 +202,36 @@ const ProfileContent = () => {
     const storedDevices = localStorage.getItem('connected_devices');
     if (storedDevices) {
       setDevices(JSON.parse(storedDevices));
+    } else if (selectedField && selectedField.id) {
+      // Fallback: Try to fetch from backend if local storage is empty (Fresh Login)
+      import('./device.service').then(({ getDevicesForField }) => {
+        getDevicesForField(selectedField.id).then((fetchedDevices) => {
+          if (fetchedDevices && fetchedDevices.length > 0) {
+            // Map backend sensor to frontend Device format if needed
+            // This assumes backend returns compatible structure or we just use it
+            // We might need to map 'serialNumber' if backend uses 'code' or 'id'
+            const mapped = fetchedDevices.map((d: any) => ({
+              ...d,
+              serialNumber: d.serialNumber || d.code || d.id, // Ensure serial matches
+              status: d.status || (d.isOnline ? 'Active' : 'Offline'),
+              connectedAt: d.createdAt || new Date().toISOString(),
+            }));
+
+            setDevices(mapped);
+            localStorage.setItem('connected_devices', JSON.stringify(mapped));
+          }
+        });
+      });
     }
-  }, [user, location.state, profileLoading, selectedFarmer, selectedFarm, selectedField, selectedCrop]);
+  }, [
+    user,
+    location.state,
+    profileLoading,
+    selectedFarmer,
+    selectedFarm,
+    selectedField,
+    selectedCrop,
+  ]);
 
   const tabs = [
     'Profile',
@@ -155,21 +273,32 @@ const ProfileContent = () => {
   };
 
   const handleDeleteAccount = () => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete your account? This action cannot be undone.'
-      )
-    ) {
-      localStorage.removeItem('user');
-      localStorage.removeItem('registeredUser');
-      setUser(null);
-      navigate('/login');
-    }
+    setAlertConfig({
+      isOpen: true,
+      isConfirm: true,
+      title: 'Delete Account',
+      message:
+        'Are you sure you want to delete your account? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      type: 'error',
+      onConfirm: () => {
+        localStorage.removeItem('user');
+        localStorage.removeItem('registeredUser');
+        setUser(null);
+        navigate('/login');
+        closeAlert(); // Although navigating away usually unmounts
+      },
+    });
   };
 
   const handleAddDevice = async (deviceData: any) => {
     if (!deviceData.serialNumber) {
-      alert('Please enter a serial number.');
+      setAlertConfig({
+        isOpen: true,
+        title: 'Missing Information',
+        message: 'Please enter a serial number.',
+        type: 'warning',
+      });
       return;
     }
 
@@ -177,7 +306,10 @@ const ProfileContent = () => {
     try {
       // Connect to the device service
       // @ts-ignore
-      const response: any = await connectDevice(deviceData.serialNumber, deviceData);
+      const response: any = await connectDevice(
+        deviceData.serialNumber,
+        deviceData
+      );
 
       if (response.success) {
         // 1. Update Devices List
@@ -196,57 +328,98 @@ const ProfileContent = () => {
         );
 
         setIsAddDeviceModalOpen(false);
-        alert('Device Connected Successfully! IoT Dashboard is now live.');
+
+        // Show success or warning message
+        if (response.warning) {
+          setAlertConfig({
+            isOpen: true,
+            title: 'Device Connected with Warning',
+            message: `${response.warning}`,
+            type: 'warning',
+          });
+        } else {
+          setAlertConfig({
+            isOpen: true,
+            title: 'Success',
+            message:
+              'Device Connected Successfully! IoT Dashboard is now live.',
+            type: 'info',
+          });
+        }
       }
     } catch (error: any) {
-      alert(
-        error.message ||
-        'Failed to connect device. Please check the serial number.'
-      );
+      setAlertConfig({
+        isOpen: true,
+        title: 'Connection Failed',
+        message:
+          error.message ||
+          'Failed to connect device. Please check the serial number.',
+        type: 'error',
+      });
     } finally {
       setIsAddingDevice(false);
     }
   };
 
   const handleDeleteDevice = async (device: any) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete the device "${device.name}"? This action cannot be undone.`
-      )
-    ) {
-      return;
-    }
+    setAlertConfig({
+      isOpen: true,
+      isConfirm: true,
+      title: 'Delete Device',
+      message: `Are you sure you want to delete the device "${device.name}"? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      type: 'error',
+      onConfirm: async () => {
+        closeAlert();
+        try {
+          // If the device has a fieldId and sensorId, try to delete from backend
+          if (device.fieldId && device.sensorId) {
+            await deleteDevice(device.fieldId, device.sensorId);
+          }
 
-    try {
-      // If the device has a fieldId, try to delete from backend
-      if (device.fieldId && device.serialNumber) {
-        await deleteDevice(device.fieldId, device.serialNumber);
-      }
+          // Update Local State
+          const updatedDevices = devices.filter(
+            (d) => d.serialNumber !== device.serialNumber
+          );
+          setDevices(updatedDevices);
+          localStorage.setItem(
+            'connected_devices',
+            JSON.stringify(updatedDevices)
+          ); // Persist
 
-      // Update Local State
-      const updatedDevices = devices.filter(
-        (d) => d.serialNumber !== device.serialNumber
-      );
-      setDevices(updatedDevices);
-      localStorage.setItem('connected_devices', JSON.stringify(updatedDevices)); // Persist
+          // If no devices left, maybe clear IoT data?
+          if (updatedDevices.length === 0) {
+            localStorage.removeItem('iot_device_data');
+          }
 
-      // If no devices left, maybe clear IoT data?
-      if (updatedDevices.length === 0) {
-        localStorage.removeItem('iot_device_data');
-      }
+          setAlertConfig({
+            isOpen: true,
+            title: 'Deleted',
+            message: 'Device deleted successfully.',
+            type: 'info',
+          });
+        } catch (error: any) {
+          console.error('Failed to delete device:', error);
+          // Fallback: Remove locally even if backend fails (to unblock user)
+          const updatedDevices = devices.filter(
+            (d) => d.serialNumber !== device.serialNumber
+          );
+          setDevices(updatedDevices);
+          localStorage.setItem(
+            'connected_devices',
+            JSON.stringify(updatedDevices)
+          );
 
-      alert('Device deleted successfully.');
-    } catch (error: any) {
-      console.error('Failed to delete device:', error);
-      alert('Failed to delete device from backend, but removing locally.');
-
-      // Fallback: Remove locally even if backend fails (to unblock user)
-      const updatedDevices = devices.filter(
-        (d) => d.serialNumber !== device.serialNumber
-      );
-      setDevices(updatedDevices);
-      localStorage.setItem('connected_devices', JSON.stringify(updatedDevices));
-    }
+          setAlertConfig({
+            isOpen: true,
+            title: 'Partial Delete',
+            message:
+              'Failed to delete device from backend, but removed locally.',
+            type: 'warning',
+          });
+        }
+      },
+    });
   };
 
   return (
@@ -260,10 +433,11 @@ const ProfileContent = () => {
                 key={tab}
                 variant="ghost"
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 md:px-6 rounded-xl text-xs md:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${activeTab === tab
-                  ? 'bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20 hover:text-green-500'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent'
-                  }`}
+                className={`px-4 py-2 md:px-6 rounded-xl text-xs md:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${
+                  activeTab === tab
+                    ? 'bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20 hover:text-green-500'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent'
+                }`}
               >
                 {tab}
               </Button>
@@ -274,15 +448,16 @@ const ProfileContent = () => {
           {activeTab === 'Profile' && (
             <div className="bg-card border border-border rounded-3xl p-4 md:p-8">
               {/* Header */}
-              <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-8">
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center bg-green-500 text-black flex-shrink-0 shadow-lg">
-                    <User size={40} />
+              {/* Header */}
+              <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-8 relative">
+                <div className="flex items-start gap-4 flex-1 pr-12">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center bg-green-500 text-black flex-shrink-0 shadow-lg">
+                    <User size={32} />
                   </div>
-                  <div className="flex-1 space-y-2 mt-1">
+                  <div className="flex-1 space-y-1 mt-1">
                     {isEditing ? (
                       <div className="space-y-1">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase">
                           Name
                         </Label>
                         <FormInput
@@ -293,23 +468,23 @@ const ProfileContent = () => {
                               name: e.target.value,
                             })
                           }
-                          className="h-9"
+                          className="h-8 text-sm"
                           error={errors.name || ''}
                         />
                       </div>
                     ) : (
-                      <h2 className="text-2xl font-bold text-foreground">
+                      <h2 className="text-xl md:text-2xl font-bold text-foreground">
                         {userDetails.name}
                       </h2>
                     )}
 
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>{userDetails.email}</span>
                     </div>
 
                     {isEditing ? (
                       <div className="space-y-1 w-full max-w-md">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase">
                           Bio
                         </Label>
                         <FormTextarea
@@ -320,28 +495,28 @@ const ProfileContent = () => {
                               bio: e.target.value,
                             })
                           }
-                          className="h-20 resize-none"
+                          className="h-16 resize-none text-sm"
                         />
                       </div>
                     ) : (
-                      <p className="text-sm text-foreground/80 max-w-lg leading-relaxed">
+                      <p className="text-xs md:text-sm text-foreground/80 max-w-lg leading-relaxed">
                         {userDetails.bio}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="absolute top-0 right-0 md:static">
                   <Button
                     size="icon"
-                    className="rounded-xl w-10 h-10 bg-green-500 hover:bg-green-600 shadow-lg"
+                    className="rounded-xl w-8 h-8 md:w-10 md:h-10 bg-green-500 hover:bg-green-600 shadow-lg"
                     title="Add Device"
                     onClick={handleAttemptAddDevice}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
+                      width="20"
+                      height="20"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -359,66 +534,66 @@ const ProfileContent = () => {
 
               {/* Stats Cards */}
               <div className="mb-8">
-                <h3 className="text-sm font-bold text-muted-foreground uppercase mb-4 md:hidden">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3 md:hidden">
                   Farm Statistics
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                <div className="grid grid-cols-3 gap-3 md:gap-6">
                   {/* Total Land */}
-                  <div className="bg-[#1e40af] rounded-2xl p-6 relative overflow-hidden group hover:shadow-xl transition-all">
-                    <div className="flex justify-between items-start mb-6 relative z-10">
-                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                        <Map size={24} className="text-white" />
+                  <div className="bg-[#1e40af] rounded-2xl p-3 md:p-6 relative overflow-hidden group hover:shadow-xl transition-all">
+                    <div className="flex justify-between items-start mb-2 md:mb-6 relative z-10">
+                      <div className="p-1.5 md:p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <Map className="w-4 h-4 md:w-6 md:h-6 text-white" />
                       </div>
                     </div>
                     <div className="relative z-10">
-                      <h3 className="text-4xl font-bold text-white mb-0.5">
+                      <h3 className="text-lg md:text-4xl font-bold text-white mb-0.5">
                         {selectedFarm
                           ? parseFloat(selectedFarm.area) > 0
                             ? selectedFarm.area
                             : selectedFarm.fields?.reduce(
-                              (acc: number, f: any) =>
-                                acc + (parseFloat(f.area) || 0),
-                              0
-                            ) || '0'
+                                (acc: number, f: any) =>
+                                  acc + (parseFloat(f.area) || 0),
+                                0
+                              ) || '0'
                           : '0'}
                       </h3>
-                      <p className="text-xs font-bold text-white/60 uppercase tracking-wider">
+                      <p className="text-[9px] md:text-xs font-bold text-white/60 uppercase tracking-wider">
                         Total Land
                       </p>
                     </div>
                   </div>
 
                   {/* Cultivable */}
-                  <div className="bg-[#16a34a] rounded-2xl p-6 relative overflow-hidden group hover:shadow-xl transition-all">
-                    <div className="flex justify-between items-start mb-6 relative z-10">
-                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                        <Leaf size={24} className="text-white" />
+                  <div className="bg-[#16a34a] rounded-2xl p-3 md:p-6 relative overflow-hidden group hover:shadow-xl transition-all">
+                    <div className="flex justify-between items-start mb-2 md:mb-6 relative z-10">
+                      <div className="p-1.5 md:p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <Leaf className="w-4 h-4 md:w-6 md:h-6 text-white" />
                       </div>
                     </div>
                     <div className="relative z-10">
-                      <h3 className="text-4xl font-bold text-white mb-0.5">
+                      <h3 className="text-lg md:text-4xl font-bold text-white mb-0.5">
                         {selectedField ? selectedField.area : '0'}
                       </h3>
-                      <p className="text-xs font-bold text-white/60 uppercase tracking-wider">
+                      <p className="text-[9px] md:text-xs font-bold text-white/60 uppercase tracking-wider">
                         Cultivable
                       </p>
                     </div>
                   </div>
 
                   {/* Water Source */}
-                  <div className="bg-[#06b6d4] rounded-2xl p-6 relative overflow-hidden group hover:shadow-xl transition-all">
-                    <div className="flex justify-between items-start mb-6 relative z-10">
-                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                        <Droplets size={24} className="text-white" />
+                  <div className="bg-[#06b6d4] rounded-2xl p-3 md:p-6 relative overflow-hidden group hover:shadow-xl transition-all">
+                    <div className="flex justify-between items-start mb-2 md:mb-6 relative z-10">
+                      <div className="p-1.5 md:p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <Droplets className="w-4 h-4 md:w-6 md:h-6 text-white" />
                       </div>
                     </div>
                     <div className="relative z-10">
-                      <h3 className="text-xl font-bold text-white mb-0.5 capitalize truncate">
+                      <h3 className="text-base md:text-xl font-bold text-white mb-0.5 capitalize leading-tight">
                         {selectedField && selectedField.irrigationMethod
                           ? selectedField.irrigationMethod
                           : 'No Source'}
                       </h3>
-                      <p className="text-xs font-bold text-white/60 uppercase tracking-wider">
+                      <p className="text-[9px] md:text-xs font-bold text-white/60 uppercase tracking-wider">
                         Water Source
                       </p>
                     </div>
@@ -456,10 +631,11 @@ const ProfileContent = () => {
                             </div>
                           </div>
                           <div
-                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${device.status === 'Active'
-                              ? 'bg-green-500/10 text-green-500'
-                              : 'bg-red-500/10 text-red-500'
-                              }`}
+                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              device.status === 'Active'
+                                ? 'bg-green-500/10 text-green-500'
+                                : 'bg-red-500/10 text-red-500'
+                            }`}
                           >
                             {device.status}
                           </div>
@@ -522,8 +698,8 @@ const ProfileContent = () => {
                             <p className="text-xs text-foreground mt-0.5">
                               {device.connectedAt
                                 ? new Date(
-                                  device.connectedAt
-                                ).toLocaleDateString()
+                                    device.connectedAt
+                                  ).toLocaleDateString()
                                 : 'Just now'}
                             </p>
                           </div>
@@ -613,7 +789,7 @@ const ProfileContent = () => {
                         </div>
                         <Switch
                           checked={isDarkMode}
-                          onCheckedChange={setIsDarkMode}
+                          onCheckedChange={handleDarkModeToggle}
                         />
                       </div>
                       <div className="w-full h-px bg-border/50"></div>
@@ -656,10 +832,25 @@ const ProfileContent = () => {
             </div>
           )}
 
-          {activeTab === 'Farmer Details' && <FarmerDetailsTab />}
-          {activeTab === 'Farm Details' && <FarmDetailsTab />}
-          {activeTab === 'Field Details' && <FieldDetailsTab />}
-          {activeTab === 'Crop Details' && <CropDetailsTab />}
+          {!registrationCompleted ? (
+            <div className="bg-card border border-border rounded-3xl p-8">
+              <RegistrationPlaceholder
+                title="No registration completed"
+                description={`Complete your registration to view and manage your ${activeTab === 'Profile' ? 'farm' : activeTab.toLowerCase().replace(' details', '')} details.`}
+                route="/register/farmer-details"
+                variant="button"
+                color="green"
+                className="w-full max-w-md mx-auto"
+              />
+            </div>
+          ) : (
+            <>
+              {activeTab === 'Farmer Details' && <FarmerDetailsTab />}
+              {activeTab === 'Farm Details' && <FarmDetailsTab />}
+              {activeTab === 'Field Details' && <FieldDetailsTab />}
+              {activeTab === 'Crop Details' && <CropDetailsTab />}
+            </>
+          )}
         </div>
       </div>
 
@@ -668,17 +859,58 @@ const ProfileContent = () => {
         onClose={() => setIsAddDeviceModalOpen(false)}
         onAdd={handleAddDevice}
       />
+
+      {/* Global Alert/Confirm Dialog */}
+      <AlertDialog
+        open={alertConfig.isOpen}
+        onOpenChange={(open) => {
+          if (!open) closeAlert();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertConfig.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertConfig.isConfirm ? (
+              <>
+                <AlertDialogCancel onClick={closeAlert}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={alertConfig.onConfirm}
+                  className={
+                    alertConfig.type === 'error'
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : ''
+                  }
+                >
+                  {alertConfig.confirmLabel || 'Confirm'}
+                </AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction
+                onClick={() => {
+                  if (alertConfig.onConfirm) alertConfig.onConfirm();
+                  closeAlert();
+                }}
+              >
+                Okay
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 };
 
-// Main Profile Component Wrapped in Provider
+// Main Profile Component (Wrapper) - Now just renders content as Provider is up a level
 const Profile = () => {
-  return (
-    <ProfileProvider>
-      <ProfileContent />
-    </ProfileProvider>
-  );
+  return <ProfileContent />;
 };
 
 export default Profile;

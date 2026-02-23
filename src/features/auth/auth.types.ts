@@ -67,10 +67,23 @@ export interface Field {
   units: string; // e.g., "acres"
   soilType?: string;
   irrigationMethod?: string;
-  boundary?: any; // GeoJSON
+  boundary?: {
+    type: string;
+    coordinates: number[][][];
+  }; // GeoJSON
   coordinates?: any; // Legacy/Frontend prop
-  soil?: any; // Backend prop
-  irrigation?: any; // Backend prop
+  soil?: {
+    type: string;
+    ph: number;
+    organicCarbon: number;
+    nitrogen: number;
+    phosphorus: number;
+    potassium: number;
+  };
+  irrigation?: {
+    type: string;
+    waterSource: string;
+  };
   crops: Crop[];
 }
 

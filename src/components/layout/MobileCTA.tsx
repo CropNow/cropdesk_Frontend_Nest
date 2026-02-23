@@ -26,6 +26,9 @@ const MobileCTA = () => {
         // Actually, user said "temporary registration data" in previous conversation, but here standard logout usually clears "user" and tokens.
         // Let's stick to what DesktopNavbar does:
         localStorage.removeItem('isAuthenticated');
+        // Clear device data to prevent state leakage to next user
+        localStorage.removeItem('connected_devices');
+        localStorage.removeItem('iot_device_data');
         setUser(null);
         navigate('/login');
         setIsMenuOpen(false);
