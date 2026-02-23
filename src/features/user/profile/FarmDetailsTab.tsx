@@ -481,6 +481,13 @@ const FarmDetailsTab = () => {
                   GPS Coordinates (Lat / Long)
                 </Label>
                 <div className="mb-4">
+                  {farmData.location?.latitude &&
+                    farmData.location?.longitude && (
+                      <div className="mb-2 px-3 py-2 bg-muted rounded-lg text-xs font-mono">
+                        {farmData.location.latitude},{' '}
+                        {farmData.location.longitude}
+                      </div>
+                    )}
                   <LocationPicker
                     mode="point"
                     readOnly={false}

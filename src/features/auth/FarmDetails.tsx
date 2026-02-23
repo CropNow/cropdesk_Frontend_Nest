@@ -360,6 +360,11 @@ const FarmDetails = () => {
               Coordinates
             </Label>
             <div className="mb-2">
+              {farmData.location.latitude && farmData.location.longitude && (
+                <div className="mb-2 px-3 py-2 bg-white/10 rounded-lg text-xs font-mono text-white/80">
+                  {farmData.location.latitude}, {farmData.location.longitude}
+                </div>
+              )}
               <LocationPicker
                 mode="point"
                 value={
