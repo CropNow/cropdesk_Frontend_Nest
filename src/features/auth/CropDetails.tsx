@@ -6,6 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useAuth } from './useAuth';
 import { useProfile } from '@/features/user/profile/context/useProfile';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import fieldInfoBg from '@/features/auth/asset/field_info.png';
 
 const CropDetails = () => {
@@ -34,6 +43,21 @@ const CropDetails = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'info' | 'warning' | 'error';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const closeAlert = () =>
+    setAlertConfig((prev) => ({ ...prev, isOpen: false }));
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -71,9 +95,12 @@ const CropDetails = () => {
       const token = localStorage.getItem('accessToken');
       if (!token) {
         console.error('CRITICAL: No access token found in localStorage!');
-        alert(
-          'Authentication Error: No access token found. Please login again.'
-        );
+        setAlertConfig({
+          isOpen: true,
+          title: 'Authentication Error',
+          message: 'No access token found. Please login again.',
+          type: 'error',
+        });
         return false;
       }
       console.log('Access Token exists (length):', token.length);
@@ -88,8 +115,12 @@ const CropDetails = () => {
         console.error('Token validation failed:', authError);
         // If this read fails with 401, we know for sure token is bad
         if (authError.response?.status === 401) {
-          alert('Your session has expired. Please log in again.');
-          // force cleanup
+          setAlertConfig({
+            isOpen: true,
+            title: 'Session Expired',
+            message: 'Your session has expired. Please log in again.',
+            type: 'warning',
+          });
           localStorage.removeItem('accessToken');
           localStorage.removeItem('user');
           navigate('/login');
@@ -137,9 +168,13 @@ const CropDetails = () => {
       } catch (err: any) {
         console.error('Create Farmer Failed:', err);
         if (err.response?.status === 401) {
-          alert(
-            'Unauthorized: Cannot create farmer. Please ensure you are logged in correctly.'
-          );
+          setAlertConfig({
+            isOpen: true,
+            title: 'Unauthorized',
+            message:
+              'Cannot create farmer. Please ensure you are logged in correctly.',
+            type: 'error',
+          });
           return false;
         }
         throw new Error(
@@ -248,23 +283,36 @@ const CropDetails = () => {
 
           // Case 1: Standard LocationPicker Output { type: 'Polygon', points: [{lat, lng}, ...] }
           if (parsedCoords?.points && Array.isArray(parsedCoords.points)) {
-            const rings = parsedCoords.points.map((p: any) => [p.lng, p.lat]);
-            // Ensure closed loop for Polygon
-            const firstRing = rings[0];
-            const lastRing = rings[rings.length - 1];
+            const rings = parsedCoords.points
+              .map((p: any) => [p.lng, p.lat])
+              .filter(
+                (coord: any) =>
+                  Array.isArray(coord) &&
+                  coord.length === 2 &&
+                  typeof coord[0] === 'number' &&
+                  typeof coord[1] === 'number'
+              );
 
-            if (rings.length > 0 && firstRing && lastRing) {
+            if (rings.length < 3) {
+              console.warn(
+                'Invalid polygon coordinates - less than 3 valid points'
+              );
+            } else {
+              // Ensure closed loop for Polygon
+              const firstRing = rings[0];
+              const lastRing = rings[rings.length - 1];
+
               if (
                 firstRing[0] !== lastRing[0] ||
                 firstRing[1] !== lastRing[1]
               ) {
                 rings.push(firstRing);
               }
+              fieldPayload.boundary = {
+                type: 'Polygon',
+                coordinates: [rings],
+              };
             }
-            fieldPayload.boundary = {
-              type: 'Polygon',
-              coordinates: [rings],
-            };
           }
           // Case 2: Rectangle shape { type: 'Rectangle', bounds: {...} }
           else if (parsedCoords?.type === 'Rectangle' && parsedCoords?.bounds) {
@@ -375,7 +423,12 @@ const CropDetails = () => {
             'CRITICAL: Field ID missing from created field response! Cannot create crop.'
           );
           console.log('Field Object:', field);
-          alert('Field created but ID is missing. Crop creation skipped.');
+          setAlertConfig({
+            isOpen: true,
+            title: 'Warning',
+            message: 'Field created but ID is missing. Crop creation skipped.',
+            type: 'warning',
+          });
         } else {
           console.log('Using Field ID for Crop:', fieldId);
           const cropPayload = {
@@ -401,15 +454,23 @@ const CropDetails = () => {
                 cropErr.response.status,
                 cropErr.response.data
               );
-              alert(
-                `Crop creation failed: ${cropErr.response.data.message || cropErr.message}`
-              );
+              setAlertConfig({
+                isOpen: true,
+                title: 'Crop Creation Failed',
+                message: cropErr.response.data.message || cropErr.message,
+                type: 'error',
+              });
             } else {
-              alert(`Crop creation failed: ${cropErr.message}`);
+              setAlertConfig({
+                isOpen: true,
+                title: 'Crop Creation Failed',
+                message: cropErr.message,
+                type: 'error',
+              });
             }
-            // We do NOT rethrow here, so the user flow can complete (redirect to dashboard)
-            // even if crop fails. But the alert informs them.
           }
+          // We do NOT rethrow here, so the user flow can complete (redirect to dashboard)
+          // even if crop fails. But the alert informs them.
         }
       } else {
         console.log('Skipping Crop creation: No valid crop data found.');
@@ -451,16 +512,30 @@ const CropDetails = () => {
       console.error('Error Status:', error.response?.status);
 
       if (error.response?.status === 401) {
-        alert('Session Expired or Unauthorized. Please log in again.');
+        setAlertConfig({
+          isOpen: true,
+          title: 'Session Expired',
+          message: 'Session Expired or Unauthorized. Please log in again.',
+          type: 'warning',
+        });
       } else if (error.response?.data) {
-        // Show backend validation error
         const errorMsg =
           error.response.data.message ||
           error.response.data.error ||
           JSON.stringify(error.response.data);
-        alert(`Failed to save data: ${errorMsg}`);
+        setAlertConfig({
+          isOpen: true,
+          title: 'Save Failed',
+          message: `Failed to save data: ${errorMsg}`,
+          type: 'error',
+        });
       } else {
-        alert(`Failed to save data: ${error.message || 'Unknown error'}`);
+        setAlertConfig({
+          isOpen: true,
+          title: 'Save Failed',
+          message: `Failed to save data: ${error.message || 'Unknown error'}`,
+          type: 'error',
+        });
       }
       throw error; // Rethrow to stop navigation if needed
     }
@@ -614,6 +689,33 @@ const CropDetails = () => {
           </p>
         </form>
       </div>
+
+      <AlertDialog
+        open={alertConfig.isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAlertConfig((prev) => ({ ...prev, isOpen: false }));
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertConfig.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() =>
+                setAlertConfig((prev) => ({ ...prev, isOpen: false }))
+              }
+            >
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

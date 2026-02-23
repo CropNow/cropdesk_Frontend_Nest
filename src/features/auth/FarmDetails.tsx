@@ -7,6 +7,15 @@ import { FormTextarea } from '@/components/common/FormTextarea';
 import { FormDropdown } from '@/components/common/FormDropdown';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import fieldInfoBg from '@/features/auth/asset/field_info.png';
 
 interface FarmData {
@@ -72,6 +81,21 @@ const FarmDetails = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'info' | 'warning' | 'error';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const closeAlert = () =>
+    setAlertConfig((prev) => ({ ...prev, isOpen: false }));
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!farmData.farmName.trim())
@@ -121,7 +145,14 @@ const FarmDetails = () => {
 
   const handleGeolocation = (silent = false) => {
     if (!navigator.geolocation) {
-      if (!silent) alert('Geolocation is not supported by your browser.');
+      if (!silent) {
+        setAlertConfig({
+          isOpen: true,
+          title: 'Not Supported',
+          message: 'Geolocation is not supported by your browser.',
+          type: 'warning',
+        });
+      }
       return;
     }
 
@@ -160,7 +191,12 @@ const FarmDetails = () => {
             errorMessage = 'The request to get user location timed out.';
             break;
         }
-        alert(errorMessage);
+        setAlertConfig({
+          isOpen: true,
+          title: 'Location Error',
+          message: errorMessage,
+          type: 'warning',
+        });
       },
       options
     );
@@ -257,8 +293,7 @@ const FarmDetails = () => {
               onChange={(e) =>
                 setFarmData({ ...farmData, units: e.target.value })
               }
-              className="w-full px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
-              // No error handling logic shown for units but if needed add error prop
+              className="px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
               <option value="acres" className="bg-gray-800">
                 Acres
@@ -369,6 +404,33 @@ const FarmDetails = () => {
           </Button>
         </form>
       </div>
+
+      <AlertDialog
+        open={alertConfig.isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAlertConfig((prev) => ({ ...prev, isOpen: false }));
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertConfig.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() =>
+                setAlertConfig((prev) => ({ ...prev, isOpen: false }))
+              }
+            >
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
