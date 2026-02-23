@@ -114,9 +114,11 @@ const FarmDetailsTab = () => {
     const newErrors: Record<string, string> = {};
     if (!farmData.name.trim()) newErrors.name = 'Farm name is required';
     if (!farmData.area.toString().trim()) newErrors.area = 'Area is required';
-    if (!farmData.location.address.trim()) newErrors.address = 'Address is required';
+    if (!farmData.location.address.trim())
+      newErrors.address = 'Address is required';
     if (!farmData.location.city.trim()) newErrors.city = 'City is required';
-    if (!farmData.location.country.trim()) newErrors.country = 'Country is required';
+    if (!farmData.location.country.trim())
+      newErrors.country = 'Country is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -146,7 +148,8 @@ const FarmDetailsTab = () => {
     // Clear error for the changed field
     if (name.startsWith('location.')) {
       const errorKey = name.split('.')[1];
-      if (errorKey && errors[errorKey]) setErrors((prev) => ({ ...prev, [errorKey]: '' }));
+      if (errorKey && errors[errorKey])
+        setErrors((prev) => ({ ...prev, [errorKey]: '' }));
     } else if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -340,7 +343,10 @@ const FarmDetailsTab = () => {
                     name="name"
                     value={farmData.name || ''}
                     onChange={(e) => {
-                      setFarmData((prev) => ({ ...prev, name: e.target.value }));
+                      setFarmData((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }));
                       if (errors.name) setErrors({ ...errors, name: '' });
                     }}
                     className="w-full font-semibold px-4 py-3 text-sm"
@@ -376,7 +382,10 @@ const FarmDetailsTab = () => {
                         name="area"
                         value={farmData.area ? `${farmData.area}` : ''}
                         onChange={(e) => {
-                          setFarmData((prev) => ({ ...prev, area: e.target.value }));
+                          setFarmData((prev) => ({
+                            ...prev,
+                            area: e.target.value,
+                          }));
                           if (errors.area) setErrors({ ...errors, area: '' });
                         }}
                         placeholder="Area (e.g. 10)"
@@ -407,8 +416,15 @@ const FarmDetailsTab = () => {
                         name="location.address"
                         value={farmData.location?.address || ''}
                         onChange={(e) => {
-                          setFarmData((prev) => ({ ...prev, location: { ...prev.location, address: e.target.value } }));
-                          if (errors.address) setErrors({ ...errors, address: '' });
+                          setFarmData((prev) => ({
+                            ...prev,
+                            location: {
+                              ...prev.location,
+                              address: e.target.value,
+                            },
+                          }));
+                          if (errors.address)
+                            setErrors({ ...errors, address: '' });
                         }}
                         className="w-full font-semibold px-4 py-3 text-sm"
                         error={errors.address || ''}
@@ -424,7 +440,10 @@ const FarmDetailsTab = () => {
                       name="location.city"
                       value={farmData.location?.city || ''}
                       onChange={(e) => {
-                        setFarmData((prev) => ({ ...prev, location: { ...prev.location, city: e.target.value } }));
+                        setFarmData((prev) => ({
+                          ...prev,
+                          location: { ...prev.location, city: e.target.value },
+                        }));
                         if (errors.city) setErrors({ ...errors, city: '' });
                       }}
                       className="w-full font-semibold px-4 py-3 text-sm"
@@ -440,8 +459,15 @@ const FarmDetailsTab = () => {
                       name="location.country"
                       value={farmData.location?.country || ''}
                       onChange={(e) => {
-                        setFarmData((prev) => ({ ...prev, location: { ...prev.location, country: e.target.value } }));
-                        if (errors.country) setErrors({ ...errors, country: '' });
+                        setFarmData((prev) => ({
+                          ...prev,
+                          location: {
+                            ...prev.location,
+                            country: e.target.value,
+                          },
+                        }));
+                        if (errors.country)
+                          setErrors({ ...errors, country: '' });
                       }}
                       className="w-full font-semibold px-4 py-3 text-sm"
                       error={errors.country || ''}
@@ -460,7 +486,7 @@ const FarmDetailsTab = () => {
                     readOnly={false}
                     value={
                       farmData.location?.latitude &&
-                        farmData.location?.longitude
+                      farmData.location?.longitude
                         ? `${farmData.location.latitude}, ${farmData.location.longitude}`
                         : ''
                     }
@@ -472,6 +498,17 @@ const FarmDetailsTab = () => {
                           ...prev.location,
                           latitude: lat || '',
                           longitude: lng || '',
+                        },
+                      }));
+                    }}
+                    onLocationDataChange={(data) => {
+                      setFarmData((prev) => ({
+                        ...prev,
+                        location: {
+                          ...prev.location,
+                          address: data.address || prev.location.address || '',
+                          city: data.city || prev.location.city || '',
+                          country: data.country || prev.location.country || '',
                         },
                       }));
                     }}
