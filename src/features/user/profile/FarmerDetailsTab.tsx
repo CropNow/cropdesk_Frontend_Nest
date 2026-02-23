@@ -80,9 +80,12 @@ const FarmerDetailsTab = () => {
     if (!formData.name.trim()) newErrors.name = 'This field is not filled';
     if (!formData.phone.trim()) newErrors.phone = 'This field is not filled';
     if (!formData.email.trim()) newErrors.email = 'This field is not filled';
-    if (!formData.address.village.trim()) newErrors.village = 'This field is not filled';
-    if (!formData.address.district.trim()) newErrors.district = 'This field is not filled';
-    if (!formData.address.state.trim()) newErrors.state = 'This field is not filled';
+    if (!formData.address.village.trim())
+      newErrors.village = 'This field is not filled';
+    if (!formData.address.district.trim())
+      newErrors.district = 'This field is not filled';
+    if (!formData.address.state.trim())
+      newErrors.state = 'This field is not filled';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -199,8 +202,8 @@ const FarmerDetailsTab = () => {
               {/* Details Section */}
               <div className="space-y-2 text-foreground">
                 {formData.address.village ||
-                  formData.address.district ||
-                  formData.address.state ? (
+                formData.address.district ||
+                formData.address.state ? (
                   <p className="text-base">
                     {[
                       formData.address.village,
@@ -276,7 +279,10 @@ const FarmerDetailsTab = () => {
                     name="name"
                     value={formData.name || ''}
                     onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, name: e.target.value }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }));
                       if (errors.name) setErrors({ ...errors, name: '' });
                     }}
                     className="w-full font-semibold px-4 py-3 text-sm"
@@ -300,7 +306,10 @@ const FarmerDetailsTab = () => {
                       name="phone"
                       value={formData.phone || ''}
                       onChange={(e) => {
-                        setFormData((prev) => ({ ...prev, phone: e.target.value }));
+                        setFormData((prev) => ({
+                          ...prev,
+                          phone: e.target.value,
+                        }));
                         if (errors.phone) setErrors({ ...errors, phone: '' });
                       }}
                       className="w-full font-semibold px-4 py-3 text-sm"
@@ -373,7 +382,8 @@ const FarmerDetailsTab = () => {
                           district: e.target.value,
                         },
                       });
-                      if (errors.district) setErrors({ ...errors, district: '' });
+                      if (errors.district)
+                        setErrors({ ...errors, district: '' });
                     }}
                     className="w-full font-semibold px-4 py-3 text-sm"
                     error={errors.district || ''}

@@ -17,6 +17,7 @@ import { getCalendarStatus, DailyStatus } from './smart-info.api';
 
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/useAuth';
+import { useProfile } from '@/features/user/profile/context/useProfile';
 import { Button } from '@/components/ui/button';
 import { getLatestPrediction } from '../dashboard/ml.service';
 import { MLPrediction } from '@/types/ml.types';
@@ -24,58 +25,46 @@ import { RegistrationPlaceholder } from '@/components/common/RegistrationPlaceho
 
 const SmartInfo = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const {
+    selectedFarmer,
+    selectedFarm,
+    selectedField,
+    selectedCrop,
+    loading: profileLoading,
+  } = useProfile();
   const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
   const [calendarData, setCalendarData] = useState<DailyStatus[]>([]);
   const [mlPrediction, setMlPrediction] = useState<MLPrediction | null>(null);
 
-  const { user } = useAuth();
-
   React.useEffect(() => {
     const checkProfileStatus = async () => {
-      if (user) {
-        // Optimistic check (from session)
-        if (
-          (user.farmers && user.farmers.length > 0) ||
-          (user.farmerDetails && Object.keys(user.farmerDetails).length > 0)
-        ) {
-          setIsProfileComplete(true);
-          return;
-        }
-
-        // Deep check (from Backend)
-        try {
-          const { getAllFarmers } =
-            await import('@/features/auth/api/farmer.api');
-          const farmers = await getAllFarmers();
-
-          if (farmers && farmers.length > 0) {
-            const myFarmer = farmers.find((f: any) => {
-              const fUserId =
-                f.userId && typeof f.userId === 'object'
-                  ? f.userId._id
-                  : f.userId;
-              return (
-                String(fUserId) === String(user.id) ||
-                String(f.farmerUserId) === String(user.id)
-              );
-            });
-
-            if (myFarmer) {
-              setIsProfileComplete(true);
-            }
-          }
-        } catch (e) {
-          console.error('SmartInfo: Failed to verify profile status', e);
-        }
+      if (user && !profileLoading) {
+        const isComplete = !!(
+          selectedFarmer &&
+          selectedFarm &&
+          selectedField &&
+          selectedCrop
+        );
+        setIsProfileComplete(isComplete);
       }
     };
     checkProfileStatus();
-  }, [user]);
+  }, [
+    user,
+    selectedFarmer,
+    selectedFarm,
+    selectedField,
+    selectedCrop,
+    profileLoading,
+  ]);
 
   // Fetch Calendar Data when month changes
   useEffect(() => {
+    if (!isProfileComplete) return;
+
     const fetchCalendarData = async () => {
       try {
         const data = await getCalendarStatus(
@@ -88,7 +77,7 @@ const SmartInfo = () => {
       }
     };
     fetchCalendarData();
-  }, [currentDate]);
+  }, [currentDate, isProfileComplete]);
 
   // Check for device/profile completeness
   const [hasDevices, setHasDevices] = useState(false);
@@ -178,58 +167,57 @@ const SmartInfo = () => {
 
   // Fetch ML Prediction
   useEffect(() => {
+    if (!isProfileComplete || !user || !user.id) return;
+
     const fetchML = async () => {
-      if (user && user.id) {
-        try {
-          // 1. Try to get latest from DB
-          const pred = await getLatestPrediction(user.id);
+      try {
+        // 1. Try to get latest from DB
+        const pred = await getLatestPrediction(user.id);
 
-          // 2. If we have real IoT data and the DB prediction is mock/missing/old,
-          //    run a fresh analysis against the external ML Model.
-          if (realIotData && (!pred || pred._id?.startsWith('pred_mock'))) {
-            console.log('Fetching fresh analysis from ML Model...');
-            const { analyzeCropHealth } =
-              await import('../dashboard/ml.service');
+        // 2. If we have real IoT data and the DB prediction is mock/missing/old,
+        //    run a fresh analysis against the external ML Model.
+        if (realIotData && (!pred || pred._id?.startsWith('pred_mock'))) {
+          console.log('Fetching fresh analysis from ML Model...');
+          const { analyzeCropHealth } = await import('../dashboard/ml.service');
 
-            // Let's construct a cleaner payload
-            const analysisPayload = {
-              soilTemperature: soilTemp,
-              soilMoisture: soilMoisture,
-              windSpeed: windSpeed,
-              // Add others if available or let them default
-              temperature: getSensorValue('weather', 'Temperature'),
-              humidity: getSensorValue('weather', 'Humidity'),
-              rainfall: getSensorValue('weather', 'Rain'),
-              pm2_5: getSensorValue('air', 'PM 2.5'),
-              pm10: getSensorValue('air', 'PM 10'),
-              co2: getSensorValue('air', 'CO2'),
-              lightIntensity: getSensorValue('light', 'Light'),
-              solarRadiation: getSensorValue('light', 'Radiation'),
-            };
+          // Let's construct a cleaner payload
+          const analysisPayload = {
+            soilTemperature: soilTemp,
+            soilMoisture: soilMoisture,
+            windSpeed: windSpeed,
+            // Add others if available or let them default
+            temperature: getSensorValue('weather', 'Temperature'),
+            humidity: getSensorValue('weather', 'Humidity'),
+            rainfall: getSensorValue('weather', 'Rain'),
+            pm2_5: getSensorValue('air', 'PM 2.5'),
+            pm10: getSensorValue('air', 'PM 10'),
+            co2: getSensorValue('air', 'CO2'),
+            lightIntensity: getSensorValue('light', 'Light'),
+            solarRadiation: getSensorValue('light', 'Radiation'),
+          };
 
-            const externalPred = await analyzeCropHealth(
-              analysisPayload,
-              user.id
-            );
+          const externalPred = await analyzeCropHealth(
+            analysisPayload,
+            user.id
+          );
 
-            setMlPrediction(externalPred);
-            return;
-          }
-
-          // Only set if different to avoid loops if objects are new refs
-          setMlPrediction((prev) => {
-            if (prev?._id === pred?._id) return prev;
-            return pred;
-          });
-        } catch (e) {
-          console.error('Failed to fetch ML prediction', e);
+          setMlPrediction(externalPred);
+          return;
         }
+
+        // Only set if different to avoid loops if objects are new refs
+        setMlPrediction((prev) => {
+          if (prev?._id === pred?._id) return prev;
+          return pred;
+        });
+      } catch (e) {
+        console.error('Failed to fetch ML prediction', e);
       }
     };
-    if (user) {
+    if (user && isProfileComplete) {
       fetchML();
     }
-  }, [user, realIotData]); // Added realIotData dependency
+  }, [user, realIotData, isProfileComplete]); // Added realIotData dependency
 
   // Metric Data - Zeroed if no data
   const metrics = React.useMemo(
@@ -447,7 +435,7 @@ const SmartInfo = () => {
 
   if (!isProfileComplete) {
     return (
-      <main className="min-h-screen bg-background text-foreground pb-20 pt-20 lg:pt-8 p-4 lg:p-8 font-sans flex items-center justify-center">
+      <main className="min-h-screen bg-background text-foreground pb-20 pt-20 lg:pt-8 p-4 lg:p-8 font-sans flex items-center justify-center overflow-hidden">
         <RegistrationPlaceholder
           title="Smart Information Unavailable"
           description="Please complete your profile to access smart insights and alerts."
@@ -461,7 +449,7 @@ const SmartInfo = () => {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground pb-20 pt-20 lg:pt-8 p-4 lg:p-8 font-sans">
+    <main className="min-h-screen bg-background text-foreground pb-20 pt-20 lg:pt-8 p-4 lg:p-8 font-sans overflow-hidden">
       <div
         className={`max-w-[1600px] mx-auto ${!hasDevices ? 'cursor-pointer relative' : ''}`}
         onClick={handleNoDeviceClick}

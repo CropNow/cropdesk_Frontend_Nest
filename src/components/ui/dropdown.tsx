@@ -7,10 +7,10 @@ const Dropdown = React.forwardRef<
   React.SelectHTMLAttributes<HTMLSelectElement> & { hideArrow?: boolean }
 >(({ className, children, hideArrow, ...props }, ref) => {
   return (
-    <div className="relative w-full">
+    <div className="relative inline-block w-auto">
       <select
         className={cn(
-          'flex h-11 w-full appearance-none items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-lg font-medium shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+          'flex h-9 appearance-none items-center justify-between rounded-md border border-input bg-white px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus-visible:ring-[3px] focus-visible:border-ring focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
           className
         )}
         ref={ref}

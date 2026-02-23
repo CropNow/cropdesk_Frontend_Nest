@@ -172,4 +172,18 @@ input::-ms-clear {
   .warning {
     @apply border-yellow-300 bg-yellow-50 text-yellow-800 shadow-md rounded-xl;
   }
+
+  select option {
+    background-color: white !important;
+    color: black !important;
+  }
+
+  select {
+    color: white !important;
+  }
+
+  select option:checked {
+    background-color: black !important;
+    color: white !important;
+  }
 }

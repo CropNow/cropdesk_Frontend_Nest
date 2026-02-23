@@ -31,10 +31,35 @@ const Dashboard = () => {
   const [activeCropsCount, setActiveCropsCount] = React.useState(0);
 
   // Access Profile Context for shared state
-  const { selectedFarm, loading: profileLoading } = useProfile();
+  const {
+    selectedFarmer,
+    selectedFarm,
+    selectedField,
+    selectedCrop,
+    loading: profileLoading,
+  } = useProfile();
 
   // useAuth provides the reactive user state and loading status
   const { user, loading } = useAuth();
+
+  // Check profile completion from context
+  React.useEffect(() => {
+    if (!profileLoading) {
+      const isComplete = !!(
+        selectedFarmer &&
+        selectedFarm &&
+        selectedField &&
+        selectedCrop
+      );
+      setIsProfileComplete(isComplete);
+    }
+  }, [
+    selectedFarmer,
+    selectedFarm,
+    selectedField,
+    selectedCrop,
+    profileLoading,
+  ]);
 
   useEffect(() => {
     // If we are still loading authentication state, do not attempt to fetch yet.
@@ -124,6 +149,9 @@ const Dashboard = () => {
               const firstFarm = farms[0];
               if (!firstFarm) return; // Safety check
               const farmId = firstFarm.id || (firstFarm as any)._id; // Handle _id vs id
+
+              // Store farms in localStorage for ML service to access
+              localStorage.setItem('farms', JSON.stringify(farms));
 
               if (farmId) {
                 const { getFarmStatistics } =
