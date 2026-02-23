@@ -27,6 +27,7 @@ interface FarmData {
   location: {
     address: string;
     city: string;
+    state: string;
     country: string;
     latitude: string;
     longitude: string;
@@ -72,6 +73,7 @@ const FarmDetails = () => {
       location: {
         address: '',
         city: '',
+        state: '',
         country: '',
         latitude: '',
         longitude: '',
@@ -381,12 +383,14 @@ const FarmDetails = () => {
                   });
                 }}
                 onLocationDataChange={(data) => {
-                  // Auto-fill city and country from reverse geocoding
+                  // Auto-fill address, city, state and country from reverse geocoding
                   setFarmData((prev) => ({
                     ...prev,
                     location: {
                       ...prev.location,
+                      address: data.address || prev.location.address || '',
                       city: data.city || prev.location.city || '',
+                      state: data.state || prev.location.state || '',
                       country: data.country || prev.location.country || '',
                     },
                   }));

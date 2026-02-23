@@ -1,46 +1,57 @@
-/// <reference types="google.maps" />
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useMemo,
-} from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  GoogleMap,
-  useJsApiLoader,
+  MapContainer,
+  TileLayer,
   Marker,
   Polygon,
-  DrawingManager,
-  Circle,
   Rectangle,
-} from '@react-google-maps/api';
+  Circle,
+  useMap,
+  useMapEvents,
+} from 'react-leaflet';
+import { LeafletMouseEvent } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import 'leaflet-draw/dist/leaflet.draw.css';
+import { FeatureGroup } from 'react-leaflet';
+import { EditControl } from 'react-leaflet-draw';
+import L from 'leaflet';
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyAv4C8ghcCodw5X525A-BzfPMWmRkOjVek';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-const libraries: ('drawing' | 'geometry' | 'places')[] = [
-  'drawing',
-  'geometry',
-  'places',
-];
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
-declare global {
-  interface Window {
-    google: typeof google;
-  }
-}
+const TILE_LAYERS = {
+  normal: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '',
+  },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '',
+  },
+};
 
 interface LocationPickerProps {
   mode: 'point' | 'polygon';
-  value: any; // string "lat,lng" OR stringified JSON for shapes
+  value: any;
   onChange: (value: any) => void;
-  height?: string | undefined;
-  readOnly?: boolean | undefined;
-  center?: [number, number] | undefined; // [lat, lng]
+  height?: string;
+  readOnly?: boolean;
+  center?: [number, number] | undefined;
   onAreaCalculated?: ((sqFt: number) => void) | undefined;
-  onLocationDataChange?:
-    | ((data: { city?: string; state?: string; country?: string }) => void)
-    | undefined;
+  onLocationDataChange?: (data: {
+    address?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+  }) => void;
 }
 
 const LocationPicker: React.FC<LocationPickerProps> = ({
@@ -49,160 +60,144 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   onChange,
   height = '400px',
   readOnly = false,
-  center: defaultCenter,
+  center,
   onAreaCalculated,
   onLocationDataChange,
 }) => {
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries,
-  });
-
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [markerPosition, setMarkerPosition] =
-    useState<google.maps.LatLngLiteral | null>(null);
-
-  // Polygon/Shape State
-  const [shapePath, setShapePath] = useState<google.maps.LatLngLiteral[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [mapView, setMapView] = useState<'normal' | 'satellite'>('normal');
+  const [mapCenter, setMapCenter] = useState<[number, number]>(
+    center || [20.5937, 78.9629]
+  );
+  const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(
+    null
+  );
+  const [shapePath, setShapePath] = useState<[number, number][]>([]);
   const [shapeType, setShapeType] = useState<
     'Polygon' | 'Rectangle' | 'Circle' | null
   >(null);
-  const [circleCenter, setCircleCenter] =
-    useState<google.maps.LatLngLiteral | null>(null);
-  const [circleRadius, setCircleRadius] = useState<number>(0);
-  const [rectangleBounds, setRectangleBounds] =
-    useState<google.maps.LatLngBoundsLiteral | null>(null);
-
-  const drawingManagerRef = useRef<google.maps.drawing.DrawingManager | null>(
+  const [circleCenter, setCircleCenter] = useState<[number, number] | null>(
     null
   );
+  const [circleRadius, setCircleRadius] = useState<number>(0);
+  const [rectangleBounds, setRectangleBounds] = useState<
+    [[number, number], [number, number]] | null
+  >(null);
+  const featureGroupRef = useRef<L.FeatureGroup>(null);
+  const mapRef = useRef<L.Map>(null);
 
-  // Default center (India)
-  const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>({
-    lat: 20.5937,
-    lng: 78.9629,
-  });
+  const KARNATAKA_CENTER: [number, number] = [15.3173, 75.7139];
 
-  // 1. Sync Center Prop
   useEffect(() => {
-    if (defaultCenter) {
-      setMapCenter({ lat: defaultCenter[0], lng: defaultCenter[1] });
+    if (center && center[0] !== undefined && center[1] !== undefined) {
+      setMapCenter(center);
+    } else {
+      setMapCenter(KARNATAKA_CENTER);
     }
-  }, [defaultCenter]);
+  }, [center]);
 
-  // 2. Initialize from Value
   useEffect(() => {
-    if (!value || !isLoaded || !window.google) return;
+    if (!value) return;
 
     if (mode === 'point' && typeof value === 'string') {
       const parts = value.split(',').map((v) => parseFloat(v.trim()));
-      if (parts.length >= 2) {
-        const lat = parts[0];
-        const lng = parts[1];
-        if (
-          lat !== undefined &&
-          lng !== undefined &&
-          !isNaN(lat) &&
-          !isNaN(lng)
-        ) {
-          const pos = { lat, lng };
-          setMarkerPosition(pos);
-          setMapCenter(pos);
-        }
+      const lat = parts[0];
+      const lng = parts[1];
+      if (
+        parts.length >= 2 &&
+        lat !== undefined &&
+        lng !== undefined &&
+        !isNaN(lat) &&
+        !isNaN(lng)
+      ) {
+        const pos: [number, number] = [lat, lng];
+        setMarkerPosition(pos);
+        setMapCenter(pos);
       }
     } else if (mode === 'polygon') {
       try {
         const parsed = typeof value === 'string' ? JSON.parse(value) : value;
         if (parsed.type === 'Polygon' && parsed.points) {
-          // Points could be [{lat, lng}] or [[lat, lng]] (leaflet style)
-          // Standardize to [{lat, lng}]
-          let path: google.maps.LatLngLiteral[] = [];
+          let path: [number, number][] = [];
           if (Array.isArray(parsed.points) && parsed.points.length > 0) {
             if (Array.isArray(parsed.points[0])) {
-              // [[lat, lng]]
-              path = parsed.points.map((p: any) => ({ lat: p[0], lng: p[1] }));
+              path = parsed.points.map((p: any) => [p[0], p[1]]);
             } else if ('lat' in parsed.points[0]) {
-              // [{lat, lng}]
-              path = parsed.points;
+              path = parsed.points.map((p: any) => [p.lat, p.lng]);
             }
           }
           setShapeType('Polygon');
           setShapePath(path);
-          const firstPoint = path[0];
-          if (path.length > 0 && firstPoint) setMapCenter(firstPoint);
-        } else if (parsed.type === 'Circle') {
+          if (path.length > 0 && path[0]) setMapCenter(path[0]);
+        } else if (parsed.type === 'Circle' && parsed.center) {
           setShapeType('Circle');
-          setCircleCenter(parsed.center);
+          setCircleCenter([parsed.center.lat, parsed.center.lng]);
           setCircleRadius(parsed.radius);
-          setMapCenter(parsed.center);
+          setMapCenter([parsed.center.lat, parsed.center.lng]);
         } else if (parsed.type === 'Rectangle') {
-          // Check if bounds provided or points
-          if (parsed.bounds) {
-            setRectangleBounds(parsed.bounds);
-          } else if (parsed.points && parsed.points.length === 2) {
-            // Reconstruct bounds from corners if stored that way
-            const bounds = new window.google.maps.LatLngBounds(
-              parsed.points[0],
-              parsed.points[1]
-            );
-            setRectangleBounds(bounds.toJSON());
-          }
           setShapeType('Rectangle');
+          if (parsed.bounds) {
+            setRectangleBounds([
+              [parsed.bounds.south, parsed.bounds.west],
+              [parsed.bounds.north, parsed.bounds.east],
+            ]);
+          } else if (parsed.points && parsed.points.length === 2) {
+            setRectangleBounds([
+              [parsed.points[0].lat, parsed.points[0].lng],
+              [parsed.points[1].lat, parsed.points[1].lng],
+            ]);
+          }
         }
       } catch (e) {
         console.warn('Failed to parse polygon value', e);
       }
     }
-  }, [value, mode, isLoaded]);
+  }, [value, mode]);
 
-  const onLoad = useCallback((mapInstance: google.maps.Map) => {
-    setMap(mapInstance);
-  }, []);
-
-  const onUnmount = useCallback(() => {
-    setMap(null);
-  }, []);
-
-  // Reverse Geocoding: Convert coordinates to city, state, country
   const reverseGeocode = useCallback(
     async (lat: number, lng: number) => {
-      if (!window.google || !onLocationDataChange) return;
-
-      const geocoder = new window.google.maps.Geocoder();
-      const latlng = { lat, lng };
+      if (!onLocationDataChange) return;
 
       try {
-        const response = await geocoder.geocode({ location: latlng });
-        if (response.results[0]) {
-          const addressComponents = response.results[0].address_components;
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+        );
+        const data = await response.json();
 
-          // Extract city (locality or administrative_area_level_2)
-          const city = addressComponents.find(
-            (c) =>
-              c.types.includes('locality') ||
-              c.types.includes('administrative_area_level_2')
-          )?.long_name;
-
-          // Extract state (administrative_area_level_1)
-          const state = addressComponents.find((c) =>
-            c.types.includes('administrative_area_level_1')
-          )?.long_name;
-
-          // Extract country
-          const country = addressComponents.find((c) =>
-            c.types.includes('country')
-          )?.long_name;
-
-          // Only pass defined values
+        if (data.address) {
           const locationData: {
+            address?: string;
             city?: string;
             state?: string;
             country?: string;
           } = {};
-          if (city) locationData.city = city;
-          if (state) locationData.state = state;
-          if (country) locationData.country = country;
 
+          // Build address from available components
+          const addressParts = [];
+          if (data.address.road) addressParts.push(data.address.road);
+          if (data.address.neighbourhood)
+            addressParts.push(data.address.neighbourhood);
+          if (data.address.city || data.address.town || data.address.village) {
+            addressParts.push(
+              data.address.city || data.address.town || data.address.village
+            );
+          }
+          if (data.address.county) addressParts.push(data.address.county);
+
+          if (addressParts.length > 0) {
+            locationData.address = addressParts.join(', ');
+          }
+
+          if (data.address.city || data.address.town || data.address.village) {
+            locationData.city =
+              data.address.city || data.address.town || data.address.village;
+          }
+          if (data.address.state) {
+            locationData.state = data.address.state;
+          }
+          if (data.address.country) {
+            locationData.country = data.address.country;
+          }
           onLocationDataChange(locationData);
         }
       } catch (error) {
@@ -212,93 +207,127 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     [onLocationDataChange]
   );
 
-  // Point Mode: Handle Map Click
-  const handleMapClick = (e: google.maps.MapMouseEvent) => {
-    if (readOnly || mode !== 'point' || !e.latLng) return;
+  const handleMapClick = useCallback(
+    (e: LeafletMouseEvent) => {
+      if (readOnly || mode !== 'point') return;
 
-    const lat = e.latLng.lat();
-    const lng = e.latLng.lng();
-    setMarkerPosition({ lat, lng });
-    onChange(`${lat}, ${lng}`);
+      const { lat, lng } = e.latlng;
+      setMarkerPosition([lat, lng]);
+      onChange(`${lat}, ${lng}`);
+      reverseGeocode(lat, lng);
+    },
+    [readOnly, mode, onChange, reverseGeocode]
+  );
 
-    // Trigger reverse geocoding
-    reverseGeocode(lat, lng);
+  const calculateGeodesicArea = (latLngs: L.LatLng[]): number => {
+    const earthRadius = 6378137;
+    let area = 0;
+    const coords = latLngs.map((ll): [number, number] => {
+      const lat = ll.lat;
+      const lng = ll.lng;
+      return [(lat * Math.PI) / 180, (lng * Math.PI) / 180];
+    });
+
+    for (let i = 0; i < coords.length; i++) {
+      const j = (i + 1) % coords.length;
+      const coordI = coords[i];
+      const coordJ = coords[j];
+
+      if (coordI && coordJ) {
+        const x1 = coordI[0];
+        const y1 = coordI[1];
+        const x2 = coordJ[0];
+        const y2 = coordJ[1];
+
+        if (
+          x1 !== undefined &&
+          x2 !== undefined &&
+          y1 !== undefined &&
+          y2 !== undefined
+        ) {
+          area += (y2 - y1) * (2 + Math.sin(x1) + Math.sin(x2));
+        }
+      }
+    }
+
+    area = Math.abs((area * earthRadius * earthRadius) / 2.0);
+    return area;
   };
 
-  // Polygon Mode: Handle Drawing Complete
-  const onOverlayComplete = (e: google.maps.drawing.OverlayCompleteEvent) => {
-    const overlay = e.overlay;
-    // Clear existing shape drawing manually if needed (to allow only one shape?)
-    // For now, let's assume one shape per field.
-    // We should ideally remove the overlay from map to avoid duplicates visually
-    // since we will render it via state (Polygon/Circle component).
-    overlay?.setMap(null);
+  const handleCreated = useCallback(
+    (e: any) => {
+      const layer = e.layer as L.Layer;
+      const featureGroup = featureGroupRef.current;
+      if (!featureGroup) return;
 
-    // Guard against missing window.google just in case
-    if (!window.google) return;
+      featureGroup.clearLayers();
+      featureGroup.addLayer(layer);
 
-    if (e.type === window.google.maps.drawing.OverlayType.POLYGON) {
-      const poly = overlay as google.maps.Polygon;
-      const path = poly
-        .getPath()
-        .getArray()
-        .map((p) => ({ lat: p.lat(), lng: p.lng() }));
-      setShapeType('Polygon');
-      setShapePath(path);
+      const layerType = e.layerType;
 
-      onChange(JSON.stringify({ type: 'Polygon', points: path }));
+      if (layerType === 'polygon') {
+        const polygon = layer as L.Polygon;
+        const latLngs = polygon.getLatLngs()[0] as L.LatLng[];
+        const path = latLngs.map((ll) => [ll.lat, ll.lng] as [number, number]);
+        setShapeType('Polygon');
+        setShapePath(path);
+        onChange(JSON.stringify({ type: 'Polygon', points: path }));
 
-      if (onAreaCalculated) {
-        const areaSqM = window.google.maps.geometry.spherical.computeArea(
-          poly.getPath()
-        );
-        onAreaCalculated(areaSqM * 10.7639); // Convert to SqFt
-      }
-    } else if (e.type === window.google.maps.drawing.OverlayType.RECTANGLE) {
-      const rect = overlay as google.maps.Rectangle;
-      const bounds = rect.getBounds();
-      if (bounds) {
+        if (onAreaCalculated) {
+          const areaSqM = calculateGeodesicArea(latLngs);
+          onAreaCalculated(areaSqM * 10.7639);
+        }
+      } else if (layerType === 'rectangle') {
+        const rectangle = layer as L.Rectangle;
+        const bounds = rectangle.getBounds();
         const ne = bounds.getNorthEast();
         const sw = bounds.getSouthWest();
+
+        setRectangleBounds([
+          [sw.lat, sw.lng],
+          [ne.lat, ne.lng],
+        ]);
         setShapeType('Rectangle');
-        setRectangleBounds(bounds.toJSON());
 
         onChange(
           JSON.stringify({
             type: 'Rectangle',
-            bounds: bounds.toJSON(),
+            bounds: {
+              north: ne.lat,
+              east: ne.lng,
+              south: sw.lat,
+              west: sw.lng,
+            },
             points: [
-              { lat: sw.lat(), lng: sw.lng() },
-              { lat: ne.lat(), lng: ne.lng() },
+              { lat: sw.lat, lng: sw.lng },
+              { lat: ne.lat, lng: ne.lng },
             ],
           })
         );
 
         if (onAreaCalculated) {
-          // Approximate area
-          const areaSqM = window.google.maps.geometry.spherical.computeArea([
-            sw,
-            new window.google.maps.LatLng(sw.lat(), ne.lng()),
-            ne,
-            new window.google.maps.LatLng(ne.lat(), sw.lng()),
-          ]);
+          const latLngs: L.LatLng[] = [
+            L.latLng(sw.lat, sw.lng),
+            L.latLng(sw.lat, ne.lng),
+            L.latLng(ne.lat, ne.lng),
+            L.latLng(ne.lat, sw.lng),
+          ];
+          const areaSqM = calculateGeodesicArea(latLngs);
           onAreaCalculated(areaSqM * 10.7639);
         }
-      }
-    } else if (e.type === window.google.maps.drawing.OverlayType.CIRCLE) {
-      const circ = overlay as google.maps.Circle;
-      const center = circ.getCenter();
-      const radius = circ.getRadius();
+      } else if (layerType === 'circle') {
+        const circle = layer as L.Circle;
+        const center = circle.getLatLng();
+        const radius = circle.getRadius();
 
-      if (center) {
-        setShapeType('Circle');
-        setCircleCenter({ lat: center.lat(), lng: center.lng() });
+        setCircleCenter([center.lat, center.lng]);
         setCircleRadius(radius);
+        setShapeType('Circle');
 
         onChange(
           JSON.stringify({
             type: 'Circle',
-            center: { lat: center.lat(), lng: center.lng() },
+            center: { lat: center.lat, lng: center.lng },
             radius,
           })
         );
@@ -308,162 +337,224 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           onAreaCalculated(areaSqM * 10.7639);
         }
       }
-    }
-  };
+    },
+    [onChange, onAreaCalculated]
+  );
 
   const handleUserLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((pos) => {
         const { latitude, longitude } = pos.coords;
-        const userPos = { lat: latitude, lng: longitude };
-        setMapCenter(userPos);
-        map?.panTo(userPos);
-        map?.setZoom(18); // Zoom in close for field marking
+        setMapCenter([latitude, longitude]);
+
+        if (mapRef.current) {
+          mapRef.current.setView([latitude, longitude], 15);
+        }
 
         if (mode === 'point' && !readOnly) {
-          setMarkerPosition(userPos);
+          setMarkerPosition([latitude, longitude]);
           onChange(`${latitude}, ${longitude}`);
-
-          // Trigger reverse geocoding
-          reverseGeocode(latitude, longitude);
         }
+
+        reverseGeocode(latitude, longitude);
       });
     }
   };
 
-  // Drawing Manager Options (must be defined outside of conditional rendering)
-  const drawingManagerOptions = useMemo(() => {
-    if (!isLoaded || !window.google) return null;
-    return {
-      drawingControl: true,
-      drawingControlOptions: {
-        position: window.google.maps.ControlPosition.TOP_CENTER,
-        drawingModes: [
-          window.google.maps.drawing.OverlayType.POLYGON,
-          window.google.maps.drawing.OverlayType.RECTANGLE,
-          window.google.maps.drawing.OverlayType.CIRCLE,
-        ],
-      },
-      polygonOptions: {
-        fillColor: '#2196F3',
-        fillOpacity: 0.4,
-        strokeWeight: 2,
-        clickable: true,
-        editable: true,
-        zIndex: 1,
-      },
-    };
-  }, [isLoaded]);
+  useEffect(() => {
+    if (mapRef.current) {
+      setTimeout(() => {
+        mapRef.current?.invalidateSize();
+      }, 150);
+    }
+  }, [isExpanded]);
 
-  if (loadError) {
-    return (
-      <div className="text-red-500 p-4 border border-red-500 rounded">
-        Error loading maps
-      </div>
-    );
-  }
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
 
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center bg-muted h-full w-full rounded-lg">
-        Loading Maps...
-      </div>
-    );
-  }
+  const getZoomLevel = () => {
+    if (center) return 14;
+    return 10;
+  };
+
+  const currentZoom = getZoomLevel();
+
+  const containerStyle = isExpanded
+    ? {
+        position: 'fixed' as const,
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        height: '80vh',
+        width: '90vw',
+        maxWidth: '1000px',
+        maxHeight: '700px',
+        zIndex: 9999,
+        background: '#000',
+        borderRadius: '12px',
+        overflow: 'hidden',
+      }
+    : {
+        height,
+      };
+
+  const mapContainerStyle = isExpanded
+    ? {
+        width: '100%',
+        height: '100%',
+        borderRadius: '12px',
+      }
+    : {
+        width: '100%',
+        height: '100%',
+      };
 
   return (
     <div
       className="relative rounded-lg overflow-hidden border border-white/20"
-      style={{ height }}
+      style={containerStyle}
     >
-      <GoogleMap
-        mapContainerStyle={{ width: '100%', height: '100%' }}
-        center={mapCenter}
-        zoom={defaultCenter ? 18 : 10}
-        onLoad={onLoad}
-        onUnmount={onUnmount}
-        onClick={handleMapClick}
-        options={{
-          mapTypeId: 'hybrid', // Best for farming (Satellite + Labels)
-          streetViewControl: false,
-          fullscreenControl: true,
-          mapTypeControl: true,
-        }}
-      >
-        {/* Render Marker (Point Mode) */}
-        {mode === 'point' && markerPosition && (
-          <Marker position={markerPosition} />
-        )}
+      <div style={mapContainerStyle}>
+        <MapContainer
+          center={mapCenter}
+          zoom={currentZoom}
+          ref={mapRef}
+          style={{ width: '100%', height: '100%' }}
+          zoomControl={true}
+        >
+          <TileLayer
+            url={TILE_LAYERS[mapView].url}
+            attribution={TILE_LAYERS[mapView].attribution}
+          />
 
-        {/* Render Shapes (Polygon Mode) */}
-        {mode === 'polygon' && (
-          <>
-            {shapeType === 'Polygon' && shapePath.length > 0 && (
+          <MapEvents onClick={handleMapClick} />
+
+          {mode === 'point' && markerPosition && (
+            <Marker position={markerPosition} />
+          )}
+
+          {mode === 'polygon' && !readOnly && (
+            <FeatureGroup ref={featureGroupRef}>
+              <EditControl
+                position="topleft"
+                onCreated={handleCreated}
+                draw={{
+                  rectangle: true,
+                  polygon: true,
+                  circle: false,
+                  circlemarker: false,
+                  marker: false,
+                  polyline: false,
+                }}
+              />
+            </FeatureGroup>
+          )}
+
+          {mode === 'polygon' &&
+            shapeType === 'Polygon' &&
+            shapePath.length > 0 && (
               <Polygon
-                paths={shapePath}
-                options={{
+                positions={shapePath}
+                pathOptions={{
+                  color: '#2196F3',
                   fillColor: '#2196F3',
                   fillOpacity: 0.4,
-                  strokeColor: '#2196F3',
-                  strokeWeight: 2,
-                  editable: !readOnly, // Allow editing if not readOnly
-                  draggable: !readOnly,
                 }}
-                // Handle edits to update state? Requires events (onMouseUp, onDragEnd)
-                // For MVP, keep editing simple (re-draw) or just visualization
               />
             )}
-            {shapeType === 'Rectangle' && rectangleBounds && (
+
+          {mode === 'polygon' &&
+            shapeType === 'Rectangle' &&
+            rectangleBounds && (
               <Rectangle
                 bounds={rectangleBounds}
-                options={{
+                pathOptions={{
+                  color: '#2196F3',
                   fillColor: '#2196F3',
                   fillOpacity: 0.4,
-                  strokeColor: '#2196F3',
-                  strokeWeight: 2,
-                  editable: !readOnly,
-                  draggable: !readOnly,
-                }}
-              />
-            )}
-            {shapeType === 'Circle' && circleCenter && (
-              <Circle
-                center={circleCenter}
-                radius={circleRadius}
-                options={{
-                  fillColor: '#2196F3',
-                  fillOpacity: 0.4,
-                  strokeColor: '#2196F3',
-                  strokeWeight: 2,
-                  editable: !readOnly,
-                  draggable: !readOnly,
                 }}
               />
             )}
 
-            {/* Drawing Controls */}
-            {!readOnly && (
-              <DrawingManager
-                onLoad={(dm) => (drawingManagerRef.current = dm)}
-                onOverlayComplete={onOverlayComplete}
-                options={drawingManagerOptions as any}
-              />
-            )}
-          </>
-        )}
-      </GoogleMap>
+          {mode === 'polygon' && shapeType === 'Circle' && circleCenter && (
+            <Circle
+              center={circleCenter}
+              radius={circleRadius}
+              pathOptions={{
+                color: '#2196F3',
+                fillColor: '#2196F3',
+                fillOpacity: 0.4,
+              }}
+            />
+          )}
+        </MapContainer>
+      </div>
 
       {!readOnly && (
-        <button
-          type="button"
-          onClick={handleUserLocation}
-          className="absolute bottom-6 left-4 z-[50] bg-white text-black p-2 rounded shadow-lg text-xs font-bold flex items-center gap-1 hover:bg-gray-100"
-        >
-          📍 Use My Location
-        </button>
+        <>
+          {/* Expand/Collapse button - positioned below draw controls */}
+          <button
+            type="button"
+            onClick={toggleExpand}
+            className={`absolute top-4 right-4 z-[1000] bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 transition-colors ${isExpanded ? 'px-4 py-2' : 'p-1'} flex items-center gap-2`}
+            title={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            <span className={isExpanded ? 'text-lg' : 'text-sm'}>⛶</span>
+            {isExpanded && (
+              <span className="text-sm font-semibold">
+                {isExpanded ? 'Collapse' : 'Expand'}
+              </span>
+            )}
+          </button>
+
+          {/* Bottom left - Action buttons */}
+          <div
+            className={`absolute z-[1000] flex gap-2 ${isExpanded ? 'bottom-4 left-4' : 'bottom-6 left-4'}`}
+          >
+            <button
+              type="button"
+              onClick={handleUserLocation}
+              className={`bg-white text-black rounded-lg shadow-lg hover:bg-gray-100 transition-colors ${isExpanded ? 'px-4 py-2' : 'p-1'} flex items-center gap-2`}
+              title="Use My Location"
+            >
+              <span className={isExpanded ? 'text-xl' : 'text-base'}>📍</span>
+              {isExpanded && (
+                <span className="text-sm font-semibold">Use My Location</span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMapView(mapView === 'normal' ? 'satellite' : 'normal');
+              }}
+              className={`bg-white text-black rounded-lg shadow-lg hover:bg-gray-100 transition-colors ${isExpanded ? 'px-4 py-2' : 'p-1'} flex items-center gap-2`}
+              title={`Current: ${mapView === 'normal' ? 'Normal' : 'Satellite'}`}
+            >
+              <span className={isExpanded ? 'text-xl' : 'text-base'}>
+                {mapView === 'normal' ? '🗺️' : '🛰️'}
+              </span>
+              {isExpanded && (
+                <span className="text-sm font-semibold">
+                  {mapView === 'normal' ? 'Normal' : 'Satellite'}
+                </span>
+              )}
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
+};
+
+const MapEvents: React.FC<{ onClick: (e: LeafletMouseEvent) => void }> = ({
+  onClick,
+}) => {
+  useMapEvents({
+    click: onClick,
+  });
+  return null;
 };
 
 export default LocationPicker;
