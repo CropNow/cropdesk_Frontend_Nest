@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/useAuth';
 import { getLatestPrediction } from './ml.service';
 import { MLPrediction } from '@/types/ml.types';
-import { useTheme } from '@/hooks/useTheme';
 
 const AIInsights = ({
   showEmptyState = false,
@@ -14,8 +13,6 @@ const AIInsights = ({
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   // Fetch real IoT Data (shared with IOTDashboard)
   const [realIotData, setRealIotData] = React.useState<any>(null);
   const [prediction, setPrediction] = React.useState<MLPrediction | null>(null);
@@ -62,9 +59,9 @@ const AIInsights = ({
               const cat = realIotData.find((c: any) => c.id === catId);
               if (!cat) return '0';
               const sens = cat.details.find((d: any) =>
-                d.name.includes(sensorName)
+                d.name.toLowerCase().includes(sensorName.toLowerCase())
               );
-              return sens ? sens.value : '0';
+              return sens && sens.value ? sens.value : '0';
             };
 
             // Construct Payload
@@ -74,7 +71,7 @@ const AIInsights = ({
               windSpeed: getSensorValue('weather', 'Wind Speed'),
               temperature: getSensorValue('weather', 'Temperature'),
               humidity: getSensorValue('weather', 'Humidity'),
-              rainfall: getSensorValue('weather', 'Rain'),
+              rainfall: getSensorValue('weather', 'Rain Fall'),
               pm2_5: getSensorValue('air', 'PM 2.5'),
               pm10: getSensorValue('air', 'PM 10'),
               co2: getSensorValue('air', 'CO2'),
@@ -112,18 +109,14 @@ const AIInsights = ({
       onClick={handleInteraction}
       className={`flex flex-col gap-4 ${!hasData ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
     >
-      <div
-        className={`${isDark ? 'bg-[#0f0f0f]/90' : 'bg-white/90'} backdrop-blur-sm rounded-2xl p-5 ${isDark ? 'border border-white/5' : 'border border-black/5'}`}
-      >
+      <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-5 border border-border">
         {/* Header */}
         <div className="flex justify-between items-center mb-5">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-600/20 rounded-lg border border-blue-500/30">
               <Sparkles size={18} className="text-blue-400" />
             </div>
-            <h4
-              className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
-            >
+            <h4 className="text-base font-bold text-card-foreground">
               AI Insights
             </h4>
           </div>
@@ -131,17 +124,13 @@ const AIInsights = ({
 
         {/* Key Insights Section */}
         <div className="mb-5">
-          <h5
-            className={`text-[9px] font-bold uppercase tracking-wider mb-3 ml-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-          >
+          <h5 className="text-[9px] font-bold uppercase tracking-wider mb-3 ml-0.5 text-muted-foreground">
             KEY INSIGHTS
           </h5>
 
           <div className="space-y-2.5">
             {/* Irrigation */}
-            <div
-              className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${isDark ? 'bg-black/30 border-white/5 hover:border-white/10' : 'bg-gray-50 border-black/5 hover:border-black/10'}`}
-            >
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 border-border hover:border-primary/20 transition-colors">
               <div className="flex items-center gap-3 flex-1">
                 <div
                   className={`p-1.5 rounded-md ${hasData && prediction?.irrigation?.irrigation_required ? 'bg-orange-500/10' : 'bg-green-500/10'}`}
@@ -151,14 +140,10 @@ const AIInsights = ({
                   ></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div
-                    className={`text-xs font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                  >
+                  <div className="text-xs font-semibold mb-0.5 text-card-foreground">
                     Irrigation
                   </div>
-                  <div
-                    className={`text-[10px] truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                  >
+                  <div className="text-[10px] truncate text-muted-foreground">
                     {hasData && prediction?.irrigation
                       ? `Moisture: ${(prediction.irrigation.soil_moisture * 100).toFixed(0)}%, Water Req: ${prediction.irrigation.water_requirement_mm}mm`
                       : 'No data available'}
@@ -181,9 +166,7 @@ const AIInsights = ({
             </div>
 
             {/* Fungal */}
-            <div
-              className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${isDark ? 'bg-black/30 border-white/5 hover:border-white/10' : 'bg-gray-50 border-black/5 hover:border-black/10'}`}
-            >
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 border-border hover:border-primary/20 transition-colors">
               <div className="flex items-center gap-3 flex-1">
                 <div
                   className={`p-1.5 rounded-md ${hasData && prediction?.fungal_disease?.activity_level === 'HIGH' ? 'bg-red-500/10' : 'bg-green-500/10'}`}
@@ -193,14 +176,10 @@ const AIInsights = ({
                   ></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div
-                    className={`text-xs font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                  >
+                  <div className="text-xs font-semibold mb-0.5 text-card-foreground">
                     Fungal
                   </div>
-                  <div
-                    className={`text-[10px] truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                  >
+                  <div className="text-[10px] truncate text-muted-foreground">
                     {hasData && prediction?.fungal_disease
                       ? `Activity: ${prediction.fungal_disease.activity_level}, Risk: ${prediction.fungal_disease.risk_score}%`
                       : 'No data available'}
@@ -221,9 +200,7 @@ const AIInsights = ({
             </div>
 
             {/* Pest */}
-            <div
-              className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${isDark ? 'bg-black/30 border-white/5 hover:border-white/10' : 'bg-gray-50 border-black/5 hover:border-black/10'}`}
-            >
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 border-border hover:border-primary/20 transition-colors">
               <div className="flex items-center gap-3 flex-1">
                 <div
                   className={`p-1.5 rounded-md ${hasData && prediction?.pest?.pest_risk_level === 'HIGH' ? 'bg-red-500/10' : 'bg-green-500/10'}`}
@@ -233,14 +210,10 @@ const AIInsights = ({
                   ></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div
-                    className={`text-xs font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                  >
+                  <div className="text-xs font-semibold mb-0.5 text-card-foreground">
                     Pest
                   </div>
-                  <div
-                    className={`text-[10px] truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                  >
+                  <div className="text-[10px] truncate text-muted-foreground">
                     {hasData && prediction?.pest
                       ? `Risk Level: ${prediction.pest.pest_risk_level}, Score: ${prediction.pest.pest_risk_score}%`
                       : 'No data available'}
@@ -261,9 +234,7 @@ const AIInsights = ({
             </div>
 
             {/* AQI */}
-            <div
-              className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${isDark ? 'bg-black/30 border-white/5 hover:border-white/10' : 'bg-gray-50 border-black/5 hover:border-black/10'}`}
-            >
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 border-border hover:border-primary/20 transition-colors">
               <div className="flex items-center gap-3 flex-1">
                 <div
                   className={`p-1.5 rounded-md ${hasData && prediction?.aqi?.aqi_level === 'GOOD' ? 'bg-green-500/10' : 'bg-yellow-500/10'}`}
@@ -273,14 +244,10 @@ const AIInsights = ({
                   ></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div
-                    className={`text-xs font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                  >
+                  <div className="text-xs font-semibold mb-0.5 text-card-foreground">
                     AQI
                   </div>
-                  <div
-                    className={`text-[10px] truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                  >
+                  <div className="text-[10px] truncate text-muted-foreground">
                     {hasData && prediction?.aqi
                       ? `Level: ${prediction.aqi.aqi.toFixed(0)} (${prediction.aqi.dominant_pollutant})`
                       : 'No data available'}
@@ -303,9 +270,7 @@ const AIInsights = ({
         {/* Last Updated */}
         <div className="flex items-center gap-1.5 mb-5 ml-0.5">
           <div className="w-1 h-1 rounded-full bg-blue-400"></div>
-          <p
-            className={`text-[9px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-          >
+          <p className="text-[9px] text-muted-foreground">
             Last updated:{' '}
             {localStorage.getItem('last_iot_refresh')
               ? new Date(
@@ -318,50 +283,31 @@ const AIInsights = ({
         </div>
 
         {/* AI Farm Health Analysis Card */}
-        {/* AI Farm Health Analysis Card */}
         <div className="mb-5">
-          <h5
-            className={`text-[9px] font-bold tracking-wider mb-3 ml-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-          >
+          <h5 className="text-[9px] font-bold tracking-wider mb-3 ml-0.5 text-muted-foreground">
             AI Farm Health Analysis
           </h5>
-          <div
-            className={`rounded-xl p-4 relative overflow-hidden shadow-lg border transition-all ${isDark ? 'text-white' : 'text-gray-900'} ${
-              hasData && prediction?.farm_status
-                ? isDark
-                  ? 'bg-black/30 border-white/5'
-                  : 'bg-gray-100 border-black/5'
-                : isDark
-                  ? 'bg-zinc-900/50 border-white/5'
-                  : 'bg-gray-50 border-black/5'
-            }`}
-          >
+          <div className="rounded-xl p-4 relative overflow-hidden shadow-lg border bg-muted/30 transition-all text-card-foreground">
             <div className="relative z-10">
               <div className="flex flex-col gap-4">
                 {/* Score & Condition */}
                 <div>
-                  <h2
-                    className={`text-3xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                  >
+                  <h2 className="text-3xl font-bold mb-1 text-card-foreground">
                     {hasData && prediction?.farm_status
                       ? prediction.farm_status.farm_health_percentage
                       : '--'}
                     %{' '}
-                    <span
-                      className={`text-sm font-medium ${isDark ? 'opacity-80' : 'opacity-60'}`}
-                    >
+                    <span className="text-sm font-medium text-muted-foreground">
                       Score
                     </span>
                   </h2>
-                  <div
-                    className={`text-[11px] flex items-center gap-1.5 ${isDark ? 'opacity-90' : 'opacity-80'}`}
-                  >
+                  <div className="text-[11px] flex items-center gap-1.5 text-muted-foreground">
                     <span>Condition:</span>
                     <span
                       className={`font-bold uppercase ${
                         hasData && prediction?.farm_status
-                          ? ''
-                          : 'text-gray-500'
+                          ? 'text-primary'
+                          : 'text-muted-foreground'
                       }`}
                     >
                       {hasData && prediction?.farm_status
@@ -369,7 +315,7 @@ const AIInsights = ({
                         : 'Unknown'}
                     </span>
                     <span className="mx-1 opacity-50">•</span>
-                    <span className={isDark ? 'opacity-80' : 'opacity-60'}>
+                    <span className="text-muted-foreground">
                       Valid until{' '}
                       {hasData && prediction?.validUntil
                         ? new Date(prediction.validUntil).toLocaleDateString()
@@ -380,28 +326,14 @@ const AIInsights = ({
               </div>
             </div>
             {/* Background decoration */}
-            <div
-              className={`absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none ${
-                hasData && prediction?.farm_status
-                  ? isDark
-                    ? 'bg-white/5'
-                    : 'bg-blue-500/10'
-                  : isDark
-                    ? 'bg-gray-500/5'
-                    : 'bg-gray-400/10'
-              }`}
-            ></div>
+            <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none bg-primary/10"></div>
           </div>
         </div>
 
         {/* Chat with AI Assistant Button */}
         <button
           disabled
-          className={`w-full py-3 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-2 cursor-not-allowed border ${
-            isDark
-              ? 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'
-              : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
-          }`}
+          className="w-full py-3 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-2 cursor-not-allowed border bg-muted text-muted-foreground border-border hover:bg-muted/80"
         >
           <MessageSquare size={14} />
           Chat with AI Assistant (Coming Soon)
