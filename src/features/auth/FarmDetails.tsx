@@ -22,14 +22,16 @@ interface FarmData {
   farmName: string;
   description: string;
   area: string;
-  units: string;
+  unit: string;
   soilType: string;
+  irrigationType: string;
+  farmingType: string;
   location: {
     address: string;
     city: string;
+    state: string;
     country: string;
-    latitude: string;
-    longitude: string;
+    zipCode: string;
   };
 }
 
@@ -67,14 +69,16 @@ const FarmDetails = () => {
       farmName: '',
       description: '',
       area: '',
-      units: 'acres',
-      soilType: '',
+      unit: 'acres',
+      soilType: 'loamy',
+      irrigationType: 'drip',
+      farmingType: 'conventional',
       location: {
         address: '',
         city: '',
-        country: '',
-        latitude: '',
-        longitude: '',
+        state: '',
+        country: 'India',
+        zipCode: '',
       },
     };
   });
@@ -127,10 +131,7 @@ const FarmDetails = () => {
   }, [farmData]);
 
   useEffect(() => {
-    // Only run geo if no location data exists to avoid overwriting
-    if (!farmData.location.latitude && !farmData.location.longitude) {
-      handleGeolocation(true);
-    }
+    // Geolocation helper is removed from auto-mount since we focus on address now
   }, []);
 
   const handleLocationChange = (field: string, value: string) => {
@@ -143,64 +144,7 @@ const FarmDetails = () => {
     });
   };
 
-  const handleGeolocation = (silent = false) => {
-    if (!navigator.geolocation) {
-      if (!silent) {
-        setAlertConfig({
-          isOpen: true,
-          title: 'Not Supported',
-          message: 'Geolocation is not supported by your browser.',
-          type: 'warning',
-        });
-      }
-      return;
-    }
-
-    const options = {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
-    };
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setFarmData({
-          ...farmData,
-          location: {
-            ...farmData.location,
-            latitude: position.coords.latitude.toString(),
-            longitude: position.coords.longitude.toString(),
-          },
-        });
-      },
-      (error) => {
-        console.error('Error detecting location', error);
-        if (silent) return; // Don't alert if running in silent mode (e.g. on mount)
-
-        let errorMessage = 'Unable to retrieve your location.';
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage =
-              'Location permission denied. Please enable it in your browser settings.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage =
-              'Location information is unavailable. Please check your device settings.';
-            break;
-          case error.TIMEOUT:
-            errorMessage = 'The request to get user location timed out.';
-            break;
-        }
-        setAlertConfig({
-          isOpen: true,
-          title: 'Location Error',
-          message: errorMessage,
-          type: 'warning',
-        });
-      },
-      options
-    );
-  };
+  // handleGeolocation removed as it was used for coordinates which are no longer in schema.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -289,9 +233,9 @@ const FarmDetails = () => {
               />
             </div>
             <FormDropdown
-              value={farmData.units}
+              value={farmData.unit}
               onChange={(e) =>
-                setFarmData({ ...farmData, units: e.target.value })
+                setFarmData({ ...farmData, unit: e.target.value })
               }
               className="px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >
@@ -305,6 +249,39 @@ const FarmDetails = () => {
                 Sq Ft
               </option>
             </FormDropdown>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormInput
+              type="text"
+              placeholder="Soil Type (e.g. loamy)"
+              value={farmData.soilType}
+              onChange={(e) =>
+                setFarmData({ ...farmData, soilType: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+            />
+            <FormInput
+              type="text"
+              placeholder="Irrigation (e.g. drip)"
+              value={farmData.irrigationType}
+              onChange={(e) =>
+                setFarmData({ ...farmData, irrigationType: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+            />
+          </div>
+
+          <div>
+            <FormInput
+              type="text"
+              placeholder="Farming Type (e.g. organic)"
+              value={farmData.farmingType}
+              onChange={(e) =>
+                setFarmData({ ...farmData, farmingType: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+            />
           </div>
 
           <hr className="border-white/10 my-4" />
@@ -343,6 +320,20 @@ const FarmDetails = () => {
             <div>
               <FormInput
                 type="text"
+                placeholder="State / Province"
+                value={farmData.location.state}
+                onChange={(e) => {
+                  handleLocationChange('state', e.target.value);
+                }}
+                className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormInput
+                type="text"
                 placeholder="Country"
                 value={farmData.location.country}
                 onChange={(e) => {
@@ -353,38 +344,28 @@ const FarmDetails = () => {
                 error={errors.country || ''}
               />
             </div>
+            <div>
+              <FormInput
+                type="text"
+                placeholder="Zip / Pin Code"
+                value={farmData.location.zipCode}
+                onChange={(e) => {
+                  handleLocationChange('zipCode', e.target.value);
+                }}
+                className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors"
+              />
+            </div>
           </div>
 
           <div className="relative border border-white/20 rounded-lg p-3 bg-white/5">
             <Label className="text-xs text-white/50 mb-1 block">
-              Coordinates
+              Location Helper (Auto-fill)
             </Label>
             <div className="mb-2">
-              {farmData.location.latitude && farmData.location.longitude && (
-                <div className="mb-2 px-3 py-2 bg-white/10 rounded-lg text-xs font-mono text-white/80">
-                  {farmData.location.latitude}, {farmData.location.longitude}
-                </div>
-              )}
               <LocationPicker
                 mode="point"
-                value={
-                  farmData.location.latitude && farmData.location.longitude
-                    ? `${farmData.location.latitude}, ${farmData.location.longitude}`
-                    : ''
-                }
-                onChange={(val: string) => {
-                  const [lat = '', lng = ''] = val
-                    .split(',')
-                    .map((s) => s.trim());
-                  setFarmData({
-                    ...farmData,
-                    location: {
-                      ...farmData.location,
-                      latitude: lat,
-                      longitude: lng,
-                    },
-                  });
-                }}
+                value=""
+                onChange={() => {}} // No longer storing specific lat/lng in state
                 onLocationDataChange={(data) => {
                   // Auto-fill address, city and country from reverse geocoding
                   setFarmData((prev) => ({

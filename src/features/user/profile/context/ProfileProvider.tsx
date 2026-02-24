@@ -336,33 +336,10 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
         delete farmPayload.area; // Remove if empty/invalid
       }
 
-      // Sanitize Location Data for Backend
-      if (farmPayload.location) {
-        const loc = { ...farmPayload.location };
-
-        // Latitude
-        if (
-          loc.latitude !== undefined &&
-          loc.latitude !== '' &&
-          !isNaN(Number(loc.latitude))
-        ) {
-          loc.latitude = Number(loc.latitude);
-        } else {
-          delete loc.latitude;
-        }
-
-        // Longitude
-        if (
-          loc.longitude !== undefined &&
-          loc.longitude !== '' &&
-          !isNaN(Number(loc.longitude))
-        ) {
-          loc.longitude = Number(loc.longitude);
-        } else {
-          delete loc.longitude;
-        }
-
-        farmPayload.location = loc;
+      // Ensure unit is singular if coming from fields that might have used 'units'
+      if (farmPayload.units && !farmPayload.unit) {
+        farmPayload.unit = farmPayload.units;
+        delete farmPayload.units;
       }
 
       console.log('Creating Farm Payload:', farmPayload);
@@ -412,14 +389,16 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
         farmPayload.area = Number(farmPayload.area);
       }
 
-      // Sanitize Location (if updating location)
+      // Ensure unit is singular
+      if (farmPayload.units && !farmPayload.unit) {
+        farmPayload.unit = farmPayload.units;
+        delete farmPayload.units;
+      }
+
+      // Sanitize Location (removed lat/long specific logic)
       if (farmPayload.location) {
-        const loc = { ...farmPayload.location };
-        if (loc.latitude && !isNaN(Number(loc.latitude)))
-          loc.latitude = Number(loc.latitude);
-        if (loc.longitude && !isNaN(Number(loc.longitude)))
-          loc.longitude = Number(loc.longitude);
-        farmPayload.location = loc;
+        // Just ensure it's an object, no specific lat/lng cleanup needed for new schema
+        farmPayload.location = { ...farmPayload.location };
       }
 
       const updatedFarm = await updateFarm(id, farmPayload);

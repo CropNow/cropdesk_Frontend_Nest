@@ -54,7 +54,7 @@ const FieldDetails = () => {
       fieldName: '',
       description: '',
       area: '',
-      units: 'acres',
+      unit: 'acres',
       boundaryType: 'Polygon',
       coordinates: '',
       soilType: 'Loamy',
@@ -165,16 +165,17 @@ const FieldDetails = () => {
         }
 
         const farmDetails = tempData.farmDetails;
+        const farmUnit = farmDetails?.unit || farmDetails?.units;
 
-        if (farmDetails && farmDetails.area && farmDetails.units) {
+        if (farmDetails && farmDetails.area && farmUnit) {
           try {
             const farmAreaSqFt = convertAreaToSqFt(
               parseFloat(farmDetails.area),
-              farmDetails.units
+              farmUnit
             );
             const fieldAreaSqFt = convertAreaToSqFt(
               parseFloat(fieldData.area),
-              fieldData.units
+              fieldData.unit
             );
 
             console.log(
@@ -312,9 +313,9 @@ const FieldDetails = () => {
               />
             </div>
             <FormDropdown
-              value={fieldData.units}
+              value={fieldData.unit}
               onChange={(e) =>
-                setFieldData({ ...fieldData, units: e.target.value })
+                setFieldData({ ...fieldData, unit: e.target.value })
               }
               className="px-4 py-3 h-auto bg-white/10 border border-white/20 rounded-lg text-white appearance-none focus:outline-none focus:border-green-500 transition-colors [&>option]:text-black"
             >

@@ -193,19 +193,13 @@ const CropDetails = () => {
         location: {
           address: loc.address || 'Unknown Address',
           city: loc.city || 'Unknown City',
-          state: loc.state || 'Unknown State', // Added if available, though not in form explicitly sometimes
+          state: loc.state || 'Unknown State',
           country: loc.country || 'India',
-          coordinates: {
-            type: 'Point',
-            coordinates: [
-              parseFloat(loc.longitude || '0'),
-              parseFloat(loc.latitude || '0'),
-            ],
-          },
+          zipCode: loc.zipCode || '000000',
         },
-        area: tempData.farmDetails?.area || '0', // Keep as string for TS interface
-        unit: tempData.farmDetails?.units || 'acres', // FIXED: 'units' to match type/backend? Checking backend expectation...
-        soilType: tempData.farmDetails?.soilType || 'loamy', // Default or from field? Farm schema requires it.
+        area: parseFloat(tempData.farmDetails?.area || '0'),
+        unit: tempData.farmDetails?.units || 'acres',
+        soilType: tempData.farmDetails?.soilType || 'loamy',
         irrigationType: 'drip',
         farmingType: 'conventional',
       };

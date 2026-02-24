@@ -53,10 +53,20 @@ export interface Farmer {
 export interface Farm {
   id: string;
   name: string;
+  description?: string;
   farmerId?: string; // Relation ID
-  location?: any; // Was string, but backend uses Object (address, city, coordinates etc)
-  area?: string;
-  units?: string;
+  location?: {
+    address?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+  };
+  area?: number;
+  unit?: string;
+  soilType?: string;
+  irrigationType?: string;
+  farmingType?: string;
   fields: Field[];
 }
 

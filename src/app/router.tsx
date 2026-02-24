@@ -25,6 +25,9 @@ const SmartInfo = lazy(() => import('@/features/user/smart-info/SmartInfo'));
 const SensorDetails = lazy(
   () => import('@/features/user/dashboard/SensorDetails')
 );
+const Subscription = lazy(
+  () => import('@/features/user/subscription/Subscription')
+);
 
 export const AppRouter = () => {
   return (
@@ -66,6 +69,7 @@ export const AppRouter = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/smart-info" element={<SmartInfo />} />
           <Route path="/sensor-details" element={<SensorDetails />} />
+          <Route path="/subscription" element={<Subscription />} />
         </Route>
 
         {/* Fallback */}

@@ -33,13 +33,16 @@ const FarmDetailsTab = () => {
     name: '',
     description: '',
     area: '',
-    units: '',
+    unit: 'acres',
+    soilType: 'loamy',
+    irrigationType: 'drip',
+    farmingType: 'conventional',
     location: {
       address: '',
       city: '',
-      country: '',
-      latitude: '',
-      longitude: '',
+      state: '',
+      country: 'India',
+      zipCode: '',
     },
   });
 
@@ -49,60 +52,35 @@ const FarmDetailsTab = () => {
         name: '',
         description: '',
         area: '',
-        units: 'acres',
+        unit: 'acres',
+        soilType: 'loamy',
+        irrigationType: 'drip',
+        farmingType: 'conventional',
         location: {
           address: '',
           city: '',
-          country: '',
-          latitude: '',
-          longitude: '',
+          state: '',
+          country: 'India',
+          zipCode: '',
         },
       });
       setIsEditing(true);
     } else if (selectedFarm) {
-      console.log('Selected Farm Data:', selectedFarm);
-      console.log('Selected Farm Location:', selectedFarm.location);
-
-      let loc: any = {
-        address: '',
-        city: '',
-        country: '',
-        latitude: '',
-        longitude: '',
-      };
-      if (selectedFarm.location && typeof selectedFarm.location === 'object') {
-        loc = {
-          address: selectedFarm.location.address || '',
-          city: selectedFarm.location.city || '',
-          country: selectedFarm.location.country || '',
-          latitude: selectedFarm.location.latitude || '',
-          longitude: selectedFarm.location.longitude || '',
-        };
-      } else if (typeof selectedFarm.location === 'string') {
-        try {
-          const parsed = JSON.parse(selectedFarm.location);
-          if (typeof parsed === 'object' && parsed !== null) {
-            loc = {
-              address: parsed.address || '',
-              city: parsed.city || '',
-              country: parsed.country || '',
-              latitude: parsed.latitude || '',
-              longitude: parsed.longitude || '',
-            };
-          } else {
-            loc.address = selectedFarm.location;
-          }
-        } catch (e) {
-          loc.address = selectedFarm.location;
-        }
-      }
-
       setFarmData({
         name: selectedFarm.name || selectedFarm.farmName || '',
         description: selectedFarm.description || '',
         area: selectedFarm.area || '',
-        units: selectedFarm.units || '',
-        location: loc,
+        unit: selectedFarm.unit || selectedFarm.units || 'acres',
+        soilType: selectedFarm.soilType || 'loamy',
+        irrigationType: selectedFarm.irrigationType || 'drip',
+        farmingType: selectedFarm.farmingType || 'conventional',
+        location: {
+          address: selectedFarm.location?.address || '',
+          city: selectedFarm.location?.city || '',
+          state: selectedFarm.location?.state || '',
+          country: selectedFarm.location?.country || '',
+          zipCode: selectedFarm.location?.zipCode || '',
+        },
       });
       setIsEditing(false);
     }
@@ -473,41 +451,82 @@ const FarmDetailsTab = () => {
                       error={errors.country || ''}
                     />
                   </div>
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Zip Code
+                    </Label>
+                    <FormInput
+                      type="text"
+                      name="location.zipCode"
+                      value={farmData.location?.zipCode || ''}
+                      onChange={(e) => {
+                        setFarmData((prev) => ({
+                          ...prev,
+                          location: {
+                            ...prev.location,
+                            zipCode: e.target.value,
+                          },
+                        }));
+                      }}
+                      className="w-full font-semibold px-4 py-3 text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Additional Details */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Soil Type
+                    </Label>
+                    <FormInput
+                      type="text"
+                      name="soilType"
+                      value={farmData.soilType}
+                      onChange={handleChange}
+                      placeholder="e.g. loamy"
+                      className="w-full font-semibold px-4 py-3 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Irrigation Type
+                    </Label>
+                    <FormInput
+                      type="text"
+                      name="irrigationType"
+                      value={farmData.irrigationType}
+                      onChange={handleChange}
+                      placeholder="e.g. drip"
+                      className="w-full font-semibold px-4 py-3 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="block text-xs font-bold text-white uppercase mb-2">
+                      Farming Type
+                    </Label>
+                    <FormInput
+                      type="text"
+                      name="farmingType"
+                      value={farmData.farmingType}
+                      onChange={handleChange}
+                      placeholder="e.g. organic"
+                      className="w-full font-semibold px-4 py-3 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div>
                 <Label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
-                  GPS Coordinates (Lat / Long)
+                  Location Helper (Auto-fill)
                 </Label>
                 <div className="mb-4">
-                  {farmData.location?.latitude &&
-                    farmData.location?.longitude && (
-                      <div className="mb-2 px-3 py-2 bg-muted rounded-lg text-xs font-mono">
-                        {farmData.location.latitude},{' '}
-                        {farmData.location.longitude}
-                      </div>
-                    )}
                   <LocationPicker
                     mode="point"
                     readOnly={false}
-                    value={
-                      farmData.location?.latitude &&
-                      farmData.location?.longitude
-                        ? `${farmData.location.latitude}, ${farmData.location.longitude}`
-                        : ''
-                    }
-                    onChange={(val: string) => {
-                      const [lat, lng] = val.split(',').map((s) => s.trim());
-                      setFarmData((prev) => ({
-                        ...prev,
-                        location: {
-                          ...prev.location,
-                          latitude: lat || '',
-                          longitude: lng || '',
-                        },
-                      }));
-                    }}
+                    value=""
+                    onChange={() => {}} // No longer storing specific lat/lng in state
                     onLocationDataChange={(data) => {
                       setFarmData((prev) => ({
                         ...prev,
@@ -542,32 +561,22 @@ const FarmDetailsTab = () => {
                     setIsEditing(false);
                     if (isAdding) {
                       setIsAdding(false);
-                    } else if (selectedFarm) {
-                      let loc: any = {
-                        address: '',
-                        city: '',
-                        country: '',
-                        latitude: '',
-                        longitude: '',
-                      };
-                      if (
-                        selectedFarm.location &&
-                        typeof selectedFarm.location === 'object'
-                      ) {
-                        loc = {
-                          address: selectedFarm.location.address || '',
-                          city: selectedFarm.location.city || '',
-                          country: selectedFarm.location.country || '',
-                          latitude: selectedFarm.location.latitude || '',
-                          longitude: selectedFarm.location.longitude || '',
-                        };
-                      }
                       setFarmData({
                         name: selectedFarm.name || selectedFarm.farmName || '',
                         description: selectedFarm.description || '',
                         area: selectedFarm.area || '',
-                        units: selectedFarm.units || 'acres',
-                        location: loc,
+                        unit:
+                          selectedFarm.unit || selectedFarm.units || 'acres',
+                        soilType: selectedFarm.soilType || 'loamy',
+                        irrigationType: selectedFarm.irrigationType || 'drip',
+                        farmingType: selectedFarm.farmingType || 'conventional',
+                        location: {
+                          address: selectedFarm.location?.address || '',
+                          city: selectedFarm.location?.city || '',
+                          state: selectedFarm.location?.state || '',
+                          country: selectedFarm.location?.country || '',
+                          zipCode: selectedFarm.location?.zipCode || '',
+                        },
                       });
                     }
                   }}
