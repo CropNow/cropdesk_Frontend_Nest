@@ -42,13 +42,15 @@ const SmartInfo = () => {
   React.useEffect(() => {
     const checkProfileStatus = async () => {
       if (user && !profileLoading) {
-        const isComplete = !!(
+        const isContextComplete = !!(
           selectedFarmer &&
           selectedFarm &&
           selectedField &&
           selectedCrop
         );
-        setIsProfileComplete(isComplete);
+        const isBackendOnboardingComplete = !!user?.onboarding?.isComplete;
+
+        setIsProfileComplete(isContextComplete || isBackendOnboardingComplete);
       }
     };
     checkProfileStatus();

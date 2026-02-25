@@ -59,6 +59,10 @@ const FieldDetails = () => {
       coordinates: '',
       soilType: 'Loamy',
       phLevel: '',
+      nitrogen: '',
+      phosphorus: '',
+      potassium: '',
+      organicCarbon: '',
       irrigationMethod: 'Drip',
     };
   });
@@ -114,34 +118,7 @@ const FieldDetails = () => {
     }
   }, [fieldData]);
 
-  const handleGeolocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setFieldData((prev: any) => ({
-            ...prev,
-            coordinates: `${position.coords.latitude}, ${position.coords.longitude}`,
-          }));
-        },
-        (error) => {
-          console.error('Error detecting location', error);
-          setAlertConfig({
-            isOpen: true,
-            title: 'Location Error',
-            message: 'Unable to retrieve your location.',
-            type: 'warning',
-          });
-        }
-      );
-    } else {
-      setAlertConfig({
-        isOpen: true,
-        title: 'Not Supported',
-        message: 'Geolocation is not supported by your browser.',
-        type: 'warning',
-      });
-    }
-  };
+  // handleGeolocation removed ...
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,7 +167,7 @@ const FieldDetails = () => {
               setAlertConfig({
                 isOpen: true,
                 title: 'Area Validation Error',
-                message: `Field area (${fieldData.area} ${fieldData.units}) cannot exceed the total Farm area (${farmDetails.area} ${farmDetails.units})!`,
+                message: `Field area (${fieldData.area} ${fieldData.unit}) cannot exceed the total Farm area (${farmDetails.area} ${farmDetails.unit || farmDetails.units})!`,
                 type: 'warning',
               });
               return; // Stop execution
@@ -450,6 +427,46 @@ const FieldDetails = () => {
               <option value="Flood">Flood</option>
               <option value="Manual">Manual</option>
             </FormDropdown>
+          </div>
+
+          {/* Soil Metrics Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <FormInput
+              type="number"
+              placeholder="Nitrogen (mg/kg)"
+              value={fieldData.nitrogen}
+              onChange={(e) =>
+                setFieldData({ ...fieldData, nitrogen: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors text-sm"
+            />
+            <FormInput
+              type="number"
+              placeholder="Phosphorus (mg/kg)"
+              value={fieldData.phosphorus}
+              onChange={(e) =>
+                setFieldData({ ...fieldData, phosphorus: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors text-sm"
+            />
+            <FormInput
+              type="number"
+              placeholder="Potassium (mg/kg)"
+              value={fieldData.potassium}
+              onChange={(e) =>
+                setFieldData({ ...fieldData, potassium: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors text-sm"
+            />
+            <FormInput
+              type="number"
+              placeholder="Organic Carbon (%)"
+              value={fieldData.organicCarbon}
+              onChange={(e) =>
+                setFieldData({ ...fieldData, organicCarbon: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-white/10 border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-500 transition-colors text-sm"
+            />
           </div>
 
           <Button

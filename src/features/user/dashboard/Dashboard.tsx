@@ -42,16 +42,18 @@ const Dashboard = () => {
   // useAuth provides the reactive user state and loading status
   const { user, loading } = useAuth();
 
-  // Check profile completion from context
+  // Check profile completion from context + backend status
   React.useEffect(() => {
     if (!profileLoading) {
-      const isComplete = !!(
+      const isContextComplete = !!(
         selectedFarmer &&
         selectedFarm &&
         selectedField &&
         selectedCrop
       );
-      setIsProfileComplete(isComplete);
+      const isBackendOnboardingComplete = !!user?.onboarding?.isComplete;
+
+      setIsProfileComplete(isContextComplete || isBackendOnboardingComplete);
     }
   }, [
     selectedFarmer,
@@ -59,6 +61,7 @@ const Dashboard = () => {
     selectedField,
     selectedCrop,
     profileLoading,
+    user?.onboarding?.isComplete,
   ]);
 
   useEffect(() => {

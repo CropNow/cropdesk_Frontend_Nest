@@ -227,184 +227,55 @@ const CropDetails = () => {
 
       // 3. Create Field
       console.log('Creating Field...');
+      const { getGeoJSONFromShape } = await import('@/utils/geoUtils');
+      const geoResult = getGeoJSONFromShape(tempData.fieldDetails?.coordinates);
+
       const fieldPayload = {
-        name: tempData.fieldDetails?.fieldName, // DB 'name', FE 'fieldName'
-        description: tempData.fieldDetails?.description,
-        area: tempData.fieldDetails?.area || '0', // Keep as string
-        // Note: 'units' field removed - backend doesn't accept it
+        name: tempData.fieldDetails?.fieldName || 'Main Field',
+        description: tempData.fieldDetails?.description || '',
+        area: parseFloat(tempData.fieldDetails?.area || '0'),
+        unit: tempData.fieldDetails?.unit?.toLowerCase() || 'acres',
         soil: {
           type: tempData.fieldDetails?.soilType?.toLowerCase() || 'loamy',
           ph: parseFloat(tempData.fieldDetails?.phLevel || '7'),
-          organicCarbon: 0,
-          nitrogen: 0,
-          phosphorus: 0,
-          potassium: 0,
+          organicCarbon: parseFloat(
+            tempData.fieldDetails?.organicCarbon || '0'
+          ),
+          nitrogen: parseFloat(tempData.fieldDetails?.nitrogen || '0'),
+          phosphorus: parseFloat(tempData.fieldDetails?.phosphorus || '0'),
+          potassium: parseFloat(tempData.fieldDetails?.potassium || '0'),
         },
         irrigation: {
           type:
             tempData.fieldDetails?.irrigationMethod?.toLowerCase() || 'drip',
           waterSource: 'Well',
         },
-        boundary: {
+        boundary: geoResult?.boundary || {
           type: 'Polygon',
           coordinates: [
             [
               [0, 0],
-              [0, 1],
-              [1, 1],
               [1, 0],
+              [1, 1],
+              [0, 1],
               [0, 0],
             ],
-          ], // Default mock boundary if none provided
+          ],
         },
       };
 
-      // Handle Coordinates
-      if (tempData.fieldDetails?.coordinates) {
-        try {
-          // If valid GeoJSON or points are stored, parse and format for backend
-          // Backend expects { type: "Polygon", coordinates: [[[lon, lat], ...]] }
-          // User input might be simple string or JSON from LocationPicker
-
-          let parsedCoords = tempData.fieldDetails.coordinates;
-          if (typeof parsedCoords === 'string') {
-            try {
-              parsedCoords = JSON.parse(parsedCoords);
-            } catch (e) {
-              console.warn('Failed to parse coordinates string:', e);
-            }
-          }
-
-          // Case 1: Standard LocationPicker Output { type: 'Polygon', points: [{lat, lng}, ...] }
-          if (parsedCoords?.points && Array.isArray(parsedCoords.points)) {
-            const rings = parsedCoords.points
-              .map((p: any) => [p.lng, p.lat])
-              .filter(
-                (coord: any) =>
-                  Array.isArray(coord) &&
-                  coord.length === 2 &&
-                  typeof coord[0] === 'number' &&
-                  typeof coord[1] === 'number'
-              );
-
-            if (rings.length < 3) {
-              console.warn(
-                'Invalid polygon coordinates - less than 3 valid points'
-              );
-            } else {
-              // Ensure closed loop for Polygon
-              const firstRing = rings[0];
-              const lastRing = rings[rings.length - 1];
-
-              if (
-                firstRing[0] !== lastRing[0] ||
-                firstRing[1] !== lastRing[1]
-              ) {
-                rings.push(firstRing);
-              }
-              fieldPayload.boundary = {
-                type: 'Polygon',
-                coordinates: [rings],
-              };
-            }
-          }
-          // Case 2: Rectangle shape { type: 'Rectangle', bounds: {...} }
-          else if (parsedCoords?.type === 'Rectangle' && parsedCoords?.bounds) {
-            const { north, south, east, west } = parsedCoords.bounds;
-            fieldPayload.boundary = {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [west, south],
-                  [east, south],
-                  [east, north],
-                  [west, north],
-                  [west, south], // Close the loop
-                ],
-              ],
-            };
-            console.log(
-              'Converted Rectangle to Polygon:',
-              fieldPayload.boundary
-            );
-          }
-          // Case 3: Circle shape { type: 'Circle', center: {lat, lng}, radius: number }
-          else if (
-            parsedCoords?.type === 'Circle' &&
-            parsedCoords?.center &&
-            parsedCoords?.radius
-          ) {
-            // Convert circle to polygon approximation (32 points for smooth circle)
-            const points = 32;
-            const coordinates: number[][] = [];
-            const { lat, lng } = parsedCoords.center;
-            const radiusInMeters = parsedCoords.radius;
-
-            for (let i = 0; i <= points; i++) {
-              const angle = (i * 360) / points;
-              const angleRad = (angle * Math.PI) / 180;
-
-              // Calculate offset in degrees (approximate)
-              // 1 degree latitude ≈ 111,320 meters
-              // 1 degree longitude ≈ 111,320 * cos(latitude) meters
-              const latOffset = (radiusInMeters / 111320) * Math.cos(angleRad);
-              const lngOffset =
-                (radiusInMeters / (111320 * Math.cos((lat * Math.PI) / 180))) *
-                Math.sin(angleRad);
-
-              coordinates.push([lng + lngOffset, lat + latOffset]);
-            }
-
-            fieldPayload.boundary = {
-              type: 'Polygon',
-              coordinates: [coordinates],
-            };
-            console.log('Converted Circle to Polygon:', fieldPayload.boundary);
-          }
-          // Case 4: Array of points (Leaflet style or raw)
-          else if (Array.isArray(parsedCoords)) {
-            // Assume [[lat, lng]] (Leaflet) or [{lat, lng}]
-            const rings = parsedCoords.map((p: any) => {
-              if (Array.isArray(p)) return [p[1], p[0]]; // Swap lat,lng to lng,lat
-              if (p.lat && p.lng) return [p.lng, p.lat];
-              return [0, 0];
-            });
-            // Ensure closed loop
-            const firstRing = rings[0];
-            if (rings.length > 0 && firstRing) rings.push(firstRing);
-
-            fieldPayload.boundary = {
-              type: 'Polygon',
-              coordinates: [rings],
-            };
-          }
-          // Case 5: Already GeoJSON
-          else if (
-            parsedCoords?.type === 'Polygon' &&
-            parsedCoords?.coordinates
-          ) {
-            fieldPayload.boundary = parsedCoords;
-          }
-        } catch (e) {
-          console.error('Error processing coordinates for backend:', e);
-        }
+      let field;
+      try {
+        const { createField } = await import('@/features/auth/api/field.api');
+        const farmId = farm.id || (farm as any)._id;
+        field = await createField(farmId, fieldPayload as any);
+        console.log('Field Created Successfully:', field);
+      } catch (err: any) {
+        console.error('Create Field Failed:', err);
+        throw new Error(
+          `Field creation failed: ${err.response?.data?.message || err.message}`
+        );
       }
-
-      const { createField } = await import('@/features/auth/api/field.api');
-      const farmId = farm.id || (farm as any)._id;
-
-      // Log the complete field payload for verification
-      console.log(
-        'Creating Field with Payload:',
-        JSON.stringify(fieldPayload, null, 2)
-      );
-      console.log('Field Boundary Coordinates:', fieldPayload.boundary);
-
-      // We need to cast fieldPayload to any because 'soil', 'irrigation', 'boundary' are not in current Field interface in auth.types.ts
-      // Update auth.types.ts is better, but for now cast to avoid error
-      const field = await createField(farmId, fieldPayload as any);
-      console.log('Field Created Response:', field);
-
       // 4. Create Crop
       // Only if we have valid crop data
       const cropToSave = finalCropData || tempData.cropDetails;

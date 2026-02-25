@@ -97,7 +97,15 @@ const AddDeviceModal = ({ isOpen, onClose, onAdd }: AddDeviceModalProps) => {
       setAlertOpen(true);
       return;
     }
-    onAdd(formData);
+
+    // Map UI types to Backend enum ['NEST', 'SEED']
+    const backendData = {
+      ...formData,
+      type: formData.type.includes('NEST') ? 'NEST' : 'SEED',
+      unit: formData.type.includes('NEST') ? 'status' : 'percentage',
+    };
+
+    onAdd(backendData);
     // Reset form
     setFormData({
       name: '',

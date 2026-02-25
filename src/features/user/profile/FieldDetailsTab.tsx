@@ -33,10 +33,15 @@ const FieldDetailsTab = () => {
     name: '',
     description: '',
     area: '',
-    units: '',
+    units: 'acres', // Legacy ref
+    unit: 'acres',
     boundaryType: '',
     soilType: '',
     phLevel: '',
+    nitrogen: '',
+    phosphorus: '',
+    potassium: '',
+    organicCarbon: '',
     irrigationMethod: '',
     coordinates: '',
   });
@@ -47,10 +52,15 @@ const FieldDetailsTab = () => {
         name: '',
         description: '',
         area: '',
+        unit: 'acres',
         units: 'acres',
         boundaryType: '',
         soilType: '',
         phLevel: '',
+        nitrogen: '',
+        phosphorus: '',
+        potassium: '',
+        organicCarbon: '',
         irrigationMethod: '',
         coordinates: '',
       });
@@ -94,11 +104,16 @@ const FieldDetailsTab = () => {
         name: selectedField.name || selectedField.fieldName || '',
         description: selectedField.description || '',
         area: selectedField.area || '',
+        unit: selectedField.unit || selectedField.units || 'acres',
         units: selectedField.units || selectedField.unit || 'acres',
         boundaryType:
           selectedField.boundaryType || selectedField.boundary?.type || '',
         soilType: selectedField.soilType || selectedField.soil?.type || '',
         phLevel: selectedField.phLevel || selectedField.soil?.ph || '',
+        nitrogen: selectedField.soil?.nitrogen || '',
+        phosphorus: selectedField.soil?.phosphorus || '',
+        potassium: selectedField.soil?.potassium || '',
+        organicCarbon: selectedField.soil?.organicCarbon || '',
         irrigationMethod:
           selectedField.irrigationMethod ||
           selectedField.irrigation?.type ||
@@ -141,20 +156,48 @@ const FieldDetailsTab = () => {
 
     setIsSaving(true);
     try {
+      const { getGeoJSONFromShape } = await import('@/utils/geoUtils');
+      const geoResult = getGeoJSONFromShape(fieldData.coordinates);
+
       if (isAdding) {
         // Construct payload for creation (nested structure)
         const payload = {
-          ...fieldData,
-          unit: fieldData.units, // Backend often expects 'unit'
+          name: fieldData.name,
+          description: fieldData.description,
+          area: parseFloat(fieldData.area || '0'),
+          unit: fieldData.unit,
           soil: {
             type: fieldData.soilType,
-            ph: fieldData.phLevel,
+            ph: fieldData.phLevel ? parseFloat(fieldData.phLevel) : undefined,
+            nitrogen: fieldData.nitrogen ? parseFloat(fieldData.nitrogen) : 0,
+            phosphorus: fieldData.phosphorus
+              ? parseFloat(fieldData.phosphorus)
+              : 0,
+            potassium: fieldData.potassium
+              ? parseFloat(fieldData.potassium)
+              : 0,
+            organicCarbon: fieldData.organicCarbon
+              ? parseFloat(fieldData.organicCarbon)
+              : 0,
           },
           irrigation: {
             type: fieldData.irrigationMethod,
           },
-          boundary: {
-            type: fieldData.boundaryType || 'Polygon',
+          boundary: geoResult?.boundary || {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          location: geoResult?.location || {
+            type: 'Point',
+            coordinates: [0, 0],
           },
         };
         await addField(payload);
@@ -164,18 +207,29 @@ const FieldDetailsTab = () => {
         const payload = {
           name: fieldData.name,
           description: fieldData.description,
-          area: fieldData.area,
-          unit: fieldData.units,
+          area: parseFloat(fieldData.area || '0'),
+          unit: fieldData.unit,
           soil: {
             type: fieldData.soilType,
-            ph: fieldData.phLevel,
+            ph: fieldData.phLevel ? parseFloat(fieldData.phLevel) : undefined,
+            nitrogen: fieldData.nitrogen
+              ? parseFloat(fieldData.nitrogen)
+              : undefined,
+            phosphorus: fieldData.phosphorus
+              ? parseFloat(fieldData.phosphorus)
+              : undefined,
+            potassium: fieldData.potassium
+              ? parseFloat(fieldData.potassium)
+              : undefined,
+            organicCarbon: fieldData.organicCarbon
+              ? parseFloat(fieldData.organicCarbon)
+              : undefined,
           },
           irrigation: {
             type: fieldData.irrigationMethod,
           },
-          boundary: {
-            type: fieldData.boundaryType,
-          },
+          boundary: geoResult?.boundary,
+          location: geoResult?.location,
           coordinates: fieldData.coordinates,
         };
         await updateField(selectedFieldId, payload);
@@ -304,14 +358,23 @@ const FieldDetailsTab = () => {
                   )}
                 </p>
 
-                <p className="text-base">
-                  pH Level:{' '}
-                  {fieldData.phLevel || (
-                    <span className="text-muted-foreground italic">
-                      Not provided
-                    </span>
-                  )}
+                <p className="text-base text-muted-foreground pt-2">
+                  Soil Metrics
                 </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  <p className="text-sm">
+                    Nitrogen: {fieldData.nitrogen || 'N/A'}
+                  </p>
+                  <p className="text-sm">
+                    Phosphorus: {fieldData.phosphorus || 'N/A'}
+                  </p>
+                  <p className="text-sm">
+                    Potassium: {fieldData.potassium || 'N/A'}
+                  </p>
+                  <p className="text-sm">
+                    Carbon: {fieldData.organicCarbon || 'N/A'}
+                  </p>
+                </div>
 
                 <p className="text-base">
                   Irrigation:{' '}
@@ -448,7 +511,7 @@ const FieldDetailsTab = () => {
 
                 <hr className="border-border my-2" />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Soil Type */}
                   <div>
                     <Label className="block text-xs font-bold text-white uppercase mb-2">
@@ -488,7 +551,68 @@ const FieldDetailsTab = () => {
                       />
                     </div>
                   </div>
+                </div>
 
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Nitrogen */}
+                  <div>
+                    <Label className="block text-[10px] font-bold text-white uppercase mb-2">
+                      Nitrogen (N)
+                    </Label>
+                    <FormInput
+                      type="number"
+                      name="nitrogen"
+                      value={fieldData.nitrogen || ''}
+                      onChange={handleChange}
+                      placeholder="mg/kg"
+                      className="w-full font-semibold px-3 py-2 text-xs"
+                    />
+                  </div>
+                  {/* Phosphorus */}
+                  <div>
+                    <Label className="block text-[10px] font-bold text-white uppercase mb-2">
+                      Phosphorus (P)
+                    </Label>
+                    <FormInput
+                      type="number"
+                      name="phosphorus"
+                      value={fieldData.phosphorus || ''}
+                      onChange={handleChange}
+                      placeholder="mg/kg"
+                      className="w-full font-semibold px-3 py-2 text-xs"
+                    />
+                  </div>
+                  {/* Potassium */}
+                  <div>
+                    <Label className="block text-[10px] font-bold text-white uppercase mb-2">
+                      Potassium (K)
+                    </Label>
+                    <FormInput
+                      type="number"
+                      name="potassium"
+                      value={fieldData.potassium || ''}
+                      onChange={handleChange}
+                      placeholder="mg/kg"
+                      className="w-full font-semibold px-3 py-2 text-xs"
+                    />
+                  </div>
+                  {/* Carbon */}
+                  <div>
+                    <Label className="block text-[10px] font-bold text-white uppercase mb-2">
+                      Organic Carbon
+                    </Label>
+                    <FormInput
+                      type="number"
+                      name="organicCarbon"
+                      value={fieldData.organicCarbon || ''}
+                      onChange={handleChange}
+                      placeholder="%"
+                      className="w-full font-semibold px-3 py-2 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Irrigation */}
                   <div>
                     <Label className="block text-xs font-bold text-white uppercase mb-2">
@@ -537,10 +661,15 @@ const FieldDetailsTab = () => {
                         description: selectedField.description || '',
                         area: selectedField.area || '',
                         units: selectedField.units || 'acres',
+                        unit: selectedField.unit || 'acres',
                         boundaryType: selectedField.boundaryType || '',
                         coordinates: selectedField.coordinates || '',
                         soilType: selectedField.soilType || '',
                         phLevel: selectedField.phLevel || '',
+                        nitrogen: selectedField.soil?.nitrogen || '',
+                        phosphorus: selectedField.soil?.phosphorus || '',
+                        potassium: selectedField.soil?.potassium || '',
+                        organicCarbon: selectedField.soil?.organicCarbon || '',
                         irrigationMethod: selectedField.irrigationMethod || '',
                       });
                     }

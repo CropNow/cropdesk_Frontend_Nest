@@ -22,6 +22,10 @@ export interface User {
   fieldDetails?: any;
   cropDetails?: any;
   isOnboardingComplete?: boolean;
+  onboarding?: {
+    isComplete: boolean;
+    hasSensor: boolean;
+  };
 
   // Legacy/Flat fields (Deprecated, kept for temporary compatibility if needed)
   farmDetails?: {
@@ -73,28 +77,35 @@ export interface Farm {
 export interface Field {
   id: string;
   name: string;
-  area: string; // e.g., "10"
-  units: string; // e.g., "acres"
-  soilType?: string;
-  irrigationMethod?: string;
-  boundary?: {
-    type: string;
-    coordinates: number[][][];
-  }; // GeoJSON
-  coordinates?: any; // Legacy/Frontend prop
+  description?: string;
+  area: number;
+  unit: string; // 'acres', 'hectares', 'sqft', 'sqm'
   soil?: {
-    type: string;
-    ph: number;
-    organicCarbon: number;
-    nitrogen: number;
-    phosphorus: number;
-    potassium: number;
+    type: string; // 'clay', 'sandy', 'loamy', etc.
+    ph?: number;
+    organicCarbon?: number;
+    nitrogen?: number;
+    phosphorus?: number;
+    potassium?: number;
   };
   irrigation?: {
-    type: string;
-    waterSource: string;
+    type?: string;
+    waterSource?: string;
   };
+  boundary: {
+    type: string; // 'Polygon'
+    coordinates: number[][][];
+  }; // GeoJSON Polygon
+  location: {
+    type: 'Point';
+    coordinates: [number, number]; // [longitude, latitude]
+  }; // GeoJSON Point (Centroid)
   crops: Crop[];
+  // Frontend helpers
+  soilType?: string;
+  irrigationMethod?: string;
+  boundaryType?: string;
+  coordinates?: any;
 }
 
 export interface Crop {
@@ -105,9 +116,17 @@ export interface Crop {
 }
 
 export interface LoginResponse {
+  status: string;
+  message: string;
   accessToken: string;
   refreshToken?: string;
-  user: User;
+  data: {
+    user: User;
+    onboarding: {
+      isComplete: boolean;
+      hasSensor: boolean;
+    };
+  };
 }
 
 export interface LogoutResponse {

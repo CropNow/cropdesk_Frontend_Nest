@@ -20,14 +20,31 @@ import * as sensorApi from '@/api/sensor.api';
 import * as mlApi from '@/api/ml.api';
 
 // Helper to Register Device in Backend
-const registerDevice = async (fieldId: string, deviceData: any) => {
+export const registerNewDevice = async (fieldId: string, deviceData: any) => {
   try {
-    await sensorApi.createSensor(fieldId, deviceData);
+    const payload = {
+      name: deviceData.name || 'IoT Sensor',
+      type: mapDeviceTypeToSensorType(deviceData.type),
+      location: {
+        coordinates: {
+          type: 'Point' as const,
+          coordinates: [0, 0] as [number, number],
+        },
+      },
+      unit: 'metric' as const,
+      serialNumber: deviceData.serialNumber,
+      manufacturer: deviceData.manufacturer,
+      model: deviceData.model,
+      firmwareVersion: deviceData.firmwareVersion,
+    };
+    const response = await sensorApi.createSensor(fieldId, payload);
+    return response;
   } catch (error: any) {
-    console.warn(
-      'Device registration skipped/failed:',
+    console.error(
+      'Device registration failed:',
       error.response?.data || error.message
     );
+    throw error;
   }
 };
 

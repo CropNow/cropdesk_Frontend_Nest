@@ -61,14 +61,17 @@ const Login = () => {
         localStorage.setItem('refreshToken', response.refreshToken);
       }
 
-      // ✅ STORE USER (if backend sends it later)
-      // Check for user in 'user' prop OR 'data' prop (common API variance)
-      // ✅ STORE USER (if backend sends it later)
-      // We check for user in 'user' prop OR 'data' prop (common API variance)
-      let userFromResponse = response.user;
-      if (!userFromResponse && (response as any).data) {
-        userFromResponse =
-          (response as any).data.user || (response as any).data;
+      // ✅ GET USER AND ONBOARDING DATA FROM STRUCTERED RESPONSE
+      let userFromResponse = response.data.user;
+      const onboardingData = response.data.onboarding;
+
+      // Merge onboarding data into user object for cross-app convenience
+      if (userFromResponse && onboardingData) {
+        userFromResponse = {
+          ...userFromResponse,
+          onboarding: onboardingData,
+          isOnboardingComplete: onboardingData.isComplete,
+        };
       }
 
       // 🔄 FETCH FULL PROFILE (to get firstName, lastName etc if missing in login response)
@@ -76,7 +79,7 @@ const Login = () => {
         const fullProfile = await getMe();
         if (fullProfile) {
           console.log('Fetched full profile after login:', fullProfile);
-          // Merge to ensure we have tokens + profile
+          // Merge to ensure we have tokens + profile + onboarding
           userFromResponse = { ...userFromResponse, ...fullProfile };
         }
       } catch (profileErr) {
@@ -92,14 +95,17 @@ const Login = () => {
             let finalUser = userFromResponse;
 
             // CHECK FOR EXISTING LOCAL DATA IN COLLECTION
-            // We assume userFromResponse.email is present (it should be for login)
             if (finalUser.email) {
               const existingLocal = getStoredUser(finalUser.email);
 
               if (existingLocal) {
                 finalUser = {
-                  ...userFromResponse, // Backend is source of truth for auth info
-                  ...existingLocal, // Local collection is source of truth for profile/onboarding details
+                  ...userFromResponse,
+                  ...existingLocal,
+                  onboarding: {
+                    ...onboardingData,
+                    ...(existingLocal.onboarding || {}),
+                  },
                   id: userFromResponse.id || (userFromResponse as any)._id,
                   email: userFromResponse.email,
                   username: userFromResponse.username || existingLocal.username,
@@ -119,39 +125,17 @@ const Login = () => {
             }
             setUser(finalUser);
 
-            // Request Location Access
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                (position) => {
-                  console.log('Location access granted:', position);
-                },
-                (error) => {
-                  console.error('Location access denied or error:', error);
-                }
-              );
-            }
-
             // INTELLIGENT REDIRECT:
-            // If user has no farmers/farms (new user), go to Onboarding.
-            // Otherwise, go to Dashboard.
-
-            // Check deep structure (farmers array) or flat structure (farmerDetails)
-            const hasFarmers =
-              (finalUser.farmers && finalUser.farmers.length > 0) ||
-              (finalUser.farmerDetails &&
-                Object.keys(finalUser.farmerDetails).length > 0);
-
-            if (!hasFarmers) {
-              console.log('New user detected, redirecting to Onboarding...');
+            if (!onboardingData || !onboardingData.isComplete) {
+              console.log('Onboarding incomplete, redirecting to details...');
               navigate('/register/farmer-details');
             } else {
-              console.log('Existing user, redirecting to Dashboard...');
+              console.log('Onboarding complete, redirecting to Dashboard...');
               navigate('/');
             }
           }
         );
       } else {
-        // Fallback if no user object in response (rare)
         navigate('/');
       }
     } catch (err: any) {

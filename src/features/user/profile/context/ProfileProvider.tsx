@@ -459,39 +459,58 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
 
     try {
       const { createField } = await import('@/features/auth/api/field.api');
-      const fieldPayload = { ...newField };
+      const { getGeoJSONFromShape } = await import('@/utils/geoUtils');
+      const geoResult = getGeoJSONFromShape(newField.coordinates);
 
-      // Sanitize Area
-      if (
-        fieldPayload.area !== undefined &&
-        fieldPayload.area !== '' &&
-        !isNaN(Number(fieldPayload.area))
-      ) {
-        fieldPayload.area = Number(fieldPayload.area);
-      } else {
-        delete fieldPayload.area;
-      }
+      const fieldPayload = {
+        ...newField,
+        area: parseFloat(newField.area || '0'),
+        unit: newField.unit || newField.units || 'acres',
+        soil: {
+          type: newField.soilType || 'loamy',
+          ph: parseFloat(newField.phLevel || '7'),
+          nitrogen: parseFloat(newField.nitrogen || '0'),
+          phosphorus: parseFloat(newField.phosphorus || '0'),
+          potassium: parseFloat(newField.potassium || '0'),
+          organicCarbon: parseFloat(newField.organicCarbon || '0'),
+        },
+        irrigation: {
+          type: newField.irrigationMethod || 'drip',
+        },
+        boundary: geoResult?.boundary || {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
+        },
+        location: geoResult?.location || {
+          type: 'Point',
+          coordinates: [0, 0],
+        },
+      };
 
-      // Ensure coordinates is sent as Object if it's a a JSON string
-      if (fieldPayload.coordinates) {
-        if (typeof fieldPayload.coordinates === 'string') {
-          try {
-            fieldPayload.coordinates = JSON.parse(fieldPayload.coordinates);
-          } catch (e) {
-            console.warn(
-              'Invalid coordinates string, removing:',
-              fieldPayload.coordinates
-            );
-            delete fieldPayload.coordinates;
-          }
-        }
-      } else {
-        delete fieldPayload.coordinates;
-      }
+      // Remove flat fields that are now nested
+      delete (fieldPayload as any).soilType;
+      delete (fieldPayload as any).phLevel;
+      delete (fieldPayload as any).nitrogen;
+      delete (fieldPayload as any).phosphorus;
+      delete (fieldPayload as any).potassium;
+      delete (fieldPayload as any).organicCarbon;
+      delete (fieldPayload as any).irrigationMethod;
+      delete (fieldPayload as any).units;
 
       console.log('Creating Field Payload:', fieldPayload);
 
-      const createdField = await createField(selectedFarmId, fieldPayload);
+      const createdField = await createField(
+        selectedFarmId,
+        fieldPayload as any
+      );
       const normalizedField = {
         ...createdField,
         id: createdField.id || (createdField as any)._id,
@@ -530,18 +549,60 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
   const updateField = async (id: string, updates: any) => {
     try {
       const { updateField } = await import('@/features/auth/api/field.api');
+      const { getGeoJSONFromShape } = await import('@/utils/geoUtils');
+      const geoResult = getGeoJSONFromShape(updates.coordinates);
 
-      const fieldPayload = { ...updates };
-      if (
-        fieldPayload.coordinates &&
-        typeof fieldPayload.coordinates === 'string'
-      ) {
-        try {
-          fieldPayload.coordinates = JSON.parse(fieldPayload.coordinates);
-        } catch (e) {}
+      const fieldPayload = {
+        ...updates,
+        area: updates.area ? parseFloat(updates.area) : undefined,
+        unit: updates.unit || updates.units,
+        soil:
+          updates.soilType ||
+          updates.phLevel ||
+          updates.nitrogen ||
+          updates.phosphorus ||
+          updates.potassium ||
+          updates.organicCarbon
+            ? {
+                type: updates.soilType,
+                ph: updates.phLevel ? parseFloat(updates.phLevel) : undefined,
+                nitrogen: updates.nitrogen
+                  ? parseFloat(updates.nitrogen)
+                  : undefined,
+                phosphorus: updates.phosphorus
+                  ? parseFloat(updates.phosphorus)
+                  : undefined,
+                potassium: updates.potassium
+                  ? parseFloat(updates.potassium)
+                  : undefined,
+                organicCarbon: updates.organicCarbon
+                  ? parseFloat(updates.organicCarbon)
+                  : undefined,
+              }
+            : updates.soil,
+        irrigation: updates.irrigationMethod
+          ? {
+              type: updates.irrigationMethod,
+            }
+          : updates.irrigation,
+      };
+
+      if (geoResult) {
+        fieldPayload.boundary = geoResult.boundary;
+        fieldPayload.location = geoResult.location;
       }
 
-      const updatedField = await updateField(id, fieldPayload);
+      // Cleanup flat fields
+      delete (fieldPayload as any).soilType;
+      delete (fieldPayload as any).phLevel;
+      delete (fieldPayload as any).nitrogen;
+      delete (fieldPayload as any).phosphorus;
+      delete (fieldPayload as any).potassium;
+      delete (fieldPayload as any).organicCarbon;
+      delete (fieldPayload as any).irrigationMethod;
+      delete (fieldPayload as any).units;
+
+      const updatedField = await updateField(id, fieldPayload as any);
       const normalizedRes = {
         ...updatedField,
         id: updatedField.id || (updatedField as any)._id,

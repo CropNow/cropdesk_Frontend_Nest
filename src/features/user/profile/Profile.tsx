@@ -304,56 +304,48 @@ const ProfileContent = () => {
 
     setIsAddingDevice(true);
     try {
-      // Connect to the device service
-      // @ts-ignore
-      const response: any = await connectDevice(
-        deviceData.serialNumber,
-        deviceData
-      );
+      // 1. Register Device in Backend
+      const { registerNewDevice, getDevicesForField } =
+        await import('./device.service');
+      const fieldId =
+        deviceData.fieldId || selectedField?.id || selectedField?._id;
 
-      if (response.success) {
-        // 1. Update Devices List
-        const newDevice = { ...deviceData, ...response.device };
-        const updatedDevices = [...devices, newDevice];
-        setDevices(updatedDevices);
-        localStorage.setItem(
-          'connected_devices',
-          JSON.stringify(updatedDevices)
-        );
+      if (!fieldId) {
+        throw new Error('No Field selected for the device.');
+      }
 
-        // 2. Persist IOT Data for the Dashboard
-        localStorage.setItem(
-          'iot_device_data',
-          JSON.stringify(response.sensorData)
-        );
+      const response: any = await registerNewDevice(fieldId, deviceData);
+
+      if (response) {
+        // 2. Fetch Fresh Devices from Backend to sync state
+        const fetchedDevices = await getDevicesForField(fieldId);
+
+        const mapped = fetchedDevices.map((d: any) => ({
+          ...d,
+          serialNumber: d.serialNumber || d.code || d.id,
+          status: d.status || (d.isOnline ? 'Active' : 'Offline'),
+          connectedAt: d.createdAt || new Date().toISOString(),
+        }));
+
+        setDevices(mapped);
+        localStorage.setItem('connected_devices', JSON.stringify(mapped));
 
         setIsAddDeviceModalOpen(false);
-
-        // Show success or warning message
-        if (response.warning) {
-          setAlertConfig({
-            isOpen: true,
-            title: 'Device Connected with Warning',
-            message: `${response.warning}`,
-            type: 'warning',
-          });
-        } else {
-          setAlertConfig({
-            isOpen: true,
-            title: 'Success',
-            message:
-              'Device Connected Successfully! IoT Dashboard is now live.',
-            type: 'info',
-          });
-        }
+        setAlertConfig({
+          isOpen: true,
+          title: 'Success',
+          message: 'Device Registered Successfully!',
+          type: 'info',
+        });
       }
     } catch (error: any) {
       setAlertConfig({
         isOpen: true,
-        title: 'Connection Failed',
+        title: 'Registration Failed',
         message:
+          error.response?.data?.message ||
           error.message ||
-          'Failed to connect device. Please check the serial number.',
+          'Failed to register device. Please try again.',
         type: 'error',
       });
     } finally {
@@ -504,31 +496,6 @@ const ProfileContent = () => {
                       </p>
                     )}
                   </div>
-                </div>
-
-                <div className="absolute top-0 right-0 md:static">
-                  <Button
-                    size="icon"
-                    className="rounded-xl w-8 h-8 md:w-10 md:h-10 bg-green-500 hover:bg-green-600 shadow-lg"
-                    title="Add Device"
-                    onClick={handleAttemptAddDevice}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-black"
-                    >
-                      <path d="M5 12h14" />
-                      <path d="M12 5v14" />
-                    </svg>
-                  </Button>
                 </div>
               </div>
 
@@ -715,9 +682,29 @@ const ProfileContent = () => {
                     <h3 className="text-lg font-bold text-foreground">
                       No devices connected yet
                     </h3>
-                    <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                    <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-xs">
                       Add a device to start monitoring your farm
                     </p>
+                    <Button
+                      onClick={handleAttemptAddDevice}
+                      className="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-2 rounded-xl flex items-center gap-2 shadow-lg transition-all active:scale-95"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M5 12h14" />
+                        <path d="M12 5v14" />
+                      </svg>
+                      Add Device
+                    </Button>
                   </div>
                 )}
               </div>
