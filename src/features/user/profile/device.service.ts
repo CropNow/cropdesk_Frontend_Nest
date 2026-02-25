@@ -66,7 +66,8 @@ export const getDevicesForField = async (fieldId: string) => {
     // Re-using the field-level list if backend still supports it,
     // or we might need to fetch all sensors.
     const response = await http.get(`/fields/${fieldId}/sensors`);
-    return response.data;
+    // Extract actual data array from envelope { success: true, data: [...] }
+    return response.data?.data || response.data || [];
   } catch (error) {
     console.error('Failed to fetch devices for field', error);
     return [];

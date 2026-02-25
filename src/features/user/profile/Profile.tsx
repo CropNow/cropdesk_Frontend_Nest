@@ -320,7 +320,12 @@ const ProfileContent = () => {
         // 2. Fetch Fresh Devices from Backend to sync state
         const fetchedDevices = await getDevicesForField(fieldId);
 
-        const mapped = fetchedDevices.map((d: any) => ({
+        // Safety check to ensure we have an array
+        const devicesArray = Array.isArray(fetchedDevices)
+          ? fetchedDevices
+          : fetchedDevices?.data || [];
+
+        const mapped = devicesArray.map((d: any) => ({
           ...d,
           serialNumber: d.serialNumber || d.code || d.id,
           status: d.status || (d.isOnline ? 'Active' : 'Offline'),
