@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { User, Map, Leaf, Droplets, Cpu, Trash2 } from 'lucide-react';
+import {
+  User,
+  Map,
+  Leaf,
+  Droplets,
+  Cpu,
+  Trash2,
+  Pencil,
+  Plus,
+} from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
 import FarmerDetailsTab from './FarmerDetailsTab';
@@ -75,6 +84,7 @@ const ProfileContent = () => {
   // Device State
   const [devices, setDevices] = useState<any[]>([]);
   const [isAddingDevice, setIsAddingDevice] = useState(false);
+  const [editingDevice, setEditingDevice] = useState<any>(null);
 
   // User Details State
   const [userDetails, setUserDetails] = useState({
@@ -291,7 +301,7 @@ const ProfileContent = () => {
     });
   };
 
-  const handleAddDevice = async (deviceData: any) => {
+  const handleSaveDevice = async (deviceData: any) => {
     if (!deviceData.serialNumber) {
       setAlertConfig({
         isOpen: true,
@@ -304,8 +314,7 @@ const ProfileContent = () => {
 
     setIsAddingDevice(true);
     try {
-      // 1. Register Device in Backend
-      const { registerNewDevice, getDevicesForField } =
+      const { registerNewDevice, getDevicesForField, updateDevice } =
         await import('./device.service');
       const fieldId =
         deviceData.fieldId || selectedField?.id || selectedField?._id;
@@ -314,35 +323,42 @@ const ProfileContent = () => {
         throw new Error('No Field selected for the device.');
       }
 
-      const response: any = await registerNewDevice(fieldId, deviceData);
-
-      if (response) {
-        // 2. Fetch Fresh Devices from Backend to sync state
-        const fetchedDevices = await getDevicesForField(fieldId);
-
-        // Safety check to ensure we have an array
-        const devicesArray = Array.isArray(fetchedDevices)
-          ? fetchedDevices
-          : fetchedDevices?.data || [];
-
-        const mapped = devicesArray.map((d: any) => ({
-          ...d,
-          serialNumber: d.serialNumber || d.code || d.id,
-          status: d.status || (d.isOnline ? 'Active' : 'Offline'),
-          connectedAt: d.createdAt || new Date().toISOString(),
-        }));
-
-        setDevices(mapped);
-        localStorage.setItem('connected_devices', JSON.stringify(mapped));
-
-        setIsAddDeviceModalOpen(false);
-        setAlertConfig({
-          isOpen: true,
-          title: 'Success',
-          message: 'Device Registered Successfully!',
-          type: 'info',
-        });
+      if (editingDevice) {
+        // Update existing device
+        await updateDevice(fieldId, editingDevice.sensorId, deviceData);
+      } else {
+        // Register new device
+        await registerNewDevice(fieldId, deviceData);
       }
+
+      // 2. Fetch Fresh Devices from Backend to sync state
+      const fetchedDevices = await getDevicesForField(fieldId);
+
+      // Safety check to ensure we have an array
+      const devicesArray = Array.isArray(fetchedDevices)
+        ? fetchedDevices
+        : fetchedDevices?.data || [];
+
+      const mapped = devicesArray.map((d: any) => ({
+        ...d,
+        serialNumber: d.serialNumber || d.code || d.id,
+        status: d.status || (d.isOnline ? 'Active' : 'Offline'),
+        connectedAt: d.createdAt || new Date().toISOString(),
+      }));
+
+      setDevices(mapped);
+      localStorage.setItem('connected_devices', JSON.stringify(mapped));
+
+      setIsAddDeviceModalOpen(false);
+      setEditingDevice(null);
+      setAlertConfig({
+        isOpen: true,
+        title: 'Success',
+        message: editingDevice
+          ? 'Device Updated Successfully!'
+          : 'Device Registered Successfully!',
+        type: 'info',
+      });
     } catch (error: any) {
       setAlertConfig({
         isOpen: true,
@@ -579,6 +595,18 @@ const ProfileContent = () => {
                   <h3 className="text-lg font-bold text-foreground">
                     Device Details
                   </h3>
+                  {devices.length > 0 && (
+                    <Button
+                      onClick={() => {
+                        setEditingDevice(null);
+                        setIsAddDeviceModalOpen(true);
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white font-bold h-9 px-4 rounded-xl flex items-center gap-2 shadow-sm transition-all active:scale-95"
+                    >
+                      <Plus size={16} />
+                      Add Device
+                    </Button>
+                  )}
                 </div>
 
                 {devices.length > 0 && checkProfileCompleteness().complete ? (
@@ -611,15 +639,29 @@ const ProfileContent = () => {
                           >
                             {device.status}
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 -mt-1 -mr-2"
-                            onClick={() => handleDeleteDevice(device)}
-                            title="Delete Device"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
+                          <div className="flex items-center gap-1 -mt-1 -mr-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-green-500 hover:bg-green-500/10"
+                              onClick={() => {
+                                setEditingDevice(device);
+                                setIsAddDeviceModalOpen(true);
+                              }}
+                              title="Edit Device"
+                            >
+                              <Pencil size={14} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteDevice(device)}
+                              title="Delete Device"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
@@ -848,8 +890,12 @@ const ProfileContent = () => {
 
       <AddDeviceModal
         isOpen={isAddDeviceModalOpen}
-        onClose={() => setIsAddDeviceModalOpen(false)}
-        onAdd={handleAddDevice}
+        onClose={() => {
+          setIsAddDeviceModalOpen(false);
+          setEditingDevice(null);
+        }}
+        initialData={editingDevice}
+        onAdd={handleSaveDevice}
       />
 
       {/* Global Alert/Confirm Dialog */}

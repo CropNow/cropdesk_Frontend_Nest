@@ -48,6 +48,31 @@ export const registerNewDevice = async (fieldId: string, deviceData: any) => {
   }
 };
 
+export const updateDevice = async (
+  fieldId: string,
+  sensorId: string,
+  deviceData: any
+) => {
+  try {
+    const payload = {
+      name: deviceData.name,
+      type: mapDeviceTypeToSensorType(deviceData.type),
+      status: deviceData.status,
+      manufacturer: deviceData.manufacturer,
+      model: deviceData.model,
+      firmwareVersion: deviceData.firmwareVersion,
+    };
+    const response = await sensorApi.updateSensor(sensorId, payload);
+    return response;
+  } catch (error: any) {
+    console.error(
+      'Device update failed:',
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
 export const deleteDevice = async (fieldId: string, sensorId: string) => {
   try {
     await sensorApi.deleteSensor(sensorId);
@@ -86,8 +111,14 @@ export const connectDevice = async (
     status?: string;
   }
 ) => {
-  if (apiKey !== VALID_SERIAL_NUMBER) {
-    throw new Error('Invalid User API Key. Connection Refused.');
+  // Allow both the GGESPL API Key AND the specific machine serial number
+  const isValidSerial =
+    apiKey === VALID_SERIAL_NUMBER || apiKey === 'WMS_D093F9';
+
+  if (!isValidSerial) {
+    throw new Error(
+      'Invalid User API Key or Serial Number. Connection Refused.'
+    );
   }
 
   try {
@@ -347,19 +378,59 @@ export const connectDevice = async (
       color: 'green',
       previewSensors: [
         {
-          name: 'Temp Surf',
-          value: `${getSensorValue(sensors, 'soil_temperature')}°C`,
+          name: 'Nitrogen',
+          value: `${getSensorValue(sensors, 'nitrogen')} mg/kg`,
         },
         {
-          name: 'Moist Surf',
-          value: `${getSensorValue(sensors, 'soil_moisture_1')}%`,
+          name: 'Phosphorus',
+          value: `${getSensorValue(sensors, 'phosphorus')} mg/kg`,
         },
         {
-          name: 'Temp Root',
-          value: `${getSensorValue(sensors, 'soil_temperature_2')}°C`,
+          name: 'Potassium',
+          value: `${getSensorValue(sensors, 'potassium')} mg/kg`,
         },
       ],
       details: [
+        {
+          name: 'Nitrogen',
+          value: getSensorValue(sensors, 'nitrogen'),
+          unit: 'mg/kg',
+          color: 'green',
+          status: 'Good',
+          readings: getReadings(sensors, 'nitrogen'),
+        },
+        {
+          name: 'Phosphorus',
+          value: getSensorValue(sensors, 'phosphorus'),
+          unit: 'mg/kg',
+          color: 'blue',
+          status: 'Good',
+          readings: getReadings(sensors, 'phosphorus'),
+        },
+        {
+          name: 'Potassium',
+          value: getSensorValue(sensors, 'potassium'),
+          unit: 'mg/kg',
+          color: 'orange',
+          status: 'Good',
+          readings: getReadings(sensors, 'potassium'),
+        },
+        {
+          name: 'pH Level',
+          value: getSensorValue(sensors, 'ph'),
+          unit: 'pH',
+          color: 'purple',
+          status: 'Good',
+          readings: getReadings(sensors, 'ph'),
+        },
+        {
+          name: 'Organic Carbon',
+          value: getSensorValue(sensors, 'organic_carbon'),
+          unit: '%',
+          color: 'amber',
+          status: 'Good',
+          readings: getReadings(sensors, 'organic_carbon'),
+        },
         {
           name: 'Soil Temperature at Surface',
           value: getSensorValue(sensors, 'soil_temperature'),
@@ -375,22 +446,6 @@ export const connectDevice = async (
           color: 'blue',
           status: 'Good',
           readings: getReadings(sensors, 'soil_moisture_1'),
-        },
-        {
-          name: 'Soil Temperature at Root',
-          value: getSensorValue(sensors, 'soil_temperature_2'),
-          unit: '°C',
-          color: 'orange',
-          status: 'Good',
-          readings: getReadings(sensors, 'soil_temperature_2'),
-        },
-        {
-          name: 'Soil Moisture at Root',
-          value: getSensorValue(sensors, 'soil_moisture_2'),
-          unit: '%',
-          color: 'blue',
-          status: 'Good',
-          readings: getReadings(sensors, 'soil_moisture_2'),
         },
       ],
     };
@@ -605,6 +660,11 @@ const METRIC_MAP: Record<string, string> = {
   'Soil Temperature at Root': 'soil_temperature_2',
   'Soil Moisture at Root': 'soil_moisture_2',
   'Leaf Wetness': 'leaf_wetness',
+  Nitrogen: 'nitrogen',
+  Phosphorus: 'phosphorus',
+  Potassium: 'potassium',
+  'pH Level': 'ph',
+  'Organic Carbon': 'organic_carbon',
 
   // Light
   Light: 'illuminance',
