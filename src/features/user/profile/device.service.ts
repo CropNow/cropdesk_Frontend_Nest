@@ -111,21 +111,31 @@ export const connectDevice = async (
       console.log('Existing sensors:', existingSensors);
 
       if (existingSensors.length > 0) {
-        const sensorId = existingSensors[0].id || existingSensors[0]._id;
-        console.log('Found sensor ID:', sensorId);
-        if (sensorId) {
-          try {
-            const latestData = await sensorApi.getLatestData(sensorId, 10);
-            console.log('Latest sensor data:', latestData);
-            data = {
-              sensors: latestData,
-              machine: { id: apiKey },
-              sensorId,
-            };
-          } catch (dataErr) {
-            console.warn('Failed to fetch sensor data:', dataErr);
+        // Fetch latest data from ALL sensors to ensure we catch all metrics
+        const allLatestData: any[] = [];
+        for (const sensor of existingSensors) {
+          const sid = sensor.id || sensor._id;
+          if (sid) {
+            try {
+              const latest = await sensorApi.getLatestData(sid, 50);
+              // Tag each reading with the sensor ID just in case
+              const tagged = latest.map((l: any) => ({
+                ...l,
+                _sourceSensorId: sid,
+              }));
+              allLatestData.push(...tagged);
+            } catch (err) {
+              console.warn(`Failed to fetch data for sensor ${sid}:`, err);
+            }
           }
         }
+
+        data = {
+          sensors: allLatestData,
+          machine: { id: apiKey },
+          sensorId: existingSensors[0].id || existingSensors[0]._id, // Default ID for historical calls
+          allSensors: existingSensors,
+        };
       } else {
         // No sensors registered yet, create one
         console.log('No sensors found, registering new sensor...');
@@ -147,7 +157,7 @@ export const connectDevice = async (
 
           const newSensorId = newSensor.id || newSensor._id;
           if (newSensorId) {
-            const latestData = await sensorApi.getLatestData(newSensorId, 10);
+            const latestData = await sensorApi.getLatestData(newSensorId, 50);
             data = {
               sensors: latestData,
               machine: { id: apiKey },
@@ -162,24 +172,124 @@ export const connectDevice = async (
 
     // The rest of the mapping logic remains to update the UI local storage
     // using the data returned from our backend.
-    const sensors = data.sensors || [];
+    const sensors = (data.sensors || []).sort(
+      (a: any, b: any) =>
+        new Date(b.timestamp || 0).getTime() -
+        new Date(a.timestamp || 0).getTime()
+    );
     const realSerialNumber = data.machine?.id || apiKey;
 
-    // Helper to safely get value or default (API uses 'type' not 'name')
+    // Helper to safely get value or default (Ultra Robust)
     const getSensorValue = (
       sensors: any[],
-      type: string,
+      metricKey: string,
       defaultValue: string = '0'
     ) => {
-      const sensor = sensors.find((s: any) => s.type === type);
-      return sensor && sensor.readings && sensor.readings.length > 0
-        ? String(sensor.readings[0].value)
-        : '0';
+      if (!sensors || sensors.length === 0) return defaultValue;
+
+      const lowerKey = metricKey.toLowerCase();
+
+      // 1. Search for a point dedicated to this metric (e.g. { metric: 'temp', value: 25 })
+      const reading = sensors.find((s: any) => {
+        const smetric = String(s.metric || s.type || '').toLowerCase();
+        return smetric === lowerKey || smetric === lowerKey.replace(/_/g, ' ');
+      });
+
+      if (reading) {
+        if (reading.value !== undefined) return String(reading.value);
+        if (reading.val !== undefined) return String(reading.val);
+        if (reading.readings && reading.readings.length > 0)
+          return String(reading.readings[0].value);
+      }
+
+      // 2. Search for a multi-field object that contains this key (e.g. { temp: 25, wind: 10 })
+      // OR search inside the 'values' object (New backend format)
+      const multiFieldReading = sensors.find((s: any) => {
+        // Check top-level keys
+        const hasTopLevel = Object.keys(s).some(
+          (k) => k.toLowerCase() === lowerKey
+        );
+        if (hasTopLevel) return true;
+
+        // Check inside 'values' if it exists
+        if (s.values && typeof s.values === 'object') {
+          return Object.keys(s.values).some(
+            (k) => k.toLowerCase() === lowerKey
+          );
+        }
+        return false;
+      });
+
+      if (multiFieldReading) {
+        // Try top-level first
+        const topLevelKey = Object.keys(multiFieldReading).find(
+          (k) => k.toLowerCase() === lowerKey
+        );
+        if (topLevelKey) return String(multiFieldReading[topLevelKey]);
+
+        // Try inside 'values'
+        if (multiFieldReading.values) {
+          const valuesKey = Object.keys(multiFieldReading.values).find(
+            (k) => k.toLowerCase() === lowerKey
+          );
+          if (valuesKey) return String(multiFieldReading.values[valuesKey]);
+        }
+      }
+
+      return defaultValue;
     };
 
-    const getReadings = (sensors: any[], type: string): any[] => {
-      const sensor = sensors.find((s: any) => s.type === type);
-      return sensor && sensor.readings ? sensor.readings : [];
+    const getReadings = (sensors: any[], metricKey: string): any[] => {
+      if (!sensors || sensors.length === 0) return [];
+      const lowerKey = metricKey.toLowerCase();
+
+      // Find all entries that have this metric
+      const matching = sensors.filter((s: any) => {
+        const smetric = String(s.metric || s.type || '').toLowerCase();
+        const hasTopLevel = Object.keys(s).some(
+          (k) => k.toLowerCase() === lowerKey
+        );
+        const hasInValues =
+          s.values &&
+          typeof s.values === 'object' &&
+          Object.keys(s.values).some((k) => k.toLowerCase() === lowerKey);
+        return (
+          smetric === lowerKey ||
+          smetric === lowerKey.replace(/_/g, ' ') ||
+          hasTopLevel ||
+          hasInValues
+        );
+      });
+
+      // Map to standardized { value, timestamp }
+      return matching.map((s: any) => {
+        let val = s.value !== undefined ? s.value : s.val;
+
+        // Check top level
+        if (val === undefined) {
+          const actualKey = Object.keys(s).find(
+            (k) => k.toLowerCase() === lowerKey
+          );
+          if (actualKey) val = s[actualKey];
+        }
+
+        // Check inside 'values'
+        if (val === undefined && s.values) {
+          const valuesKey = Object.keys(s.values).find(
+            (k) => k.toLowerCase() === lowerKey
+          );
+          if (valuesKey) val = s.values[valuesKey];
+        }
+
+        return {
+          value: parseFloat(String(val || 0)),
+          timestamp:
+            s.timestamp ||
+            (s.readings && s.readings.length > 0
+              ? s.readings[0].timestamp
+              : new Date().toISOString()),
+        };
+      });
     };
 
     // Mapping logic remains to preserve the UI structure
@@ -429,15 +539,18 @@ export const connectDevice = async (
 
     if (sensors && sensors.length > 0) {
       sensors.forEach((s: any) => {
-        if (s.readings && s.readings.length > 0) {
-          const readingTime = s.readings[0].timestamp;
-          if (
-            readingTime &&
-            (!latestTimestamp ||
-              new Date(readingTime) > new Date(latestTimestamp))
-          ) {
-            latestTimestamp = readingTime;
-          }
+        const readingTime =
+          s.timestamp ||
+          (s.readings && s.readings.length > 0
+            ? s.readings[0].timestamp
+            : null);
+
+        if (
+          readingTime &&
+          (!latestTimestamp ||
+            new Date(readingTime) > new Date(latestTimestamp))
+        ) {
+          latestTimestamp = readingTime;
         }
       });
     }
@@ -460,6 +573,126 @@ export const connectDevice = async (
     };
   } catch (error) {
     console.error('Device connection error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Historical Data and Export Integrations
+ */
+
+const METRIC_MAP: Record<string, string> = {
+  // Weather
+  'Rain Fall': 'rainfall',
+  'Wind Speed': 'wind_speed',
+  'Wind Direction': 'wind_direction',
+  Humidity: 'humidity',
+  'Air Temperature': 'temperature',
+  'Air Pressure': 'pressure',
+  Temperature: 'temperature',
+
+  // Air Quality
+  'PM 2.5': 'pm2_5',
+  'PM 10': 'pm10',
+  CO2: 'co2',
+  SOX: 'so2',
+  NOX: 'no2',
+  O3: 'o3',
+
+  // Soil
+  'Soil Temperature at Surface': 'soil_temperature',
+  'Soil Moisture at Surface': 'soil_moisture_1',
+  'Soil Temperature at Root': 'soil_temperature_2',
+  'Soil Moisture at Root': 'soil_moisture_2',
+  'Leaf Wetness': 'leaf_wetness',
+
+  // Light
+  Light: 'illuminance',
+  Radiation: 'solar_radiation',
+};
+
+/**
+ * Fetch aggregated historical data for a sensor
+ */
+export const getHistoricalData = async (
+  sensorId: string,
+  uiMetricName: string,
+  rangeLabel: string
+) => {
+  try {
+    const metric =
+      METRIC_MAP[uiMetricName] || uiMetricName.toLowerCase().replace(/ /g, '_');
+
+    // Map range label (e.g. "7 Days", "1 Month") to API range (7d, 30d, 1m)
+    let range = '7d';
+    if (rangeLabel.includes('24 Hours')) range = '1d';
+    else if (rangeLabel.includes('7 Days')) range = '7d';
+    else if (rangeLabel.includes('7 Weeks')) range = '49d';
+    else if (rangeLabel.includes('1 Month')) range = '1m';
+    else if (rangeLabel.includes('30 Days')) range = '30d';
+
+    const aggregation = range === '1d' ? 'hour' : 'day';
+
+    return await sensorApi.getAggregatedData(
+      sensorId,
+      metric,
+      range,
+      aggregation
+    );
+  } catch (error) {
+    console.error(
+      `Failed to fetch historical data for ${uiMetricName}:`,
+      error
+    );
+    return [];
+  }
+};
+
+/**
+ * Export sensor data as CSV or JSON
+ */
+export const downloadSensorData = async (
+  sensorId: string,
+  startDate: string,
+  endDate: string,
+  format: 'csv' | 'json' = 'json'
+) => {
+  try {
+    const data = await sensorApi.exportData(
+      sensorId,
+      startDate,
+      endDate,
+      format
+    );
+
+    if (format === 'csv') {
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute(
+        'download',
+        `sensor_data_${sensorId}_${new Date().toISOString().split('T')[0]}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      const dataStr =
+        'data:text/json;charset=utf-8,' +
+        encodeURIComponent(JSON.stringify(data));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute('href', dataStr);
+      downloadAnchorNode.setAttribute(
+        'download',
+        `sensor_data_${sensorId}.json`
+      );
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to export sensor data:', error);
     throw error;
   }
 };

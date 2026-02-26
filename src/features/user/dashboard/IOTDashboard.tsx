@@ -22,6 +22,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 
 interface SensorCategory {
   id: string;
@@ -43,7 +44,13 @@ interface SensorCategory {
 }
 
 import { useNavigate } from 'react-router-dom';
-import { connectDevice } from '../profile/device.service';
+import { useProfile } from '../profile/context/useProfile';
+import {
+  connectDevice,
+  getHistoricalData,
+  downloadSensorData,
+  VALID_SERIAL_NUMBER,
+} from '../profile/device.service';
 
 import {
   AlertDialog,
@@ -77,6 +84,8 @@ const IOTDashboard = ({
     message: '',
     type: 'info',
   });
+
+  const { selectedField } = useProfile();
 
   const closeAlert = () =>
     setAlertConfig((prev) => ({ ...prev, isOpen: false }));
@@ -237,7 +246,7 @@ const IOTDashboard = ({
   const handleRefresh = async () => {
     const lastRefresh = localStorage.getItem('last_iot_refresh');
     const now = Date.now();
-    const cooldown = 45 * 60 * 1000;
+    const cooldown = 30 * 1000; // Reduced to 30 seconds for easier recovery
 
     if (lastRefresh && now - parseInt(lastRefresh) < cooldown) {
       const remaining = Math.ceil(
@@ -342,92 +351,63 @@ const IOTDashboard = ({
   useEffect(() => {
     // Auto-Fetch if we have devices but no data (Persistence Restoration)
     const checkAndFetch = async () => {
-      const storedDevices = localStorage.getItem('connected_devices');
+      let storedDevices = localStorage.getItem('connected_devices');
       const storedData = localStorage.getItem('iot_device_data');
+
+      // 1. If no devices in localStorage, try to sync from backend via Profile Context
+      if (!storedDevices && selectedField?.id) {
+        console.log(
+          'IOTDashboard: No devices in storage, syncing from backend for field:',
+          selectedField.id
+        );
+        const { getDevicesForField } =
+          await import('@/features/user/profile/device.service');
+        const fetchedDevices = await getDevicesForField(selectedField.id);
+        const devicesArray = Array.isArray(fetchedDevices)
+          ? fetchedDevices
+          : fetchedDevices?.data || [];
+
+        if (devicesArray.length > 0) {
+          const mapped = devicesArray.map((d: any) => ({
+            ...d,
+            serialNumber: d.serialNumber || d.code || d.id,
+            status: d.status || (d.isOnline ? 'Active' : 'Offline'),
+            connectedAt: d.createdAt || new Date().toISOString(),
+          }));
+          localStorage.setItem('connected_devices', JSON.stringify(mapped));
+          storedDevices = JSON.stringify(mapped);
+        }
+      }
 
       if (storedDevices && JSON.parse(storedDevices).length > 0) {
         if (!storedData || JSON.parse(storedData).length === 0) {
           console.log(
             'IOTDashboard: Devices found but no data. Auto-fetching...'
           );
-          // We need to call fetchFreshData.
-          // Since fetchFreshData is defined below, we can't call it easily in this effect if it's not hoisted or using useCallback correctly with deps.
-          // We'll trigger it via a small timeout loop or refactor helper.
-          // BETTER: Dispatch a custom event or just reuse the logic from fetchFreshData here cleanly?
-          // Let's reuse logic by calling the button handler or extracting logic.
-          // For safety/speed, we'll just set a flag to trigger the fetch in the main effect or duplicate the fetch call lightly.
-          // Actually, let's just trigger the refresh button logic if possible? No, cleaner to just run the fetch command.
 
-          // We'll implement a self-contained fetch here to ensure it runs on mount.
           try {
             const devices = JSON.parse(storedDevices);
-            const serial = devices[0].apiKey || devices[0].serialNumber;
-            // Dynamically import to avoid circular deps or ensure service availability
-            const { connectDevice } =
-              await import('@/features/user/profile/device.service');
-            // @ts-ignore
-            const response: any = await connectDevice(serial, devices[0]);
+            const serial =
+              devices[0].apiKey ||
+              devices[0].serialNumber ||
+              VALID_SERIAL_NUMBER;
 
-            if (response.success) {
-              localStorage.setItem(
-                'iot_device_data',
-                JSON.stringify(response.sensorData)
-              );
-              // Update Last Refresh
-              const nowStr = Date.now().toString();
-              localStorage.setItem('last_iot_refresh', nowStr);
-              const lastActive = response.device.lastActiveAt;
-              if (lastActive)
-                localStorage.setItem('iot_last_active_at', lastActive);
-
-              window.dispatchEvent(new Event('iot-data-updated'));
-              // Force reload of state by re-reading or setting state directly?
-              // The main useEffect above reads from localStorage only on mount [].
-              // We need to trigger a re-read.
-              // Simplest way: reload page? No.
-              // Dispatching 'iot-data-updated' might simply trigger other listeners, but won't re-run the main mount effect here easily WITHOUT reloading the component.
-              // The best way is to set state directly here.
-
-              const storedData = JSON.stringify(response.sensorData);
-              const parsedData = JSON.parse(storedData);
-
-              const hydratedData = parsedData.map((cat: any) => ({
-                ...cat,
-                icon: (
-                  <div
-                    className={`p-2 bg-${cat.color}-500/10 rounded-lg text-${cat.color}-500`}
-                  >
-                    {resolveCategoryIcon(cat.id)}
-                  </div>
-                ),
-                previewSensors: cat.previewSensors.map((s: any) => ({
-                  ...s,
-                  icon: resolveIcon(s.name, 12),
-                })),
-                details: cat.details.map((d: any) => ({
-                  ...d,
-                  icon: resolveIcon(d.name, 20),
-                })),
-              }));
-              setSensorCategories(hydratedData);
-              setAlertConfig({
-                isOpen: true,
-                title: 'Data Restored',
-                message: 'Sensor data restored from cloud.',
-                type: 'info',
-              });
-            }
+            // We'll reuse fetchFreshData logic here
+            setIsRefreshing(true);
+            await fetchFreshData();
+            setIsRefreshing(false);
           } catch (e) {
             console.error('Auto-fetch failed', e);
+            setIsRefreshing(false);
           }
         }
       }
     };
 
-    // Run after a short delay to allow storage to settle
-    const timer = setTimeout(checkAndFetch, 1000);
+    // Run after a short delay to allow storage and profile context to settle
+    const timer = setTimeout(checkAndFetch, 1500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [selectedField]);
 
   const hasData = !showEmptyState && sensorCategories.length > 0;
 
@@ -969,6 +949,14 @@ const SensorCategoryModal = ({
                               (s) => s.name === selectedSensor
                             )?.readings || []
                           }
+                          sensorId={
+                            localStorage.getItem('connected_devices')
+                              ? JSON.parse(
+                                  localStorage.getItem('connected_devices') ||
+                                    '[]'
+                                )[0]?.sensorId
+                              : null
+                          }
                           onClose={() => setSelectedSensor(null)}
                         />
                       </div>
@@ -996,6 +984,14 @@ const SensorCategoryModal = ({
                             category.details.find(
                               (s) => s.name === selectedSensor
                             )?.readings || []
+                          }
+                          sensorId={
+                            localStorage.getItem('connected_devices')
+                              ? JSON.parse(
+                                  localStorage.getItem('connected_devices') ||
+                                    '[]'
+                                )[0]?.sensorId
+                              : null
                           }
                           onClose={() => setSelectedSensor(null)}
                         />
@@ -1031,6 +1027,8 @@ const ChartCard = ({
   activeTab,
   onTabChange,
   tabs = ['24 Hours', '7 Days', '1 Month'],
+  onExport,
+  isExporting,
   children,
 }: {
   title: string;
@@ -1040,6 +1038,8 @@ const ChartCard = ({
   activeTab: string;
   onTabChange: (tab: string) => void;
   tabs?: string[];
+  onExport?: ((format: 'csv' | 'json') => void | Promise<any>) | undefined;
+  isExporting?: boolean | undefined;
   children: React.ReactNode;
 }) => {
   return (
@@ -1055,6 +1055,23 @@ const ChartCard = ({
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-baseline gap-0.5">{valueDisplay}</div>
+          {onExport && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onExport('csv')}
+                disabled={isExporting}
+                className="text-[10px] font-bold h-8"
+              >
+                {isExporting ? (
+                  <RefreshCw className="animate-spin" size={12} />
+                ) : (
+                  'CSV'
+                )}
+              </Button>
+            </div>
+          )}
           <button
             onClick={onClose}
             className="p-1.5 bg-red-500/10 rounded-full text-red-500 hover:bg-red-500/20 transition-all"
@@ -1090,35 +1107,62 @@ const WindDirectionChart = ({
   value,
   unit,
   readings,
+  sensorId,
   onClose,
 }: {
   sensorName: string;
   value: string;
   unit: string;
   readings: { value: number; timestamp: string }[];
+  sensorId?: string | null;
   onClose: () => void;
 }) => {
   const [activeTab, setActiveTab] = useState('24 Hours');
-  const tabs = ['24 Hours', '7 Weeks', '1 Month'];
+  const [chartData, setChartData] = useState<
+    { value: number; timestamp: string }[]
+  >([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const tabs = ['24 Hours', '7 Days', '1 Month'];
 
-  // Helper to filter readings
-  const getFilteredData = () => {
-    const now = Date.now();
-    const oneDay = 24 * 60 * 60 * 1000;
+  // Fetch data effect
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!sensorId) {
+        // Fallback to local readings
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+        let startTime = now - oneDay;
+        if (activeTab === '7 Days') startTime = now - 7 * oneDay;
+        else if (activeTab === '1 Month') startTime = now - 30 * oneDay;
 
-    let startTime = now;
-    if (activeTab === '24 Hours') {
-      startTime = now - oneDay;
-    } else if (activeTab === '7 Weeks') {
-      startTime = now - 49 * oneDay;
-    } else if (activeTab === '1 Month') {
-      startTime = now - 30 * oneDay;
-    }
+        const filtered = readings.filter(
+          (r) => new Date(r.timestamp).getTime() >= startTime
+        );
+        setChartData(filtered);
+        return;
+      }
 
-    return readings.filter((r) => new Date(r.timestamp).getTime() >= startTime);
-  };
-
-  const chartData = getFilteredData();
+      setIsLoading(true);
+      try {
+        const data = await getHistoricalData(
+          sensorId,
+          'Wind Direction',
+          activeTab
+        );
+        if (data && data.length > 0) {
+          setChartData(data);
+        } else {
+          // Fallback
+          setChartData([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch historical wind data', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [sensorId, activeTab, readings]);
 
   // Process data into frequency bins for Radar
   // Directions: N, NE, E, SE, S, SW, W, NW (0, 45, 90, 135, 180, 225, 270, 315)
@@ -1173,6 +1217,18 @@ const WindDirectionChart = ({
       subTitle="Direction Distribution"
       activeTab={activeTab}
       onTabChange={setActiveTab}
+      onExport={
+        sensorId
+          ? (format: 'csv' | 'json') => {
+              downloadSensorData(
+                sensorId,
+                new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                new Date().toISOString(),
+                format
+              );
+            }
+          : undefined
+      }
       tabs={tabs}
       valueDisplay={
         <div className="flex flex-col items-end">
@@ -1268,41 +1324,77 @@ const SensorTrendChart = ({
   value,
   unit,
   readings,
+  sensorId,
   onClose,
 }: {
   sensorName: string;
   value: string;
   unit: string;
   readings: { value: number; timestamp: string }[];
+  sensorId?: string | null;
   onClose: () => void;
 }) => {
   const [activeTab, setActiveTab] = useState('24 Hours');
+  const [chartData, setChartData] = useState<
+    { value: number; timestamp: string }[]
+  >([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
-  // Helper to parse and sort readings
-  const sortedReadings = [...(readings || [])].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  );
+  // Fetch data effect
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!sensorId || activeTab === '24 Hours') {
+        // Use local readings for real-time/latest
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+        let startTime = now - oneDay;
+        if (activeTab === '7 Days') startTime = now - 7 * oneDay;
+        else if (activeTab === '1 Month') startTime = now - 30 * oneDay;
 
-  const getFilteredData = () => {
-    const now = new Date();
-    const oneDay = 24 * 60 * 60 * 1000;
+        const sorted = [...(readings || [])].sort(
+          (a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        const filtered = sorted.filter(
+          (r) => new Date(r.timestamp).getTime() >= startTime
+        );
+        setChartData(filtered);
+        return;
+      }
 
-    let startTime = now.getTime();
+      setIsLoading(true);
+      try {
+        const data = await getHistoricalData(sensorId, sensorName, activeTab);
+        if (data && data.length > 0) {
+          setChartData(data);
+        } else {
+          setChartData([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch historical sensor data', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [sensorId, activeTab, readings, sensorName]);
 
-    if (activeTab === '24 Hours') {
-      startTime = now.getTime() - oneDay;
-    } else if (activeTab === '7 Days') {
-      startTime = now.getTime() - 7 * oneDay;
-    } else if (activeTab === '1 Month') {
-      startTime = now.getTime() - 30 * oneDay;
+  const handleExport = async (format: 'csv' | 'json') => {
+    if (!sensorId) return;
+    setIsExporting(true);
+    try {
+      const endDate = new Date().toISOString();
+      const startDate = new Date(
+        Date.now() - 30 * 24 * 60 * 60 * 1000
+      ).toISOString(); // Last 30 days
+      await downloadSensorData(sensorId, startDate, endDate, format);
+    } catch (err) {
+      console.error('Export failed', err);
+    } finally {
+      setIsExporting(false);
     }
-
-    return sortedReadings.filter(
-      (r) => new Date(r.timestamp).getTime() >= startTime
-    );
   };
-
-  const chartData = getFilteredData();
 
   // Generate X-axis labels dynamically
   const getAxisLabels = () => {
@@ -1328,6 +1420,10 @@ const SensorTrendChart = ({
       title={sensorName}
       activeTab={activeTab}
       onTabChange={setActiveTab}
+      onExport={
+        sensorId ? (format: 'csv' | 'json') => handleExport(format) : undefined
+      }
+      isExporting={isExporting}
       valueDisplay={
         <>
           <span className="text-3xl sm:text-5xl font-bold text-red-500">
