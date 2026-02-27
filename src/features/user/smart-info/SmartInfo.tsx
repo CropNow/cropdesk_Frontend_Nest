@@ -177,9 +177,18 @@ const SmartInfo = () => {
         const pred = await getLatestPrediction(user.id);
 
         // 2. If we have real IoT data and the DB prediction is mock/missing/old,
+        //    OR if the server prediction lacks the structured FIS fields (pest/irrigation),
         //    run a fresh analysis against the external ML Model.
-        if (realIotData && (!pred || pred._id?.startsWith('pred_mock'))) {
-          console.log('Fetching fresh analysis from ML Model...');
+        const needsFreshAnalysis =
+          !pred ||
+          pred._id?.startsWith('pred_mock') ||
+          !pred.pest ||
+          !pred.irrigation;
+
+        if (realIotData && needsFreshAnalysis) {
+          console.log(
+            'Fetching fresh analysis from ML Model (Server data incomplete/missing)...'
+          );
           const { analyzeCropHealth } = await import('../dashboard/ml.service');
 
           // Let's construct a cleaner payload

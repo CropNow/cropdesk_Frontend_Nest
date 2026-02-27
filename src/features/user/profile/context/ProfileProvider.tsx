@@ -226,7 +226,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
               if (firstFarm.fields?.length > 0) {
                 const firstField = firstFarm.fields[0];
                 // Set selection IDs
-                setSelectedFieldId(firstField.id);
+                handleSetSelectedFieldId(firstField.id);
                 if (firstField.crops?.length > 0) {
                   setSelectedCropId(firstField.crops[0].id);
                 }
@@ -460,7 +460,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
     try {
       const { createField } = await import('@/features/auth/api/field.api');
       const { getGeoJSONFromShape } = await import('@/utils/geoUtils');
-      const geoResult = getGeoJSONFromShape(newField.coordinates);
+      const geoResult: any = getGeoJSONFromShape(newField.coordinates);
 
       const fieldPayload = {
         ...newField,
@@ -550,7 +550,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
     try {
       const { updateField } = await import('@/features/auth/api/field.api');
       const { getGeoJSONFromShape } = await import('@/utils/geoUtils');
-      const geoResult = getGeoJSONFromShape(updates.coordinates);
+      const geoResult: any = getGeoJSONFromShape(updates.coordinates);
 
       const fieldPayload = {
         ...updates,
@@ -821,6 +821,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
   // Wrapper for selecting Logic to handle hierarchy selection & FRESH FETCH
   const handleSetSelectedFarmerId = async (id: string) => {
     setSelectedFarmerId(String(id));
+    localStorage.setItem('selectedFarmerId', String(id));
     setSelectedFarmId('');
     setSelectedFieldId('');
     setSelectedCropId('');
@@ -853,6 +854,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
 
   const handleSetSelectedFarmId = async (id: string) => {
     setSelectedFarmId(String(id));
+    localStorage.setItem('selectedFarmId', String(id));
     setSelectedFieldId('');
     setSelectedCropId('');
 
@@ -892,6 +894,7 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
 
   const handleSetSelectedFieldId = async (id: string) => {
     setSelectedFieldId(String(id));
+    localStorage.setItem('selectedFieldId', String(id));
     setSelectedCropId('');
 
     if (!id) return;

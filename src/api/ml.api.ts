@@ -47,13 +47,15 @@ export const getDiseasePrediction = async (
   return response.data;
 };
 
-export const getWeatherRecommendations =
-  async (): Promise<WeatherRecommendation> => {
-    const response = await http.get<WeatherRecommendation>(
-      '/predictions/weather/recommendations'
-    );
-    return response.data;
-  };
+export const getWeatherRecommendations = async (
+  payload: any
+): Promise<WeatherRecommendation> => {
+  const response = await http.post<WeatherRecommendation>(
+    '/predictions/weather/recommendations',
+    payload
+  );
+  return response.data;
+};
 
 export const getSoilAnalysis = async (
   fieldId: string
@@ -104,10 +106,8 @@ export const analyzeCropHealth = async (
   sensorData: any,
   farmId: string
 ): Promise<any> => {
-  // Use weather recommendations endpoint for crop health analysis
-  const response = await http.post('/predictions/weather/recommendations', {
+  return await getWeatherRecommendations({
     ...sensorData,
     farmId,
   });
-  return response.data;
 };

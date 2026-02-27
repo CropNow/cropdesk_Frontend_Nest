@@ -49,8 +49,14 @@ const AIInsights = ({
           const pred = await getLatestPrediction(user.id);
 
           // 2. If we have real IoT data and the DB prediction is mock/missing/old,
-          //    run a fresh analysis against the external ML Model.
-          if (realIotData && (!pred || pred._id?.startsWith('pred_mock'))) {
+          //    OR if the server prediction lacks structured data, run fresh analysis.
+          const needsFreshAnalysis =
+            !pred ||
+            pred._id?.startsWith('pred_mock') ||
+            !pred.pest ||
+            !pred.irrigation;
+
+          if (realIotData && needsFreshAnalysis) {
             // Need to allow time for component to mount/check
             const { analyzeCropHealth } = await import('./ml.service');
 
