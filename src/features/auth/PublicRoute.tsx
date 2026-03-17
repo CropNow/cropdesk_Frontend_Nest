@@ -10,8 +10,13 @@ interface PublicRouteProps {
 export const PublicRoute = ({ children }: PublicRouteProps) => {
   const { user, loading } = useAuth();
 
-  if (loading) return <Loader />;
-  if (user) return <Navigate to="/" replace />;
+  if (loading) {
+    return <Loader />;
+  }
+
+  if (user || localStorage.getItem('user')) {
+    return <Navigate to="/" replace />;
+  }
 
   return <>{children}</>;
 };
