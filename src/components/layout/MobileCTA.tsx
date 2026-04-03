@@ -4,12 +4,15 @@ import { Sun, Moon, Menu, X, LogOut } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/features/auth/useAuth';
 import { logout } from '@/features/auth/auth.api';
+import { useAccess } from '@/hooks/useAccess';
+import ProductSwitcher from '@/components/common/ProductSwitcher';
 
 const MobileCTA = () => {
   const { theme, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { setUser } = useAuth();
+  const { activeProduct } = useAccess();
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -52,6 +55,7 @@ const MobileCTA = () => {
         </Link>
 
         <div className="flex items-center gap-3">
+          <ProductSwitcher />
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg bg-card border border-border text-muted-foreground transition-all active:scale-95"
@@ -69,45 +73,131 @@ const MobileCTA = () => {
 
       {isMenuOpen && (
         <nav className="absolute top-16 left-0 right-0 bg-background border-b border-border p-4 flex flex-col gap-2 animate-in slide-in-from-top-4 duration-300 shadow-xl">
-          <NavLink
-            to="/"
-            onClick={() => setIsMenuOpen(false)}
-            className={({ isActive }) =>
-              `px-4 py-3 rounded-xl transition-all font-medium ${
-                isActive
-                  ? 'bg-primary/10 text-primary border border-primary/20'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`
-            }
-          >
-            Home
-          </NavLink>
-          <NavLink
-            to="/smart-info"
-            onClick={() => setIsMenuOpen(false)}
-            className={({ isActive }) =>
-              `px-4 py-3 rounded-xl transition-all font-medium ${
-                isActive
-                  ? 'bg-primary/10 text-primary border border-primary/20'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`
-            }
-          >
-            Smart Info
-          </NavLink>
-          <NavLink
-            to="/profile"
-            onClick={() => setIsMenuOpen(false)}
-            className={({ isActive }) =>
-              `px-4 py-3 rounded-xl transition-all font-medium ${
-                isActive
-                  ? 'bg-primary/10 text-primary border border-primary/20'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`
-            }
-          >
-            User
-          </NavLink>
+          {activeProduct === 'nest' ? (
+            <>
+              <NavLink
+                to="/"
+                onClick={() => setIsMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-xl transition-all font-medium ${
+                    isActive
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`
+                }
+              >
+                Home
+              </NavLink>
+              <NavLink
+                to="/smart-info"
+                onClick={() => setIsMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-xl transition-all font-medium ${
+                    isActive
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`
+                }
+              >
+                Smart Info
+              </NavLink>
+              <NavLink
+                to="/profile"
+                onClick={() => setIsMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-xl transition-all font-medium ${
+                    isActive
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`
+                }
+              >
+                User
+              </NavLink>
+            </>
+          ) : (
+            <>
+              <NavLink
+                to="/seed/dashboard"
+                onClick={() => setIsMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-xl transition-all font-medium ${
+                    isActive
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`
+                }
+              >
+                Dashboard
+              </NavLink>
+              <NavLink
+                to="/seed/sensors"
+                onClick={() => setIsMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-xl transition-all font-medium ${
+                    isActive
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`
+                }
+              >
+                Sensors
+              </NavLink>
+              <NavLink
+                to="/seed/disease"
+                onClick={() => setIsMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-xl transition-all font-medium ${
+                    isActive
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`
+                }
+              >
+                Disease
+              </NavLink>
+              <NavLink
+                to="/seed/pests"
+                onClick={() => setIsMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-xl transition-all font-medium ${
+                    isActive
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`
+                }
+              >
+                Pests
+              </NavLink>
+              <NavLink
+                to="/seed/weeds"
+                onClick={() => setIsMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-xl transition-all font-medium ${
+                    isActive
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`
+                }
+              >
+                Weeds
+              </NavLink>
+
+              <NavLink
+                to="/seed/profile"
+                onClick={() => setIsMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-xl transition-all font-medium ${
+                    isActive
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`
+                }
+              >
+                Fleet
+              </NavLink>
+            </>
+          )}
 
           <div className="h-px bg-border my-2"></div>
 

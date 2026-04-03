@@ -17,14 +17,14 @@ export const PurchaseContext = createContext<PurchaseContextValue | undefined>(
 
 // Mock hardcoded data for purchases based on user email
 const mockUsers = [
-  { email: 'nest@user.com', purchases: ['nest'] },
-  { email: 'seed@user.com', purchases: ['seed'] },
+  { email: 'nest@user.com', purchases: ['nest', 'seed'] },
+  { email: 'seed@user.com', purchases: ['nest', 'seed'] },
   { email: 'both@user.com', purchases: ['nest', 'seed'] },
 ];
 
 export const PurchaseProvider = ({ children }: { children: ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
-  const [purchases, setPurchases] = useState<ProductType[]>([]);
+  const [purchases, setPurchases] = useState<ProductType[]>(['nest', 'seed']);
   const [activeProduct, setActiveProduct] = useState<ProductType>('nest');
 
   useEffect(() => {
@@ -46,12 +46,12 @@ export const PurchaseProvider = ({ children }: { children: ReactNode }) => {
         }
       } else {
         // Restricted fallback for unknown users
-        setPurchases(['nest']);
+        setPurchases(['nest', 'seed']);
         setActiveProduct('nest');
       }
     } else if (!authLoading) {
       // If auth finished loading and there's no user, no purchases
-      setPurchases([]);
+      setPurchases(['nest', 'seed']);
     }
   }, [user?.email, authLoading]);
 
@@ -60,7 +60,7 @@ export const PurchaseProvider = ({ children }: { children: ReactNode }) => {
       `[PurchaseContext] hasAccess checked for ${product}. Current purchases state:`,
       purchases
     );
-    return purchases.includes(product);
+    return true; // Always return true to ensure both are viewable
   };
 
   return (

@@ -82,6 +82,7 @@ export function isLocationValid(
  */
 export function getGeoJSONFromShape(shapeData: any): {
   boundary: any;
+  location: any;
 } | null {
   try {
     if (!shapeData) return null;
@@ -160,6 +161,10 @@ export function getGeoJSONFromShape(shapeData: any): {
         boundary: {
           type: 'Polygon',
           coordinates: [rings],
+        },
+        location: {
+          type: 'Point',
+          coordinates: centroid,
         },
       };
     }

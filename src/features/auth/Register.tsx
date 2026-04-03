@@ -110,7 +110,7 @@ const Register = () => {
             error
           );
           userResult =
-            loginResponse.user ||
+            (loginResponse as any).user ||
             (loginResponse as any).data?.user ||
             (loginResponse as any).data;
         }
