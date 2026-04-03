@@ -18,6 +18,42 @@ const CropDetails = lazy(() => import('@/features/auth/CropDetails'));
 const ForgetPassword = lazy(() => import('@/features/auth/ForgetPassword'));
 const ResetPassword = lazy(() => import('@/features/auth/ResetPassword'));
 
+import { useAccess } from '@/hooks/useAccess';
+import LockedScreen from '@/components/common/LockedScreen';
+
+const ProductGuard = ({
+  product,
+  children,
+}: {
+  product: 'nest' | 'seed';
+  children: React.ReactNode;
+}) => {
+  const { hasAccess, authLoading } = useAccess();
+
+  if (authLoading) return <Loader />; // prevent locked screen from flashing
+
+  const access = hasAccess(product);
+  console.log(
+    `[ProductGuard] Evaluating access for product: ${product}. hasAccess: ${access}`
+  );
+  if (!access) return <LockedScreen product={product} />;
+  return <>{children}</>;
+};
+
+// Lazy loaded seed pages
+const SeedDashboard = lazy(
+  () => import('@/features/seed/dashboard/SeedDashboard')
+);
+const SeedSensors = lazy(() => import('@/features/seed/sensors/SeedSensors'));
+
+const SeedProfile = lazy(() => import('@/features/seed/profile/SeedProfile'));
+const SeedDisease = lazy(() => import('@/features/seed/disease/SeedDisease'));
+const SeedPests = lazy(() => import('@/features/seed/pests/SeedPests'));
+const SeedWeeds = lazy(() => import('@/features/seed/weeds/SeedWeeds'));
+const SeedInsights = lazy(
+  () => import('@/features/seed/insights/SeedInsights')
+);
+
 // Lazy loaded protected pages
 const Dashboard = lazy(() => import('@/features/user/dashboard/Dashboard'));
 const Profile = lazy(() => import('@/features/user/profile/Profile'));
@@ -65,11 +101,98 @@ export const AppRouter = () => {
           <Route path="/register/crop-details" element={<CropDetails />} />
 
           {/* Main App */}
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/smart-info" element={<SmartInfo />} />
-          <Route path="/sensor-details" element={<SensorDetails />} />
+          <Route
+            path="/"
+            element={
+              <ProductGuard product="nest">
+                <Dashboard />
+              </ProductGuard>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProductGuard product="nest">
+                <Profile />
+              </ProductGuard>
+            }
+          />
+          <Route
+            path="/smart-info"
+            element={
+              <ProductGuard product="nest">
+                <SmartInfo />
+              </ProductGuard>
+            }
+          />
+          <Route
+            path="/sensor-details"
+            element={
+              <ProductGuard product="nest">
+                <SensorDetails />
+              </ProductGuard>
+            }
+          />
           <Route path="/subscription" element={<Subscription />} />
+
+          {/* Seed App */}
+          <Route
+            path="/seed/dashboard"
+            element={
+              <ProductGuard product="seed">
+                <SeedDashboard />
+              </ProductGuard>
+            }
+          />
+          <Route
+            path="/seed/sensors"
+            element={
+              <ProductGuard product="seed">
+                <SeedSensors />
+              </ProductGuard>
+            }
+          />
+          <Route
+            path="/seed/disease"
+            element={
+              <ProductGuard product="seed">
+                <SeedDisease />
+              </ProductGuard>
+            }
+          />
+          <Route
+            path="/seed/pests"
+            element={
+              <ProductGuard product="seed">
+                <SeedPests />
+              </ProductGuard>
+            }
+          />
+          <Route
+            path="/seed/weeds"
+            element={
+              <ProductGuard product="seed">
+                <SeedWeeds />
+              </ProductGuard>
+            }
+          />
+          <Route
+            path="/seed/insights"
+            element={
+              <ProductGuard product="seed">
+                <SeedInsights />
+              </ProductGuard>
+            }
+          />
+
+          <Route
+            path="/seed/profile"
+            element={
+              <ProductGuard product="seed">
+                <SeedProfile />
+              </ProductGuard>
+            }
+          />
         </Route>
 
         {/* Fallback */}

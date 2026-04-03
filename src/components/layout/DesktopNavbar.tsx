@@ -49,11 +49,14 @@ const AlertDialogTrigger = React.lazy(() =>
 import { logout } from '@/features/auth/auth.api';
 import { useAuth } from '@/features/auth/useAuth';
 import { useTheme } from '@/hooks/useTheme';
+import { useAccess } from '@/hooks/useAccess';
+import ProductSwitcher from '@/components/common/ProductSwitcher';
 
 const DesktopNavbar = () => {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const { setUser } = useAuth();
+  const { activeProduct } = useAccess();
 
   return (
     <header className="hidden md:flex items-center justify-between px-6 py-4 bg-background/50 backdrop-blur-md sticky top-0 z-50 border-b border-border w-full">
@@ -66,45 +69,126 @@ const DesktopNavbar = () => {
       </Link>
 
       <nav className="flex items-center gap-8">
-        <NavLink
-          to="/"
-          className={({ isActive }) =>
-            `px-6 py-2 rounded-full transition-all ${
-              isActive
-                ? 'bg-primary/10 text-primary border border-primary/20'
-                : 'text-muted-foreground hover:text-foreground'
-            }`
-          }
-        >
-          Home
-        </NavLink>
-        <NavLink
-          to="/smart-info"
-          className={({ isActive }) =>
-            `px-6 py-2 rounded-full transition-all ${
-              isActive
-                ? 'bg-primary/10 text-primary border border-primary/20'
-                : 'text-muted-foreground hover:text-foreground'
-            }`
-          }
-        >
-          Smart Info
-        </NavLink>
-        <NavLink
-          to="/profile"
-          className={({ isActive }) =>
-            `px-6 py-2 rounded-full transition-all ${
-              isActive
-                ? 'bg-primary/10 text-primary border border-primary/20'
-                : 'text-muted-foreground hover:text-foreground'
-            }`
-          }
-        >
-          User
-        </NavLink>
+        {activeProduct === 'nest' ? (
+          <>
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `px-6 py-2 rounded-full transition-all ${
+                  isActive
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`
+              }
+            >
+              Home
+            </NavLink>
+            <NavLink
+              to="/smart-info"
+              className={({ isActive }) =>
+                `px-6 py-2 rounded-full transition-all ${
+                  isActive
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`
+              }
+            >
+              Smart Info
+            </NavLink>
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                `px-6 py-2 rounded-full transition-all ${
+                  isActive
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`
+              }
+            >
+              User
+            </NavLink>
+          </>
+        ) : (
+          <>
+            <NavLink
+              to="/seed/dashboard"
+              className={({ isActive }) =>
+                `px-6 py-2 rounded-full transition-all ${
+                  isActive
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`
+              }
+            >
+              Dashboard
+            </NavLink>
+            <NavLink
+              to="/seed/sensors"
+              className={({ isActive }) =>
+                `px-6 py-2 rounded-full transition-all ${
+                  isActive
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`
+              }
+            >
+              Sensors
+            </NavLink>
+            <NavLink
+              to="/seed/disease"
+              className={({ isActive }) =>
+                `px-6 py-2 rounded-full transition-all ${
+                  isActive
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`
+              }
+            >
+              Disease
+            </NavLink>
+            <NavLink
+              to="/seed/pests"
+              className={({ isActive }) =>
+                `px-6 py-2 rounded-full transition-all ${
+                  isActive
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`
+              }
+            >
+              Pests
+            </NavLink>
+            <NavLink
+              to="/seed/weeds"
+              className={({ isActive }) =>
+                `px-6 py-2 rounded-full transition-all ${
+                  isActive
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`
+              }
+            >
+              Weeds
+            </NavLink>
+
+            <NavLink
+              to="/seed/profile"
+              className={({ isActive }) =>
+                `px-6 py-2 rounded-full transition-all ${
+                  isActive
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`
+              }
+            >
+              Fleet
+            </NavLink>
+          </>
+        )}
       </nav>
 
       <div className="flex items-center gap-2">
+        <ProductSwitcher />
         <button
           onClick={toggleTheme}
           className="p-2 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all active:scale-95"

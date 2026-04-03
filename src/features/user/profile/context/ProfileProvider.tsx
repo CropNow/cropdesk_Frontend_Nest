@@ -9,12 +9,52 @@ interface ProfileProviderProps {
 
 export const ProfileProvider = ({ children }: ProfileProviderProps) => {
   // Hierarchy State
-  const [farmers, setFarmers] = useState<any[]>([]);
-  const [selectedFarmerId, setSelectedFarmerId] = useState<string>('');
-  const [selectedFarmId, setSelectedFarmId] = useState<string>('');
-  const [selectedFieldId, setSelectedFieldId] = useState<string>('');
-  const [selectedCropId, setSelectedCropId] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
+  const [farmers, setFarmers] = useState<any[]>(() => {
+    const mockFarmer = {
+      id: 'mock-farmer-id',
+      name: 'Mock Farmer',
+      phone: '1234567890',
+      email: 'dev@example.com',
+      address: {
+        village: 'Mock Village',
+        district: 'Mock District',
+        state: 'Mock State',
+      },
+      farms: [
+        {
+          id: 'mock-farm-id',
+          name: 'Mock Farm',
+          area: 10,
+          unit: 'acres',
+          fields: [
+            {
+              id: 'mock-field-id',
+              name: 'Mock Field',
+              area: 5,
+              unit: 'acres',
+              crops: [
+                {
+                  id: 'mock-crop-id',
+                  name: 'Mock Crop',
+                  variety: 'Mock Variety',
+                },
+              ],
+              irrigationMethod: 'Drip',
+              soilType: 'Loamy',
+            },
+          ],
+        },
+      ],
+    };
+    return [mockFarmer];
+  });
+  const [selectedFarmerId, setSelectedFarmerId] =
+    useState<string>('mock-farmer-id');
+  const [selectedFarmId, setSelectedFarmId] = useState<string>('mock-farm-id');
+  const [selectedFieldId, setSelectedFieldId] =
+    useState<string>('mock-field-id');
+  const [selectedCropId, setSelectedCropId] = useState<string>('mock-crop-id');
+  const [loading, setLoading] = useState<boolean>(false);
 
   // Derived Selected Objects
   // Using String comparison to avoid type mismatches (number vs string) which causes UI to "lose" the selected item
@@ -152,20 +192,16 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
         }
 
         // B. Fetch Fields (Global fetch)
-        // We fetch all fields but optimize matching
         try {
           const { getFields } = await import('@/features/auth/api/field.api');
           const rawFields = await getFields({});
           const allFields = normalizeData(rawFields || []);
 
           if (allFields.length > 0) {
-            // Map Fields to Farms
-            // Map Fields to Farms
             enrichedFarmers = await Promise.all(
               enrichedFarmers.map(async (farmer: any) => {
                 if (!farmer.farms) return farmer;
 
-                // Initialize enriched farms with fields and crops
                 const enrichedFarms = await Promise.all(
                   farmer.farms.map(async (farm: any) => {
                     const farmId = farm.id;
@@ -178,7 +214,6 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
                       return String(fFarmId) === String(farmId);
                     });
 
-                    // Fetch crops for ALL fields to ensure correct counts globally
                     const fieldsWithCrops = await Promise.all(
                       myFields.map(async (field: any) => {
                         try {
@@ -225,7 +260,6 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
               handleSetSelectedFarmId(firstFarm.id);
               if (firstFarm.fields?.length > 0) {
                 const firstField = firstFarm.fields[0];
-                // Set selection IDs
                 handleSetSelectedFieldId(firstField.id);
                 if (firstField.crops?.length > 0) {
                   setSelectedCropId(firstField.crops[0].id);
@@ -234,11 +268,9 @@ export const ProfileProvider = ({ children }: ProfileProviderProps) => {
             }
           }
         }
-      } else {
-        setFarmers([]);
       }
     } catch (e) {
-      console.error('Profile Data Fetch Error:', e);
+      console.error('Profile Data Fetch Error (Backend probably down):', e);
     } finally {
       setLoading(false);
     }

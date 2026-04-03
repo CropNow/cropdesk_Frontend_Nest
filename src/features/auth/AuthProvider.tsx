@@ -13,7 +13,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(() => {
     try {
       const storedUser = localStorage.getItem('user');
-      return storedUser ? JSON.parse(storedUser) : null;
+      if (storedUser) return JSON.parse(storedUser);
+
+      // MOCK USER FOR DEVELOPMENT WITHOUT BACKEND
+      return {
+        id: 'mock-user-id',
+        _id: 'mock-user-id',
+        email: 'dev@example.com',
+        firstName: 'Developer',
+        lastName: 'User',
+        role: 'farmer',
+        isOnboardingComplete: true,
+        onboarding: {
+          isComplete: true,
+          hasSensor: true,
+        },
+      } as User;
     } catch {
       return null;
     }
@@ -23,6 +38,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        // If we don't have a token but DO have a user, it's a dev session.
+        setLoading(false);
+        return;
+      }
+
+      // MOCK DEV SESSION RE-HYDRATION
+      if (user?.email === 'dev@example.com') {
+        setLoading(false);
+        return;
+      }
+
       setUser(null);
       setLoading(false);
       return;
