@@ -37,13 +37,13 @@ export function RadialDeviceLayout({
   const attrs = [
     {
       label: 'Soil Type',
-      value: device.soilType,
+      value: typeof device.soilType === 'string' ? device.soilType : (device as any).field?.soil?.type || 'Clay',
       icon: <Leaf className="h-3 w-3" />,
       delay: 0.08,
     },
     {
       label: 'Area',
-      value: device.area,
+      value: typeof device.area === 'number' || typeof device.area === 'string' ? device.area : (device as any).field?.area || '120',
       icon: (
         <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -53,19 +53,19 @@ export function RadialDeviceLayout({
     },
     {
       label: 'Location',
-      value: device.location,
+      value: typeof device.location === 'string' ? device.location : (device as any).field?.location?.name || 'Smart Block A',
       icon: <MapPin className="h-3 w-3" />,
       delay: 0.12,
     },
     {
       label: 'Irrigation',
-      value: device.irrigationType,
+      value: typeof device.irrigationType === 'string' ? device.irrigationType : (device as any).field?.irrigation?.type || 'Drip',
       icon: <Droplets className="h-3 w-3" />,
       delay: 0.14,
     },
     {
       label: 'Boundary',
-      value: device.boundary,
+      value: typeof device.boundary === 'string' ? device.boundary : (device as any).field?.boundary?.type || 'Polygon',
       icon: (
         <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polygon points="12 2 2 19 22 19" />
@@ -77,14 +77,17 @@ export function RadialDeviceLayout({
       label: 'Crops',
       value: (
         <div className="mt-1 flex max-w-[200px] flex-wrap gap-1.5">
-          {device.crops.map((crop) => (
-            <span
-              key={crop}
-              className="rounded-full border border-accentPrimary/40 bg-accentPrimary/12 px-2.5 py-0.5 text-[10px] font-medium leading-relaxed text-[#9BFFD7]"
-            >
-              {crop}
-            </span>
-          ))}
+          {(device.crops || []).map((crop: any, idx: number) => {
+            const cropName = typeof crop === 'string' ? crop : (crop.name || crop.scientificName || 'Crop');
+            return (
+              <span
+                key={`${cropName}-${idx}`}
+                className="rounded-full border border-accentPrimary/40 bg-accentPrimary/12 px-2.5 py-0.5 text-[10px] font-medium leading-relaxed text-[#9BFFD7]"
+              >
+                {cropName}
+              </span>
+            );
+          })}
         </div>
       ),
       icon: <Leaf className="h-3 w-3" />,
@@ -110,19 +113,27 @@ export function RadialDeviceLayout({
               background: 'radial-gradient(circle, rgba(0,255,156,0.15), transparent 70%)',
             }}
           />
-          <motion.img
-            key={`${selectedDeviceType}-${currentDeviceIndex}`}
-            src={device.image}
-            alt={device.name}
-            initial={{ opacity: 0, y: 12, scale: 0.9 }}
-            animate={{ opacity: 1, y: [0, -6, 0], scale: 1 }}
-            transition={{
-              opacity: { duration: 0.35 },
-              y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' },
-              scale: { duration: 0.35 },
-            }}
-            className="relative z-10 max-h-[300px] w-auto object-contain drop-shadow-[0_22px_56px_rgba(0,255,156,0.32)] sm:max-h-[360px] md:max-h-[400px]"
-          />
+          {(() => {
+            const type = (device.deviceType || (device as any).type || 'nest').toLowerCase();
+            const fallbackImage = type === 'seed' ? '/seed.png' : type === 'aero' ? '/kaptor_drone.png' : '/NEST.png';
+            const displayImage = device.image || fallbackImage;
+
+            return (
+              <motion.img
+                key={`${selectedDeviceType}-${currentDeviceIndex}`}
+                src={displayImage}
+                alt={device.name}
+                initial={{ opacity: 0, y: 12, scale: 0.9 }}
+                animate={{ opacity: 1, y: [0, -6, 0], scale: 1 }}
+                transition={{
+                  opacity: { duration: 0.35 },
+                  y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' },
+                  scale: { duration: 0.35 },
+                }}
+                className="relative z-10 max-h-[300px] w-auto object-contain drop-shadow-[0_22px_56px_rgba(0,255,156,0.32)] sm:max-h-[360px] md:max-h-[400px]"
+              />
+            );
+          })()}
         </div>
 
       </div>

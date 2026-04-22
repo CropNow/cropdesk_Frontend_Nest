@@ -20,11 +20,17 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
-  email: string;
-  password: string;
   firstName: string;
   lastName: string;
-  role?: string;
+  email: string;
+  password: string;
+  rePassword: string;
+  phone: string;
+}
+
+export interface VerifyOTPRequest {
+  email: string;
+  otp: string;
 }
 
 export interface AuthResponse {

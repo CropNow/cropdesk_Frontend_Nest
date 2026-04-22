@@ -5,12 +5,13 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function RegisterPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, register } = useAuth();
   const navigate = useNavigate();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +32,11 @@ export function RegisterPage() {
       return;
     }
 
+    if (!phone.trim()) {
+      setError('Phone number is required.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -42,12 +48,22 @@ export function RegisterPage() {
     }
 
     setIsLoading(true);
-    // TODO: Call register API with firstName, lastName, email, password
-    // For now, just navigate to login
-    setTimeout(() => {
-      navigate('/login');
-      setIsLoading(false);
-    }, 1000);
+    
+    const success = await register({
+      firstName,
+      lastName,
+      email,
+      phone,
+      password,
+      rePassword: confirmPassword
+    });
+
+    if (success) {
+      navigate('/verify-otp', { state: { email } });
+    } else {
+      setError('Registration failed. Please try again or use a different email.');
+    }
+    setIsLoading(false);
   };
 
   const steps = [
@@ -225,6 +241,19 @@ export function RegisterPage() {
                 placeholder="eg. johnfrans@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className={inputCls}
+                required
+              />
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-textLabel">Phone Number</label>
+              <input
+                type="tel"
+                placeholder="eg. +1234567890"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 className={inputCls}
                 required
               />

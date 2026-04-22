@@ -3,7 +3,7 @@
  * Section-based modular layout with organized components
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import { DEVICE_LIBRARY, DeviceType } from '../../constants/deviceConstants';
@@ -16,6 +16,9 @@ import { SensorCategoriesSection } from '../../components/sections/SensorCategor
 import { FISAlertSection } from '../../components/sections/FISAlertSection';
 import { AIInsightsSection } from '../../components/sections/AIInsightsSection';
 import { WaterSavingsSection } from '../../components/sections/WaterSavingsSection';
+
+import { useAuth } from '../../contexts/AuthContext';
+import { dashboardAPI } from '../../api/dashboard.api';
 
 /**
  * Dashboard Classic View
@@ -31,11 +34,99 @@ export function DashboardPage() {
   const [currentDeviceIndex, setCurrentDeviceIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  const { user: authUser } = useAuth();
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Simulate loading state
+  // Helper to map Open-Meteo codes to conditions
+  const mapWeatherCode = (code: number) => {
+    if (code === 0) return 'Clear sky';
+    if (code <= 3) return 'Partly cloudy';
+    if (code <= 48) return 'Foggy';
+    if (code <= 55) return 'Drizzle';
+    if (code <= 67) return 'Rainy';
+    if (code <= 77) return 'Snowy';
+    if (code <= 82) return 'Rain showers';
+    if (code <= 99) return 'Thunderstorm';
+    return 'Cloudy';
+  };
+
+  const fetchWeather = async (lat: number, lon: number) => {
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+      const data = await res.json();
+      return {
+        temperature: data.current_weather.temperature,
+        condition: mapWeatherCode(data.current_weather.weathercode),
+      };
+    } catch (err) {
+      console.error('Weather fetch failed:', err);
+      return { temperature: 30, condition: 'Clear' };
+    }
+  };
+
+  // Fetch dashboard data
   useEffect(() => {
-    const timer = window.setTimeout(() => setIsLoading(false), 900);
-    return () => window.clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        console.log('📊 [Dashboard] Fetching farms...');
+        const farmRes = await dashboardAPI.getFarms();
+        const farms = farmRes.data.data.farms;
+
+        if (farms && farms.length > 0) {
+          const farmId = farms[0]._id;
+          console.log(`✅ [Dashboard] Found farm: ${farmId}. Fetching stats and devices...`);
+          
+          const [statsRes, devicesRes] = await Promise.all([
+            dashboardAPI.getFarmStatistics(farmId),
+            dashboardAPI.getFarmDevices(farmId)
+          ]);
+
+          console.log('✅ [Dashboard] Stats Received:', statsRes.data);
+          console.log('✅ [Dashboard] Devices Received:', devicesRes.data);
+
+          // Get location from farm
+          let lat = 11.75; // Default Kallakurichi
+          let lon = 78.96;
+          let cityName = 'Green Valley Farm';
+
+          if (farms[0].location?.coordinates) {
+            const coords = farms[0].location.coordinates;
+            // Handle both {lat, lng} and [lng, lat] structures
+            lat = coords.lat || coords[1] || lat;
+            lon = coords.lng || coords[0] || lon;
+            cityName = farms[0].name || farms[0].location.name || cityName;
+          }
+
+          console.log(`🌍 [Dashboard] Fetching weather for: ${cityName} (${lat}, ${lon})`);
+          const weatherData = await fetchWeather(lat, lon);
+
+          // Build a context object compatible with existing state
+          setDashboardData({
+            health: statsRes.data.data,
+            devices: devicesRes.data.data,
+            weather: { 
+              city: cityName, 
+              country: 'IN', 
+              temperature: weatherData.temperature, 
+              condition: weatherData.condition 
+            }
+          });
+        } else {
+          console.warn('⚠️ [Dashboard] No farms found for this user.');
+          setError('No farms registered. Please add a farm first.');
+        }
+      } catch (err: any) {
+        console.error('❌ [Dashboard] Fetch Failed:', err.response?.data || err.message);
+        setError('Could not load dashboard data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // Update time every minute
@@ -53,8 +144,14 @@ export function DashboardPage() {
     }
   }, [searchParams, selectedDeviceType]);
 
-  const deviceList = DEVICE_LIBRARY[selectedDeviceType];
-  const currentDevice = deviceList[currentDeviceIndex % deviceList.length];
+  const deviceList = useMemo(() => {
+    if (dashboardData?.devices) {
+      return dashboardData.devices;
+    }
+    return DEVICE_LIBRARY[selectedDeviceType];
+  }, [dashboardData, selectedDeviceType]);
+
+  const currentDevice = deviceList[currentDeviceIndex % deviceList.length] || DEVICE_LIBRARY[selectedDeviceType][0];
 
   const cycleDevice = (direction: 1 | -1) => {
     setCurrentDeviceIndex((prev) => {
@@ -68,6 +165,28 @@ export function DashboardPage() {
   if (isLoading) {
     return <LoadingSkeleton />;
   }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bgMain p-10 text-center">
+        <div className="rounded-3xl border border-red-500/20 bg-red-500/5 p-8 backdrop-blur-xl">
+          <p className="text-xl font-bold text-red-400">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-xl bg-red-500/20 px-6 py-2 text-sm font-semibold text-red-300 hover:bg-red-500/30"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const weatherSummary = dashboardData?.weather ? {
+    temp: `${dashboardData.weather.temperature} C`,
+    condition: dashboardData.weather.condition,
+    city: `${dashboardData.weather.city}, ${dashboardData.weather.country}`
+  } : undefined;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-bgMain px-4 pb-10 pt-8 text-textPrimary sm:px-6 lg:pl-28 lg:pr-10">
@@ -87,7 +206,11 @@ export function DashboardPage() {
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-[1600px] space-y-6">
         {/* Header Section */}
-        <WelcomeHeader currentTime={currentTime} />
+        <WelcomeHeader 
+          currentTime={currentTime} 
+          userName={authUser?.firstName} 
+          weather={weatherSummary}
+        />
 
         {/* Device & Farm Health Section */}
         <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
@@ -97,19 +220,19 @@ export function DashboardPage() {
             currentDeviceIndex={currentDeviceIndex}
             cycleDevice={cycleDevice}
           />
-          <FarmHealthSection />
+          <FarmHealthSection data={dashboardData?.health} />
         </div>
 
         {/* Sensors & FIS Alerts Section */}
         <section className="grid gap-6 xl:grid-cols-5">
-          <SensorCategoriesSection />
-          <FISAlertSection />
+          <SensorCategoriesSection data={dashboardData?.sensors} sensorId={currentDevice?._id} />
+          <FISAlertSection data={dashboardData?.alerts} />
         </section>
 
         {/* Insights & Water Savings Section */}
         <section className="grid gap-6 lg:grid-cols-3">
-          <AIInsightsSection />
-          <WaterSavingsSection />
+          <AIInsightsSection data={dashboardData?.aiInsights} />
+          <WaterSavingsSection data={dashboardData?.waterSavings} />
         </section>
       </div>
     </main>

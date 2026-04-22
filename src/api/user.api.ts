@@ -12,6 +12,11 @@ export const userAPI = {
   getProfile: () => apiClient.get('/users/profile'),
 
   /**
+   * Get current authenticated user
+   */
+  getMe: () => apiClient.get('/users/me'),
+
+  /**
    * Update user profile
    */
   updateProfile: (data: any) =>

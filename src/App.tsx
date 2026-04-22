@@ -5,6 +5,8 @@ import { DashboardV2Page } from './pages/dashboard/DashboardV2Page';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { OTPVerifyPage } from './pages/auth/OTPVerifyPage';
+import { ROUTES } from './routeConstants';
 
 export function App() {
   return (
@@ -13,6 +15,7 @@ export function App() {
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify-otp" element={<OTPVerifyPage />} />
 
         {/* Protected routes (sidebar + content) */}
         <Route element={<ProtectedRoute />}>

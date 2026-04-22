@@ -116,7 +116,7 @@ export function AppSidebar() {
           </div>
 
           <nav className="flex-1 space-y-1" aria-label="Primary">
-<NavLink
+            <NavLink
               to="/dashboard"
               onClick={closeMobile}
               className={({ isActive }) =>
@@ -130,24 +130,7 @@ export function AppSidebar() {
               }
             >
               <LayoutDashboard className="h-4.5 w-4.5 shrink-0" />
-              {isExpanded ? <span>Dashboard 1</span> : null}
-            </NavLink>
-
-            <NavLink
-              to="/dashboard2"
-              onClick={closeMobile}
-              className={({ isActive }) =>
-                [
-                  'sidebar-item flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 mt-1',
-                  isActive
-                    ? 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20'
-                    : 'text-textSecondary hover:bg-cardBg hover:text-textHeading',
-                  isExpanded ? 'justify-start gap-3' : 'justify-center',
-                ].join(' ')
-              }
-            >
-              <LayoutDashboard className="h-4.5 w-4.5 shrink-0" />
-              {isExpanded ? <span>Dashboard 2</span> : null}
+              {isExpanded ? <span>Dashboard</span> : null}
             </NavLink>
 
             <div
@@ -262,11 +245,13 @@ export function AppSidebar() {
                 ].join(' ')}
               >
                 <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary">
-                  {user?.name.split(' ').map((n) => n[0]).join('') ?? 'U'}
+                  {user ? `${user.firstName[0]}${user.lastName[0]}` : 'U'}
                 </span>
                 {isExpanded ? (
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-textPrimary">{user?.name ?? 'User'}</span>
+                    <span className="block truncate text-sm font-semibold text-textPrimary">
+                      {user ? `${user.firstName} ${user.lastName}` : 'User'}
+                    </span>
                     <span className="block truncate text-xs text-textSecondary">{user?.role ?? ''}</span>
                   </span>
                 ) : null}
