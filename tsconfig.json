@@ -1,36 +1,25 @@
 {
   "compilerOptions": {
-    /* Deprecation handling */
-    /* Environment */
-    "target": "ES2022",
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    /* Module system (CRITICAL) */
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "moduleResolution": "Bundler",
-    /* React */
-    "jsx": "react-jsx",
-    /* Strictness */
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    /* Migration support */
-    "allowJs": true,
-    "checkJs": false,
-    /* Build */
-    "noEmit": true,
-    "isolatedModules": true,
-    /* Interop */
-    "esModuleInterop": true,
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
-    /* Paths */
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-    /* Vite */
-    "types": ["vite/client", "google.maps"],
-    /* Performance */
-    "skipLibCheck": true
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

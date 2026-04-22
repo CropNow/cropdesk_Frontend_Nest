@@ -1,7 +1,0 @@
-
-> frontend@0.0.0 typecheck
-> tsc --noEmit
-
-src/features/auth/FieldDetails.tsx(269,36): error TS7006: Parameter 'prev' implicitly has an 'any' type.
-src/features/auth/FieldDetails.tsx(271,36): error TS7006: Parameter 'prev' implicitly has an 'any' type.
-src/features/auth/FieldDetails.tsx(273,36): error TS7006: Parameter 'prev' implicitly has an 'any' type.

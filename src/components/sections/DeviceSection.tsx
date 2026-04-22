@@ -1,0 +1,38 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { DeviceData, DeviceType } from '../../constants/deviceConstants';
+import { RadialDeviceLayout } from '../devices/RadialDeviceLayout';
+
+/**
+ * DeviceSection - Active device display section
+ */
+interface DeviceSectionProps {
+  device: DeviceData;
+  selectedDeviceType: DeviceType;
+  currentDeviceIndex: number;
+  cycleDevice: (dir: 1 | -1) => void;
+}
+
+export function DeviceSection({
+  device,
+  selectedDeviceType,
+  currentDeviceIndex,
+  cycleDevice,
+}: DeviceSectionProps) {
+  return (
+    <motion.section
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: 0.05 }}
+      className="relative px-4 pb-1 pt-4 sm:px-6 sm:pb-2 sm:pt-6"
+    >
+
+      <RadialDeviceLayout
+        device={device}
+        selectedDeviceType={selectedDeviceType}
+        currentDeviceIndex={currentDeviceIndex}
+        cycleDevice={cycleDevice}
+      />
+    </motion.section>
+  );
+}

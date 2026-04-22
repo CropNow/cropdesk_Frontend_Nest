@@ -1,0 +1,166 @@
+/**
+ * Global CSS variables and Tailwind base styles
+ */
+
+@layer base {
+  :root {
+    /* Primary Colors */
+    --primary: 34 197 94; /* green-500 */
+    --primary-light: 74 222 128; /* green-300 */
+    --primary-dark: 22 163 74; /* green-700 */
+
+    /* Secondary Colors */
+    --secondary: 59 130 246; /* blue-500 */
+    --secondary-light: 147 197 253; /* blue-200 */
+    --secondary-dark: 37 99 235; /* blue-600 */
+
+    /* Danger/Alert Colors */
+    --danger: 239 68 68; /* red-500 */
+    --warning: 245 158 11; /* amber-500 */
+    --info: 59 130 246; /* blue-500 */
+    --success: 34 197 94; /* green-500 */
+
+    /* Background Colors */
+    --bg-primary: 255 255 255; /* white */
+    --bg-secondary: 249 250 251; /* slate-50 */
+    --bg-tertiary: 241 245 249; /* slate-100 */
+
+    /* Text Colors */
+    --text-primary: 15 23 42; /* slate-900 */
+    --text-secondary: 71 85 105; /* slate-600 */
+    --text-tertiary: 120 113 108; /* slate-400 */
+
+    /* Border Colors */
+    --border: 226 232 240; /* slate-200 */
+    --border-dark: 203 213 225; /* slate-300 */
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+
+    /* Border Radius */
+    --radius-xs: 0.25rem;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-full: 9999px;
+
+    /* Typography */
+    --font-body: ui-sans-serif, system-ui, sans-serif;
+    --font-mono: ui-monospace, 'SFMono-Regular', monospace;
+  }
+
+  /* Dark mode */
+  [data-theme='dark'] {
+    --bg-primary: 14 14 27; /* slate-950 */
+    --bg-secondary: 26 26 46; /* slate-900 */
+    --bg-tertiary: 38 38 66; /* slate-800 */
+
+    --text-primary: 249 250 251; /* slate-50 */
+    --text-secondary: 203 213 225; /* slate-300 */
+    --text-tertiary: 148 163 184; /* slate-400 */
+
+    --border: 71 85 105; /* slate-600 */
+    --border-dark: 100 116 139; /* slate-500 */
+  }
+
+  /* Base styles */
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-white text-text-primary dark:bg-slate-950 dark:text-slate-50;
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Selection styles */
+  ::selection {
+    @apply bg-primary text-white;
+  }
+
+  /* Focus visible styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+}
+
+@layer components {
+  /* Button base styles */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-white hover:bg-secondary-dark;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-white rounded-lg border border-border shadow-md p-6;
+  }
+
+  .card-hover {
+    @apply card transition-shadow duration-200 hover:shadow-lg;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full px-3 py-2 border border-border rounded-md bg-white text-text-primary placeholder-text-tertiary focus-visible:ring-2 focus-visible:ring-primary;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary bg-opacity-10 text-primary;
+  }
+
+  .badge-danger {
+    @apply badge bg-danger bg-opacity-10 text-danger;
+  }
+}
+
+@layer utilities {
+  /* Flex utilities */
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+
+  .flex-between {
+    @apply flex items-center justify-between;
+  }
+
+  /* Text utilities */
+  .text-truncate {
+    @apply overflow-hidden text-overflow-ellipsis whitespace-nowrap;
+  }
+
+  .line-clamp {
+    @apply overflow-hidden display-webkit-box -webkit-line-clamp-3 -webkit-box-orient-vertical;
+  }
+
+  /* Visually hidden */
+  .sr-only {
+    @apply absolute w-px h-px p-0 m-(-1px) overflow-hidden clip-rect-0 whitespace-nowrap border-0;
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)",
+      "WebFetch(domain:www.reactbits.dev)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/DavidHDev/react-bits/main/src/ts-default/Backgrounds/ColorBends/ColorBends.tsx\")",
+      "Bash(npm install:*)",
+      "Bash(find D:\\\\cropnow\\\\CropDesk_Frontend\\\\src:*)",
+      "Bash(find src:*)",
+      "Bash(python /tmp/count_dark.py)",
+      "Bash(python3 /tmp/count_dark.py)",
+      "Bash(python3:*)"
+    ]
+  }
+}

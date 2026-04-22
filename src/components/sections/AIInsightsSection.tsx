@@ -1,0 +1,42 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { AI_INSIGHTS } from '../../constants/deviceConstants';
+
+/**
+ * AIInsightsSection - AI-generated insights about farm conditions
+ */
+export function AIInsightsSection() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.18 }}
+      className="rounded-3xl border border-cardBorder bg-cardBg p-5 backdrop-blur-xl lg:col-span-2"
+    >
+      <h3 className="mb-4 text-3xl font-bold">AI Insights</h3>
+      <div className="space-y-3">
+        {AI_INSIGHTS.map((item) => (
+          <motion.div
+            key={item.title}
+            whileHover={{ x: 3 }}
+            className="flex items-center justify-between rounded-2xl border border-cardBorder bg-black/10 dark:bg-black/20 px-4 py-3"
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={[
+                  'h-3 w-3 rounded-full',
+                  item.level === 'good' ? 'bg-accentPrimary' : 'bg-yellow-300',
+                ].join(' ')}
+              />
+              <div>
+                <p className="font-semibold">{item.title}</p>
+                <p className="text-sm text-textSecondary">{item.description}</p>
+              </div>
+            </div>
+            <span className="text-sm text-textMuted">-</span>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
