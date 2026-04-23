@@ -60,11 +60,28 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
       animate={{ y: 0, opacity: 1 }}
       className="relative z-30 rounded-xl border border-cardBorder bg-cardBg/50 p-3 backdrop-blur-sm sm:p-5"
     >
-      <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div>
+      <div className="relative flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col">
+          {/* Mobile Welcome Text */}
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-textLabel sm:hidden mb-0.5">
+            Welcome back,
+          </span>
+          
           <h1 className="text-xl font-bold tracking-tight text-textHeading sm:text-3xl lg:text-4xl">
-            Welcome back, {userName}
+            <span className="hidden sm:inline">Welcome back, </span>
+            {userName}
           </h1>
+
+          {/* Mobile Weather - Placed below user name */}
+          <div className="mt-1.5 flex items-center gap-2 sm:hidden">
+            <p className="text-sm font-bold text-textHeading">
+              {displayWeather.temp.split(' ')[0]}°
+            </p>
+            <p className="text-[11px] font-medium text-textSecondary">
+              {displayWeather.condition}
+            </p>
+          </div>
+
           <p className="mt-1 hidden sm:block text-xs font-medium text-textLabel sm:mt-2 sm:text-sm">
             <span className="block sm:inline">
               {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -81,8 +98,8 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
         </div>
 
         <div className="flex flex-col items-start gap-2 sm:gap-3 lg:items-end">
-          <div className="flex w-full items-center justify-between gap-2 lg:justify-end">
-            <div className="relative flex items-center gap-2" ref={trayRef}>
+          <div className="flex w-full items-center justify-end gap-2 lg:justify-end">
+            <div className="absolute right-0 top-0 sm:relative flex items-center gap-2" ref={trayRef}>
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -106,7 +123,7 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
               </button>
 
               {isTrayOpen ? (
-                <div className="absolute right-0 top-12 z-50 w-[320px] rounded-2xl border border-cardBorder bg-bgSidebar p-3 shadow-2xl">
+                <div className="absolute right-0 top-12 z-50 w-[300px] sm:w-[320px] rounded-2xl border border-cardBorder bg-bgSidebar p-3 shadow-2xl">
                   <div className="mb-2 flex items-center justify-between border-b border-cardBorder pb-2">
                     <p className="text-sm font-semibold text-textHeading">Notifications</p>
                     <span className="rounded-full bg-accentPrimary/20 px-2 py-0.5 text-[11px] font-semibold text-accentPrimary">
@@ -144,7 +161,7 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
             </div>
           </div>
 
-          <div className="mt-1 flex items-baseline gap-2 sm:gap-3">
+          <div className="mt-1 hidden sm:flex items-baseline gap-2 sm:gap-3">
             <p className="text-2xl font-extrabold tracking-tighter text-textHeading sm:text-3xl lg:text-4xl">
               {displayWeather.temp.split(' ')[0]}
               <span className="text-lg text-textMuted sm:text-xl lg:text-3xl">°C</span>
