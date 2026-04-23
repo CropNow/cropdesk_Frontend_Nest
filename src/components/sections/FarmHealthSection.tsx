@@ -1,78 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Droplets, Eye, Leaf, Thermometer, Waves, Wind } from 'lucide-react';
 import { CircularGauge } from '../common/CircularGauge';
 import { FarmStatusCard } from '../common/FarmStatusCard';
-import { FarmStatusMetric } from '../../constants/deviceConstants';
-
-const DASHBOARD2_FARM_STATUS_METRICS: FarmStatusMetric[] = [
-  {
-    id: 'soil-moisture',
-    label: 'Soil moisture',
-    value: 54.3,
-    unit: 'v/v',
-    icon: <Waves className="h-5 w-5" />,
-    color: 'cyan',
-    min: 0,
-    max: 100,
-    status: 'optimal',
-  },
-  {
-    id: 'temperature',
-    label: 'Temperature',
-    value: 27.5,
-    unit: '°C',
-    icon: <Thermometer className="h-5 w-5" />,
-    color: 'orange',
-    min: 0,
-    max: 50,
-    status: 'optimal',
-  },
-  {
-    id: 'wind-speed',
-    label: 'Wind speed',
-    value: 0,
-    unit: 'm/s',
-    icon: <Wind className="h-5 w-5" />,
-    color: 'blue',
-    min: 0,
-    max: 30,
-    status: 'optimal',
-  },
-  {
-    id: 'humidity',
-    label: 'Humidity',
-    value: 53,
-    unit: '%',
-    icon: <Droplets className="h-5 w-5" />,
-    color: 'violet',
-    min: 0,
-    max: 100,
-    status: 'optimal',
-  },
-  {
-    id: 'visibility',
-    label: 'Visibility',
-    value: 24.1,
-    unit: 'km',
-    icon: <Eye className="h-5 w-5" />,
-    color: 'emerald',
-    min: 0,
-    max: 50,
-    status: 'optimal',
-  },
-  {
-    id: 'leaf-wetness',
-    label: 'Leaf Wetness',
-    value: 30,
-    unit: '%',
-    icon: <Leaf className="h-5 w-5" />,
-    color: 'emerald',
-    min: 0,
-    max: 100,
-    status: 'optimal',
-  },
-];
+import { FARM_STATUS_METRICS } from '../../constants/deviceConstants';
 
 /**
  * FarmHealthSection - Farm health metrics overview
@@ -97,7 +27,7 @@ export function FarmHealthSection({ data }: { data?: any }) {
           <CircularGauge value={overallHealth} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {metrics.map((metric: any, index: number) => (
+          {FARM_STATUS_METRICS.map((metric, index) => (
             <motion.div
               key={metric.id}
               initial={{ opacity: 0, y: 12 }}
@@ -120,7 +50,7 @@ export function FarmHealthSection({ data }: { data?: any }) {
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          {metrics.map((metric: any) => (
+          {FARM_STATUS_METRICS.map((metric) => (
             <FarmStatusCard key={metric.id} metric={metric} />
           ))}
         </div>

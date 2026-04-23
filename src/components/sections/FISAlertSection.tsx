@@ -1,10 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CircularGauge } from '../common/CircularGauge';
 import { FIS_CARDS } from '../../constants/deviceConstants';
 
 /**
- * FISAlertSection - Field Intelligence System alerts
+ * FISAlertSection - Field Intelligence System alerts (V2 design with linear progress bars)
  */
 export function FISAlertSection({ data }: { data?: any }) {
   const cards = data?.cards || FIS_CARDS;
@@ -19,52 +18,72 @@ export function FISAlertSection({ data }: { data?: any }) {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.14 }}
-      className="rounded-3xl border border-accentPrimary/20 bg-gradient-to-br from-accentPrimary/10 via-cardBg to-transparent p-5 backdrop-blur-xl xl:col-span-3"
+      className="rounded-3xl border border-[#00FF9C]/20 bg-gradient-to-br from-[#00FF9C]/10 via-white/[0.03] to-transparent p-5 backdrop-blur-xl xl:col-span-3"
     >
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-3xl font-bold">FIS Alert Engine</h3>
-        <span className="rounded-full border border-accentPrimary/30 bg-accentPrimary/10 px-3 py-1 text-xs font-semibold text-accentPrimary">
+        <span className="rounded-full border border-[#00FF9C]/30 bg-[#00FF9C]/10 px-3 py-1 text-xs font-semibold text-[#00FF9C]">
           ACTIVE
         </span>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {cards.map((card: any) => (
-          <div
-            key={card.title}
-            className="rounded-3xl border border-cardBorder bg-black/10 dark:bg-black/20 p-4"
-          >
-            <div className="mb-3 flex items-start justify-between">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-cardBg">
-                <card.icon className="h-5 w-5 text-accentPrimary" />
+        {FIS_CARDS.map((card) => (
+          <div key={card.title} className="rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition-all hover:bg-white/[0.05]">
+            <div className="mb-5 flex items-center gap-4">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 backdrop-blur-md border border-white/5 shadow-inner">
+                <card.icon className="h-5 w-5 text-[#00FF9C]" />
               </span>
-              <CircularGauge value={card.value} />
+              <h4 className="text-xl font-bold text-white tracking-tight whitespace-nowrap">{card.title}</h4>
             </div>
-            <p className="text-xl font-bold">{card.title}</p>
-            <p className="mt-2 min-h-[72px] text-sm text-textLabel">{card.body}</p>
-            <span
-              className={[
-                'mt-3 inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold',
-                card.status === 'Optimal' && 'bg-accentPrimary/15 text-accentPrimary',
-                card.status === 'Warning' && 'bg-yellow-400/15 text-yellow-300',
-                card.status === 'Critical' && 'bg-red-400/15 text-red-300',
-              ].join(' ')}
-            >
-              {card.status}
-            </span>
+
+            <p className="text-sm font-medium leading-relaxed text-white/60 min-h-[48px] line-clamp-2">
+              {card.body}
+            </p>
+
+            <div className="mt-6 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span
+                  className={[
+                    'inline-flex rounded-full px-3 py-1 text-[0.65rem] font-black uppercase tracking-widest',
+                    card.status === 'Optimal' && 'bg-[#00FF9C]/10 text-[#00FF9C] border border-[#00FF9C]/20',
+                    card.status === 'Warning' && 'bg-yellow-400/10 text-yellow-300 border border-yellow-400/20',
+                    card.status === 'Critical' && 'bg-red-400/10 text-red-300 border border-red-400/20',
+                  ].join(' ')}
+                >
+                  {card.status}
+                </span>
+                <span className="text-xs font-black text-white/40 tracking-tighter">{card.value}%</span>
+              </div>
+
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5 border border-white/5">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${card.value}%` }}
+                  transition={{ duration: 1.2, ease: "easeOut" }}
+                  className={`h-full rounded-full shadow-[0_0_10px_rgba(0,255,156,0.2)] ${
+                    card.status === 'Optimal' ? 'bg-gradient-to-r from-[#00FF9C] to-emerald-400' :
+                    card.status === 'Warning' ? 'bg-gradient-to-r from-yellow-400 to-amber-500' :
+                    'bg-gradient-to-r from-red-500 to-rose-600'
+                  }`}
+                />
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-accentPrimary/25 bg-accentPrimary/10 p-4">
-        <p className="text-lg font-semibold">{suggestion.title}</p>
-        <p className="mt-1 text-textBody">{suggestion.body}</p>
+      <div className="mt-4 rounded-2xl border border-[#00FF9C]/25 bg-[#00FF9C]/10 p-4">
+        <p className="text-lg font-semibold">Suggestion</p>
+        <p className="mt-1 text-textBody">
+          Deploy sub-surface irrigation now. Solar intensity is rising, hydrate early to maximize yield.
+        </p>
         <div className="mt-4 h-3 rounded-full bg-black/30">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: suggestion.confidence }}
             transition={{ duration: 1.1, delay: 0.2 }}
-            className="h-3 rounded-full bg-gradient-to-r from-accentPrimary to-emerald-300"
+            className="h-3 rounded-full bg-gradient-to-r from-[#00FF9C] to-emerald-300"
           />
         </div>
         <div className="mt-1 flex items-center justify-between text-xs text-textLabel">
@@ -75,7 +94,7 @@ export function FISAlertSection({ data }: { data?: any }) {
         <div className="mt-4 sm:hidden">
           <button
             type="button"
-            className="w-full rounded-xl border border-accentPrimary/40 bg-accentPrimary/20 py-2.5 text-sm font-semibold text-accentPrimary transition hover:bg-accentPrimary/30 active:scale-[0.98]"
+            className="w-full rounded-xl bg-[#00FF9C]/20 border border-[#00FF9C]/40 py-2.5 text-sm font-semibold text-[#00FF9C] transition hover:bg-[#00FF9C]/30 active:scale-[0.98]"
           >
             Acknowledge
           </button>
@@ -84,7 +103,7 @@ export function FISAlertSection({ data }: { data?: any }) {
         <div className="hidden sm:mt-4 sm:flex sm:justify-end">
           <button
             type="button"
-            className="rounded-lg border border-accentPrimary/30 bg-accentPrimary/10 px-4 py-1.5 text-sm font-semibold text-accentPrimary transition-all hover:bg-accentPrimary/20 active:scale-[0.98]"
+            className="rounded-lg border border-[#00FF9C]/30 bg-[#00FF9C]/10 px-4 py-1.5 text-sm font-semibold text-[#00FF9C] transition-all hover:bg-[#00FF9C]/20 active:scale-[0.98]"
           >
             Acknowledge
           </button>

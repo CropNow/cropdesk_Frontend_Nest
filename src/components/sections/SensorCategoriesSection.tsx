@@ -16,62 +16,19 @@ import {
 } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import { SENSOR_CARDS } from '../../constants/deviceConstants';
+import { useLockBodyScroll } from '../../hooks/common/useLockBodyScroll';
 
 /**
  * SensorCategoriesSection - DashboardV2Page-equivalent interactive sensor insights
  */
-export function SensorCategoriesSection({ data, sensorId }: { data?: any; sensorId?: string }) {
-  const { addToast } = useToast();
+
+export function SensorCategoriesSection() {
   const [showWeatherDetails, setShowWeatherDetails] = useState(false);
   const [showSoilDetails, setShowSoilDetails] = useState(false);
   const [showAirDetails, setShowAirDetails] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const isAnySensorModalOpen = showWeatherDetails || showSoilDetails || showAirDetails;
 
-  const activeSensorsCount = data?.activeCount || 19;
-
-  const handleExport = async () => {
-    if (!sensorId) {
-      addToast({ message: 'No active sensor selected for export', type: 'error' });
-      return;
-    }
-
-    try {
-      setIsExporting(true);
-      
-      // Calculate last 1 month
-      const endDate = new Date().toISOString().split('T')[0];
-      const start = new Date();
-      start.setMonth(start.getMonth() - 1);
-      const startDate = start.toISOString().split('T')[0];
-
-      const baseUrl = 'http://4.186.31.224:8081/api/v1';
-      const exportUrl = `${baseUrl}/sensor-data/export?sensorId=${sensorId}&format=csv&startDate=${startDate}&endDate=${endDate}&email=true`;
-      
-      console.log('📤 [Sensor Insights] Triggering export:', exportUrl);
-      
-      // In a real app, we might use apiClient.get(exportUrl)
-      // but for "email=true" exports, usually a simple fetch or redirect works.
-      const response = await fetch(exportUrl, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('cropdesk_auth_token')}`
-        }
-      });
-
-      if (response.ok) {
-        addToast({ 
-          message: 'Export triggered! Check your email for the CSV file.', 
-          type: 'success' 
-        });
-      } else {
-        throw new Error('Export failed');
-      }
-    } catch (err) {
-      console.error('Export failed:', err);
-      addToast({ message: 'Failed to trigger export. Please try again.', type: 'error' });
-    } finally {
-      setIsExporting(false);
-    }
-  };
+  useLockBodyScroll(isAnySensorModalOpen);
 
   return (
     <>
@@ -214,7 +171,7 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="max-h-[98vh] w-[99vw] overflow-hidden rounded-[2rem] border border-white/5 bg-bgCard shadow-[0_32px_64px_-15px_rgba(0,0,0,0.6)] md:max-w-[85rem] md:rounded-[2.5rem]"
+        className="flex max-h-[98vh] w-[99vw] flex-col overflow-hidden rounded-[2rem] border border-white/5 bg-bgCard shadow-[0_32px_64px_-15px_rgba(0,0,0,0.6)] md:max-w-[85rem] md:rounded-[2.5rem]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/5 px-4 py-2.5 md:px-6 md:py-3">
@@ -232,28 +189,32 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           </button>
         </div>
 
-        <div className="overflow-y-auto px-4 py-2 md:px-6 md:py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2 md:px-6 md:py-4">
           <div className="flex flex-col justify-start gap-4 md:flex-row md:flex-wrap md:gap-5">
             <div className="w-full md:w-auto">
               <div
                 onClick={() => toggleMetric('Wind Direction')}
-                className={`flex h-[10rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:w-[16rem] md:rounded-[2rem] md:p-6 ${activeMetric === 'Wind Direction' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-cardBg shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-cardBg active:scale-95'}`}
+                className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:w-[16rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeMetric === 'Wind Direction' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
               >
                 <div>
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-cardBg md:mb-4 md:h-10 md:w-10 md:rounded-2xl">
-                    <Wind className={`h-4 w-4 md:h-5 md:w-5 ${activeMetric === 'Wind Direction' ? 'text-[#00FF9C]' : 'text-[#A855F7]'}`} />
+                  <div
+                    className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                    style={{ backgroundColor: '#A855F71A' }}
+                  >
+                    <Wind className={`h-6 w-6 ${activeMetric === 'Wind Direction' ? 'text-[#00FF9C]' : 'text-[#A855F7]'}`} />
                   </div>
-                  <p className="mb-0.5 text-[0.6rem] font-extrabold uppercase tracking-[0.2em] text-textHint">Wind Direction</p>
-                  <p className="text-[1.25rem] font-black leading-none tracking-tighter text-textHeading md:text-[1.75rem]">
-                    0<span className="ml-1 text-[0.6rem] font-bold tracking-normal text-textHint md:text-[0.7rem]">°</span>
-                  </p>
+                  <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Wind Direction</p>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">0</span>
+                    <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">°</span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
-                    <span className="text-[0.6rem] font-black uppercase tracking-[0.15em] text-[#00FF9C] md:text-[0.7rem]">Good</span>
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
+                    <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
                   </div>
-                  <ChevronDown className={`h-3 w-3 text-textHint transition-transform ${activeMetric === 'Wind Direction' ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === 'Wind Direction' ? 'rotate-180' : ''}`} />
                 </div>
               </div>
 
@@ -273,23 +234,27 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
             <div
               onClick={() => toggleMetric('Wind Speed')}
-              className={`flex h-[10rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:w-[16rem] md:rounded-[2rem] md:p-6 ${activeMetric === 'Wind Speed' ? 'border-[#22D3EE] bg-[#22D3EE]/5 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-white/10 bg-cardBg shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#22D3EE]/30 hover:bg-cardBg active:scale-95'}`}
+              className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:w-[16rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeMetric === 'Wind Speed' ? 'border-[#22D3EE] bg-[#22D3EE]/5 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#22D3EE]/30 hover:bg-white/[0.05] active:scale-95'}`}
             >
               <div>
-                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-cardBg md:mb-4 md:h-10 md:w-10 md:rounded-2xl">
-                  <Wind className={`h-4 w-4 md:h-5 md:w-5 ${activeMetric === 'Wind Speed' ? 'text-[#22D3EE]' : 'text-[#22D3EE]/60'}`} />
+                <div
+                    className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                  style={{ backgroundColor: '#22D3EE1A' }}
+                >
+                  <Wind className={`h-6 w-6 ${activeMetric === 'Wind Speed' ? 'text-[#00FF9C]' : 'text-[#22D3EE]'}`} />
                 </div>
-                <p className="mb-0.5 text-[0.6rem] font-extrabold uppercase tracking-[0.2em] text-textHint">Wind Speed</p>
-                <p className="text-[1.5rem] font-black leading-none tracking-tighter text-textHeading md:text-[2rem]">
-                  0<span className="ml-1.5 text-[0.7rem] font-bold tracking-normal text-textHint md:text-[0.8rem]">m/s</span>
-                </p>
+                <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Wind Speed</p>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">0</span>
+                  <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">m/s</span>
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
-                  <span className="text-[0.65rem] font-black uppercase tracking-[0.15em] text-[#00FF9C] md:text-[0.75rem]">Good</span>
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
+                  <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
                 </div>
-                <ChevronDown className={`h-3.5 w-3.5 text-textHint transition-transform ${activeMetric === 'Wind Speed' ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === 'Wind Speed' ? 'rotate-180' : ''}`} />
               </div>
             </div>
 
@@ -309,23 +274,27 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             <div className="w-full md:w-auto">
               <div
                 onClick={() => toggleMetric('Rain Fall')}
-                className={`flex h-[10rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:w-[16rem] md:rounded-[2rem] md:p-6 ${activeMetric === 'Rain Fall' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-cardBg shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-cardBg active:scale-95'}`}
+                className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:w-[16rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeMetric === 'Rain Fall' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
               >
                 <div>
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-cardBg md:mb-6 md:h-12 md:w-12 md:rounded-2xl">
-                    <CloudRain className={`h-5 w-5 md:h-6 md:w-6 ${activeMetric === 'Rain Fall' ? 'text-[#00FF9C]' : 'text-[#00FF9C]/60'}`} />
+                  <div
+                    className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                    style={{ backgroundColor: '#00FF9C1A' }}
+                  >
+                    <CloudRain className={`h-6 w-6 ${activeMetric === 'Rain Fall' ? 'text-[#00FF9C]' : 'text-[#00FF9C]/80'}`} />
                   </div>
-                  <p className="mb-0.5 text-[0.6rem] font-extrabold uppercase tracking-[0.2em] text-textHint">Rain Fall</p>
-                  <p className="text-[1.5rem] font-black leading-none tracking-tighter text-textHeading md:text-[2rem]">
-                    0.5<span className="ml-1.5 text-[0.7rem] font-bold tracking-normal text-textHint md:text-[0.8rem]">mm</span>
-                  </p>
+                  <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Rain Fall</p>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">0.5</span>
+                    <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">mm</span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
-                    <span className="text-[0.65rem] font-black uppercase tracking-[0.15em] text-[#00FF9C] md:text-[0.75rem]">Good</span>
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
+                    <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
                   </div>
-                  <ChevronDown className={`h-3.5 w-3.5 text-textHint transition-transform ${activeMetric === 'Rain Fall' ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === 'Rain Fall' ? 'rotate-180' : ''}`} />
                 </div>
               </div>
 
@@ -381,7 +350,7 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           </AnimatePresence>
         </div>
 
-        <div className="mt-auto px-4 pb-4 md:px-6 md:pb-6">
+        <div className="mt-auto shrink-0 px-4 pb-4 md:px-6 md:pb-6">
           <div className="flex flex-col gap-0.5 rounded-[1rem] border border-[#00FF9C]/10 bg-[#00FF9C]/[0.02] px-6 py-3 md:rounded-[1.25rem] md:py-3">
             <div className="flex items-center gap-2">
               <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
@@ -412,7 +381,10 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     { title: 'Soil Moisture at Surface', value: '57.01', unit: '%', icon: Droplets, color: '#3B82F6' },
   ];
 
+  const activeSensorIndex = activeSensor ? soilSensors.findIndex((sensor) => sensor.title === activeSensor) : -1;
   const activeSensorData = soilSensors.find((sensor) => sensor.title === activeSensor);
+  const firstRowSensors = soilSensors.slice(0, 4);
+  const secondRowSensors = soilSensors.slice(4);
 
   return (
     <motion.div
@@ -426,47 +398,58 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="max-h-[98vh] w-[99vw] overflow-hidden rounded-[2rem] border border-white/5 bg-bgCard shadow-[0_32px_64px_-15px_rgba(0,0,0,0.6)] md:max-w-[85rem] md:rounded-[2.5rem]"
+        className="flex max-h-[98vh] w-[99vw] flex-col overflow-hidden rounded-[2rem] border border-white/5 bg-bgCard shadow-[0_32px_64px_-15px_rgba(0,0,0,0.6)] md:max-w-[85rem] md:rounded-[2.5rem]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-white/5 px-4 py-2.5 md:px-6 md:py-3">
+        <div className="flex items-center justify-between border-b border-white/5 px-4 py-5 md:px-6 md:py-6">
           <div className="flex items-center gap-4 md:gap-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[0.75rem] bg-emerald-500/10 md:h-14 md:w-14 md:rounded-[1rem]">
-              <Leaf className="h-5 w-5 text-emerald-500 md:h-7 md:w-7" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-[0.75rem] bg-emerald-500/10 md:h-14 md:w-14 md:rounded-[1rem]">
+              <Leaf className="h-6 w-6 text-emerald-500 md:h-7 md:w-7" />
             </div>
             <div>
-              <h2 className="text-xl font-bold leading-tight tracking-tight text-textHeading md:text-[1.6rem]">Soil Sensors</h2>
-              <p className="mt-0.5 whitespace-nowrap text-[0.75rem] font-medium text-textHint md:text-[0.9rem]">7 active sensors</p>
+              <h2 className="text-xl font-bold leading-tight tracking-tight text-white md:text-[1.6rem]">Soil Sensors</h2>
+              <p className="mt-0.5 whitespace-nowrap text-[0.75rem] font-medium text-white/75 md:text-[0.9rem]">
+                {soilSensors.length} active sensors
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 transition-opacity hover:opacity-50">
-            <X className="h-5 w-5 text-red-500/80 md:h-6 md:w-6" strokeWidth={2.5} />
+            <X className="h-5 w-5 text-[#00FF9C] md:h-6 md:w-6" strokeWidth={2.5} />
           </button>
         </div>
 
-        <div className="overflow-y-auto px-4 py-2 md:px-6 md:py-4">
-          <div className="flex flex-col justify-start gap-4 md:flex-row md:flex-wrap md:gap-5">
-            {soilSensors.map((sensor, idx) => (
-              <div key={idx} className="w-full md:w-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 md:px-6 md:py-10">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
+            {firstRowSensors.map((sensor, idx) => (
+              <div key={idx} className="w-full">
                 <div
                   onClick={() => toggleSensor(sensor.title)}
-                  className={`flex h-[10rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:w-[16rem] md:rounded-[2rem] md:p-6 ${activeSensor === sensor.title ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-cardBg shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-cardBg active:scale-95'}`}
+                  className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:w-[16rem] md:rounded-[2rem] md:p-6 ${activeSensor === sensor.title ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
                 >
                   <div>
-                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-cardBg md:mb-4 md:h-10 md:w-10 md:rounded-2xl">
-                      <sensor.icon className={`h-4 w-4 md:h-5 md:w-5 ${activeSensor === sensor.title ? 'text-[#00FF9C]' : ''}`} style={{ color: activeSensor !== sensor.title ? sensor.color : undefined }} />
+                    <div
+                      className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl md:mb-4 md:h-10 md:w-10 md:rounded-2xl"
+                      style={{ backgroundColor: `${sensor.color}1A` }}
+                    >
+                      <sensor.icon
+                        className={`h-6 w-6 md:h-5 md:w-5 ${activeSensor === sensor.title ? 'text-[#00FF9C]' : ''}`}
+                        style={{ color: activeSensor !== sensor.title ? sensor.color : undefined }}
+                      />
                     </div>
-                    <p className="mb-0.5 overflow-hidden whitespace-nowrap text-ellipsis text-[0.6rem] font-extrabold uppercase tracking-[0.2em] text-textHint" title={sensor.title}>{sensor.title}</p>
-                    <p className="text-[1.25rem] font-black leading-none tracking-tighter text-textHeading md:text-[1.75rem]">
-                      {sensor.value}<span className="ml-1 text-[0.6rem] font-bold tracking-normal text-textHint md:text-[0.7rem]">{sensor.unit}</span>
+                    <p className="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]" title={sensor.title}>
+                      {sensor.title}
+                    </p>
+                    <p className="text-[2rem] font-black leading-none tracking-tighter text-white md:text-[1.75rem]">
+                      {sensor.value}
+                      <span className="ml-1 text-[0.8rem] font-bold tracking-normal text-white/60 md:text-[0.7rem]">{sensor.unit}</span>
                     </p>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
-                      <span className="text-[0.6rem] font-black uppercase tracking-[0.15em] text-[#00FF9C] md:text-[0.7rem]">Good</span>
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C]" />
+                      <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
                     </div>
-                    <ChevronDown className={`h-3 w-3 text-textHint transition-transform ${activeSensor === sensor.title ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-3.5 w-3.5 text-white/40 transition-transform ${activeSensor === sensor.title ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
 
@@ -487,9 +470,75 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           </div>
 
           <AnimatePresence mode="wait">
-            {activeSensor && activeSensorData && (
+            {activeSensor && activeSensorData && activeSensorIndex >= 0 && activeSensorIndex < 4 && (
               <motion.div
-                key="desktop-details"
+                key="desktop-details-first-row"
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                className="hidden w-full overflow-hidden md:block"
+              >
+                <SoilSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {secondRowSensors.length > 0 ? (
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
+              {secondRowSensors.map((sensor, idx) => (
+                <div key={idx} className="w-full">
+                  <div
+                    onClick={() => toggleSensor(sensor.title)}
+                    className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:rounded-[2rem] md:p-6 ${activeSensor === sensor.title ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
+                  >
+                    <div>
+                      <div
+                        className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl md:mb-4 md:h-10 md:w-10 md:rounded-2xl"
+                        style={{ backgroundColor: `${sensor.color}1A` }}
+                      >
+                        <sensor.icon
+                          className={`h-6 w-6 md:h-5 md:w-5 ${activeSensor === sensor.title ? 'text-[#00FF9C]' : ''}`}
+                          style={{ color: activeSensor !== sensor.title ? sensor.color : undefined }}
+                        />
+                      </div>
+                      <p className="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]" title={sensor.title}>
+                        {sensor.title}
+                      </p>
+                      <p className="text-[2rem] font-black leading-none tracking-tighter text-white md:text-[1.75rem]">
+                        {sensor.value}
+                        <span className="ml-1 text-[0.8rem] font-bold tracking-normal text-white/60 md:text-[0.7rem]">{sensor.unit}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C]" />
+                        <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
+                      </div>
+                      <ChevronDown className={`h-3.5 w-3.5 text-white/40 transition-transform ${activeSensor === sensor.title ? 'rotate-180' : ''}`} />
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {activeSensor === sensor.title && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        className="w-full overflow-hidden md:hidden"
+                      >
+                        <SoilSensorDetail sensor={sensor} onClose={() => setActiveSensor(null)} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <AnimatePresence mode="wait">
+            {activeSensor && activeSensorData && activeSensorIndex >= 4 && (
+              <motion.div
+                key="desktop-details-second-row"
                 initial={{ opacity: 0, height: 0, marginTop: 0 }}
                 animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
                 exit={{ opacity: 0, height: 0, marginTop: 0 }}
@@ -501,7 +550,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           </AnimatePresence>
         </div>
 
-        <div className="mt-auto px-4 pb-4 md:px-6 md:pb-6">
+        <div className="mt-auto shrink-0 px-4 pb-8 md:px-6 md:pb-12">
           <div className="flex flex-col gap-0.5 rounded-[1rem] border border-[#00FF9C]/10 bg-[#00FF9C]/[0.02] px-6 py-3 md:rounded-[1.25rem] md:py-3">
             <div className="flex items-center gap-2">
               <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
@@ -582,19 +631,104 @@ function SoilSensorDetail({ sensor, onClose }: { sensor: any; onClose: () => voi
   );
 }
 
+function AirSensorDetail({ sensor, onClose }: { sensor: any; onClose: () => void }) {
+  const [selectedRange, setSelectedRange] = useState('24 Hours');
+  const ranges = ['24 Hours', '7 Days', '1 Month'];
+
+  return (
+    <div className="relative w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#0A0E14]/90 p-6 backdrop-blur-2xl md:p-8">
+      <div className="mb-4 flex items-center justify-between md:hidden">
+        <div className="flex items-center gap-4">
+          <h3 className="text-xl font-black tracking-tight text-white">{sensor.title}</h3>
+          <p className="text-xl font-black leading-none tracking-tighter text-[#00FF9C]">
+            {sensor.value}
+            <span className="ml-0.5 text-[0.7rem] font-bold uppercase">.{sensor.unit}</span>
+          </p>
+        </div>
+        <button
+          onClick={onClose}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-lg transition-all active:scale-95 group"
+        >
+          <X className="h-5 w-5 text-[#00FF9C]" strokeWidth={3} />
+        </button>
+      </div>
+
+      <p className="mb-4 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-white/40 md:hidden">24-Hour Trend</p>
+
+      <div className="mb-8 hidden items-start justify-between md:flex">
+        <div>
+          <h3 className="mb-1 text-2xl font-bold leading-tight tracking-tight text-white md:text-[1.75rem]">{sensor.title}</h3>
+          <p className="text-[0.75rem] font-medium uppercase tracking-widest text-white/40 md:text-[0.85rem]">24-Hour Trend</p>
+        </div>
+
+        <div className="flex items-center gap-2 md:gap-3">
+          <p className="text-2xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-[2.25rem]">
+            {sensor.value}
+            <span className="ml-0.5 text-[0.8rem] font-bold uppercase md:text-[0.9rem]">.{sensor.unit}</span>
+          </p>
+          <button
+            onClick={onClose}
+            className="ml-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-lg transition-all hover:bg-white/10 active:scale-95 group md:h-10 md:w-10"
+          >
+            <X className="h-4 w-4 text-white/40 group-hover:text-white md:h-5 md:w-5" strokeWidth={3} />
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-6 max-w-[200px] md:mb-8 md:max-w-[180px]">
+        <div className="relative">
+          <select
+            value={selectedRange}
+            onChange={(e) => setSelectedRange(e.target.value)}
+            className="w-full appearance-none cursor-pointer rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-[0.75rem] font-black uppercase tracking-wider text-[#00FF9C] outline-none transition-colors hover:bg-white/[0.08] md:px-5"
+          >
+            {ranges.map((range) => (
+              <option key={range} value={range} className="bg-[#0A0E14] text-white uppercase">
+                {range}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+            <ChevronDown className="h-4 w-4 text-[#00FF9C]/60" />
+          </div>
+        </div>
+      </div>
+
+      <div className="relative flex h-[220px] w-full items-end justify-center overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-0 md:h-[300px]">
+        <WindSpeedChart />
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center border-t border-white/5 pt-6">
+          <p className="text-[0.7rem] font-black uppercase tracking-[0.3em] text-white/20 md:text-xs">No Data Available</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [activeSensor, setActiveSensor] = useState<string | null>(null);
+
   const airSensors = [
-    { title: 'PM 2.5', value: '7', unit: 'µg/m³', icon: Activity, color: '#3B82F6' },
-    { title: 'PM 10', value: '7', unit: 'µg/m³', icon: Activity, color: '#22D3EE' },
-    { title: 'CO2', value: '0', unit: 'ppm', icon: Cloud, color: '#E5E7EB' },
-    { title: 'Air Temperature', value: '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
-    { title: 'Humidity', value: '0', unit: '%', icon: Droplets, color: '#3B82F6' },
-    { title: 'Air Pressure', value: '999', unit: 'hPa', icon: Activity, color: '#3B82F6' },
-    { title: 'SOX', value: '0.47', unit: 'ppm', icon: Activity, color: '#FBBF24' },
-    { title: 'NOX', value: '0.18', unit: 'ppm', icon: Activity, color: '#F97316' },
-    { title: 'O3', value: '0.02', unit: 'ppm', icon: Activity, color: '#22C55E' },
-    { title: 'Leaf Wetness', value: '0', unit: '%', icon: Leaf, color: '#22C55E' },
+    { id: 'pm25', title: 'PM 2.5', value: '7', unit: 'µg/m³', icon: Activity, color: '#3B82F6' },
+    { id: 'pm10', title: 'PM 10', value: '7', unit: 'µg/m³', icon: Activity, color: '#22D3EE' },
+    { id: 'co2', title: 'CO2', displayName: <>CO<sub>2</sub></>, value: '0', unit: 'ppm', icon: Cloud, color: '#E5E7EB' },
+    { id: 'temp', title: 'Air Temperature', value: '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
+    { id: 'hum', title: 'Humidity', value: '0', unit: '%', icon: Droplets, color: '#3B82F6' },
+    { id: 'pres', title: 'Air Pressure', value: '999', unit: 'hPa', icon: Activity, color: '#3B82F6' },
+    { id: 'so2', title: 'SO2', displayName: <>SO<sub>2</sub></>, value: '0.47', unit: 'ppm', icon: Activity, color: '#FBBF24' },
+    { id: 'no2', title: 'NO2', displayName: <>NO<sub>2</sub></>, value: '0.18', unit: 'ppm', icon: Activity, color: '#F97316' },
+    { id: 'o3', title: 'O3', value: '0.02', unit: 'ppm', icon: Activity, color: '#22C55E' },
+    { id: 'leaf', title: 'Leaf Wetness', value: '0', unit: '%', icon: Leaf, color: '#22C55E' },
   ];
+
+  const row1 = airSensors.slice(0, 4);
+  const row2 = airSensors.slice(4, 8);
+  const row3 = airSensors.slice(8);
+  const activeSensorData = airSensors.find((sensor) => sensor.id === activeSensor);
+  const activeSensorIndex = airSensors.findIndex((sensor) => sensor.id === activeSensor);
+
+  const toggleSensor = (id: string) => {
+    setActiveSensor(activeSensor === id ? null : id);
+  };
 
   return (
     <motion.div
@@ -608,7 +742,7 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="max-h-[90vh] w-[94vw] overflow-hidden rounded-[2rem] border border-white/10 bg-bgMain/95 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] backdrop-blur-3xl md:max-w-[1280px] md:rounded-[2.5rem]"
+        className="flex max-h-[90vh] w-[94vw] flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-bgMain/95 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] backdrop-blur-3xl md:max-w-[1280px] md:rounded-[2.5rem]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/5 px-6 py-4 md:px-14 md:py-4">
@@ -626,35 +760,201 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           </button>
         </div>
 
-        <div className="overflow-y-auto px-6 py-6 md:px-14 md:py-8">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-4">
-            {airSensors.map((sensor, idx) => (
-              <div
-                key={idx}
-                className="flex h-[10.5rem] flex-col justify-between rounded-[1.5rem] border border-white/10 bg-cardBg px-6 py-5 shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all hover:border-[#00FF9C]/30 hover:bg-cardBg md:h-[13rem] md:rounded-[2rem] md:px-8 md:py-6"
-              >
-                <div>
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-cardBg md:mb-6 md:h-12 md:w-12 md:rounded-2xl">
-                    <sensor.icon className="h-5 w-5 md:h-6 md:w-6" style={{ color: sensor.color }} />
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:px-14 md:py-8">
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
+            {row1.map((sensor, idx) => (
+              <div key={idx} className="w-full">
+                <div
+                  onClick={() => toggleSensor(sensor.id)}
+                  className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
+                >
+                  <div>
+                    <div
+                      className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                      style={{ backgroundColor: `${sensor.color}1A` }}
+                    >
+                      <sensor.icon className="h-6 w-6" style={{ color: sensor.color }} />
+                    </div>
+                    <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">
+                      {sensor.displayName || sensor.title}
+                    </p>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
+                        {sensor.value}
+                      </span>
+                      <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">
+                        {sensor.unit}
+                      </span>
+                    </div>
                   </div>
-                  <p className="mb-1 text-[0.6rem] font-bold uppercase tracking-[0.15em] text-textHint md:text-[0.65rem]">{sensor.title}</p>
-                  <p className="text-[2rem] font-bold leading-none tracking-tighter text-textHeading md:text-[2.6rem]">
-                    {sensor.value}<span className="ml-1 text-[0.9rem] font-bold text-textHint md:text-[1.1rem]">{sensor.unit}</span>
-                  </p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_#00FF9C] md:h-2 md:w-2" />
-                    <span className="text-[0.7rem] font-bold uppercase tracking-widest text-[#00FF9C] md:text-[0.8rem]">Good</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
+                      <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeSensor === sensor.id ? 'rotate-180' : ''}`} />
                   </div>
-                  <ChevronDown className="h-4 w-4 text-textHint" />
                 </div>
+
+                <AnimatePresence>
+                  {activeSensor === sensor.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                      animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                      className="w-full overflow-hidden lg:hidden"
+                    >
+                      <AirSensorDetail sensor={sensor} onClose={() => setActiveSensor(null)} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ))}
           </div>
+
+          <AnimatePresence>
+            {activeSensor && activeSensorIndex >= 0 && activeSensorIndex < 4 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                className="hidden overflow-hidden lg:block"
+              >
+                <AirSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
+            {row2.map((sensor, idx) => (
+              <div key={idx} className="w-full">
+                <div
+                  onClick={() => toggleSensor(sensor.id)}
+                  className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
+                >
+                  <div>
+                    <div
+                      className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                      style={{ backgroundColor: `${sensor.color}1A` }}
+                    >
+                      <sensor.icon className="h-6 w-6" style={{ color: sensor.color }} />
+                    </div>
+                    <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">
+                      {sensor.displayName || sensor.title}
+                    </p>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
+                        {sensor.value}
+                      </span>
+                      <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">
+                        {sensor.unit}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
+                      <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeSensor === sensor.id ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {activeSensor === sensor.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                      animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                      className="w-full overflow-hidden lg:hidden"
+                    >
+                      <AirSensorDetail sensor={sensor} onClose={() => setActiveSensor(null)} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+
+          <AnimatePresence>
+            {activeSensor && activeSensorIndex >= 4 && activeSensorIndex < 8 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                className="hidden overflow-hidden lg:block"
+              >
+                <AirSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
+            {row3.map((sensor, idx) => (
+              <div key={idx} className="w-full">
+                <div
+                  onClick={() => toggleSensor(sensor.id)}
+                  className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
+                >
+                  <div>
+                    <div
+                      className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                      style={{ backgroundColor: `${sensor.color}1A` }}
+                    >
+                      <sensor.icon className="h-6 w-6" style={{ color: sensor.color }} />
+                    </div>
+                    <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">
+                      {sensor.displayName || sensor.title}
+                    </p>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
+                        {sensor.value}
+                      </span>
+                      <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">
+                        {sensor.unit}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
+                      <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeSensor === sensor.id ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {activeSensor === sensor.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                      animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                      className="w-full overflow-hidden lg:hidden"
+                    >
+                      <AirSensorDetail sensor={sensor} onClose={() => setActiveSensor(null)} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+
+          <AnimatePresence>
+            {activeSensor && activeSensorIndex >= 8 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                className="hidden overflow-hidden lg:block"
+              >
+                <AirSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <div className="mt-auto px-6 pb-6 md:px-14 md:pb-8">
+        <div className="mt-auto shrink-0 px-6 pb-6 md:px-14 md:pb-8">
           <div className="flex flex-col gap-1 rounded-[1.25rem] border border-[#00FF9C]/10 bg-[#00FF9C]/5 px-6 py-3 md:rounded-[1.75rem] md:px-8 md:py-4">
             <div className="flex items-center gap-3">
               <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
