@@ -41,6 +41,26 @@ type DeviceData = {
 
 type FisStatus = 'Optimal' | 'Warning' | 'Critical';
 
+function useLockBodyScroll(isLocked: boolean) {
+  useEffect(() => {
+    if (!isLocked) {
+      return;
+    }
+
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+    const previousTouchAction = body.style.touchAction;
+
+    body.style.overflow = 'hidden';
+    body.style.touchAction = 'none';
+
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.touchAction = previousTouchAction;
+    };
+  }, [isLocked]);
+}
+
 const DEVICE_LABELS: Record<DeviceType, string> = {
   nest: 'NEST',
   seed: 'Seed',
@@ -313,6 +333,9 @@ export function DashboardV2Page() {
   const [showWeatherDetails, setShowWeatherDetails] = useState(false);
   const [showSoilDetails, setShowSoilDetails] = useState(false);
   const [showAirDetails, setShowAirDetails] = useState(false);
+  const isAnySensorModalOpen = showWeatherDetails || showSoilDetails || showAirDetails;
+
+  useLockBodyScroll(isAnySensorModalOpen);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setIsLoading(false), 900);
@@ -810,23 +833,26 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         </div>
 
         {/* Content - Scrollable on Mobile */}
-        <div className="px-4 py-8 md:px-6 md:py-10 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 md:px-6 md:py-10">
           <div className="flex flex-col md:flex-row md:flex-wrap justify-start gap-4 md:gap-5">
             {/* Wind Direction */}
             <div className="w-full md:w-auto">
               <div 
                 onClick={() => toggleMetric('Wind Direction')}
-                className={`w-full md:w-[16rem] p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border transition-all cursor-pointer ${activeMetric === 'Wind Direction' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'} flex flex-col justify-between h-[12.5rem] md:h-[11rem]`}
+                className={`w-full md:w-[16rem] px-6 py-5 md:px-8 md:py-6 rounded-[1.5rem] md:rounded-[2rem] border transition-all cursor-pointer ${activeMetric === 'Wind Direction' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'} flex flex-col justify-between h-[12.5rem] md:h-[13rem]`}
               >
                 <div>
                   <div 
-                    className="w-12 h-12 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-4"
+                    className="w-12 h-12 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6"
                     style={{ backgroundColor: '#A855F71A' }}
                   >
-                    <Wind className={`w-6 h-6 md:w-5 md:h-5 ${activeMetric === 'Wind Direction' ? 'text-[#00FF9C]' : 'text-[#A855F7]'}`} style={{ color: activeMetric === 'Wind Direction' ? undefined : '#A855F7' }} />
+                    <Wind className={`w-6 h-6 ${activeMetric === 'Wind Direction' ? 'text-[#00FF9C]' : 'text-[#A855F7]'}`} style={{ color: activeMetric === 'Wind Direction' ? undefined : '#A855F7' }} />
                   </div>
-                  <p className="text-[0.75rem] md:text-[0.7rem] font-bold text-white/90 tracking-wider uppercase mb-0.5 whitespace-nowrap">Wind Direction</p>
-                  <p className="text-[2rem] md:text-[1.75rem] font-black text-white leading-none tracking-tighter">0<span className="text-[0.8rem] md:text-[0.7rem] ml-1 font-bold text-white/60 tracking-normal">°</span></p>
+                  <p className="text-[0.75rem] md:text-[0.7rem] font-bold text-white/90 tracking-wider uppercase mb-1 whitespace-nowrap">Wind Direction</p>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-[1.2rem] md:text-[1.4rem] font-black text-white leading-none tracking-tight">0</span>
+                    <span className="text-[0.6rem] md:text-[0.8rem] font-extrabold text-white/50 tracking-wider mb-1">°</span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -855,17 +881,20 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             {/* Wind Speed */}
             <div 
               onClick={() => toggleMetric('Wind Speed')}
-              className={`w-full md:w-[16rem] p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border transition-all cursor-pointer ${activeMetric === 'Wind Speed' ? 'border-[#22D3EE] bg-[#22D3EE]/5 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#22D3EE]/30 hover:bg-white/[0.05] active:scale-95'} flex flex-col justify-between h-[12.5rem] md:h-[11rem]`}
+              className={`w-full md:w-[16rem] px-6 py-5 md:px-8 md:py-6 rounded-[1.5rem] md:rounded-[2rem] border transition-all cursor-pointer ${activeMetric === 'Wind Speed' ? 'border-[#22D3EE] bg-[#22D3EE]/5 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#22D3EE]/30 hover:bg-white/[0.05] active:scale-95'} flex flex-col justify-between h-[12.5rem] md:h-[13rem]`}
             >
               <div>
                 <div 
-                  className="w-12 h-12 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-4"
+                  className="w-12 h-12 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6"
                   style={{ backgroundColor: '#22D3EE1A' }}
                 >
-                  <Wind className={`w-6 h-6 md:w-5 md:h-5 ${activeMetric === 'Wind Speed' ? 'text-[#00FF9C]' : 'text-[#22D3EE]'}`} style={{ color: activeMetric === 'Wind Speed' ? undefined : '#22D3EE' }} />
+                  <Wind className={`w-6 h-6 ${activeMetric === 'Wind Speed' ? 'text-[#00FF9C]' : 'text-[#22D3EE]'}`} style={{ color: activeMetric === 'Wind Speed' ? undefined : '#22D3EE' }} />
                 </div>
-                <p className="text-[0.75rem] md:text-[0.7rem] font-bold text-white/90 tracking-wider uppercase mb-0.5 whitespace-nowrap">Wind Speed</p>
-                <p className="text-[2rem] md:text-[1.75rem] font-black text-white leading-none tracking-tighter">0<span className="text-[0.8rem] md:text-[0.7rem] ml-1 font-bold text-white/60 tracking-normal">m/s</span></p>
+                <p className="text-[0.75rem] md:text-[0.7rem] font-bold text-white/90 tracking-wider uppercase mb-1 whitespace-nowrap">Wind Speed</p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-[1.2rem] md:text-[1.4rem] font-black text-white leading-none tracking-tight">0</span>
+                  <span className="text-[0.6rem] md:text-[0.8rem] font-extrabold text-white/50 tracking-wider mb-1">m/s</span>
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -894,17 +923,20 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             <div className="w-full md:w-auto">
               <div 
                 onClick={() => toggleMetric('Rain Fall')}
-                className={`w-full md:w-[16rem] p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border transition-all cursor-pointer ${activeMetric === 'Rain Fall' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'} flex flex-col justify-between h-[12.5rem] md:h-[11rem]`}
+                className={`w-full md:w-[16rem] px-6 py-5 md:px-8 md:py-6 rounded-[1.5rem] md:rounded-[2rem] border transition-all cursor-pointer ${activeMetric === 'Rain Fall' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'} flex flex-col justify-between h-[12.5rem] md:h-[13rem]`}
               >
                 <div>
                   <div 
-                    className="w-12 h-12 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6"
+                    className="w-12 h-12 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6"
                     style={{ backgroundColor: '#00FF9C1A' }}
                   >
-                    <CloudRain className={`w-6 h-6 md:w-6 md:h-6 ${activeMetric === 'Rain Fall' ? 'text-[#00FF9C]' : 'text-[#00FF9C]/80'}`} style={{ color: '#00FF9C' }} />
+                    <CloudRain className={`w-6 h-6 ${activeMetric === 'Rain Fall' ? 'text-[#00FF9C]' : 'text-[#00FF9C]/80'}`} style={{ color: '#00FF9C' }} />
                   </div>
-                  <p className="text-[0.75rem] md:text-[0.7rem] font-bold text-white/90 tracking-wider uppercase mb-0.5 whitespace-nowrap">Rain Fall</p>
-                  <p className="text-[2rem] md:text-[1.75rem] font-black text-white leading-none tracking-tighter">0.5<span className="text-[0.8rem] md:text-[0.7rem] ml-1 font-bold text-white/60 tracking-normal">mm</span></p>
+                  <p className="text-[0.75rem] md:text-[0.7rem] font-bold text-white/90 tracking-wider uppercase mb-1 whitespace-nowrap">Rain Fall</p>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-[1.2rem] md:text-[1.4rem] font-black text-white leading-none tracking-tight">0.5</span>
+                    <span className="text-[0.6rem] md:text-[0.8rem] font-extrabold text-white/50 tracking-wider mb-1">mm</span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -969,7 +1001,7 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           </AnimatePresence>
         </div>
 
-        <div className="px-4 pb-8 md:px-6 md:pb-12 mt-auto">
+        <div className="mt-auto shrink-0 px-4 pb-8 md:px-6 md:pb-12">
           <div className="bg-[#00FF9C]/[0.02] rounded-[1rem] md:rounded-[1.25rem] py-3 md:py-3 px-6 flex flex-col gap-0.5 border border-[#00FF9C]/10">
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
@@ -1282,7 +1314,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         </div>
 
         {/* Content - Scrollable on Mobile */}
-        <div className="px-4 py-8 md:px-6 md:py-10 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 md:px-6 md:py-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
             {firstRowSensors.map((sensor, idx) => (
               <div key={idx} className="w-full">
@@ -1403,7 +1435,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         </div>
 
         {/* Footer Area */}
-        <div className="px-4 pb-8 md:px-6 md:pb-12 mt-auto">
+        <div className="mt-auto shrink-0 px-4 pb-8 md:px-6 md:pb-12">
           <div className="bg-[#00FF9C]/[0.02] rounded-[1rem] md:rounded-[1.25rem] py-3 md:py-3 px-6 flex flex-col gap-0.5 border border-[#00FF9C]/10">
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
@@ -1605,7 +1637,7 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         </div>
 
         {/* Content */}
-        <div className="px-6 py-6 md:px-14 md:py-8 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:px-14 md:py-8">
           {/* Row 1 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
             {row1.map((sensor, idx) => (
@@ -1815,7 +1847,7 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         </div>
 
         {/* Footer Area */}
-        <div className="px-6 pb-6 md:px-14 md:pb-8 mt-auto">
+        <div className="mt-auto shrink-0 px-6 pb-6 md:px-14 md:pb-8">
           <div className="bg-[#00FF9C]/5 rounded-[1.25rem] md:rounded-[1.75rem] py-3 md:py-4 px-6 md:px-8 flex flex-col gap-1 border border-[#00FF9C]/10">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C]" />
