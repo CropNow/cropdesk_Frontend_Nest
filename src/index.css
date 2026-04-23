@@ -220,4 +220,65 @@
       background-position: 0% 50%;
     }
   }
+
+  /* ── Bento Card system (reactbits.dev MagicBento) ── */
+  .bento-card {
+    --glow-x: 50%;
+    --glow-y: 50%;
+    --glow-intensity: 0;
+    --glow-radius: 200px;
+    --bento-glow-color: 0, 255, 156;
+    transition: box-shadow 0.3s ease;
+  }
+
+  .bento-card--border-glow::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    background: radial-gradient(
+      var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+      rgba(var(--bento-glow-color), calc(var(--glow-intensity) * 0.8)) 0%,
+      rgba(var(--bento-glow-color), calc(var(--glow-intensity) * 0.4)) 30%,
+      transparent 60%
+    );
+    border-radius: inherit;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+  }
+
+  .bento-card--border-glow:hover::after {
+    opacity: 1;
+  }
+
+  .bento-card--border-glow:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 30px rgba(var(--bento-glow-color), 0.15);
+  }
+
+  /* Light mode adjustments for bento */
+  :root .bento-card {
+    --bento-glow-color: 5, 150, 105;
+  }
+
+  .dark .bento-card {
+    --bento-glow-color: 0, 255, 156;
+  }
+
+  .bento-particle::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: rgba(var(--bento-glow-color), 0.2);
+    border-radius: 50%;
+    z-index: -1;
+  }
 }

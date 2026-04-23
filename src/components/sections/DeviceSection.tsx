@@ -25,9 +25,9 @@ export function DeviceSection({
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.05 }}
-        className="relative overflow-hidden rounded-3xl border border-[#00FF9C]/20 bg-gradient-to-br from-emerald-500/15 via-white/[0.03] to-cyan-500/10 p-6 backdrop-blur-xl"
+        className="relative overflow-hidden rounded-xl border border-cardBorder bg-cardBg/50 p-6 backdrop-blur-sm"
       >
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#00FF9C]/15 blur-3xl" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accentPrimary/10 blur-3xl" />
         <div className="relative mb-5 flex items-center justify-start">
           <h2 className="text-3xl font-bold">{device.name}</h2>
         </div>

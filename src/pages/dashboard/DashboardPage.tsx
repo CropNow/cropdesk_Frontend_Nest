@@ -1,4 +1,3 @@
-import React from 'react';
 import { useDashboardState } from '../../hooks/dashboard/useDashboardState';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
@@ -9,6 +8,8 @@ import { SensorCategoriesSection } from '../../components/sections/SensorCategor
 import { FISAlertSection } from '../../components/sections/FISAlertSection';
 import { AIInsightsSection } from '../../components/sections/AIInsightsSection';
 import { WaterSavingsSection } from '../../components/sections/WaterSavingsSection';
+import { BentoCard } from '../../components/common/BentoCard';
+import { BentoGrid } from '../../components/common/BentoGrid';
 
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -33,9 +34,9 @@ export function DashboardPage() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bgMain p-10 text-center">
-        <div className="rounded-3xl border border-red-500/20 bg-red-500/5 p-8 backdrop-blur-xl">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-8 backdrop-blur-xl">
           <p className="text-xl font-bold text-red-400">{error}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="mt-4 rounded-xl bg-red-500/20 px-6 py-2 text-sm font-semibold text-red-300 hover:bg-red-500/30"
           >
@@ -46,7 +47,6 @@ export function DashboardPage() {
     );
   }
 
-  // Use weather from dashboardData if available, otherwise use from hook
   const displayWeather = dashboardData?.weather ? {
     temp: `${dashboardData.weather.temperature} C`,
     condition: dashboardData.weather.condition,
@@ -58,32 +58,48 @@ export function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <WelcomeHeader 
-        currentTime={currentTime} 
-        weather={displayWeather} 
-        userName={user ? `${user.firstName} ${user.lastName}` : 'Farmer'}
-      />
+      <BentoGrid className="space-y-6">
+        <BentoCard className="rounded-xl" enableBorderGlow clickEffect>
+          <WelcomeHeader
+            currentTime={currentTime}
+            weather={displayWeather}
+            userName={user ? `${user.firstName} ${user.lastName}` : 'Farmer'}
+          />
+        </BentoCard>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
-        <DeviceSection
-          variant="v1"
-          device={dashboardData?.currentDevice || currentDevice}
-          selectedDeviceType={selectedDeviceType}
-          currentDeviceIndex={currentDeviceIndex}
-          cycleDevice={cycleDevice}
-        />
-        <FarmHealthSection data={dashboardData?.health} />
-      </div>
+        <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
+          <BentoCard className="rounded-xl" enableBorderGlow clickEffect>
+            <DeviceSection
+              variant="v1"
+              device={dashboardData?.currentDevice || currentDevice}
+              selectedDeviceType={selectedDeviceType}
+              currentDeviceIndex={currentDeviceIndex}
+              cycleDevice={cycleDevice}
+            />
+          </BentoCard>
+          <BentoCard className="rounded-xl" enableBorderGlow clickEffect>
+            <FarmHealthSection data={dashboardData?.health} />
+          </BentoCard>
+        </div>
 
-      <section className="grid gap-6 xl:grid-cols-5">
-        <SensorCategoriesSection data={dashboardData?.sensors} />
-        <FISAlertSection data={dashboardData?.alerts} />
-      </section>
+        <section className="grid gap-6 xl:grid-cols-5">
+          <BentoCard className="rounded-xl xl:col-span-2" enableBorderGlow clickEffect>
+            <SensorCategoriesSection data={dashboardData?.sensors} />
+          </BentoCard>
+          <BentoCard className="rounded-xl xl:col-span-3" enableBorderGlow clickEffect>
+            <FISAlertSection data={dashboardData?.alerts} />
+          </BentoCard>
+        </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
-        <AIInsightsSection data={dashboardData?.aiInsights} />
-        <WaterSavingsSection data={dashboardData?.waterSavings} />
-      </section>
+        <section className="grid gap-6 lg:grid-cols-3">
+          <BentoCard className="rounded-xl lg:col-span-2" enableBorderGlow clickEffect>
+            <AIInsightsSection data={dashboardData?.aiInsights} />
+          </BentoCard>
+          <BentoCard className="rounded-xl" enableBorderGlow clickEffect>
+            <WaterSavingsSection data={dashboardData?.waterSavings} />
+          </BentoCard>
+        </section>
+      </BentoGrid>
     </DashboardLayout>
   );
 }

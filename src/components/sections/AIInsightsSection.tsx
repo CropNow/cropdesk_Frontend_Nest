@@ -13,7 +13,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.18 }}
-      className="rounded-3xl border border-cardBorder bg-cardBg p-5 backdrop-blur-xl lg:col-span-2"
+      className="rounded-xl border border-cardBorder bg-cardBg/50 p-5 backdrop-blur-sm"
     >
       <h3 className="mb-4 text-3xl font-bold">AI Insights</h3>
       <div className="space-y-3">
@@ -21,7 +21,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
           <motion.div
             key={item.title}
             whileHover={{ x: 3 }}
-            className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+            className="flex items-center justify-between rounded-xl border border-cardBorder bg-cardBg/30 px-4 py-3"
           >
             <div className="flex items-center gap-3">
               <div

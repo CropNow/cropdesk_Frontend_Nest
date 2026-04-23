@@ -58,7 +58,7 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
     <motion.section
       initial={{ y: 16, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="relative z-30 rounded-2xl border border-cardBorder bg-cardBg p-3 backdrop-blur-xl sm:rounded-3xl sm:p-5"
+      className="relative z-30 rounded-xl border border-cardBorder bg-cardBg/50 p-3 backdrop-blur-sm sm:p-5"
     >
       <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div>

@@ -60,7 +60,7 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-3xl border border-white/10 bg-cardBg p-5 backdrop-blur-xl xl:col-span-2"
+        className="rounded-xl border border-cardBorder bg-cardBg/50 p-5 backdrop-blur-sm"
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-3xl font-bold">Sensor Insights</h3>

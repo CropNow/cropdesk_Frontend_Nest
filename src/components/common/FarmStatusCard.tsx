@@ -17,7 +17,7 @@ export function FarmStatusCard({ metric }: FarmStatusCardProps) {
   return (
     <motion.div
       whileHover={{ y: -2, scale: 1.02 }}
-      className="flex flex-col items-center justify-center rounded-lg border border-cardBorder bg-black/10 dark:bg-black/20 p-2 text-center transition sm:rounded-2xl sm:p-3 lg:p-4"
+      className="flex flex-col items-center justify-center rounded-lg border border-cardBorder bg-cardBg/30 p-2 text-center transition sm:rounded-xl sm:p-3 lg:p-4"
     >
       <div className="mb-1 text-textLabel sm:mb-2">{icon}</div>
       <div className="mb-0.5 flex items-baseline justify-center gap-0.5">

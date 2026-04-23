@@ -14,7 +14,8 @@
       "Bash(python /tmp/count_dark.py)",
       "Bash(python3 /tmp/count_dark.py)",
       "Bash(python3:*)",
-      "Bash(grep -E \"\\\\.\\(ts|tsx|json\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx|json\\)$\")",
+      "Bash(git checkout:*)"
     ]
   }
 }

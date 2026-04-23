@@ -16,7 +16,7 @@ export function FarmHealthSection({ data }: { data?: any }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.08 }}
-      className="rounded-3xl border border-cardBorder bg-cardBg p-6 backdrop-blur-xl"
+      className="rounded-xl border border-cardBorder bg-cardBg/50 p-6 backdrop-blur-sm"
     >
       {/* Desktop View */}
       <div className="hidden sm:block">

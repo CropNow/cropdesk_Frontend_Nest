@@ -18,7 +18,7 @@ export function FISAlertSection({ data }: { data?: any }) {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.14 }}
-      className="rounded-3xl border border-[#00FF9C]/20 bg-gradient-to-br from-[#00FF9C]/10 via-white/[0.03] to-transparent p-5 backdrop-blur-xl xl:col-span-3"
+      className="rounded-xl border border-cardBorder bg-cardBg/50 p-5 backdrop-blur-sm"
     >
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-3xl font-bold">FIS Alert Engine</h3>
@@ -29,9 +29,9 @@ export function FISAlertSection({ data }: { data?: any }) {
 
       <div className="grid gap-4 lg:grid-cols-3">
         {cards.map((card: any) => (
-          <div key={card.title} className="rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition-all hover:bg-white/[0.05]">
+          <div key={card.title} className="rounded-xl border border-cardBorder bg-cardBg/30 p-6 transition-all hover:bg-cardBg/50">
             <div className="mb-5 flex items-center gap-4">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 backdrop-blur-md border border-white/5 shadow-inner">
+              <span className="grid h-12 w-12 place-items-center rounded-xl bg-cardBg/50 border border-cardBorder">
                 <card.icon className="h-5 w-5 text-[#00FF9C]" />
               </span>
               <h4 className="text-xl font-bold text-white tracking-tight whitespace-nowrap">{card.title}</h4>
@@ -73,7 +73,7 @@ export function FISAlertSection({ data }: { data?: any }) {
         ))}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-[#00FF9C]/25 bg-[#00FF9C]/10 p-4">
+      <div className="mt-4 rounded-xl border border-cardBorder bg-cardBg/30 p-4">
         <p className="text-lg font-semibold">Suggestion</p>
         <p className="mt-1 text-textBody">
           Deploy sub-surface irrigation now. Solar intensity is rising, hydrate early to maximize yield.
