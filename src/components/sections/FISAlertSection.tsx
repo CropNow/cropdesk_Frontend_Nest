@@ -28,7 +28,7 @@ export function FISAlertSection({ data }: { data?: any }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {FIS_CARDS.map((card) => (
+        {cards.map((card: any) => (
           <div key={card.title} className="rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition-all hover:bg-white/[0.05]">
             <div className="mb-5 flex items-center gap-4">
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 backdrop-blur-md border border-white/5 shadow-inner">

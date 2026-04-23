@@ -10,7 +10,10 @@ import { FISAlertSection } from '../../components/sections/FISAlertSection';
 import { AIInsightsSection } from '../../components/sections/AIInsightsSection';
 import { WaterSavingsSection } from '../../components/sections/WaterSavingsSection';
 
+import { useAuth } from '../../contexts/AuthContext';
+
 export function DashboardPage() {
+  const { user } = useAuth();
   const {
     isLoading,
     currentTime,
@@ -18,6 +21,9 @@ export function DashboardPage() {
     selectedDeviceType,
     currentDeviceIndex,
     cycleDevice,
+    error,
+    dashboardData,
+    weatherSummary,
   } = useDashboardState();
 
   if (isLoading) {
@@ -40,35 +46,43 @@ export function DashboardPage() {
     );
   }
 
-  const weatherSummary = dashboardData?.weather ? {
+  // Use weather from dashboardData if available, otherwise use from hook
+  const displayWeather = dashboardData?.weather ? {
     temp: `${dashboardData.weather.temperature} C`,
     condition: dashboardData.weather.condition,
     city: `${dashboardData.weather.city}, ${dashboardData.weather.country}`
-  } : undefined;
+  } : {
+    ...weatherSummary,
+    city: dashboardData?.farm?.name ? `${dashboardData.farm.name}, ${dashboardData.farm.location?.city || ''}` : weatherSummary.city
+  };
 
   return (
     <DashboardLayout>
-      <WelcomeHeader currentTime={currentTime} />
+      <WelcomeHeader 
+        currentTime={currentTime} 
+        weather={displayWeather} 
+        userName={user ? `${user.firstName} ${user.lastName}` : 'Farmer'}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
         <DeviceSection
           variant="v1"
-          device={currentDevice}
+          device={dashboardData?.currentDevice || currentDevice}
           selectedDeviceType={selectedDeviceType}
           currentDeviceIndex={currentDeviceIndex}
           cycleDevice={cycleDevice}
         />
-        <FarmHealthSection />
+        <FarmHealthSection data={dashboardData?.health} />
       </div>
 
       <section className="grid gap-6 xl:grid-cols-5">
-        <SensorCategoriesSection />
-        <FISAlertSection />
+        <SensorCategoriesSection data={dashboardData?.sensors} />
+        <FISAlertSection data={dashboardData?.alerts} />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
-        <AIInsightsSection />
-        <WaterSavingsSection />
+        <AIInsightsSection data={dashboardData?.aiInsights} />
+        <WaterSavingsSection data={dashboardData?.waterSavings} />
       </section>
     </DashboardLayout>
   );

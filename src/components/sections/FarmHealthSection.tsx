@@ -8,7 +8,7 @@ import { FARM_STATUS_METRICS } from '../../constants/deviceConstants';
  * FarmHealthSection - Farm health metrics overview
  */
 export function FarmHealthSection({ data }: { data?: any }) {
-  const metrics = data?.metrics || DASHBOARD2_FARM_STATUS_METRICS;
+  const metrics = data?.metrics || FARM_STATUS_METRICS;
   const overallHealth = data?.overallHealth || 85;
 
   return (

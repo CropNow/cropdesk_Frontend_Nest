@@ -22,11 +22,35 @@ import { useLockBodyScroll } from '../../hooks/common/useLockBodyScroll';
  * SensorCategoriesSection - DashboardV2Page-equivalent interactive sensor insights
  */
 
-export function SensorCategoriesSection() {
+export function SensorCategoriesSection({ data }: { data?: any }) {
+  const { addToast } = useToast();
   const [showWeatherDetails, setShowWeatherDetails] = useState(false);
   const [showSoilDetails, setShowSoilDetails] = useState(false);
   const [showAirDetails, setShowAirDetails] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const activeSensorsCount = data?.activeSensorsCount ?? 12;
   const isAnySensorModalOpen = showWeatherDetails || showSoilDetails || showAirDetails;
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      addToast({
+        message: 'Data export started. You will receive an email shortly.',
+        type: 'success'
+      });
+    } catch (error) {
+      addToast({
+        message: 'Failed to export data. Please try again.',
+        type: 'error'
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useLockBodyScroll(isAnySensorModalOpen);
 

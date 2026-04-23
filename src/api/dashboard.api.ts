@@ -7,34 +7,10 @@ import apiClient from './client';
 
 export const dashboardAPI = {
   /**
-   * Fetch farm health metrics
+   * Fetch dashboard overview (summary of all user farms and sensors)
    */
-  getFarmHealth: (farmId: string) =>
-    apiClient.get(`/dashboard/farm-health/${farmId}`),
-
-  /**
-   * Fetch sensor data summary
-   */
-  getSensorDataSummary: (farmId: string) =>
-    apiClient.get(`/dashboard/sensors/${farmId}`),
-
-  /**
-   * Fetch alerts overview
-   */
-  getAlerts: (farmId: string, limit?: number) =>
-    apiClient.get(`/dashboard/alerts/${farmId}`, { params: { limit } }),
-
-  /**
-   * Fetch water savings data
-   */
-  getWaterSavings: (farmId: string, period?: 'day' | 'week' | 'month') =>
-    apiClient.get(`/dashboard/water-savings/${farmId}`, { params: { period } }),
-
-  /**
-   * Fetch AI insights summary
-   */
-  getAIInsightsSummary: (farmId: string) =>
-    apiClient.get(`/dashboard/ai-insights/${farmId}`),
+  getDashboardOverview: () =>
+    apiClient.get('/dashboard/overview'),
 
   /**
    * Fetch all farms for the user
@@ -48,14 +24,26 @@ export const dashboardAPI = {
     apiClient.get(`/farms/${farmId}/statistics`),
 
   /**
-   * Fetch farm devices context
+   * Fetch farm devices
    */
   getFarmDevices: (farmId: string) =>
     apiClient.get(`/farms/${farmId}/devices`),
 
   /**
-   * Fetch dashboard context (all sensors, fields, farms, crops)
+   * Fetch all alerts for the user
    */
-  getDashboardContext: (sensorId: string) =>
+  getAlerts: (limit?: number) =>
+    apiClient.get('/alerts', { params: { limit } }),
+
+  /**
+   * Fetch AI insights/predictions for a farm
+   */
+  getAIInsights: (farmId: string) =>
+    apiClient.get(`/predictions/farms/${farmId}`),
+
+  /**
+   * Fetch specific sensor dashboard context
+   */
+  getSensorDashboardContext: (sensorId: string) =>
     apiClient.get(`/sensors/${sensorId}/dashboard-context`),
 };
