@@ -8,44 +8,21 @@ import { useTheme } from '../../contexts/ThemeContext';
  */
 interface WelcomeHeaderProps {
   currentTime: Date;
+  userName?: string;
+  weather?: {
+    temp: string;
+    condition: string;
+    city?: string;
+  };
 }
 
-export function WelcomeHeader({ currentTime }: WelcomeHeaderProps) {
+export function WelcomeHeader({ currentTime, userName = 'User', weather }: WelcomeHeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const [isTrayOpen, setIsTrayOpen] = useState(false);
   const trayRef = useRef<HTMLDivElement | null>(null);
 
   const notifications = useMemo(
-    () => [
-      {
-        id: 'n1',
-        title: 'Soil moisture dropped',
-        description: 'Block A is below 30%. Irrigation suggested.',
-        time: '2m ago',
-        unread: true,
-      },
-      {
-        id: 'n2',
-        title: 'Pump maintenance due',
-        description: 'Main pump has reached 96% service threshold.',
-        time: '15m ago',
-        unread: true,
-      },
-      {
-        id: 'n3',
-        title: 'Forecast update',
-        description: 'Light rain expected this evening in your zone.',
-        time: '1h ago',
-        unread: false,
-      },
-      {
-        id: 'n4',
-        title: 'Drone mission complete',
-        description: 'Aero survey finished for Smart Block A.',
-        time: '3h ago',
-        unread: false,
-      },
-    ],
+    () => [],
     [],
   );
 
@@ -68,12 +45,14 @@ export function WelcomeHeader({ currentTime }: WelcomeHeaderProps) {
     };
   }, [isTrayOpen]);
 
-  const weatherSummary = useMemo(() => {
+  const displayWeather = useMemo(() => {
+    if (weather) return weather;
     return {
       temp: '30 C',
       condition: 'Partly cloudy',
+      city: 'Green Valley Farm, Kallakurichi',
     };
-  }, []);
+  }, [weather]);
 
   return (
     <motion.section
@@ -83,13 +62,21 @@ export function WelcomeHeader({ currentTime }: WelcomeHeaderProps) {
     >
       <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-textHeading sm:text-3xl lg:text-4xl">Welcome back, CropNow</h1>
+          <h1 className="text-xl font-bold tracking-tight text-textHeading sm:text-3xl lg:text-4xl">
+            Welcome back, {userName}
+          </h1>
           <p className="mt-1 hidden sm:block text-xs font-medium text-textLabel sm:mt-2 sm:text-sm">
-            <span className="block sm:inline">{currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+            <span className="block sm:inline">
+              {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </span>
             <span className="hidden sm:inline text-textHint"> • </span>
-            <span className="block sm:inline">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+            <span className="block sm:inline">
+              {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+            </span>
             <span className="hidden md:inline text-textHint"> • </span>
-            <span className="block md:inline mt-1 md:mt-0 text-textSecondary">Green Valley Farm, Kallakurichi - Smart Block A</span>
+            <span className="block md:inline mt-1 md:mt-0 text-textSecondary">
+              {displayWeather.city || 'Green Valley Farm, Kallakurichi'} - Smart Block A
+            </span>
           </p>
         </div>
 
@@ -128,19 +115,29 @@ export function WelcomeHeader({ currentTime }: WelcomeHeaderProps) {
                   </div>
 
                   <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                    {notifications.map((item) => (
-                      <div
-                        key={item.id}
-                        className="rounded-xl border border-cardBorder bg-cardBg p-2.5 transition hover:border-accentPrimary/30"
-                      >
-                        <div className="mb-1 flex items-start justify-between gap-2">
-                          <p className="text-xs font-semibold text-textHeading">{item.title}</p>
-                          <span className="shrink-0 text-[10px] text-textHint">{item.time}</span>
+                    {notifications.length > 0 ? (
+                      notifications.map((item) => (
+                        <div
+                          key={item.id}
+                          className="rounded-xl border border-cardBorder bg-cardBg p-2.5 transition hover:border-accentPrimary/30"
+                        >
+                          <div className="mb-1 flex items-start justify-between gap-2">
+                            <p className="text-xs font-semibold text-textHeading">{item.title}</p>
+                            <span className="shrink-0 text-[10px] text-textHint">{item.time}</span>
+                          </div>
+                          <p className="text-[11px] text-textSecondary">{item.description}</p>
+                          {item.unread ? (
+                            <span className="mt-1 block text-[10px] font-semibold text-accentPrimary">
+                              New notification
+                            </span>
+                          ) : null}
                         </div>
-                        <p className="text-[11px] text-textSecondary">{item.description}</p>
-                        {item.unread ? <span className="mt-1 block text-[10px] font-semibold text-accentPrimary">New notification</span> : null}
+                      ))
+                    ) : (
+                      <div className="py-8 text-center">
+                        <p className="text-xs font-medium text-textHint">All caught up!</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               ) : null}
@@ -149,10 +146,10 @@ export function WelcomeHeader({ currentTime }: WelcomeHeaderProps) {
 
           <div className="mt-1 flex items-baseline gap-2 sm:gap-3">
             <p className="text-2xl font-extrabold tracking-tighter text-textHeading sm:text-3xl lg:text-4xl">
-              {weatherSummary.temp.split(' ')[0]}
+              {displayWeather.temp.split(' ')[0]}
               <span className="text-lg text-textMuted sm:text-xl lg:text-3xl">°C</span>
             </p>
-            <p className="text-xs font-medium text-textSecondary sm:text-lg">{weatherSummary.condition}</p>
+            <p className="text-xs font-medium text-textSecondary sm:text-lg">{displayWeather.condition}</p>
           </div>
         </div>
       </div>

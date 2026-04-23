@@ -1,62 +1,99 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import { authAPI } from '../api/auth.api';
+import { User, RegisterRequest } from '../types/auth.types';
 
 /* ─── Types ─── */
-export interface AuthUser {
-  email: string;
-  name: string;
-  role: string;
-}
-
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: AuthUser | null;
+  isLoading: boolean;
+  user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
+  register: (data: RegisterRequest) => Promise<boolean>;
   logout: () => void;
 }
 
-/* ─── Hardcoded credentials (demo only) ─── */
-const VALID_EMAIL = 'test@gmail.com';
-const VALID_PASSWORD = 'test12345';
-const DEMO_USER: AuthUser = { email: VALID_EMAIL, name: 'Rohit Kumar', role: 'Farm Admin' };
 const STORAGE_KEY = 'cropdesk_auth';
+const TOKEN_KEY = 'authToken';
 
 /* ─── Context ─── */
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /* ─── Provider ─── */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as { user: AuthUser };
-        if (parsed.user) setUser(parsed.user);
+    const hydrate = async () => {
+      try {
+        const storedUser = localStorage.getItem(STORAGE_KEY);
+        const token = localStorage.getItem(TOKEN_KEY);
+        
+        if (storedUser && token) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error('Failed to hydrate auth state:', error);
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(TOKEN_KEY);
+      } finally {
+        setIsLoading(false);
       }
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    };
+
+    hydrate();
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    if (email === VALID_EMAIL && password === VALID_PASSWORD) {
-      setUser(DEMO_USER);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: DEMO_USER }));
+    console.log('🔐 [Auth] Attempting login for:', email);
+    try {
+      const response = await authAPI.login({ email, password });
+      console.log('✅ [Auth] Login API Success:', response.data);
+      
+      // Extract from backend structure: { accessToken, data: { user } }
+      const { accessToken, data: responseData } = response.data;
+      const user = responseData.user;
+      
+      if (!accessToken || !user) {
+        console.error('❌ [Auth] Missing user or token in response structure:', response.data);
+        return false;
+      }
+
+      setUser(user);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      localStorage.setItem(TOKEN_KEY, accessToken);
+      
       return true;
+    } catch (error: any) {
+      console.error('❌ [Auth] Login Failed:', error.response?.data || error.message);
+      return false;
     }
-    return false;
+  }, []);
+
+  const register = useCallback(async (data: RegisterRequest): Promise<boolean> => {
+    console.log('📝 [Auth] Attempting registration for:', data.email);
+    try {
+      const response = await authAPI.register(data);
+      console.log('✅ [Auth] Registration API Success:', response.data);
+      return true;
+    } catch (error: any) {
+      console.error('❌ [Auth] Registration Failed:', error.response?.data || error.message);
+      return false;
+    }
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    // Optional: call backend logout
+    authAPI.logout().catch(() => {});
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!user, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!user, isLoading, user, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

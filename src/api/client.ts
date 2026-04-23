@@ -7,7 +7,7 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'ax
 
 // API Client instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://4.186.31.224:8081/api/v1',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -17,9 +17,11 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Add auth token if available
+    // Add auth token if available (except for login and register)
     const token = localStorage.getItem('authToken');
-    if (token) {
+    const isAuthRoute = config.url?.includes('login') || config.url?.includes('register') || config.url?.includes('verify-otp');
+    
+    if (token && !isAuthRoute) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -33,15 +35,17 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
+    const isAuthRoute = error.config?.url?.includes('login') || error.config?.url?.includes('register') || error.config?.url?.includes('verify-otp');
+
     // Handle 401 - Unauthorized
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isAuthRoute) {
       localStorage.removeItem('authToken');
       window.location.href = '/login';
     }
 
     // Handle 403 - Forbidden
     if (error.response?.status === 403) {
-      console.error('Access forbidden');
+      console.error('Access forbidden:', error.response?.data);
     }
 
     return Promise.reject(error);

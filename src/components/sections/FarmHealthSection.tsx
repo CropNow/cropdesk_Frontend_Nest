@@ -7,7 +7,10 @@ import { FARM_STATUS_METRICS } from '../../constants/deviceConstants';
 /**
  * FarmHealthSection - Farm health metrics overview
  */
-export function FarmHealthSection() {
+export function FarmHealthSection({ data }: { data?: any }) {
+  const metrics = data?.metrics || DASHBOARD2_FARM_STATUS_METRICS;
+  const overallHealth = data?.overallHealth || 85;
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
@@ -21,7 +24,7 @@ export function FarmHealthSection() {
           <div>
             <h3 className="mt-1 text-3xl font-bold text-textHeading">Overall Farm Status</h3>
           </div>
-          <CircularGauge value={85} />
+          <CircularGauge value={overallHealth} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FARM_STATUS_METRICS.map((metric, index) => (
@@ -42,7 +45,7 @@ export function FarmHealthSection() {
         <div className="mb-4 flex items-center justify-between gap-4">
           <h3 className="text-2xl font-bold text-textHeading">Overall Farm Status</h3>
           <div className="origin-right flex-shrink-0 scale-75">
-            <CircularGauge value={85} />
+            <CircularGauge value={overallHealth} />
           </div>
         </div>
 

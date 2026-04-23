@@ -8,6 +8,7 @@ export const ROUTES = {
     ROOT: '/auth',
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
+    VERIFY_OTP: '/verify-otp',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password/:token',
   },

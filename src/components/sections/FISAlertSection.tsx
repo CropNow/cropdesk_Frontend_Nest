@@ -5,7 +5,14 @@ import { FIS_CARDS } from '../../constants/deviceConstants';
 /**
  * FISAlertSection - Field Intelligence System alerts (V2 design with linear progress bars)
  */
-export function FISAlertSection() {
+export function FISAlertSection({ data }: { data?: any }) {
+  const cards = data?.cards || FIS_CARDS;
+  const suggestion = data?.suggestion || {
+    title: 'Suggestion',
+    body: 'Deploy sub-surface irrigation now. Solar intensity is rising, hydrate early to maximize yield.',
+    confidence: '98.4%',
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 18 }}
@@ -74,14 +81,14 @@ export function FISAlertSection() {
         <div className="mt-4 h-3 rounded-full bg-black/30">
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: '98.4%' }}
+            animate={{ width: suggestion.confidence }}
             transition={{ duration: 1.1, delay: 0.2 }}
             className="h-3 rounded-full bg-gradient-to-r from-[#00FF9C] to-emerald-300"
           />
         </div>
         <div className="mt-1 flex items-center justify-between text-xs text-textLabel">
           <span>Confidence</span>
-          <span>98.4%</span>
+          <span>{suggestion.confidence}</span>
         </div>
 
         <div className="mt-4 sm:hidden">

@@ -11,18 +11,10 @@ export const DASHBOARD_VIEWS = {
     path: '/dashboard',
     version: 'v1',
   },
-  ADVANCED: {
-    id: 'advanced',
-    name: 'Dashboard Advanced',
-    description: 'Inline optimized view with detailed metrics',
-    path: '/dashboard-v2',
-    version: 'v2',
-  },
 };
 
 export const getDashboardViews = () => Object.values(DASHBOARD_VIEWS);
 
 export const getCurrentDashboardView = (pathname: string) => {
-  if (pathname === '/dashboard-v2') return DASHBOARD_VIEWS.ADVANCED;
   return DASHBOARD_VIEWS.CLASSIC;
 };

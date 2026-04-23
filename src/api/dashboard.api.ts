@@ -35,4 +35,27 @@ export const dashboardAPI = {
    */
   getAIInsightsSummary: (farmId: string) =>
     apiClient.get(`/dashboard/ai-insights/${farmId}`),
+
+  /**
+   * Fetch all farms for the user
+   */
+  getFarms: () => apiClient.get('/farms'),
+
+  /**
+   * Fetch farm statistics
+   */
+  getFarmStatistics: (farmId: string) =>
+    apiClient.get(`/farms/${farmId}/statistics`),
+
+  /**
+   * Fetch farm devices context
+   */
+  getFarmDevices: (farmId: string) =>
+    apiClient.get(`/farms/${farmId}/devices`),
+
+  /**
+   * Fetch dashboard context (all sensors, fields, farms, crops)
+   */
+  getDashboardContext: (sensorId: string) =>
+    apiClient.get(`/sensors/${sensorId}/dashboard-context`),
 };

@@ -5,7 +5,9 @@ import { AI_INSIGHTS } from '../../constants/deviceConstants';
 /**
  * AIInsightsSection - AI-generated insights about farm conditions
  */
-export function AIInsightsSection() {
+export function AIInsightsSection({ data }: { data?: any }) {
+  const insights = data || AI_INSIGHTS;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -15,7 +17,7 @@ export function AIInsightsSection() {
     >
       <h3 className="mb-4 text-3xl font-bold">AI Insights</h3>
       <div className="space-y-3">
-        {AI_INSIGHTS.map((item) => (
+        {insights.map((item: any) => (
           <motion.div
             key={item.title}
             whileHover={{ x: 3 }}

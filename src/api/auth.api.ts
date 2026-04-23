@@ -3,7 +3,7 @@
  */
 
 import apiClient from './client';
-import { LoginRequest, RegisterRequest, AuthResponse } from '../types/auth.types';
+import { LoginRequest, RegisterRequest, AuthResponse, VerifyOTPRequest } from '../types/auth.types';
 
 export const authAPI = {
   /**
@@ -17,6 +17,18 @@ export const authAPI = {
    */
   register: (data: RegisterRequest) =>
     apiClient.post<AuthResponse>('/auth/register', data),
+
+  /**
+   * Verify OTP
+   */
+  verifyOTP: (data: VerifyOTPRequest) =>
+    apiClient.post('/auth/verify-otp', data),
+
+  /**
+   * Resend OTP
+   */
+  resendOTP: (email: string) =>
+    apiClient.post('/auth/resend-otp', { email }),
 
   /**
    * User logout

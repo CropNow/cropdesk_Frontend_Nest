@@ -6,12 +6,15 @@ import {
   Cloud,
   CloudRain,
   Droplets,
+  Download,
   Leaf,
+  Mail,
   Radio,
   Thermometer,
   Wind,
   X,
 } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 import { SENSOR_CARDS } from '../../constants/deviceConstants';
 import { useLockBodyScroll } from '../../hooks/common/useLockBodyScroll';
 
@@ -35,13 +38,28 @@ export function SensorCategoriesSection() {
         transition={{ delay: 0.1 }}
         className="rounded-3xl border border-white/10 bg-cardBg p-5 backdrop-blur-xl xl:col-span-2"
       >
-        <h3 className="mb-4 text-3xl font-bold">Sensor Insights</h3>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-3xl font-bold">Sensor Insights</h3>
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="group flex items-center gap-2 rounded-xl border border-accentPrimary/20 bg-accentPrimary/5 px-4 py-2 text-sm font-bold text-accentPrimary transition-all hover:bg-accentPrimary/10 disabled:opacity-50"
+            title="Export last 1 month data to email"
+          >
+            {isExporting ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-accentPrimary border-t-transparent" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            <span>Export Data</span>
+          </button>
+        </div>
 
         {/* Mobile View - 2x2 grid layout */}
         <div className="grid grid-cols-2 gap-3 sm:hidden">
           {/* Active Sensors Card */}
           <div className="relative flex h-full flex-col items-start justify-between rounded-3xl border border-white/10 bg-cardBg p-4">
-            <span className="absolute right-4 top-3 text-xl font-bold text-[#00FF9C]">19</span>
+            <span className="absolute right-4 top-3 text-xl font-bold text-[#00FF9C]">{activeSensorsCount}</span>
             <div className="mb-4 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10">
               <Radio className="h-4 w-4 text-[#00FF9C]" />
             </div>
@@ -76,7 +94,7 @@ export function SensorCategoriesSection() {
           <div className="grid grid-cols-2 gap-4">
             {/* Active Sensors Card */}
             <div className="relative flex flex-col items-start justify-between rounded-3xl border border-white/10 bg-cardBg p-5">
-              <span className="absolute right-5 top-4 text-2xl font-bold text-[#00FF9C]">19</span>
+              <span className="absolute right-5 top-4 text-2xl font-bold text-[#00FF9C]">{activeSensorsCount}</span>
               <div className="mb-5 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10">
                 <Radio className="h-5 w-5 text-[#00FF9C]" />
               </div>

@@ -24,6 +24,28 @@ export function DashboardPage() {
     return <LoadingSkeleton />;
   }
 
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bgMain p-10 text-center">
+        <div className="rounded-3xl border border-red-500/20 bg-red-500/5 p-8 backdrop-blur-xl">
+          <p className="text-xl font-bold text-red-400">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-xl bg-red-500/20 px-6 py-2 text-sm font-semibold text-red-300 hover:bg-red-500/30"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const weatherSummary = dashboardData?.weather ? {
+    temp: `${dashboardData.weather.temperature} C`,
+    condition: dashboardData.weather.condition,
+    city: `${dashboardData.weather.city}, ${dashboardData.weather.country}`
+  } : undefined;
+
   return (
     <DashboardLayout>
       <WelcomeHeader currentTime={currentTime} />
