@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
@@ -13,29 +13,11 @@ import {
   X,
 } from 'lucide-react';
 import { SENSOR_CARDS } from '../../constants/deviceConstants';
+import { useLockBodyScroll } from '../../hooks/common/useLockBodyScroll';
 
 /**
  * SensorCategoriesSection - DashboardV2Page-equivalent interactive sensor insights
  */
-function useLockBodyScroll(isLocked: boolean) {
-  useEffect(() => {
-    if (!isLocked) {
-      return;
-    }
-
-    const { body } = document;
-    const previousOverflow = body.style.overflow;
-    const previousTouchAction = body.style.touchAction;
-
-    body.style.overflow = 'hidden';
-    body.style.touchAction = 'none';
-
-    return () => {
-      body.style.overflow = previousOverflow;
-      body.style.touchAction = previousTouchAction;
-    };
-  }, [isLocked]);
-}
 
 export function SensorCategoriesSection() {
   const [showWeatherDetails, setShowWeatherDetails] = useState(false);

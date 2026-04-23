@@ -19,7 +19,7 @@ export function AIInsightsSection() {
           <motion.div
             key={item.title}
             whileHover={{ x: 3 }}
-            className="flex items-center justify-between rounded-2xl border border-cardBorder bg-black/10 dark:bg-black/20 px-4 py-3"
+            className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
           >
             <div className="flex items-center gap-3">
               <div

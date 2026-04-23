@@ -1,4 +1,4 @@
-/**
+**
  * Sensor types
  */
 
