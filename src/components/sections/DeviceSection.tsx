@@ -27,7 +27,6 @@ export function DeviceSection({
         transition={{ delay: 0.05 }}
         className="relative overflow-hidden rounded-xl border border-cardBorder bg-cardBg/50 p-6 backdrop-blur-sm"
       >
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accentPrimary/10 blur-3xl" />
         <div className="relative mb-5 flex items-center justify-start">
           <h2 className="text-3xl font-bold">{device.name}</h2>
         </div>

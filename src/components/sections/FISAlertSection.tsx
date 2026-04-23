@@ -56,15 +56,15 @@ export function FISAlertSection({ data }: { data?: any }) {
                 <span className="text-xs font-black text-white/40 tracking-tighter">{card.value}%</span>
               </div>
 
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5 border border-white/5">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-cardBg/50 border border-cardBorder">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${card.value}%` }}
                   transition={{ duration: 1.2, ease: "easeOut" }}
-                  className={`h-full rounded-full shadow-[0_0_10px_rgba(0,255,156,0.2)] ${
-                    card.status === 'Optimal' ? 'bg-gradient-to-r from-[#00FF9C] to-emerald-400' :
-                    card.status === 'Warning' ? 'bg-gradient-to-r from-yellow-400 to-amber-500' :
-                    'bg-gradient-to-r from-red-500 to-rose-600'
+                  className={`h-full rounded-full ${
+                    card.status === 'Optimal' ? 'bg-accentPrimary' :
+                    card.status === 'Warning' ? 'bg-warning' :
+                    'bg-danger'
                   }`}
                 />
               </div>

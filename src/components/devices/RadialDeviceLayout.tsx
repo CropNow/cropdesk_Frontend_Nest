@@ -104,15 +104,8 @@ export function RadialDeviceLayout({
           {device.name}
         </h2>
 
-        {/* Floating device image with radial glow */}
+        {/* Floating device image */}
         <div className="relative mt-4 flex min-h-[350px] items-center justify-center sm:min-h-[370px] md:min-h-[390px]">
-          {/* Green radial glow */}
-          <div
-            className="pointer-events-none absolute h-52 w-52 rounded-full sm:h-72 sm:w-72 md:h-80 md:w-80"
-            style={{
-              background: 'radial-gradient(circle, rgba(0,255,156,0.15), transparent 70%)',
-            }}
-          />
           {(() => {
             const type = (device.deviceType || (device as any).type || 'nest').toLowerCase();
             const fallbackImage = type === 'seed' ? '/seed.png' : type === 'aero' ? '/kaptor_drone.png' : '/NEST.png';
@@ -130,7 +123,7 @@ export function RadialDeviceLayout({
                   y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' },
                   scale: { duration: 0.35 },
                 }}
-                className="relative z-10 max-h-[300px] w-auto object-contain drop-shadow-[0_22px_56px_rgba(0,255,156,0.32)] sm:max-h-[360px] md:max-h-[400px]"
+                className="relative z-10 max-h-[300px] w-auto object-contain sm:max-h-[360px] md:max-h-[400px]"
               />
             );
           })()}

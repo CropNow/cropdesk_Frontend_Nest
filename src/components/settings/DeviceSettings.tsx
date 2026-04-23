@@ -448,7 +448,7 @@ export function DeviceSettings({
                     </span>
                     <span className="whitespace-nowrap text-xs font-semibold text-textSecondary">{item.title}</span>
                     {item.id < 5 ? (
-                      <div className="h-px flex-1 rounded-full bg-gradient-to-r from-[#00FF9C]/90 via-[#00FF9C]/35 to-transparent shadow-[0_0_14px_rgba(0,255,156,0.85)]" />
+                      <div className="h-px flex-1 rounded-full bg-gradient-to-r from-accentPrimary/60 via-accentPrimary/20 to-transparent" />
                     ) : null}
                   </div>
                 ))}

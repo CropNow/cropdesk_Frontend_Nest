@@ -89,12 +89,6 @@ export function RadialDeviceLayoutV2({
 
           {/* ── Device image centrepiece ── */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            {/* radial glow */}
-            <div
-              className="pointer-events-none absolute left-1/2 top-1/2 h-52 w-52 -translate-x-1/2 -translate-y-1/2 rounded-full"
-              style={{ background: 'radial-gradient(circle, rgba(0,255,156,0.18) 0%, transparent 70%)' }}
-            />
-
             <motion.img
               key={`${selectedDeviceType}-${currentDeviceIndex}`}
               src={device.image}
@@ -106,7 +100,7 @@ export function RadialDeviceLayoutV2({
                 y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' },
                 scale: { duration: 0.35 },
               }}
-              className="relative z-10 mb-4 max-h-[240px] w-auto object-contain drop-shadow-[0_16px_40px_rgba(0,255,156,0.25)]"
+              className="relative z-10 mb-4 max-h-[240px] w-auto object-contain"
             />
 
             {/* ── Arrows at bottom ── */}
@@ -136,15 +130,11 @@ export function RadialDeviceLayoutV2({
       {/* ── Mobile layout ── */}
       <div className="sm:hidden flex flex-col items-center gap-8 mt-4 w-full px-2">
         <div className="relative flex flex-row items-center justify-between w-full min-h-[220px] px-2">
-          <div
-            className="pointer-events-none absolute left-1/2 top-1/2 h-52 w-52 -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(0,255,156,0.18) 0%, transparent 70%)' }}
-          />
-          <button type="button" onClick={() => cycleDevice(-1)} className="relative z-20 grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/20 bg-black/40 text-textHeading transition hover:border-[#00FF9C]/70 hover:text-[#00FF9C]">
+          <button type="button" onClick={() => cycleDevice(-1)} className="relative z-20 grid h-10 w-10 shrink-0 place-items-center rounded-full border border-cardBorder bg-cardBg/50 text-textHeading transition hover:border-accentPrimary/70 hover:text-accentPrimary">
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <motion.img key={`mobile-${selectedDeviceType}-${currentDeviceIndex}`} src={device.image} alt={device.name} initial={{ opacity: 0, y: 12, scale: 0.9 }} animate={{ opacity: 1, y: [0, -6, 0], scale: 1 }} transition={{ opacity: { duration: 0.35 }, y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' }, scale: { duration: 0.35 } }} className="relative z-10 max-h-[160px] w-auto object-contain flex-grow drop-shadow-[0_16px_40px_rgba(0,255,156,0.25)]" />
-          <button type="button" onClick={() => cycleDevice(1)} className="relative z-20 grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/20 bg-black/40 text-textHeading transition hover:border-[#00FF9C]/70 hover:text-[#00FF9C]">
+          <motion.img key={`mobile-${selectedDeviceType}-${currentDeviceIndex}`} src={device.image} alt={device.name} initial={{ opacity: 0, y: 12, scale: 0.9 }} animate={{ opacity: 1, y: [0, -6, 0], scale: 1 }} transition={{ opacity: { duration: 0.35 }, y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' }, scale: { duration: 0.35 } }} className="relative z-10 max-h-[160px] w-auto object-contain flex-grow" />
+          <button type="button" onClick={() => cycleDevice(1)} className="relative z-20 grid h-10 w-10 shrink-0 place-items-center rounded-full border border-cardBorder bg-cardBg/50 text-textHeading transition hover:border-accentPrimary/70 hover:text-accentPrimary">
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>

@@ -84,7 +84,7 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
           {/* Active Sensors Card */}
           <div className="relative flex h-full flex-col items-start justify-between rounded-3xl border border-white/10 bg-cardBg p-4">
             <span className="absolute right-4 top-3 text-xl font-bold text-[#00FF9C]">{activeSensorsCount}</span>
-            <div className="mb-4 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10">
+            <div className="mb-4 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-cardBg/50 border border-cardBorder">
               <Radio className="h-4 w-4 text-[#00FF9C]" />
             </div>
             <p className="text-sm font-semibold leading-tight">
@@ -119,7 +119,7 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
             {/* Active Sensors Card */}
             <div className="relative flex flex-col items-start justify-between rounded-3xl border border-white/10 bg-cardBg p-5">
               <span className="absolute right-5 top-4 text-2xl font-bold text-[#00FF9C]">{activeSensorsCount}</span>
-              <div className="mb-5 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10">
+              <div className="mb-5 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-cardBg/50 border border-cardBorder">
                 <Radio className="h-5 w-5 text-[#00FF9C]" />
               </div>
               <p className="text-lg font-semibold leading-tight lg:text-xl">
@@ -1164,7 +1164,7 @@ function WindDirectionRadar({ size = 320, range = '24 Hours' }: { size?: number;
   const dataPoints = data.map((val, i) => getCoordinates(i, val));
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full drop-shadow-[0_0_20px_rgba(168,85,247,0.1)]" preserveAspectRatio="xMidYMid meet">
+    <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full" preserveAspectRatio="xMidYMid meet">
       {gridLevels.map((level, i) => {
         const points = directions.map((_, idx) => {
           const p = getCoordinates(idx, level);
@@ -1214,7 +1214,7 @@ function WindDirectionRadar({ size = 320, range = '24 Hours' }: { size?: number;
           stroke="#A855F7"
           strokeWidth={5}
           strokeLinecap="round"
-          className="drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]"
+          className=""
         />
       )}
     </svg>
