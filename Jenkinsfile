@@ -12,28 +12,18 @@ pipeline {
     stage('Set Branch Variables') {
       steps {
         script {
-          if (env.BRANCH_NAME == 'main') {
+         {
             env.APP_NAME = 'frontend-prod'
             env.HOST_PORT = '3000'
             env.ENV_FILE = '/home/azureuser/frontend-main.env'
           }
 
-          if (env.BRANCH_NAME == 'master') {
-            env.APP_NAME = 'frontend-test'
-            env.HOST_PORT = ''
-            env.ENV_FILE = '/home/azureuser/frontend-master.env'
-          }
+          
         }
       }
     }
 
-    stage('Checkout Code') {
-      steps {
-        git branch: env.BRANCH_NAME,
-        credentialsId: 'github-token',
-        url: 'https://github.com/CropNow/cropdesk_Frontend_Nest.git'
-      }
-    }
+    
 
     stage('Build Docker Image') {
       steps {
