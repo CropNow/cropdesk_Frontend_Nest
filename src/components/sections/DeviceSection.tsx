@@ -28,7 +28,7 @@ export function DeviceSection({
         className="relative overflow-hidden rounded-xl border border-cardBorder bg-cardBg/50 p-6 backdrop-blur-sm"
       >
         <div className="relative mb-5 flex items-center justify-start">
-          <h2 className="text-3xl font-bold">{device.name}</h2>
+          <h2 className="text-lg font-bold sm:text-3xl whitespace-nowrap">{device.name}</h2>
         </div>
         <RadialDeviceLayoutV2
           device={device}

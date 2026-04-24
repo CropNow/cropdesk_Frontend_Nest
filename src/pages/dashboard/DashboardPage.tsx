@@ -58,7 +58,7 @@ export function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <BentoGrid className="space-y-6">
+      <BentoGrid className="space-y-4 sm:space-y-6">
         <BentoCard className="rounded-xl" enableBorderGlow clickEffect>
           <WelcomeHeader
             currentTime={currentTime}
@@ -67,7 +67,7 @@ export function DashboardPage() {
           />
         </BentoCard>
 
-        <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
+        <div className="grid gap-4 sm:gap-6 xl:grid-cols-[1fr_1.2fr]">
           <BentoCard className="rounded-xl" enableBorderGlow clickEffect>
             <DeviceSection
               variant="v1"
@@ -82,7 +82,7 @@ export function DashboardPage() {
           </BentoCard>
         </div>
 
-        <section className="grid gap-6 xl:grid-cols-5">
+        <section className="grid gap-4 sm:gap-6 xl:grid-cols-5">
           <BentoCard className="rounded-xl xl:col-span-2" enableBorderGlow clickEffect>
             <SensorCategoriesSection data={dashboardData?.sensors} />
           </BentoCard>
@@ -91,7 +91,7 @@ export function DashboardPage() {
           </BentoCard>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-3">
+        <section className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           <BentoCard className="rounded-xl lg:col-span-2" enableBorderGlow clickEffect>
             <AIInsightsSection data={dashboardData?.aiInsights} />
           </BentoCard>

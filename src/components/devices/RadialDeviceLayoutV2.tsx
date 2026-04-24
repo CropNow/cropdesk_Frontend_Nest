@@ -104,16 +104,7 @@ export function RadialDeviceLayoutV2({
             />
 
             {/* ── Arrows at bottom ── */}
-            <div className="relative z-20 flex items-center justify-center gap-6">
-              <button
-                type="button"
-                onClick={() => cycleDevice(-1)}
-                className="grid h-10 w-10 place-items-center rounded-full border border-cardBorder bg-black/20 dark:bg-black/40 text-textHeading transition hover:border-accentPrimary/70 hover:text-accentPrimary"
-                aria-label="Previous device"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-
+            <div className="relative z-20 flex items-center justify-center">
               <button
                 type="button"
                 onClick={() => cycleDevice(1)}
@@ -128,24 +119,72 @@ export function RadialDeviceLayoutV2({
       </div>
 
       {/* ── Mobile layout ── */}
-      <div className="sm:hidden flex flex-col items-center gap-8 mt-4 w-full px-2">
-        <div className="relative flex flex-row items-center justify-between w-full min-h-[220px] px-2">
-          <button type="button" onClick={() => cycleDevice(-1)} className="relative z-20 grid h-10 w-10 shrink-0 place-items-center rounded-full border border-cardBorder bg-cardBg/50 text-textHeading transition hover:border-accentPrimary/70 hover:text-accentPrimary">
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <motion.img key={`mobile-${selectedDeviceType}-${currentDeviceIndex}`} src={device.image} alt={device.name} initial={{ opacity: 0, y: 12, scale: 0.9 }} animate={{ opacity: 1, y: [0, -6, 0], scale: 1 }} transition={{ opacity: { duration: 0.35 }, y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' }, scale: { duration: 0.35 } }} className="relative z-10 max-h-[160px] w-auto object-contain flex-grow" />
-          <button type="button" onClick={() => cycleDevice(1)} className="relative z-20 grid h-10 w-10 shrink-0 place-items-center rounded-full border border-cardBorder bg-cardBg/50 text-textHeading transition hover:border-accentPrimary/70 hover:text-accentPrimary">
-            <ChevronRight className="h-5 w-5" />
-          </button>
+      <div className="sm:hidden flex flex-row gap-8 mt-2 w-full px-1 items-start">
+        {/* Left column: Image and arrows */}
+        <div className="flex flex-col items-center gap-4 w-[35%] shrink-0">
+          <div className="relative w-full aspect-[3/4] flex items-center justify-center pt-8">
+            <div
+              className="pointer-events-none absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full mt-4"
+              style={{ background: 'radial-gradient(circle, rgba(0,255,156,0.15) 0%, transparent 70%)' }}
+            />
+            <motion.img
+              key={`mobile-${selectedDeviceType}-${currentDeviceIndex}`}
+              src={device.image}
+              alt={device.name}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, y: [0, -4, 0], scale: 1 }}
+              transition={{
+                opacity: { duration: 0.35 },
+                y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' },
+                scale: { duration: 0.35 },
+              }}
+              className="relative z-10 max-h-[180px] w-auto object-contain drop-shadow-[0_12px_30px_rgba(0,255,156,0.2)]"
+            />
+          </div>
         </div>
 
-        <div className="w-full grid grid-cols-2 gap-x-4 gap-y-6 items-start mt-2 pb-6">
-          <MobileAttribute label="Area" value={device.area} icon={<svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /></svg>} />
-          <MobileAttribute label="Soil Type" value={device.soilType} icon={<Leaf className="h-3 w-3" />} />
-          <MobileAttribute label="Location" value={device.location} icon={<MapPin className="h-3 w-3" />} />
-          <MobileAttribute label="Irrigation" value={device.irrigationType} icon={<Droplets className="h-3 w-3" />} />
-          <MobileAttribute label="Boundary" value={device.boundary} icon={<svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 19 22 19" /></svg>} />
-          <MobileAttribute label="Crops" value={<span className="flex flex-wrap gap-1">{device.crops.map((c) => (<span key={c} className="rounded-md bg-[#00FF9C]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[#00FF9C]">{c}</span>))}</span>} icon={<Leaf className="h-3 w-3" />} />
+        {/* Right column: Attributes list */}
+        <div className="flex-grow flex flex-col gap-4 pt-1">
+          <div className="translate-x-0">
+            <MobileAttribute label="Soil Type" value={device.soilType} icon={<Leaf className="h-3 w-3" />} />
+          </div>
+          <div className="translate-x-2">
+            <MobileAttribute label="Area" value={device.area} icon={<svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /></svg>} />
+          </div>
+          <div className="translate-x-4 flex items-center justify-between gap-6 pr-1">
+            <MobileAttribute 
+              label="Location" 
+              value={<span className="whitespace-nowrap">{device.location}</span>} 
+              icon={<MapPin className="h-3 w-3" />} 
+            />
+            <div className="flex items-center gap-2 pt-2 ml-4">
+              <button
+                type="button"
+                onClick={() => cycleDevice(-1)}
+                className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/40 text-textHeading transition hover:border-[#00FF9C]/70"
+                aria-label="Previous device"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => cycleDevice(1)}
+                className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/40 text-textHeading transition hover:border-[#00FF9C]/70"
+                aria-label="Next device"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="translate-x-4">
+            <MobileAttribute label="Irrigation" value={device.irrigationType} icon={<Droplets className="h-3 w-3" />} />
+          </div>
+          <div className="translate-x-2">
+            <MobileAttribute label="Boundary" value={device.boundary} icon={<svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 19 22 19" /></svg>} />
+          </div>
+          <div className="translate-x-0">
+             <MobileAttribute label="Crops" value={<span className="flex flex-wrap gap-1">{device.crops.map((c) => (<span key={c} className="rounded-md bg-[#00FF9C]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[#00FF9C]">{c}</span>))}</span>} icon={<Leaf className="h-3 w-3" />} />
+          </div>
         </div>
       </div>
     </>

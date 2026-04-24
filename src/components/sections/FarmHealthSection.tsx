@@ -22,7 +22,7 @@ export function FarmHealthSection({ data }: { data?: any }) {
       <div className="hidden sm:block">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <h3 className="mt-1 text-3xl font-bold text-textHeading">Overall Farm Status</h3>
+            <h3 className="mt-1 text-xl font-semibold tracking-tight text-textHeading md:text-2xl">Overall Farm Status</h3>
           </div>
           <CircularGauge value={overallHealth} />
         </div>
@@ -43,7 +43,7 @@ export function FarmHealthSection({ data }: { data?: any }) {
       {/* Mobile View */}
       <div className="flex flex-col sm:hidden">
         <div className="mb-4 flex items-center justify-between gap-4">
-          <h3 className="text-2xl font-bold text-textHeading">Overall Farm Status</h3>
+          <h3 className="text-xl font-semibold tracking-tight text-textHeading md:text-2xl">Overall Farm Status</h3>
           <div className="origin-right flex-shrink-0 scale-75">
             <CircularGauge value={overallHealth} />
           </div>

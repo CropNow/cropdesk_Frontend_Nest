@@ -15,16 +15,26 @@ function ToggleSwitch({ checked, onToggle }: { checked: boolean; onToggle: () =>
       aria-pressed={checked}
       onClick={onToggle}
       className={[
-        'relative h-6 w-11 rounded-full border transition',
+        'relative h-6 w-14 rounded-full border transition',
         checked
           ? 'border-accentPrimary/50 bg-accentPrimary/20'
           : 'border-cardBorder bg-cardBg',
       ].join(' ')}
     >
+      {/* ON/OFF text */}
+      <span
+        className={`absolute top-[4px] text-[10px] font-extrabold tracking-wide ${
+          checked ? 'left-[8px] text-accentPrimary' : 'right-[6px] text-textSecondary'
+        }`}
+      >
+        {checked ? 'ON' : 'OFF'}
+      </span>
+      
+      {/* Knob */}
       <motion.span
-        animate={{ x: checked ? 20 : 2 }}
+        animate={{ x: checked ? 36 : 2 }}
         transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-        className="absolute top-[2px] h-4.5 w-4.5 rounded-full bg-white"
+        className="absolute top-[2px] block h-4.5 w-4.5 rounded-full bg-white shadow-sm"
       />
     </button>
   );

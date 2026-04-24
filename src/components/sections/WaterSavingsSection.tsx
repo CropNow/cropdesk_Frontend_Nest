@@ -19,7 +19,7 @@ export function WaterSavingsSection({ data }: { data?: any }) {
       className="rounded-xl border border-cardBorder bg-cardBg/50 p-5 backdrop-blur-sm"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-3xl font-bold">Water Savings</h3>
+        <h3 className="text-xl font-semibold tracking-tight text-textHeading md:text-2xl">Water Savings</h3>
         <span className="rounded-full border border-accentPrimary/30 bg-accentPrimary/10 px-3 py-1 text-sm font-semibold text-accentPrimary">
           {savings.percent}
         </span>
@@ -28,13 +28,13 @@ export function WaterSavingsSection({ data }: { data?: any }) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
         <div className="rounded-xl border border-cardBorder bg-cardBg/30 p-4">
           <p className="text-sm font-semibold uppercase tracking-wide text-accentCyan">Total Saved</p>
-          <p className="mt-2 text-5xl font-bold text-accentCyan">{savings.total}</p>
+          <p className="mt-2 text-3xl font-bold text-accentCyan">{savings.total}</p>
           <p className="text-sm text-textLabel">This Month</p>
         </div>
 
         <div className="rounded-xl border border-cardBorder bg-cardBg/30 p-4">
           <p className="text-sm font-semibold uppercase tracking-wide text-accentPrimary">Daily Average</p>
-          <p className="mt-2 text-5xl font-bold text-accentPrimary">{savings.daily}</p>
+          <p className="mt-2 text-3xl font-bold text-accentPrimary">{savings.daily}</p>
           <p className="text-sm text-textLabel">Per Day</p>
         </div>
       </div>

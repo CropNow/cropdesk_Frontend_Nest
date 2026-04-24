@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
@@ -63,7 +63,7 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
         className="rounded-xl border border-cardBorder bg-cardBg/50 p-5 backdrop-blur-sm"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-3xl font-bold">Sensor Insights</h3>
+          <h3 className="text-xl font-semibold tracking-tight text-textHeading md:text-2xl">Sensor Insights</h3>
           <button
             onClick={handleExport}
             disabled={isExporting}
@@ -179,26 +179,30 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
 function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [activeMetric, setActiveMetric] = useState<string | null>(null);
 
-  const toggleMetric = (metric: string) => {
-    setActiveMetric((prev) => (prev === metric ? null : metric));
-  };
+  const weatherSensors = [
+    { id: 'wind-dir', title: 'Wind Direction', value: '0', unit: '°', icon: Wind, color: '#00FF9C' },
+    { id: 'wind-speed', title: 'Wind Speed', value: '0', unit: 'm/s', icon: Wind, color: '#00FF9C' },
+    { id: 'rain', title: 'Rain Fall', value: '0.5', unit: 'mm', icon: CloudRain, color: '#00FF9C' },
+  ];
+
+  const activeSensorData = weatherSensors.find((s) => s.id === activeMetric);
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-4 py-[1vh] backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-4 py-2 backdrop-blur-sm lg:pl-[116px] lg:pr-6"
       onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="flex max-h-[98vh] w-[99vw] flex-col overflow-hidden rounded-[2rem] border border-white/5 bg-bgCard shadow-[0_32px_64px_-15px_rgba(0,0,0,0.6)] md:max-w-[85rem] md:rounded-[2.5rem]"
+        className="flex h-[94vh] w-full flex-col overflow-hidden rounded-[2rem] border border-white/5 bg-bgCard shadow-[0_32px_64px_-15px_rgba(0,0,0,0.6)] md:max-w-[72rem] md:rounded-[2.5rem]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-white/5 px-4 py-2.5 md:px-6 md:py-3">
+        <div className="flex items-center justify-between border-b border-white/5 px-4 py-5 md:px-6 md:py-6">
           <div className="flex items-center gap-4 md:gap-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-[0.75rem] bg-[#00FF9C]/10 md:h-14 md:w-14 md:rounded-[1rem]">
               <Cloud className="h-5 w-5 text-[#00FF9C] md:h-7 md:w-7" />
@@ -209,166 +213,71 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             </div>
           </div>
           <button onClick={onClose} className="p-2 transition-opacity hover:opacity-50">
-            <X className="h-5 w-5 text-red-500/80 md:h-6 md:w-6" strokeWidth={2.5} />
+            <X className="h-5 w-5 text-[#00FF9C] md:h-6 md:w-6" strokeWidth={2.5} />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2 md:px-6 md:py-4">
-          <div className="flex flex-col justify-start gap-4 md:flex-row md:flex-wrap md:gap-5">
-            <div className="w-full md:w-auto">
-              <div
-                onClick={() => toggleMetric('Wind Direction')}
-                className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:w-[16rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeMetric === 'Wind Direction' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
-              >
-                <div>
-                  <div
-                    className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
-                    style={{ backgroundColor: '#A855F71A' }}
-                  >
-                    <Wind className={`h-6 w-6 ${activeMetric === 'Wind Direction' ? 'text-[#00FF9C]' : 'text-[#A855F7]'}`} />
-                  </div>
-                  <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Wind Direction</p>
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">0</span>
-                    <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">°</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
-                    <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
-                  </div>
-                  <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === 'Wind Direction' ? 'rotate-180' : ''}`} />
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {activeMetric === 'Wind Direction' && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                    animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
-                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                    className="w-full overflow-hidden md:hidden"
-                  >
-                    <WindDirectionDetail onClose={() => setActiveMetric(null)} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div
-              onClick={() => toggleMetric('Wind Speed')}
-              className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:w-[16rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeMetric === 'Wind Speed' ? 'border-[#22D3EE] bg-[#22D3EE]/5 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#22D3EE]/30 hover:bg-white/[0.05] active:scale-95'}`}
-            >
-              <div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 md:px-6 md:pt-8 md:pb-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
+            {weatherSensors.map((sensor) => (
+              <div key={sensor.id} className="w-full">
                 <div
-                    className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
-                  style={{ backgroundColor: '#22D3EE1A' }}
+                  onClick={() => setActiveMetric(activeMetric === sensor.id ? null : sensor.id)}
+                  className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:w-[16rem] md:rounded-[2rem] md:p-6 ${activeMetric === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
                 >
-                  <Wind className={`h-6 w-6 ${activeMetric === 'Wind Speed' ? 'text-[#00FF9C]' : 'text-[#22D3EE]'}`} />
-                </div>
-                <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Wind Speed</p>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">0</span>
-                  <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">m/s</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
-                  <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
-                </div>
-                <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === 'Wind Speed' ? 'rotate-180' : ''}`} />
-              </div>
-            </div>
-
-            <AnimatePresence>
-              {activeMetric === 'Wind Speed' && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
-                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                  className="w-full overflow-hidden md:hidden"
-                >
-                  <WindSpeedDetail onClose={() => setActiveMetric(null)} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="w-full md:w-auto">
-              <div
-                onClick={() => toggleMetric('Rain Fall')}
-                className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:w-[16rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeMetric === 'Rain Fall' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
-              >
-                <div>
-                  <div
-                    className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
-                    style={{ backgroundColor: '#00FF9C1A' }}
-                  >
-                    <CloudRain className={`h-6 w-6 ${activeMetric === 'Rain Fall' ? 'text-[#00FF9C]' : 'text-[#00FF9C]/80'}`} />
+                  <div>
+                    <div
+                      className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl md:mb-4 md:h-10 md:w-10 md:rounded-2xl"
+                      style={{ backgroundColor: `${sensor.color}1A` }}
+                    >
+                      <sensor.icon className="h-6 w-6 md:h-5 md:w-5 text-[#00FF9C]" />
+                    </div>
+                    <p className="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]" title={sensor.title}>
+                      {sensor.title}
+                    </p>
+                    <p className="text-[2rem] font-black leading-none tracking-tighter text-white md:text-[1.75rem]">
+                      {sensor.value}
+                      <span className="ml-1 text-[0.8rem] font-bold tracking-normal text-white/60 md:text-[0.7rem]">{sensor.unit}</span>
+                    </p>
                   </div>
-                  <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Rain Fall</p>
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">0.5</span>
-                    <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">mm</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
+                      <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === sensor.id ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
-                    <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
-                  </div>
-                  <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === 'Rain Fall' ? 'rotate-180' : ''}`} />
-                </div>
-              </div>
 
-              <AnimatePresence>
-                {activeMetric === 'Rain Fall' && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                    animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
-                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                    className="w-full overflow-hidden md:hidden"
-                  >
-                    <RainFallDetail onClose={() => setActiveMetric(null)} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                <AnimatePresence>
+                  {activeMetric === sensor.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                      animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                      className="w-full overflow-hidden lg:hidden"
+                    >
+                      {sensor.id === 'wind-dir' ? <WindDirectionDetail onClose={() => setActiveMetric(null)} /> : 
+                       sensor.id === 'wind-speed' ? <WindSpeedDetail onClose={() => setActiveMetric(null)} /> :
+                       <RainFallDetail onClose={() => setActiveMetric(null)} />}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
           </div>
 
           <AnimatePresence mode="wait">
-            {activeMetric === 'Wind Direction' && (
+            {activeMetric && (
               <motion.div
-                key="wind-direction-details"
                 initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 24 }}
                 exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                className="hidden w-full overflow-hidden md:block"
+                className="hidden w-full overflow-hidden lg:block"
               >
-                <WindDirectionDetail onClose={() => setActiveMetric(null)} />
-              </motion.div>
-            )}
-            {activeMetric === 'Wind Speed' && (
-              <motion.div
-                key="wind-speed-details"
-                initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
-                exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                className="hidden w-full overflow-hidden md:block"
-              >
-                <WindSpeedDetail onClose={() => setActiveMetric(null)} />
-              </motion.div>
-            )}
-            {activeMetric === 'Rain Fall' && (
-              <motion.div
-                key="rain-fall-details"
-                initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
-                exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                className="hidden w-full overflow-hidden md:block"
-              >
-                <RainFallDetail onClose={() => setActiveMetric(null)} />
+                {activeMetric === 'wind-dir' ? <WindDirectionDetail onClose={() => setActiveMetric(null)} /> : 
+                 activeMetric === 'wind-speed' ? <WindSpeedDetail onClose={() => setActiveMetric(null)} /> :
+                 <RainFallDetail onClose={() => setActiveMetric(null)} />}
               </motion.div>
             )}
           </AnimatePresence>
@@ -388,6 +297,94 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   );
 }
 
+function RangeDropdown({
+  value,
+  options,
+  onChange,
+  triggerClassName = '',
+  menuClassName = '',
+}: {
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+  triggerClassName?: string;
+  menuClassName?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const el = rootRef.current;
+      if (!el) return;
+      if (event.target instanceof Node && !el.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className={[
+          'flex w-full items-center justify-between gap-3 border border-white/10 bg-cardBg text-[#00FF9C] outline-none transition-colors hover:bg-white/[0.06]',
+          triggerClassName,
+        ].join(' ')}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className="truncate">{value}</span>
+        <ChevronDown className={['h-4 w-4 text-[#00FF9C]/70 transition-transform', open ? 'rotate-180' : ''].join(' ')} />
+      </button>
+
+      {open ? (
+        <div
+          role="listbox"
+          className={[
+            'absolute left-0 top-full z-50 mt-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-[#0A0E14]/95 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-2xl',
+            menuClassName,
+          ].join(' ')}
+        >
+          {options.map((opt) => {
+            const isActive = opt === value;
+            return (
+              <button
+                key={opt}
+                type="button"
+                role="option"
+                aria-selected={isActive}
+                onClick={() => {
+                  onChange(opt);
+                  setOpen(false);
+                }}
+                className={[
+                  'flex w-full items-center px-4 py-2 text-left text-[0.75rem] font-black uppercase tracking-wider transition-colors',
+                  isActive ? 'bg-[#00FF9C]/10 text-[#00FF9C]' : 'text-white/90 hover:bg-white/[0.06]',
+                ].join(' ')}
+              >
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [activeSensor, setActiveSensor] = useState<string | null>(null);
 
@@ -397,12 +394,12 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
   const soilSensors = [
     { title: 'Nitrogen', value: '0', unit: 'mg/kg', icon: Activity, color: '#00FF9C' },
-    { title: 'Organic Carbon', value: '0', unit: '%', icon: Wind, color: '#FCD34D' },
-    { title: 'Soil Temperature at Surface', value: '24.79', unit: '°C', icon: Thermometer, color: '#F87171' },
-    { title: 'Phosphorus', value: '0', unit: 'mg/kg', icon: Activity, color: '#22D3EE' },
-    { title: 'Potassium', value: '0', unit: 'mg/kg', icon: Wind, color: '#F59E0B' },
-    { title: 'PH Level', value: '0', unit: 'pH', icon: Thermometer, color: '#A855F7' },
-    { title: 'Soil Moisture at Surface', value: '57.01', unit: '%', icon: Droplets, color: '#3B82F6' },
+    { title: 'Organic Carbon', value: '0', unit: '%', icon: Wind, color: '#00FF9C' },
+    { title: 'Soil Temp at Surface', value: '24.79', unit: '°C', icon: Thermometer, color: '#00FF9C' },
+    { title: 'Phosphorus', value: '0', unit: 'mg/kg', icon: Activity, color: '#00FF9C' },
+    { title: 'Potassium', value: '0', unit: 'mg/kg', icon: Wind, color: '#00FF9C' },
+    { title: 'PH Level', value: '0', unit: 'pH', icon: Thermometer, color: '#00FF9C' },
+    { title: 'Soil Moisture at Surface', value: '57.01', unit: '%', icon: Droplets, color: '#00FF9C' },
   ];
 
   const activeSensorIndex = activeSensor ? soilSensors.findIndex((sensor) => sensor.title === activeSensor) : -1;
@@ -415,20 +412,20 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-4 py-[1vh] backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-4 py-2 backdrop-blur-sm lg:pl-[116px] lg:pr-6"
       onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="flex max-h-[98vh] w-[99vw] flex-col overflow-hidden rounded-[2rem] border border-white/5 bg-bgCard shadow-[0_32px_64px_-15px_rgba(0,0,0,0.6)] md:max-w-[85rem] md:rounded-[2.5rem]"
+        className="flex h-[94vh] w-full flex-col overflow-hidden rounded-[2rem] border border-white/5 bg-bgCard shadow-[0_32px_64px_-15px_rgba(0,0,0,0.6)] md:max-w-[72rem] md:rounded-[2.5rem]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/5 px-4 py-5 md:px-6 md:py-6">
           <div className="flex items-center gap-4 md:gap-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-[0.75rem] bg-emerald-500/10 md:h-14 md:w-14 md:rounded-[1rem]">
-              <Leaf className="h-6 w-6 text-emerald-500 md:h-7 md:w-7" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-[0.75rem] bg-[#00FF9C]/10 md:h-14 md:w-14 md:rounded-[1rem]">
+              <Leaf className="h-6 w-6 text-[#00FF9C] md:h-7 md:w-7" />
             </div>
             <div>
               <h2 className="text-xl font-bold leading-tight tracking-tight text-white md:text-[1.6rem]">Soil Sensors</h2>
@@ -442,7 +439,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 md:px-6 md:py-10">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 md:px-6 md:pt-8 md:pb-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
             {firstRowSensors.map((sensor, idx) => (
               <div key={idx} className="w-full">
@@ -456,8 +453,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                       style={{ backgroundColor: `${sensor.color}1A` }}
                     >
                       <sensor.icon
-                        className={`h-6 w-6 md:h-5 md:w-5 ${activeSensor === sensor.title ? 'text-[#00FF9C]' : ''}`}
-                        style={{ color: activeSensor !== sensor.title ? sensor.color : undefined }}
+                        className="h-6 w-6 md:h-5 md:w-5 text-[#00FF9C]"
                       />
                     </div>
                     <p className="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]" title={sensor.title}>
@@ -470,10 +466,10 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
                       <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
                     </div>
-                    <ChevronDown className={`h-3.5 w-3.5 text-white/40 transition-transform ${activeSensor === sensor.title ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeSensor === sensor.title ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
 
@@ -481,9 +477,9 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   {activeSensor === sensor.title && (
                     <motion.div
                       initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                      animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                      animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
                       exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                      className="w-full overflow-hidden md:hidden"
+                      className="w-full overflow-hidden lg:hidden"
                     >
                       <SoilSensorDetail sensor={sensor} onClose={() => setActiveSensor(null)} />
                     </motion.div>
@@ -497,10 +493,10 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             {activeSensor && activeSensorData && activeSensorIndex >= 0 && activeSensorIndex < 4 && (
               <motion.div
                 key="desktop-details-first-row"
-                initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
-                exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                className="hidden w-full overflow-hidden md:block"
+                initial={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 24, marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
+                className="hidden w-full overflow-hidden lg:block"
               >
                 <SoilSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
               </motion.div>
@@ -513,7 +509,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                 <div key={idx} className="w-full">
                   <div
                     onClick={() => toggleSensor(sensor.title)}
-                    className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:rounded-[2rem] md:p-6 ${activeSensor === sensor.title ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
+                    className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:w-[16rem] md:rounded-[2rem] md:p-6 ${activeSensor === sensor.title ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
                   >
                     <div>
                       <div
@@ -521,8 +517,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                         style={{ backgroundColor: `${sensor.color}1A` }}
                       >
                         <sensor.icon
-                          className={`h-6 w-6 md:h-5 md:w-5 ${activeSensor === sensor.title ? 'text-[#00FF9C]' : ''}`}
-                          style={{ color: activeSensor !== sensor.title ? sensor.color : undefined }}
+                          className="h-6 w-6 md:h-5 md:w-5 text-[#00FF9C]"
                         />
                       </div>
                       <p className="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]" title={sensor.title}>
@@ -535,10 +530,10 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C]" />
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
                         <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
                       </div>
-                      <ChevronDown className={`h-3.5 w-3.5 text-white/40 transition-transform ${activeSensor === sensor.title ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeSensor === sensor.title ? 'rotate-180' : ''}`} />
                     </div>
                   </div>
 
@@ -546,9 +541,9 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                     {activeSensor === sensor.title && (
                       <motion.div
                         initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                        animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                        animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
                         exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                        className="w-full overflow-hidden md:hidden"
+                        className="w-full overflow-hidden lg:hidden"
                       >
                         <SoilSensorDetail sensor={sensor} onClose={() => setActiveSensor(null)} />
                       </motion.div>
@@ -563,10 +558,10 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             {activeSensor && activeSensorData && activeSensorIndex >= 4 && (
               <motion.div
                 key="desktop-details-second-row"
-                initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
-                exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                className="hidden w-full overflow-hidden md:block"
+                initial={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 24, marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
+                className="hidden w-full overflow-hidden lg:block"
               >
                 <SoilSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
               </motion.div>
@@ -574,7 +569,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           </AnimatePresence>
         </div>
 
-        <div className="mt-auto shrink-0 px-4 pb-8 md:px-6 md:pb-12">
+        <div className="mt-auto shrink-0 px-4 pb-4 md:px-6 md:pb-6">
           <div className="flex flex-col gap-0.5 rounded-[1rem] border border-[#00FF9C]/10 bg-[#00FF9C]/[0.02] px-6 py-3 md:rounded-[1.25rem] md:py-3">
             <div className="flex items-center gap-2">
               <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
@@ -593,12 +588,12 @@ function SoilSensorDetail({ sensor, onClose }: { sensor: any; onClose: () => voi
   const ranges = ['24 Hours', '7 Days', '1 Month'];
 
   return (
-    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:p-6">
-      <div className="mb-4 flex w-full items-start justify-between md:mb-5">
+    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:px-6 md:pt-6 md:pb-4">
+      <div className="mb-4 flex w-full items-start justify-between md:mb-6">
         <div className="z-20 flex flex-col items-start gap-3 md:gap-5">
           <div className="text-left">
-            <h3 className="mb-1 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">{sensor.title}</h3>
-            <p className="text-[0.6rem] font-medium tracking-wide text-textHint md:text-xs">24-Hour Trend</p>
+            <h3 className="mb-1 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">{sensor.displayName || sensor.title}</h3>
+            <p className="text-[0.6rem] font-medium tracking-wide text-white/70 md:text-xs">24-Hour Trend</p>
           </div>
 
           <div className="hidden flex-wrap gap-3 md:flex">
@@ -613,42 +608,36 @@ function SoilSensorDetail({ sensor, onClose }: { sensor: any; onClose: () => voi
             ))}
           </div>
 
-          <div className="relative w-full min-w-[140px] md:hidden">
-            <select
+          <div className="relative w-full min-w-[130px] md:hidden">
+            <RangeDropdown
               value={selectedRange}
-              onChange={(e) => setSelectedRange(e.target.value)}
-              className="w-full appearance-none cursor-pointer rounded-full border border-white/10 bg-cardBg px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider text-[#00FF9C] outline-none"
-            >
-              {ranges.map((range) => (
-                <option key={range} value={range} className="bg-bgMain uppercase text-textHeading">{range}</option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-              <ChevronDown className="h-4 w-4 text-[#00FF9C]/60" />
-            </div>
+              options={ranges}
+              onChange={setSelectedRange}
+              triggerClassName="cursor-pointer rounded-full px-4 py-2 text-[0.7rem] font-black uppercase tracking-wider"
+            />
           </div>
         </div>
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex flex-col items-end">
-            <p className="text-3xl font-black leading-none tracking-tighter md:text-4xl" style={{ color: sensor.color }}>
+            <p className="text-3xl font-black leading-none tracking-tighter md:text-3xl text-[#00FF9C]">
               {sensor.value}
-              <span className="ml-1 text-[1rem] font-extrabold uppercase" style={{ color: sensor.color }}>{sensor.unit}</span>
+              <span className="ml-1 text-[1rem] font-extrabold text-[#00FF9C]">{sensor.unit}</span>
             </p>
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 transition-all hover:bg-red-500/20 active:scale-95 md:h-9 md:w-9"
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 transition-all hover:bg-red-500/20 active:scale-95 md:h-9 md:w-9"
           >
-            <X className="h-5 w-5 text-red-500 md:h-4 md:w-4" strokeWidth={3} />
+            <X className="h-4 w-4 text-red-500 md:h-4 md:w-4" strokeWidth={3} />
           </button>
         </div>
       </div>
 
-      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[260px]">
+      <div className="relative mt-6 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-8 md:h-[210px]">
         <WindSpeedChart />
-        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center md:bottom-4">
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-textHint md:text-[0.75rem]">No Data</p>
+        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center md:bottom-2">
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/70 md:text-[0.75rem]">No Data</p>
         </div>
       </div>
     </div>
@@ -660,68 +649,56 @@ function AirSensorDetail({ sensor, onClose }: { sensor: any; onClose: () => void
   const ranges = ['24 Hours', '7 Days', '1 Month'];
 
   return (
-    <div className="relative w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#0A0E14]/90 p-6 backdrop-blur-2xl md:p-8">
-      <div className="mb-4 flex items-center justify-between md:hidden">
-        <div className="flex items-center gap-4">
-          <h3 className="text-xl font-black tracking-tight text-white">{sensor.title}</h3>
-          <p className="text-xl font-black leading-none tracking-tighter text-[#00FF9C]">
-            {sensor.value}
-            <span className="ml-0.5 text-[0.7rem] font-bold uppercase">.{sensor.unit}</span>
-          </p>
+    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:px-6 md:pt-6 md:pb-4">
+      <div className="mb-4 flex w-full items-start justify-between md:mb-6">
+        <div className="z-20 flex flex-col items-start gap-3 md:gap-5">
+          <div className="text-left">
+            <h3 className="mb-1 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">{sensor.displayName || sensor.title}</h3>
+            <p className="text-[0.6rem] font-medium tracking-wide text-white/70 md:text-xs">24-Hour Trend</p>
+          </div>
+
+          <div className="hidden flex-wrap gap-3 md:flex">
+            {ranges.map((range) => (
+              <button
+                key={range}
+                onClick={() => setSelectedRange(range)}
+                className={`rounded-full px-5 py-1.5 text-xs font-bold transition-all ${selectedRange === range ? 'bg-[#00FF9C]/10 text-[#00FF9C] border border-[#00FF9C]/30 shadow-[0_0_15px_rgba(0,255,156,0.15)]' : 'text-textHint border border-white/5 hover:border-white/20'}`}
+              >
+                {range}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative w-full min-w-[130px] md:hidden">
+            <RangeDropdown
+              value={selectedRange}
+              options={ranges}
+              onChange={setSelectedRange}
+              triggerClassName="cursor-pointer rounded-full px-4 py-2 text-[0.7rem] font-black uppercase tracking-wider"
+            />
+          </div>
         </div>
-        <button
-          onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-lg transition-all active:scale-95 group"
-        >
-          <X className="h-5 w-5 text-[#00FF9C]" strokeWidth={3} />
-        </button>
-      </div>
 
-      <p className="mb-4 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-white/40 md:hidden">24-Hour Trend</p>
-
-      <div className="mb-8 hidden items-start justify-between md:flex">
-        <div>
-          <h3 className="mb-1 text-2xl font-bold leading-tight tracking-tight text-white md:text-[1.75rem]">{sensor.title}</h3>
-          <p className="text-[0.75rem] font-medium uppercase tracking-widest text-white/40 md:text-[0.85rem]">24-Hour Trend</p>
-        </div>
-
-        <div className="flex items-center gap-2 md:gap-3">
-          <p className="text-2xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-[2.25rem]">
-            {sensor.value}
-            <span className="ml-0.5 text-[0.8rem] font-bold uppercase md:text-[0.9rem]">.{sensor.unit}</span>
-          </p>
+        <div className="flex items-center gap-4 md:gap-8">
+          <div className="flex flex-col items-end">
+            <p className="text-3xl font-black leading-none tracking-tighter md:text-3xl text-[#00FF9C]">
+              {sensor.value}
+              <span className="ml-1 text-[1rem] font-extrabold text-[#00FF9C]">{sensor.unit}</span>
+            </p>
+          </div>
           <button
             onClick={onClose}
-            className="ml-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-lg transition-all hover:bg-white/10 active:scale-95 group md:h-10 md:w-10"
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 transition-all hover:bg-red-500/20 active:scale-95 md:h-9 md:w-9"
           >
-            <X className="h-4 w-4 text-white/40 group-hover:text-white md:h-5 md:w-5" strokeWidth={3} />
+            <X className="h-4 w-4 text-red-500 md:h-4 md:w-4" strokeWidth={3} />
           </button>
         </div>
       </div>
 
-      <div className="mb-6 max-w-[200px] md:mb-8 md:max-w-[180px]">
-        <div className="relative">
-          <select
-            value={selectedRange}
-            onChange={(e) => setSelectedRange(e.target.value)}
-            className="w-full appearance-none cursor-pointer rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-[0.75rem] font-black uppercase tracking-wider text-[#00FF9C] outline-none transition-colors hover:bg-white/[0.08] md:px-5"
-          >
-            {ranges.map((range) => (
-              <option key={range} value={range} className="bg-[#0A0E14] text-white uppercase">
-                {range}
-              </option>
-            ))}
-          </select>
-          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-            <ChevronDown className="h-4 w-4 text-[#00FF9C]/60" />
-          </div>
-        </div>
-      </div>
-
-      <div className="relative flex h-[220px] w-full items-end justify-center overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-0 md:h-[300px]">
+      <div className="relative mt-6 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-8 md:h-[210px]">
         <WindSpeedChart />
-        <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center border-t border-white/5 pt-6">
-          <p className="text-[0.7rem] font-black uppercase tracking-[0.3em] text-white/20 md:text-xs">No Data Available</p>
+        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center md:bottom-2">
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/70 md:text-[0.75rem]">No Data</p>
         </div>
       </div>
     </div>
@@ -732,16 +709,16 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   const [activeSensor, setActiveSensor] = useState<string | null>(null);
 
   const airSensors = [
-    { id: 'pm25', title: 'PM 2.5', value: '7', unit: 'µg/m³', icon: Activity, color: '#3B82F6' },
-    { id: 'pm10', title: 'PM 10', value: '7', unit: 'µg/m³', icon: Activity, color: '#22D3EE' },
-    { id: 'co2', title: 'CO2', displayName: <>CO<sub>2</sub></>, value: '0', unit: 'ppm', icon: Cloud, color: '#E5E7EB' },
-    { id: 'temp', title: 'Air Temperature', value: '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
-    { id: 'hum', title: 'Humidity', value: '0', unit: '%', icon: Droplets, color: '#3B82F6' },
-    { id: 'pres', title: 'Air Pressure', value: '999', unit: 'hPa', icon: Activity, color: '#3B82F6' },
-    { id: 'so2', title: 'SO2', displayName: <>SO<sub>2</sub></>, value: '0.47', unit: 'ppm', icon: Activity, color: '#FBBF24' },
-    { id: 'no2', title: 'NO2', displayName: <>NO<sub>2</sub></>, value: '0.18', unit: 'ppm', icon: Activity, color: '#F97316' },
-    { id: 'o3', title: 'O3', value: '0.02', unit: 'ppm', icon: Activity, color: '#22C55E' },
-    { id: 'leaf', title: 'Leaf Wetness', value: '0', unit: '%', icon: Leaf, color: '#22C55E' },
+    { id: 'pm25', title: 'PM 2.5', value: '7', unit: 'µg/m³', icon: Activity, color: '#00FF9C' },
+    { id: 'pm10', title: 'PM 10', value: '7', unit: 'µg/m³', icon: Activity, color: '#00FF9C' },
+    { id: 'co2', title: 'CO2', displayName: <>CO<sub>2</sub></>, value: '0', unit: 'ppm', icon: Cloud, color: '#00FF9C' },
+    { id: 'temp', title: 'Air Temp', value: '0', unit: '°C', icon: Thermometer, color: '#00FF9C' },
+    { id: 'hum', title: 'Humidity', value: '0', unit: '%', icon: Droplets, color: '#00FF9C' },
+    { id: 'pres', title: 'Air Pressure', value: '999', unit: 'hPa', icon: Activity, color: '#00FF9C' },
+    { id: 'so2', title: 'SO2', displayName: <>SO<sub>2</sub></>, value: '0.47', unit: 'ppm', icon: Activity, color: '#00FF9C' },
+    { id: 'no2', title: 'NO2', displayName: <>NO<sub>2</sub></>, value: '0.18', unit: 'ppm', icon: Activity, color: '#00FF9C' },
+    { id: 'o3', title: 'O3', value: '0.02', unit: 'ppm', icon: Activity, color: '#00FF9C' },
+    { id: 'leaf', title: 'Leaf Wetness', value: '0', unit: '%', icon: Leaf, color: '#00FF9C' },
   ];
 
   const row1 = airSensors.slice(0, 4);
@@ -759,20 +736,20 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm lg:pl-[116px] lg:pr-6"
       onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="flex max-h-[90vh] w-[94vw] flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-bgMain/95 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] backdrop-blur-3xl md:max-w-[1280px] md:rounded-[2.5rem]"
+        className="flex h-[94vh] w-full flex-col overflow-hidden rounded-[2rem] border border-white/5 bg-bgCard shadow-[0_32px_64px_-15px_rgba(0,0,0,0.6)] md:max-w-[72rem] md:rounded-[2.5rem]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-white/5 px-6 py-4 md:px-14 md:py-4">
+        <div className="flex items-center justify-between border-b border-white/5 px-4 py-5 md:px-6 md:py-6">
           <div className="flex items-center gap-4 md:gap-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[0.75rem] bg-indigo-500/10 md:h-14 md:w-14 md:rounded-[1rem]">
-              <Wind className="h-5 w-5 text-indigo-400 md:h-7 md:w-7" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-[0.75rem] bg-[#00FF9C]/10 md:h-14 md:w-14 md:rounded-[1rem]">
+              <Wind className="h-5 w-5 text-[#00FF9C] md:h-7 md:w-7" />
             </div>
             <div>
               <h2 className="text-xl font-bold leading-tight tracking-tight text-textHeading md:text-[1.6rem]">Air Sensors</h2>
@@ -780,36 +757,32 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             </div>
           </div>
           <button onClick={onClose} className="p-2 transition-opacity hover:opacity-50">
-            <X className="h-5 w-5 text-red-500 md:h-6 md:w-6" strokeWidth={2.5} />
+            <X className="h-5 w-5 text-[#00FF9C] md:h-6 md:w-6" strokeWidth={2.5} />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:px-14 md:py-8">
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 md:px-6 md:pt-8 md:pb-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
             {row1.map((sensor, idx) => (
               <div key={idx} className="w-full">
                 <div
                   onClick={() => toggleSensor(sensor.id)}
-                  className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
+                  className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:w-[16rem] md:rounded-[2rem] md:p-6 ${activeSensor === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
                 >
                   <div>
                     <div
-                      className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                      className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl md:mb-4 md:h-10 md:w-10 md:rounded-2xl"
                       style={{ backgroundColor: `${sensor.color}1A` }}
                     >
-                      <sensor.icon className="h-6 w-6" style={{ color: sensor.color }} />
+                      <sensor.icon className="h-6 w-6 md:h-5 md:w-5 text-[#00FF9C]" />
                     </div>
-                    <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">
+                    <p className="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]" title={sensor.title}>
                       {sensor.displayName || sensor.title}
                     </p>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
-                        {sensor.value}
-                      </span>
-                      <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">
-                        {sensor.unit}
-                      </span>
-                    </div>
+                    <p className="text-[2rem] font-black leading-none tracking-tighter text-white md:text-[1.75rem]">
+                      {sensor.value}
+                      <span className="ml-1 text-[0.8rem] font-bold tracking-normal text-white/60 md:text-[0.7rem]">{sensor.unit}</span>
+                    </p>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -836,12 +809,12 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             ))}
           </div>
 
-          <AnimatePresence>
-            {activeSensor && activeSensorIndex >= 0 && activeSensorIndex < 4 && (
+          <AnimatePresence mode="wait">
+            {activeSensor && activeSensorData && activeSensorIndex >= 0 && activeSensorIndex < 4 && (
               <motion.div
-                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
-                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                initial={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 24, marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
                 className="hidden overflow-hidden lg:block"
               >
                 <AirSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
@@ -849,31 +822,27 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             )}
           </AnimatePresence>
 
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
             {row2.map((sensor, idx) => (
               <div key={idx} className="w-full">
                 <div
                   onClick={() => toggleSensor(sensor.id)}
-                  className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
+                  className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:w-[16rem] md:rounded-[2rem] md:p-6 ${activeSensor === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
                 >
                   <div>
                     <div
-                      className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                      className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl md:mb-4 md:h-10 md:w-10 md:rounded-2xl"
                       style={{ backgroundColor: `${sensor.color}1A` }}
                     >
-                      <sensor.icon className="h-6 w-6" style={{ color: sensor.color }} />
+                      <sensor.icon className="h-6 w-6 md:h-5 md:w-5 text-[#00FF9C]" />
                     </div>
-                    <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">
+                    <p className="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]" title={sensor.title}>
                       {sensor.displayName || sensor.title}
                     </p>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
-                        {sensor.value}
-                      </span>
-                      <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">
-                        {sensor.unit}
-                      </span>
-                    </div>
+                    <p className="text-[2rem] font-black leading-none tracking-tighter text-white md:text-[1.75rem]">
+                      {sensor.value}
+                      <span className="ml-1 text-[0.8rem] font-bold tracking-normal text-white/60 md:text-[0.7rem]">{sensor.unit}</span>
+                    </p>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -900,12 +869,12 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             ))}
           </div>
 
-          <AnimatePresence>
-            {activeSensor && activeSensorIndex >= 4 && activeSensorIndex < 8 && (
+          <AnimatePresence mode="wait">
+            {activeSensor && activeSensorData && activeSensorIndex >= 4 && activeSensorIndex < 8 && (
               <motion.div
-                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
-                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                initial={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 24, marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
                 className="hidden overflow-hidden lg:block"
               >
                 <AirSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
@@ -913,31 +882,27 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             )}
           </AnimatePresence>
 
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
             {row3.map((sensor, idx) => (
               <div key={idx} className="w-full">
                 <div
                   onClick={() => toggleSensor(sensor.id)}
-                  className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
+                  className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:w-[16rem] md:rounded-[2rem] md:p-6 ${activeSensor === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
                 >
                   <div>
                     <div
-                      className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                      className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl md:mb-4 md:h-10 md:w-10 md:rounded-2xl"
                       style={{ backgroundColor: `${sensor.color}1A` }}
                     >
-                      <sensor.icon className="h-6 w-6" style={{ color: sensor.color }} />
+                      <sensor.icon className="h-6 w-6 md:h-5 md:w-5 text-[#00FF9C]" />
                     </div>
-                    <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">
+                    <p className="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]" title={sensor.title}>
                       {sensor.displayName || sensor.title}
                     </p>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
-                        {sensor.value}
-                      </span>
-                      <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">
-                        {sensor.unit}
-                      </span>
-                    </div>
+                    <p className="text-[2rem] font-black leading-none tracking-tighter text-white md:text-[1.75rem]">
+                      {sensor.value}
+                      <span className="ml-1 text-[0.8rem] font-bold tracking-normal text-white/60 md:text-[0.7rem]">{sensor.unit}</span>
+                    </p>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -964,12 +929,12 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             ))}
           </div>
 
-          <AnimatePresence>
-            {activeSensor && activeSensorIndex >= 8 && (
+          <AnimatePresence mode="wait">
+            {activeSensor && activeSensorData && activeSensorIndex >= 8 && (
               <motion.div
-                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
-                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                initial={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 24, marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
                 className="hidden overflow-hidden lg:block"
               >
                 <AirSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
@@ -978,13 +943,13 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           </AnimatePresence>
         </div>
 
-        <div className="mt-auto shrink-0 px-6 pb-6 md:px-14 md:pb-8">
-          <div className="flex flex-col gap-1 rounded-[1.25rem] border border-[#00FF9C]/10 bg-[#00FF9C]/5 px-6 py-3 md:rounded-[1.75rem] md:px-8 md:py-4">
-            <div className="flex items-center gap-3">
-              <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
-              <p className="text-[0.75rem] font-extrabold uppercase leading-none tracking-wider text-[#00FF9C] md:text-[0.85rem]">All sensors are operational</p>
+        <div className="mt-auto shrink-0 px-4 pb-4 md:px-6 md:pb-6">
+          <div className="flex flex-col gap-0.5 rounded-[1rem] border border-[#00FF9C]/10 bg-[#00FF9C]/[0.02] px-6 py-3 md:rounded-[1.25rem] md:py-3">
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
+              <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-[#00FF9C] md:text-[0.7rem]">All sensors are operational</p>
             </div>
-            <p className="ml-4.5 text-[0.6rem] font-medium tracking-tight text-textHint md:text-[0.7rem]">Last updated: 12/10/2025, 1:08:07 PM</p>
+            <p className="ml-4 text-[0.5rem] font-bold uppercase tracking-[0.1em] text-textHint md:text-[0.6rem]">Last updated: 12/10/2025, 1:08:07 PM</p>
           </div>
         </div>
       </motion.div>
@@ -997,8 +962,8 @@ function WindDirectionDetail({ onClose }: { onClose: () => void }) {
   const ranges = ['24 Hours', '7 Days', '1 Month'];
 
   return (
-    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:p-6">
-      <div className="mb-4 flex w-full items-start justify-between md:mb-5">
+    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-3 md:rounded-[2rem] md:px-5 md:pt-5 md:pb-3">
+      <div className="mb-2 flex w-full items-start justify-between md:mb-4">
         <div className="z-20 flex flex-col items-start gap-3 md:gap-5">
           <div className="text-left">
             <h3 className="mb-1 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">Wind Direction</h3>
@@ -1018,27 +983,21 @@ function WindDirectionDetail({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="relative w-full min-w-[140px] md:hidden">
-            <select
+            <RangeDropdown
               value={selectedRange}
-              onChange={(e) => setSelectedRange(e.target.value)}
-              className="w-full appearance-none cursor-pointer rounded-full border border-white/10 bg-cardBg px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider text-[#00FF9C] outline-none"
-            >
-              {ranges.map((range) => (
-                <option key={range} value={range} className="bg-bgMain uppercase text-textHeading">{range}</option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-              <ChevronDown className="h-4 w-4 text-[#00FF9C]/60" />
-            </div>
+              options={ranges}
+              onChange={setSelectedRange}
+              triggerClassName="cursor-pointer rounded-full px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider"
+            />
           </div>
         </div>
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex flex-col items-end">
-            <p className="text-3xl font-black leading-none tracking-tighter text-[#A855F7] md:text-4xl">N</p>
+            <p className="text-3xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-4xl">N</p>
             <div className="mt-0.5 flex items-center gap-1.5 md:mt-0.5">
               <span className="text-[0.8rem] font-bold text-textHint md:text-sm">0°</span>
-              <Wind className="h-3 w-3 text-[#A855F7]/40 md:h-4 md:w-4" />
+              <Wind className="h-3 w-3 text-[#00FF9C]/40 md:h-4 md:w-4" />
             </div>
           </div>
           <button
@@ -1050,7 +1009,7 @@ function WindDirectionDetail({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      <div className="relative mx-auto mt-4 flex aspect-square w-full max-w-[200px] items-center justify-center md:mt-2 md:max-w-[380px]">
+      <div className="relative mx-auto mt-2 flex aspect-square w-full max-w-[180px] items-center justify-center md:mt-0 md:max-w-[280px]">
         <WindDirectionRadar key={selectedRange} range={selectedRange} />
       </div>
     </div>
@@ -1062,12 +1021,12 @@ function WindSpeedDetail({ onClose }: { onClose: () => void }) {
   const ranges = ['24 Hours', '7 Days', '1 Month'];
 
   return (
-    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:p-6">
-      <div className="mb-4 flex w-full items-start justify-between md:mb-5">
+    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-4 md:rounded-[2rem] md:px-5 md:pt-5 md:pb-3">
+      <div className="mb-3 flex w-full items-start justify-between md:mb-4">
         <div className="z-20 flex flex-col items-start gap-3 md:gap-5">
           <div className="text-left">
             <h3 className="mb-1 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">Wind Speed</h3>
-            <p className="text-[0.6rem] font-medium tracking-wide text-textHint md:text-xs">24-Hour Trend</p>
+            <p className="text-[0.6rem] font-medium tracking-wide text-white/70 md:text-xs">24-Hour Trend</p>
           </div>
 
           <div className="hidden flex-wrap gap-3 md:flex">
@@ -1083,24 +1042,18 @@ function WindSpeedDetail({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="relative w-full min-w-[140px] md:hidden">
-            <select
+            <RangeDropdown
               value={selectedRange}
-              onChange={(e) => setSelectedRange(e.target.value)}
-              className="w-full appearance-none cursor-pointer rounded-full border border-white/10 bg-cardBg px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider text-[#00FF9C] outline-none"
-            >
-              {ranges.map((range) => (
-                <option key={range} value={range} className="bg-bgMain uppercase text-textHeading">{range}</option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-              <ChevronDown className="h-4 w-4 text-[#00FF9C]/60" />
-            </div>
+              options={ranges}
+              onChange={setSelectedRange}
+              triggerClassName="cursor-pointer rounded-full px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider"
+            />
           </div>
         </div>
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex flex-col items-end">
-            <p className="text-3xl font-black leading-none tracking-tighter text-red-500 md:text-4xl">0<span className="ml-1 text-[1rem] font-extrabold uppercase text-red-500">.m/s</span></p>
+            <p className="text-3xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-3xl">0<span className="ml-1 text-[1rem] font-extrabold text-[#00FF9C]">m/s</span></p>
           </div>
           <button
             onClick={onClose}
@@ -1111,10 +1064,10 @@ function WindSpeedDetail({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[260px]">
+      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[210px]">
         <WindSpeedChart />
-        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center md:bottom-4">
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-textHint md:text-[0.75rem]">No Data</p>
+        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center md:bottom-2">
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/70 md:text-[0.75rem]">No Data</p>
         </div>
       </div>
     </div>
@@ -1128,7 +1081,7 @@ function WindSpeedChart() {
         const y = 250 - (val / 80) * 230;
         return (
           <g key={val}>
-            <text x="30" y={y + 5} fill="white" fillOpacity="0.15" fontSize="11" fontWeight="bold" className="tabular-nums select-none">{val}</text>
+            <text x="30" y={y + 5} fill="white" fillOpacity="0.6" fontSize="11" fontWeight="bold" className="tabular-nums select-none">{val}</text>
             <line x1="60" y1={y} x2="780" y2={y} stroke="white" strokeOpacity="0.04" strokeDasharray="4 4" />
           </g>
         );
@@ -1164,21 +1117,21 @@ function WindDirectionRadar({ size = 320, range = '24 Hours' }: { size?: number;
   const dataPoints = data.map((val, i) => getCoordinates(i, val));
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full" preserveAspectRatio="xMidYMid meet">
+    <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full drop-shadow-[0_0_34px_rgba(0,255,156,0.2)]" preserveAspectRatio="xMidYMid meet">
       {gridLevels.map((level, i) => {
         const points = directions.map((_, idx) => {
           const p = getCoordinates(idx, level);
           return `${p.x},${p.y}`;
         }).join(' ');
         return (
-          <polygon key={i} points={points} fill="none" stroke="white" strokeOpacity={0.06} strokeWidth={1} />
+          <polygon key={i} points={points} fill="none" stroke="white" strokeOpacity={0.18} strokeWidth={1.4} />
         );
       })}
 
       {directions.map((_, i) => {
         const p = getCoordinates(i, 1);
         return (
-          <line key={i} x1={center} y1={center} x2={p.x} y2={p.y} stroke="white" strokeOpacity={0.06} strokeWidth={1} />
+          <line key={i} x1={center} y1={center} x2={p.x} y2={p.y} stroke="white" strokeOpacity={0.18} strokeWidth={1.4} />
         );
       })}
 
@@ -1190,7 +1143,7 @@ function WindDirectionRadar({ size = 320, range = '24 Hours' }: { size?: number;
             x={p.x}
             y={p.y}
             fill="#FFFFFF"
-            fillOpacity={0.5}
+            fillOpacity={0.92}
             fontSize="12"
             fontWeight="bold"
             textAnchor="middle"
@@ -1211,10 +1164,10 @@ function WindDirectionRadar({ size = 320, range = '24 Hours' }: { size?: number;
           y1={center}
           x2={dataPoints[data.indexOf(1)].x}
           y2={dataPoints[data.indexOf(1)].y}
-          stroke="#A855F7"
-          strokeWidth={5}
+          stroke="#00FF9C"
+          strokeWidth={6}
           strokeLinecap="round"
-          className=""
+          className="drop-shadow-[0_0_22px_rgba(0,255,156,0.95)]"
         />
       )}
     </svg>
@@ -1226,12 +1179,12 @@ function RainFallDetail({ onClose }: { onClose: () => void }) {
   const ranges = ['24 Hours', '7 Days', '1 Month'];
 
   return (
-    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:p-6">
+    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:px-5 md:pt-5 md:pb-3">
       <div className="mb-4 flex w-full items-start justify-between md:mb-5">
         <div className="z-20 flex flex-col items-start gap-3 md:gap-5">
           <div className="text-left">
-            <h3 className="mb-0.5 text-lg font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">Rain Fall</h3>
-            <p className="text-[0.5rem] font-medium tracking-wide text-textHint md:text-xs">24-Hour Trend</p>
+            <h3 className="mb-0.5 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">Rain Fall</h3>
+            <p className="text-[0.5rem] font-medium tracking-wide text-white/70 md:text-xs">24-Hour Trend</p>
           </div>
 
           <div className="hidden flex-wrap gap-3 md:flex">
@@ -1247,38 +1200,32 @@ function RainFallDetail({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="relative w-full min-w-[140px] md:hidden">
-            <select
+            <RangeDropdown
               value={selectedRange}
-              onChange={(e) => setSelectedRange(e.target.value)}
-              className="w-full appearance-none cursor-pointer rounded-full border border-white/10 bg-cardBg px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider text-[#00FF9C] outline-none"
-            >
-              {ranges.map((range) => (
-                <option key={range} value={range} className="bg-bgMain uppercase text-textHeading">{range}</option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-              <ChevronDown className="h-4 w-4 text-[#00FF9C]/60" />
-            </div>
+              options={ranges}
+              onChange={setSelectedRange}
+              triggerClassName="cursor-pointer rounded-full px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider"
+            />
           </div>
         </div>
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex flex-col items-end">
-            <p className="text-xl font-black leading-none tracking-tighter text-red-500 md:text-4xl">0<span className="ml-1 text-[0.7rem] font-extrabold uppercase text-red-500 md:text-[1rem]">.mm</span></p>
+            <p className="text-3xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-3xl">0<span className="ml-1 text-[1rem] font-extrabold text-[#00FF9C]">mm</span></p>
           </div>
           <button
             onClick={onClose}
-            className="flex h-6 w-6 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 transition-all hover:bg-red-500/20 active:scale-95 md:h-9 md:w-9"
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 transition-all hover:bg-red-500/20 active:scale-95 md:h-9 md:w-9"
           >
-            <X className="h-3.5 w-3.5 text-red-500 md:h-4 md:w-4" strokeWidth={3} />
+            <X className="h-4 w-4 text-red-500 md:h-4 md:w-4" strokeWidth={3} />
           </button>
         </div>
       </div>
 
-      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[260px]">
+      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[210px]">
         <RainFallChart />
-        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center md:bottom-4">
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-textHint md:text-[0.75rem]">No Data</p>
+        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center md:bottom-2">
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/70 md:text-[0.75rem]">No Data</p>
         </div>
       </div>
     </div>
@@ -1292,7 +1239,7 @@ function RainFallChart() {
         const y = 250 - (val / 80) * 230;
         return (
           <g key={val}>
-            <text x="30" y={y + 5} fill="white" fillOpacity="0.15" fontSize="11" fontWeight="bold" className="tabular-nums select-none">{val}</text>
+            <text x="30" y={y + 5} fill="white" fillOpacity="0.6" fontSize="11" fontWeight="bold" className="tabular-nums select-none">{val}</text>
             <line x1="60" y1={y} x2="780" y2={y} stroke="white" strokeOpacity="0.04" strokeDasharray="4 4" />
           </g>
         );

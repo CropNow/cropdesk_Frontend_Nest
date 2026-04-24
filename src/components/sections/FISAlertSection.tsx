@@ -21,7 +21,7 @@ export function FISAlertSection({ data }: { data?: any }) {
       className="rounded-xl border border-cardBorder bg-cardBg/50 p-5 backdrop-blur-sm"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-3xl font-bold">FIS Alert Engine</h3>
+        <h3 className="text-xl font-semibold tracking-tight text-textHeading md:text-2xl">FIS Alert Engine</h3>
         <span className="rounded-full border border-[#00FF9C]/30 bg-[#00FF9C]/10 px-3 py-1 text-xs font-semibold text-[#00FF9C]">
           ACTIVE
         </span>

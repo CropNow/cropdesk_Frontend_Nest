@@ -63,24 +63,14 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
       <div className="relative flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col">
           {/* Mobile Welcome Text */}
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-textLabel sm:hidden mb-0.5">
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-textLabel sm:hidden mb-0.5 opacity-80">
             Welcome back,
           </span>
           
-          <h1 className="text-xl font-bold tracking-tight text-textHeading sm:text-3xl lg:text-4xl">
+          <h1 className="text-xl font-extrabold tracking-tight text-textHeading sm:text-2xl lg:text-3xl">
             <span className="hidden sm:inline">Welcome back, </span>
             {userName}
           </h1>
-
-          {/* Mobile Weather - Placed below user name */}
-          <div className="mt-1.5 flex items-center gap-2 sm:hidden">
-            <p className="text-sm font-bold text-textHeading">
-              {displayWeather.temp.split(' ')[0]}°
-            </p>
-            <p className="text-[11px] font-medium text-textSecondary">
-              {displayWeather.condition}
-            </p>
-          </div>
 
           <p className="mt-1 hidden sm:block text-xs font-medium text-textLabel sm:mt-2 sm:text-sm">
             <span className="block sm:inline">
@@ -99,28 +89,42 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
 
         <div className="flex flex-col items-start gap-2 sm:gap-3 lg:items-end">
           <div className="flex w-full items-center justify-end gap-2 lg:justify-end">
-            <div className="absolute right-0 top-0 sm:relative flex items-center gap-2" ref={trayRef}>
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cardBorder bg-cardBg text-textSecondary transition hover:border-accentPrimary/40 hover:text-accentPrimary"
-                aria-label="Toggle theme"
-              >
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsTrayOpen((prev) => !prev)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cardBorder bg-cardBg text-textSecondary transition hover:border-accentPrimary/40 hover:text-accentPrimary"
-                aria-label="Notifications"
-              >
-                <Bell className="h-4 w-4" />
-                {unreadCount > 0 ? (
-                  <span className="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accentPrimary px-1 text-[10px] font-bold text-black">
-                    {unreadCount}
-                  </span>
-                ) : null}
-              </button>
+            <div className="absolute right-0 top-0 sm:relative flex flex-col items-end gap-2" ref={trayRef}>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cardBorder bg-cardBg text-textSecondary transition hover:border-accentPrimary/40 hover:text-accentPrimary"
+                  aria-label="Toggle theme"
+                >
+                  {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsTrayOpen((prev) => !prev)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cardBorder bg-cardBg text-textSecondary transition hover:border-accentPrimary/40 hover:text-accentPrimary"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 ? (
+                    <span className="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accentPrimary px-1 text-[10px] font-bold text-black">
+                      {unreadCount}
+                    </span>
+                  ) : null}
+                </button>
+              </div>
+
+              {/* Mobile Weather - Placed below icons on the right */}
+              <div className="flex flex-col items-end sm:hidden">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-base font-bold text-textHeading">
+                    {displayWeather.temp.split(' ')[0]}°
+                  </p>
+                  <p className="text-[10px] font-semibold text-textSecondary uppercase tracking-wider">
+                    {displayWeather.condition}
+                  </p>
+                </div>
+              </div>
 
               {isTrayOpen ? (
                 <div className="absolute right-0 top-12 z-50 w-[300px] sm:w-[320px] rounded-2xl border border-cardBorder bg-bgSidebar p-3 shadow-2xl">

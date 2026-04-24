@@ -1,6 +1,6 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Droplets, Leaf, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Droplets, Leaf, MapPin } from 'lucide-react';
 import { DeviceData, DeviceType } from '../../constants/deviceConstants';
 
 /**
@@ -22,16 +22,30 @@ export function RadialDeviceLayout({
   currentDeviceIndex,
   cycleDevice,
 }: RadialDeviceLayoutProps) {
+  const [isMdUp, setIsMdUp] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 768px)');
+    const sync = () => setIsMdUp(mql.matches);
+    sync();
+
+    mql.addEventListener('change', sync);
+    return () => mql.removeEventListener('change', sync);
+  }, []);
+
+  const isMobile = !isMdUp;
+
   /**
-   * Compute a horizontal offset that forms a gentle vertical arc on the right side.
-   * Items at the edges get larger indent; the middle item sits closest to the left.
+   * Compute a normalized horizontal offset (0..1) that forms a gentle vertical arc on the right side.
+   * Items at the edges get 0; the middle item gets 1.
    */
-  const getArcOffset = (index: number, total: number) => {
+  const getArcFactor = (index: number, total: number) => {
     const midpoint = (total - 1) / 2;
     const distance = Math.abs(index - midpoint);
     const maxDistance = midpoint;
     // Centre items get the largest indent (toward the device image); edges stay flush
-    return Math.round((maxDistance - distance) * 18);
+    if (maxDistance <= 0) return 0;
+    return (maxDistance - distance) / maxDistance;
   };
 
   const attrs = [
@@ -76,7 +90,7 @@ export function RadialDeviceLayout({
     {
       label: 'Crops',
       value: (
-        <div className="mt-1 flex max-w-[200px] flex-wrap gap-1.5">
+        <div className="mt-1 flex max-w-[220px] flex-nowrap gap-1.5 overflow-x-auto pr-1 md:max-w-[200px] md:flex-wrap md:overflow-visible">
           {(device.crops || []).map((crop: any, idx: number) => {
             const cropName = typeof crop === 'string' ? crop : (crop.name || crop.scientificName || 'Crop');
             return (
@@ -96,19 +110,28 @@ export function RadialDeviceLayout({
   ];
 
   return (
-    <div className="flex flex-col gap-6 md:flex-row md:items-center">
-      {/* ─── LEFT: Device image + navigation ─── */}
-      <div className="flex flex-col items-center md:w-2/5">
+    <div className="flex flex-col gap-4">
+      <h2 className="text-xl font-semibold tracking-tight text-textHeading md:hidden">{device.name}</h2>
+
+      <div className="flex flex-row gap-2 md:items-center md:gap-4">
+      <div className="flex w-[35%] shrink-0 flex-col items-center md:w-2/5">
         {/* Device name */}
-        <h2 className="self-start text-3xl font-semibold tracking-tight text-textHeading sm:text-4xl">
+        <h2 className="hidden self-start text-xl font-semibold tracking-tight text-textHeading md:block md:text-2xl">
           {device.name}
         </h2>
 
-        {/* Floating device image */}
-        <div className="relative mt-4 flex min-h-[350px] items-center justify-center sm:min-h-[370px] md:min-h-[390px]">
+        {/* Floating device image with radial glow */}
+        <div className="relative mt-8 flex min-h-[240px] w-full items-center justify-center pt-6 sm:min-h-[370px] md:mt-4 md:min-h-[390px]">
+          {/* Green radial glow */}
+          <div
+            className="pointer-events-none absolute h-40 w-40 rounded-full sm:h-72 sm:w-72 md:h-80 md:w-80"
+            style={{
+              background: 'radial-gradient(circle, rgba(0,255,156,0.15), transparent 70%)',
+            }}
+          />
           {(() => {
             const type = (device.deviceType || (device as any).type || 'nest').toLowerCase();
-            const fallbackImage = type === 'seed' ? '/seed.png' : type === 'aero' ? '/kaptor_drone.png' : '/NEST.png';
+            const fallbackImage = type === '/seed.png' ? '/seed.png' : type === '/kaptor_drone.png' ? '/kaptor_drone.png' : '/NEST.png';
             const displayImage = device.image || fallbackImage;
 
             return (
@@ -123,46 +146,85 @@ export function RadialDeviceLayout({
                   y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' },
                   scale: { duration: 0.35 },
                 }}
-                className="relative z-10 max-h-[300px] w-auto object-contain sm:max-h-[360px] md:max-h-[400px]"
+                className="relative z-10 max-h-[220px] w-auto object-contain drop-shadow-[0_18px_44px_rgba(0,255,156,0.28)] sm:max-h-[360px] md:max-h-[400px]"
               />
             );
           })()}
         </div>
-
       </div>
 
       {/* ─── RIGHT: Attributes in vertical arc ─── */}
-      <div className="relative flex flex-col justify-center gap-5 py-2 pr-14 md:w-3/5 md:pl-10">
-        {attrs.map((attr, index) => (
-          <motion.div
-            key={attr.label}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.35, delay: attr.delay }}
-            className="max-w-[200px] space-y-0.5"
-            style={{ marginLeft: getArcOffset(index, attrs.length) }}
-          >
-            {/* Label row: icon + text */}
-            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-textSecondary">
-              <span className="text-accentPrimary/70">{attr.icon}</span>
-              <span>{attr.label}</span>
-            </div>
-            {/* Value */}
-            <div className="text-[17px] font-semibold leading-snug text-textHeading">
-              {attr.value}
-            </div>
-          </motion.div>
-        ))}
+      <div className="relative z-20 flex-1 py-1 pl-4 pr-8 md:ml-0 md:w-3/5 md:py-2 md:pl-10 md:pr-14">
+        {isMobile ? (
+          <div className="flex flex-col justify-center gap-4 pb-2 pt-1">
+            {attrs.map((attr, index) => {
+              const arcFactor = getArcFactor(index, attrs.length); // 0 edges, 1 middle
+              // Semi-circular wrap: middle sits furthest right (around the image).
+              const indentPx = Math.round(14 + arcFactor * 30);
 
-        <button
-          type="button"
-          onClick={() => cycleDevice(1)}
-          className="absolute right-0 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-cardBorder bg-black/20 dark:bg-black/45 text-textHeading transition hover:border-accentPrimary/70 hover:text-accentPrimary"
-          aria-label="Next device"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
+              return (
+                <motion.div
+                  key={attr.label}
+                  initial={{ opacity: 0, x: 14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.35, delay: attr.delay }}
+                  className="max-w-[220px]"
+                  style={{ marginLeft: indentPx }}
+                >
+                  <div className="flex items-center justify-between gap-6 pr-2">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-textSecondary">
+                        <span className="text-accentPrimary/70">{attr.icon}</span>
+                        <span>{attr.label}</span>
+                      </div>
+                      <div className="text-[15px] font-semibold leading-snug text-textHeading whitespace-nowrap">{attr.value}</div>
+                    </div>
+                    {attr.label === 'Location' && (
+                      <button
+                        type="button"
+                        onClick={() => cycleDevice(1)}
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/10 bg-black/40 text-textHeading transition hover:border-accentPrimary/70 hover:text-accentPrimary mt-2"
+                        aria-label="Next device"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="relative flex flex-col justify-center gap-5">
+            {attrs.map((attr, index) => (
+              <motion.div
+                key={attr.label}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.35, delay: attr.delay }}
+                className="max-w-[200px] space-y-0.5"
+                style={{ marginLeft: Math.round(getArcFactor(index, attrs.length) * 42) }}
+              >
+                <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-textSecondary">
+                  <span className="text-accentPrimary/70">{attr.icon}</span>
+                  <span>{attr.label}</span>
+                </div>
+                <div className="text-[17px] font-semibold leading-snug text-textHeading">{attr.value}</div>
+              </motion.div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => cycleDevice(1)}
+              className="absolute -right-8 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-cardBorder bg-black/20 text-textHeading transition hover:border-accentPrimary/70 hover:text-accentPrimary dark:bg-black/45 md:grid"
+              aria-label="Next device"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
+    </div>
     </div>
   );
 }

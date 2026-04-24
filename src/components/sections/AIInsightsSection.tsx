@@ -15,7 +15,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
       transition={{ delay: 0.18 }}
       className="rounded-xl border border-cardBorder bg-cardBg/50 p-5 backdrop-blur-sm"
     >
-      <h3 className="mb-4 text-3xl font-bold">AI Insights</h3>
+      <h3 className="mb-4 text-xl font-semibold tracking-tight text-textHeading md:text-2xl">AI Insights</h3>
       <div className="space-y-3">
         {insights.map((item: any) => (
           <motion.div
