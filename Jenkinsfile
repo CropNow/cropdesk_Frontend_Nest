@@ -15,7 +15,7 @@ pipeline {
          {
             env.APP_NAME = 'frontend-prod'
             env.HOST_PORT = '3000'
-            env.ENV_FILE = '/home/azureuser/frontend-main.env'
+            env.ENV_FILE = '/home/azureuser/frontend.env'
           }
 
           
