@@ -8,8 +8,13 @@ export const sensorsAPI = {
   /**
    * Get all sensors
    */
-  getSensors: () =>
-    apiClient.get('/sensors'),
+  getSensors: (params?: any) => apiClient.get('/sensors', { params }),
+
+  /**
+   * Get all sensors
+   */
+  getSensorCategories: () =>
+    apiClient.get('/sensors/categories'),
 
   /**
    * Get sensor details
@@ -53,14 +58,14 @@ export const sensorsAPI = {
   getAggregatedData: (sensorId: string, params?: any) =>
     apiClient.get(`/sensor-data/sensors/${sensorId}/aggregate`, { params }),
   /**
-   * Export sensor data
+   * Update sensor calibration
    */
-  exportData: (params: {
-    sensorId: string;
-    format?: string;
-    startDate?: string;
-    endDate?: string;
-    email?: boolean;
-  }) => apiClient.get('/sensor-data/export', { params }),
+  updateSensorCalibration: (deviceId: string, data: any) =>
+    apiClient.patch(`/sensors/${deviceId}/calibration`, data),
+
+  /**
+   * Create a new sensor
+   */
+  createSensor: (data: any) => apiClient.post('/sensors', data),
 };
 

@@ -121,6 +121,9 @@ export function SettingsContent({
                   ),
                 }))
               }
+              onDevicesLoad={(devices) =>
+                setSettings((prev) => ({ ...prev, devices }))
+              }
               onSave={() => onSave('devices')}
               isSaving={isSaving}
             />

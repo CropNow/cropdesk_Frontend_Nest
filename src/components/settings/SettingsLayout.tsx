@@ -17,7 +17,8 @@ export type SettingsTab =
 export type DeviceKind = 'NEST' | 'Seed' | 'Drone';
 
 export interface ProfileSettingsState {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   profilePicture: string;
@@ -33,7 +34,7 @@ export interface FarmSettingsState {
 }
 
 export interface DeviceSettingsState {
-  id: number;
+  id: any;
   type: DeviceKind;
   name: string;
   status: 'Connected' | 'Offline';
@@ -121,7 +122,8 @@ export const SETTINGS_TABS: Array<{ id: SettingsTab; label: string }> = [
 
 const INITIAL_SETTINGS: SettingsState = {
   profile: {
-    name: 'CropNow',
+    firstName: 'Crop',
+    lastName: 'Now',
     email: 'test@gmail.com',
     phone: '+91 98765 43210',
     profilePicture: '',
@@ -134,44 +136,7 @@ const INITIAL_SETTINGS: SettingsState = {
     soilType: 'Loamy',
     irrigationType: 'Drip',
   },
-  devices: [
-    {
-      id: 1,
-      type: 'NEST',
-      name: 'NEST Tower A1',
-      status: 'Connected',
-      serialNumber: '6CJcgHUM3uEJVUSDvPP1zCwUu86aF',
-      model: 'ms-200',
-      manufacturer: 'cropnow',
-      fieldId: '699e99bfc6e8e4b7b32061c8',
-      firmware: 'v1',
-      connectedOn: '4/6/2026',
-    },
-    {
-      id: 2,
-      type: 'Seed',
-      name: 'moisture sensor',
-      status: 'Connected',
-      serialNumber: '6XKApzXTmOBu2YcLVvx1wGhEvT8K8',
-      model: 'ms-200',
-      manufacturer: 'cropnow',
-      fieldId: '5f71a8e8a2c53f7f44a3dba2',
-      firmware: 'v1',
-      connectedOn: '4/6/2026',
-    },
-    {
-      id: 3,
-      type: 'Drone',
-      name: 'Aero Drone X1',
-      status: 'Offline',
-      serialNumber: 'DRN-55X-A2F-90K',
-      model: 'agri-drone-x1',
-      manufacturer: 'cropnow',
-      fieldId: '8b56d9b0138c4ef593f3f14e',
-      firmware: 'v2.3.1',
-      connectedOn: '3/28/2026',
-    },
-  ],
+  devices: [],
   notifications: {
     pestAlerts: true,
     fungalAlerts: true,
