@@ -17,6 +17,7 @@ import {
 import { useToast } from '../../contexts/ToastContext';
 import { SENSOR_CARDS } from '../../constants/deviceConstants';
 import { useLockBodyScroll } from '../../hooks/common/useLockBodyScroll';
+import { sensorsAPI } from '../../api/sensors.api';
 
 /**
  * SensorCategoriesSection - DashboardV2Page-equivalent interactive sensor insights
@@ -34,17 +35,34 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
 
   const handleExport = async () => {
     try {
+      const sensorId = data?.latestData?.sensorId || data?.latestData?.deviceId;
+      
+      if (!sensorId) {
+        addToast({
+          message: 'No sensor ID found for export.',
+          type: 'error'
+        });
+        return;
+      }
+
       setIsExporting(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      await sensorsAPI.exportData({
+        sensorId,
+        format: 'csv',
+        startDate: '2024-01-01',
+        endDate: '2026-12-31',
+        email: true
+      });
       
       addToast({
-        message: 'Data export started. You will receive an email shortly.',
+        message: 'Data export request sent. You will receive an email shortly.',
         type: 'success'
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Export Error:', error);
       addToast({
-        message: 'Failed to export data. Please try again.',
+        message: error.response?.data?.message || 'Failed to export data. Please try again.',
         type: 'error'
       });
     } finally {
@@ -157,18 +175,21 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
           <WeatherSensorsModal
             isOpen={showWeatherDetails}
             onClose={() => setShowWeatherDetails(false)}
+            data={data?.latestData}
           />
         )}
         {showSoilDetails && (
           <SoilSensorsModal
             isOpen={showSoilDetails}
             onClose={() => setShowSoilDetails(false)}
+            data={data?.latestData}
           />
         )}
         {showAirDetails && (
           <AirSensorsModal
             isOpen={showAirDetails}
             onClose={() => setShowAirDetails(false)}
+            data={data?.latestData}
           />
         )}
       </AnimatePresence>
@@ -176,7 +197,7 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
   );
 }
 
-function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function WeatherSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: () => void; data?: any }) {
   const [activeMetric, setActiveMetric] = useState<string | null>(null);
 
   const toggleMetric = (metric: string) => {
@@ -229,7 +250,9 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                   </div>
                   <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Wind Direction</p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">0</span>
+                    <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
+                      {data?.values?.wind_direction ?? '0'}
+                    </span>
                     <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">°</span>
                   </div>
                 </div>
@@ -269,7 +292,9 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 </div>
                 <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Wind Speed</p>
                 <div className="mt-1 flex items-baseline gap-2">
-                  <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">0</span>
+                  <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
+                    {data?.values?.wind_speed ?? '0'}
+                  </span>
                   <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">m/s</span>
                 </div>
               </div>
@@ -309,7 +334,9 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                   </div>
                   <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Rain Fall</p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">0.5</span>
+                    <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
+                      {data?.values?.rainfall ?? '0'}
+                    </span>
                     <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">mm</span>
                   </div>
                 </div>
@@ -380,7 +407,9 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
               <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
               <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-[#00FF9C] md:text-[0.7rem]">All sensors are operational</p>
             </div>
-            <p className="ml-4 text-[0.5rem] font-bold uppercase tracking-[0.1em] text-textHint md:text-[0.6rem]">Last updated: 12/10/2025, 1:08:07 PM</p>
+            <p className="ml-4 text-[0.5rem] font-bold uppercase tracking-[0.1em] text-textHint md:text-[0.6rem]">
+              Last updated: {data?.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A'}
+            </p>
           </div>
         </div>
       </motion.div>
@@ -388,7 +417,7 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   );
 }
 
-function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: () => void; data?: any }) {
   const [activeSensor, setActiveSensor] = useState<string | null>(null);
 
   const toggleSensor = (sensorTitle: string) => {
@@ -396,13 +425,13 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   };
 
   const soilSensors = [
-    { title: 'Nitrogen', value: '0', unit: 'mg/kg', icon: Activity, color: '#00FF9C' },
-    { title: 'Organic Carbon', value: '0', unit: '%', icon: Wind, color: '#FCD34D' },
-    { title: 'Soil Temperature at Surface', value: '24.79', unit: '°C', icon: Thermometer, color: '#F87171' },
-    { title: 'Phosphorus', value: '0', unit: 'mg/kg', icon: Activity, color: '#22D3EE' },
-    { title: 'Potassium', value: '0', unit: 'mg/kg', icon: Wind, color: '#F59E0B' },
-    { title: 'PH Level', value: '0', unit: 'pH', icon: Thermometer, color: '#A855F7' },
-    { title: 'Soil Moisture at Surface', value: '57.01', unit: '%', icon: Droplets, color: '#3B82F6' },
+    { title: 'Nitrogen', value: data?.values?.nitrogen ?? '0', unit: 'mg/kg', icon: Activity, color: '#00FF9C' },
+    { title: 'Organic Carbon', value: data?.values?.organicCarbon ?? '0', unit: '%', icon: Wind, color: '#FCD34D' },
+    { title: 'Soil Temperature at Surface', value: data?.values?.soil_temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F87171' },
+    { title: 'Phosphorus', value: data?.values?.phosphorus ?? '0', unit: 'mg/kg', icon: Activity, color: '#22D3EE' },
+    { title: 'Potassium', value: data?.values?.potassium ?? '0', unit: 'mg/kg', icon: Wind, color: '#F59E0B' },
+    { title: 'PH Level', value: data?.values?.ph ?? '0', unit: 'pH', icon: Thermometer, color: '#A855F7' },
+    { title: 'Soil Moisture at Surface', value: data?.values?.soil_moisture_1 ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
   ];
 
   const activeSensorIndex = activeSensor ? soilSensors.findIndex((sensor) => sensor.title === activeSensor) : -1;
@@ -580,7 +609,9 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
               <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
               <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-[#00FF9C] md:text-[0.7rem]">All sensors are operational</p>
             </div>
-            <p className="ml-4 text-[0.5rem] font-bold uppercase tracking-[0.1em] text-textHint md:text-[0.6rem]">Last updated: 12/10/2025, 1:08:07 PM</p>
+            <p className="ml-4 text-[0.5rem] font-bold uppercase tracking-[0.1em] text-textHint md:text-[0.6rem]">
+              Last updated: {data?.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A'}
+            </p>
           </div>
         </div>
       </motion.div>
@@ -728,20 +759,20 @@ function AirSensorDetail({ sensor, onClose }: { sensor: any; onClose: () => void
   );
 }
 
-function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function AirSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: () => void; data?: any }) {
   const [activeSensor, setActiveSensor] = useState<string | null>(null);
 
   const airSensors = [
-    { id: 'pm25', title: 'PM 2.5', value: '7', unit: 'µg/m³', icon: Activity, color: '#3B82F6' },
-    { id: 'pm10', title: 'PM 10', value: '7', unit: 'µg/m³', icon: Activity, color: '#22D3EE' },
-    { id: 'co2', title: 'CO2', displayName: <>CO<sub>2</sub></>, value: '0', unit: 'ppm', icon: Cloud, color: '#E5E7EB' },
-    { id: 'temp', title: 'Air Temperature', value: '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
-    { id: 'hum', title: 'Humidity', value: '0', unit: '%', icon: Droplets, color: '#3B82F6' },
-    { id: 'pres', title: 'Air Pressure', value: '999', unit: 'hPa', icon: Activity, color: '#3B82F6' },
-    { id: 'so2', title: 'SO2', displayName: <>SO<sub>2</sub></>, value: '0.47', unit: 'ppm', icon: Activity, color: '#FBBF24' },
-    { id: 'no2', title: 'NO2', displayName: <>NO<sub>2</sub></>, value: '0.18', unit: 'ppm', icon: Activity, color: '#F97316' },
-    { id: 'o3', title: 'O3', value: '0.02', unit: 'ppm', icon: Activity, color: '#22C55E' },
-    { id: 'leaf', title: 'Leaf Wetness', value: '0', unit: '%', icon: Leaf, color: '#22C55E' },
+    { id: 'pm25', title: 'PM 2.5', value: data?.values?.pm2_5 ?? '7', unit: 'µg/m³', icon: Activity, color: '#3B82F6' },
+    { id: 'pm10', title: 'PM 10', value: data?.values?.pm10 ?? '7', unit: 'µg/m³', icon: Activity, color: '#22D3EE' },
+    { id: 'co2', title: 'CO2', displayName: <>CO<sub>2</sub></>, value: data?.values?.co2 ?? '0', unit: 'ppm', icon: Cloud, color: '#E5E7EB' },
+    { id: 'temp', title: 'Air Temperature', value: data?.values?.temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
+    { id: 'hum', title: 'Humidity', value: data?.values?.humidity ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
+    { id: 'pres', title: 'Air Pressure', value: data?.values?.pressure ?? '999', unit: 'hPa', icon: Activity, color: '#3B82F6' },
+    { id: 'so2', title: 'SO2', displayName: <>SO<sub>2</sub></>, value: data?.values?.so2 ?? '0.47', unit: 'ppm', icon: Activity, color: '#FBBF24' },
+    { id: 'no2', title: 'NO2', displayName: <>NO<sub>2</sub></>, value: data?.values?.no2 ?? '0.18', unit: 'ppm', icon: Activity, color: '#F97316' },
+    { id: 'o3', title: 'O3', value: data?.values?.o3 ?? '0.02', unit: 'ppm', icon: Activity, color: '#22C55E' },
+    { id: 'leaf', title: 'Leaf Wetness', value: data?.values?.leaf_wetness ?? '0', unit: '%', icon: Leaf, color: '#22C55E' },
   ];
 
   const row1 = airSensors.slice(0, 4);
@@ -984,7 +1015,9 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
               <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
               <p className="text-[0.75rem] font-extrabold uppercase leading-none tracking-wider text-[#00FF9C] md:text-[0.85rem]">All sensors are operational</p>
             </div>
-            <p className="ml-4.5 text-[0.6rem] font-medium tracking-tight text-textHint md:text-[0.7rem]">Last updated: 12/10/2025, 1:08:07 PM</p>
+            <p className="ml-4.5 text-[0.6rem] font-medium tracking-tight text-textHint md:text-[0.7rem]">
+              Last updated: {data?.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A'}
+            </p>
           </div>
         </div>
       </motion.div>

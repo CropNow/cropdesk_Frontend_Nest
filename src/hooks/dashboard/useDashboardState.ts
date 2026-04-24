@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { DEVICE_LIBRARY, DeviceType, FARM_STATUS_METRICS } from '../../constants/deviceConstants';
 import { isDeviceType } from '../../utils/deviceUtils';
 import { dashboardAPI } from '../../api/dashboard.api';
+import { sensorsAPI } from '../../api/sensors.api';
 
 export function useDashboardState() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -74,6 +75,23 @@ export function useDashboardState() {
         // If there's only one nest, it will be the first one in the list
         const primaryDevice = devices[0];
 
+        // Fetch latest sensor data if we have a device
+        let sensorLatestData = null;
+        if (primaryDevice && (primaryDevice.id || primaryDevice._id)) {
+          try {
+            const deviceId = primaryDevice.id || primaryDevice._id;
+            const latestRes = await sensorsAPI.getLatestReading(deviceId);
+            const latestDataArr = latestRes.data?.data || latestRes.data;
+            if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
+              sensorLatestData = { ...latestDataArr[0], deviceId };
+            } else if (!Array.isArray(latestDataArr) && latestDataArr) {
+              sensorLatestData = { ...latestDataArr, deviceId };
+            }
+          } catch (e) {
+            console.error('Failed to fetch latest sensor data', e);
+          }
+        }
+
         // Map metrics from statistics or fallback
         const mappedMetrics = FARM_STATUS_METRICS.map(m => {
           if (m.id === 'soil-moisture' && stats?.currentConditions?.avgSoilMoisture !== null) {
@@ -95,8 +113,9 @@ export function useDashboardState() {
             metrics: mappedMetrics,
           },
           sensors: {
-            activeSensorsCount: stats?.overview?.activeSensors || (devices.filter((d: any) => d.status === 'active').length) || 0,
+            activeSensorsCount: sensorLatestData?.values ? Object.keys(sensorLatestData.values).filter(k => sensorLatestData.values[k] !== undefined && sensorLatestData.values[k] !== null).length : (stats?.overview?.activeSensors || (devices.filter((d: any) => d.status === 'active').length) || 0),
             totalSensorsCount: stats?.overview?.totalSensors || devices.length || 0,
+            latestData: sensorLatestData,
           },
           alerts: { 
             cards: alertsData,
