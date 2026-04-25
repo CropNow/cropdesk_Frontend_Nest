@@ -1,6 +1,10 @@
+import { Suspense, lazy } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { AppSidebar } from '../layout/AppSidebar';
+
+const AppSidebar = lazy(() =>
+  import('../layout/AppSidebar').then(module => ({ default: module.AppSidebar }))
+);
 
 export function ProtectedRoute() {
   const { isAuthenticated } = useAuth();
@@ -11,7 +15,9 @@ export function ProtectedRoute() {
 
   return (
     <>
-      <AppSidebar />
+      <Suspense fallback={null}>
+        <AppSidebar />
+      </Suspense>
       <Outlet />
     </>
   );

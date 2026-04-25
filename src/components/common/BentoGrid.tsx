@@ -2,7 +2,6 @@ import { useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 
 /**
- * BentoGrid - Adapted from reactbits.dev MagicBento GlobalSpotlight.
  * Wraps a group of BentoCards and provides the shared spotlight + glow tracking.
  */
 

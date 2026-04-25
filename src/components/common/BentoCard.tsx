@@ -2,7 +2,6 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 
 /**
- * BentoCard - Adapted from reactbits.dev MagicBento ParticleCard.
  * Wraps any section with GSAP-powered border glow, particles, and click ripple.
  */
 
