@@ -13,7 +13,7 @@ export function MobileAttribute({ label, value, icon }: MobileAttributeProps) {
         {icon}
         <span className="text-textSecondary">{label}</span>
       </span>
-      <span className="text-sm font-medium text-textBody leading-snug">{value}</span>
+      <span className="text-sm font-normal text-textBody leading-snug max-w-[120px] inline-block">{value}</span>
     </div>
   );
 }

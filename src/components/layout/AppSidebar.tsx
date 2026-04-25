@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { MobileHeader } from './MobileHeader';
 
 type DeviceLink = {
   label: string;
@@ -61,14 +62,10 @@ export function AppSidebar() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsMobileOpen(true)}
-        className="lg:hidden fixed left-3 top-3 z-40 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-cardBorder bg-bgSidebar text-textHeading shadow-lg shadow-black/10 dark:shadow-black/20 sm:left-4 sm:top-4 sm:h-10 sm:w-10 sm:rounded-xl"
-        aria-label="Open navigation"
-      >
-        <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
-      </button>
+      <MobileHeader 
+        onOpenSidebar={() => setIsMobileOpen(true)} 
+        isSidebarOpen={isMobileOpen}
+      />
 
       {isMobileOpen ? (
         <div

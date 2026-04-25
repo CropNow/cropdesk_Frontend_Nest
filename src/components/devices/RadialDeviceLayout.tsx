@@ -111,7 +111,7 @@ export function RadialDeviceLayout({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold tracking-tight text-textHeading md:hidden">{device.name}</h2>
+      <h2 className="text-xl font-semibold tracking-tight text-textHeading md:hidden max-w-[180px]">{device.name}</h2>
 
       <div className="flex flex-row gap-2 md:items-center md:gap-4">
       <div className="flex w-[35%] shrink-0 flex-col items-center md:w-2/5">
@@ -177,7 +177,7 @@ export function RadialDeviceLayout({
                         <span className="text-accentPrimary/70">{attr.icon}</span>
                         <span>{attr.label}</span>
                       </div>
-                      <div className="text-[15px] font-semibold leading-snug text-textHeading whitespace-nowrap">{attr.value}</div>
+                      <div className="text-[15px] font-normal leading-snug text-textHeading max-w-[120px]">{attr.value}</div>
                     </div>
                     {attr.label === 'Location' && (
                       <button
