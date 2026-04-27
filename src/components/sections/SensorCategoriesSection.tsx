@@ -175,21 +175,21 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
           <WeatherSensorsModal
             isOpen={showWeatherDetails}
             onClose={() => setShowWeatherDetails(false)}
-            data={data?.latestData}
+            data={{ ...(data?.latestData || {}), deviceId: data?.deviceId || data?.latestData?.deviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
           />
         )}
         {showSoilDetails && (
           <SoilSensorsModal
             isOpen={showSoilDetails}
             onClose={() => setShowSoilDetails(false)}
-            data={data?.latestData}
+            data={{ ...(data?.latestData || {}), deviceId: data?.deviceId || data?.latestData?.deviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
           />
         )}
         {showAirDetails && (
           <AirSensorsModal
             isOpen={showAirDetails}
             onClose={() => setShowAirDetails(false)}
-            data={data?.latestData}
+            data={{ ...(data?.latestData || {}), deviceId: data?.deviceId || data?.latestData?.deviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
           />
         )}
       </AnimatePresence>
@@ -201,6 +201,11 @@ function WeatherSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClo
   const [activeMetric, setActiveMetric] = useState<string | null>(null);
 
   const toggleMetric = (metric: string) => {
+    console.log(`[WeatherSensorsModal] Clicked ${metric}`);
+    console.log('data?.deviceId:', data?.deviceId);
+    console.log('data?.sensorId:', data?.sensorId);
+    console.log('data?.id:', data?.id);
+    console.log('Full sensor data object:', data);
     setActiveMetric((prev) => (prev === metric ? null : metric));
   };
 
@@ -273,7 +278,7 @@ function WeatherSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClo
                     exit={{ opacity: 0, height: 0, marginTop: 0 }}
                     className="w-full overflow-hidden md:hidden"
                   >
-                    <WindDirectionDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
+                    <WindDirectionDetail sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveMetric(null)} />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -315,7 +320,7 @@ function WeatherSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClo
                   exit={{ opacity: 0, height: 0, marginTop: 0 }}
                   className="w-full overflow-hidden md:hidden"
                 >
-                  <WindSpeedDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
+                  <WindSpeedDetail sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveMetric(null)} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -357,7 +362,7 @@ function WeatherSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClo
                     exit={{ opacity: 0, height: 0, marginTop: 0 }}
                     className="w-full overflow-hidden md:hidden"
                   >
-                    <RainFallDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
+                    <RainFallDetail sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveMetric(null)} />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -373,7 +378,7 @@ function WeatherSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClo
                 exit={{ opacity: 0, height: 0, marginTop: 0 }}
                 className="hidden w-full overflow-hidden md:block"
               >
-                <WindDirectionDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
+                <WindDirectionDetail sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveMetric(null)} />
               </motion.div>
             )}
             {activeMetric === 'Wind Speed' && (
@@ -384,7 +389,7 @@ function WeatherSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClo
                 exit={{ opacity: 0, height: 0, marginTop: 0 }}
                 className="hidden w-full overflow-hidden md:block"
               >
-                <WindSpeedDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
+                <WindSpeedDetail sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveMetric(null)} />
               </motion.div>
             )}
             {activeMetric === 'Rain Fall' && (
@@ -395,7 +400,7 @@ function WeatherSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClo
                 exit={{ opacity: 0, height: 0, marginTop: 0 }}
                 className="hidden w-full overflow-hidden md:block"
               >
-                <RainFallDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
+                <RainFallDetail sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveMetric(null)} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -421,6 +426,11 @@ function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
   const [activeSensor, setActiveSensor] = useState<string | null>(null);
 
   const toggleSensor = (sensorTitle: string) => {
+    console.log(`[SoilSensorsModal] Clicked ${sensorTitle}`);
+    console.log('data?.deviceId:', data?.deviceId);
+    console.log('data?.sensorId:', data?.sensorId);
+    console.log('data?.id:', data?.id);
+    console.log('Full sensor data object:', data);
     setActiveSensor((prev) => (prev === sensorTitle ? null : sensorTitle));
   };
 
@@ -514,7 +524,7 @@ function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
                       exit={{ opacity: 0, height: 0, marginTop: 0 }}
                       className="w-full overflow-hidden md:hidden"
                     >
-                      <SoilSensorDetail sensor={sensor} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
+                      <SoilSensorDetail sensor={sensor} sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveSensor(null)} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -531,7 +541,7 @@ function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
                 exit={{ opacity: 0, height: 0, marginTop: 0 }}
                 className="hidden w-full overflow-hidden md:block"
               >
-                <SoilSensorDetail sensor={activeSensorData} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
+                <SoilSensorDetail sensor={activeSensorData} sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveSensor(null)} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -579,7 +589,7 @@ function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
                         exit={{ opacity: 0, height: 0, marginTop: 0 }}
                         className="w-full overflow-hidden md:hidden"
                       >
-                        <SoilSensorDetail sensor={sensor} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
+                        <SoilSensorDetail sensor={sensor} sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveSensor(null)} />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -597,7 +607,7 @@ function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
                 exit={{ opacity: 0, height: 0, marginTop: 0 }}
                 className="hidden w-full overflow-hidden md:block"
               >
-                <SoilSensorDetail sensor={activeSensorData} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
+                <SoilSensorDetail sensor={activeSensorData} sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveSensor(null)} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -622,6 +632,8 @@ function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
 import { useEffect } from 'react';
 
 function RealDataChart({ data }: { data: any[] }) {
+  console.log('RealDataChart received data:', data);
+
   if (!data || data.length === 0) {
     return (
       <div className="absolute inset-0 flex items-center justify-center">
@@ -631,10 +643,38 @@ function RealDataChart({ data }: { data: any[] }) {
   }
 
   const points = data.map((d: any) => {
-    const val = typeof d.value === 'number' ? d.value : 
-                (typeof d.avg === 'number' ? d.avg : 
-                (typeof d.average === 'number' ? d.average : 0));
-    return val;
+    // Try to find well-known keys first, converting to number just in case they are strings
+    const possibleKeys = ['value', 'avg', 'average', 'reading', 'val'];
+    let val: number | undefined;
+    
+    for (const key of possibleKeys) {
+      if (d[key] !== undefined && d[key] !== null) {
+        const num = Number(d[key]);
+        if (!isNaN(num)) {
+          val = num;
+          break;
+        }
+      }
+    }
+
+    if (val === undefined) {
+      // Fallback: Find the first property that is a valid number and isn't an ID or timestamp
+      for (const key in d) {
+        const keyLower = key.toLowerCase();
+        if (keyLower.includes('id') || keyLower.includes('time') || keyLower.includes('date') || keyLower.includes('created') || keyLower.includes('updated')) {
+          continue;
+        }
+        
+        const num = Number(d[key]);
+        // Only accept it if it's a valid number and not a boolean or empty string
+        if (d[key] !== null && d[key] !== '' && typeof d[key] !== 'boolean' && !isNaN(num)) {
+          val = num;
+          break;
+        }
+      }
+    }
+    
+    return val !== undefined ? val : 0;
   });
 
   const maxVal = Math.max(...points, 1);
@@ -651,6 +691,11 @@ function RealDataChart({ data }: { data: any[] }) {
     return `${x},${y}`;
   }).join(' ');
 
+  // Handle single point case
+  const path = points.length === 1 
+    ? `M ${padding},${height/2} L ${width-padding},${height/2}`
+    : svgPoints;
+
   return (
     <svg className="h-full w-full" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
       {[0.25, 0.5, 0.75, 1].map((ratio, idx) => {
@@ -659,7 +704,11 @@ function RealDataChart({ data }: { data: any[] }) {
           <line key={idx} x1="0" y1={y} x2={width} y2={y} stroke="white" strokeOpacity="0.04" strokeWidth={1} />
         );
       })}
-      <polyline fill="none" stroke="#00FF9C" strokeWidth="3" points={svgPoints} className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]" />
+      {points.length > 1 ? (
+        <polyline fill="none" stroke="#00FF9C" strokeWidth="3" points={svgPoints} className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]" />
+      ) : (
+        <circle cx={width/2} cy={height/2} r="4" fill="#00FF9C" className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]" />
+      )}
     </svg>
   );
 }
@@ -670,13 +719,13 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
   const ranges = ['24 Hours', '7 Days', '1 Month'];
 
   const getMetricKey = (title: string) => {
-    const map: Record<string, string> = {
-      'Nitrogen': 'nitrogen',
-      'Organic Carbon': 'organicCarbon',
+    const map: Record<string, string | null> = {
+      'Nitrogen': null,
+      'Organic Carbon': null,
       'Soil Temperature at Surface': 'soil_temperature',
-      'Phosphorus': 'phosphorus',
-      'Potassium': 'potassium',
-      'PH Level': 'ph',
+      'Phosphorus': null,
+      'Potassium': null,
+      'PH Level': null,
       'Soil Moisture at Surface': 'soil_moisture_1',
       'Wind Direction': 'wind_direction',
       'Wind Speed': 'wind_speed',
@@ -687,12 +736,12 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
       'Air Temperature': 'temperature',
       'Humidity': 'humidity',
       'Air Pressure': 'pressure',
-      'SO2': 'so2',
-      'NO2': 'no2',
-      'O3': 'o3',
+      'SO2': null,
+      'NO2': null,
+      'O3': null,
       'Leaf Wetness': 'leaf_wetness'
     };
-    return map[title] || title.toLowerCase().replace(/\s+/g, '_');
+    return map[title] || null;
   };
 
   useEffect(() => {
@@ -700,6 +749,11 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
       if (!sensorId) return;
       try {
         const metric = getMetricKey(sensor.title);
+        if (!metric) {
+          setChartData([]);
+          return;
+        }
+        
         const rangeMap: Record<string, string> = {
           '24 Hours': '24h',
           '7 Days': '7d',
@@ -709,10 +763,15 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
         
         let res = await sensorsAPI.getAggregatedData(sensorId, { metric, range: rangeParam }).catch(() => null);
         if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getHistoricalData({ sensorId, metric, range: rangeParam }).catch(() => null);
+          res = await sensorsAPI.getSensorData(sensorId, { metric, range: rangeParam }).catch(() => null);
         }
         
-        const rawData = res?.data?.data || res?.data || [];
+        let rawData = res?.data?.data || res?.data || [];
+        if (!Array.isArray(rawData) && typeof rawData === 'object' && rawData !== null) {
+          const firstArrayValue = Object.values(rawData).find(val => Array.isArray(val));
+          if (firstArrayValue) rawData = firstArrayValue;
+          else rawData = [];
+        }
         setChartData(Array.isArray(rawData) ? rawData : []);
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
@@ -787,13 +846,13 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
   const ranges = ['24 Hours', '7 Days', '1 Month'];
 
   const getMetricKey = (title: string) => {
-    const map: Record<string, string> = {
-      'Nitrogen': 'nitrogen',
-      'Organic Carbon': 'organicCarbon',
+    const map: Record<string, string | null> = {
+      'Nitrogen': null,
+      'Organic Carbon': null,
       'Soil Temperature at Surface': 'soil_temperature',
-      'Phosphorus': 'phosphorus',
-      'Potassium': 'potassium',
-      'PH Level': 'ph',
+      'Phosphorus': null,
+      'Potassium': null,
+      'PH Level': null,
       'Soil Moisture at Surface': 'soil_moisture_1',
       'Wind Direction': 'wind_direction',
       'Wind Speed': 'wind_speed',
@@ -804,12 +863,12 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
       'Air Temperature': 'temperature',
       'Humidity': 'humidity',
       'Air Pressure': 'pressure',
-      'SO2': 'so2',
-      'NO2': 'no2',
-      'O3': 'o3',
+      'SO2': null,
+      'NO2': null,
+      'O3': null,
       'Leaf Wetness': 'leaf_wetness'
     };
-    return map[title] || title.toLowerCase().replace(/\s+/g, '_');
+    return map[title] || null;
   };
 
   useEffect(() => {
@@ -817,6 +876,11 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
       if (!sensorId) return;
       try {
         const metric = getMetricKey(sensor.title);
+        if (!metric) {
+          setChartData([]);
+          return;
+        }
+        
         const rangeMap: Record<string, string> = {
           '24 Hours': '24h',
           '7 Days': '7d',
@@ -826,10 +890,15 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
         
         let res = await sensorsAPI.getAggregatedData(sensorId, { metric, range: rangeParam }).catch(() => null);
         if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getHistoricalData({ sensorId, metric, range: rangeParam }).catch(() => null);
+          res = await sensorsAPI.getSensorData(sensorId, { metric, range: rangeParam }).catch(() => null);
         }
         
-        const rawData = res?.data?.data || res?.data || [];
+        let rawData = res?.data?.data || res?.data || [];
+        if (!Array.isArray(rawData) && typeof rawData === 'object' && rawData !== null) {
+          const firstArrayValue = Object.values(rawData).find(val => Array.isArray(val));
+          if (firstArrayValue) rawData = firstArrayValue;
+          else rawData = [];
+        }
         setChartData(Array.isArray(rawData) ? rawData : []);
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
@@ -927,6 +996,11 @@ function AirSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: 
   const activeSensorIndex = airSensors.findIndex((sensor) => sensor.id === activeSensor);
 
   const toggleSensor = (id: string) => {
+    console.log(`[AirSensorsModal] Clicked sensor id: ${id}`);
+    console.log('data?.deviceId:', data?.deviceId);
+    console.log('data?.sensorId:', data?.sensorId);
+    console.log('data?.id:', data?.id);
+    console.log('Full sensor data object:', data);
     setActiveSensor(activeSensor === id ? null : id);
   };
 
@@ -1004,7 +1078,7 @@ function AirSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: 
                       exit={{ opacity: 0, height: 0, marginTop: 0 }}
                       className="w-full overflow-hidden lg:hidden"
                     >
-                      <AirSensorDetail sensor={sensor} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
+                      <AirSensorDetail sensor={sensor} sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveSensor(null)} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -1068,7 +1142,7 @@ function AirSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: 
                       exit={{ opacity: 0, height: 0, marginTop: 0 }}
                       className="w-full overflow-hidden lg:hidden"
                     >
-                      <AirSensorDetail sensor={sensor} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
+                      <AirSensorDetail sensor={sensor} sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveSensor(null)} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -1084,7 +1158,7 @@ function AirSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: 
                 exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                 className="hidden overflow-hidden lg:block"
               >
-                <AirSensorDetail sensor={activeSensorData} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
+                <AirSensorDetail sensor={activeSensorData} sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveSensor(null)} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -1148,7 +1222,7 @@ function AirSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: 
                 exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                 className="hidden overflow-hidden lg:block"
               >
-                <AirSensorDetail sensor={activeSensorData} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
+                <AirSensorDetail sensor={activeSensorData} sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId} onClose={() => setActiveSensor(null)} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -1188,10 +1262,15 @@ function WindDirectionDetail({ sensorId, onClose }: { sensorId?: string; onClose
         
         let res = await sensorsAPI.getAggregatedData(sensorId, { metric: 'wind_direction', range: rangeParam }).catch(() => null);
         if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getHistoricalData({ sensorId, metric: 'wind_direction', range: rangeParam }).catch(() => null);
+          res = await sensorsAPI.getSensorData(sensorId, { metric: 'wind_direction', range: rangeParam }).catch(() => null);
         }
         
-        const rawData = res?.data?.data || res?.data || [];
+        let rawData = res?.data?.data || res?.data || [];
+        if (!Array.isArray(rawData) && typeof rawData === 'object' && rawData !== null) {
+          const firstArrayValue = Object.values(rawData).find(val => Array.isArray(val));
+          if (firstArrayValue) rawData = firstArrayValue;
+          else rawData = [];
+        }
         setChartData(Array.isArray(rawData) ? rawData : []);
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
@@ -1292,10 +1371,15 @@ function WindSpeedDetail({ sensorId, onClose }: { sensorId?: string; onClose: ()
         
         let res = await sensorsAPI.getAggregatedData(sensorId, { metric: 'wind_speed', range: rangeParam }).catch(() => null);
         if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getHistoricalData({ sensorId, metric: 'wind_speed', range: rangeParam }).catch(() => null);
+          res = await sensorsAPI.getSensorData(sensorId, { metric: 'wind_speed', range: rangeParam }).catch(() => null);
         }
         
-        const rawData = res?.data?.data || res?.data || [];
+        let rawData = res?.data?.data || res?.data || [];
+        if (!Array.isArray(rawData) && typeof rawData === 'object' && rawData !== null) {
+          const firstArrayValue = Object.values(rawData).find(val => Array.isArray(val));
+          if (firstArrayValue) rawData = firstArrayValue;
+          else rawData = [];
+        }
         setChartData(Array.isArray(rawData) ? rawData : []);
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
@@ -1343,7 +1427,22 @@ function WindSpeedDetail({ sensorId, onClose }: { sensorId?: string; onClose: ()
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex flex-col items-end">
-            <p className="text-3xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-4xl">0<span className="ml-1 text-[1rem] font-extrabold uppercase text-[#00FF9C]">.m/s</span></p>
+            <p className="text-3xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-4xl">
+              {chartData.length > 0 
+                ? (() => {
+                    const d = chartData[chartData.length - 1];
+                    const valKeys = ['value', 'avg', 'average', 'reading', 'val'];
+                    for (const k of valKeys) if (d[k] !== undefined && d[k] !== null && !isNaN(Number(d[k]))) return Number(d[k]);
+                    for (const k in d) {
+                      const kl = k.toLowerCase();
+                      if (kl.includes('id') || kl.includes('time') || kl.includes('date') || kl.includes('created') || kl.includes('updated')) continue;
+                      if (d[k] !== null && d[k] !== '' && typeof d[k] !== 'boolean' && !isNaN(Number(d[k]))) return Number(d[k]);
+                    }
+                    return 0;
+                  })()
+                : '0'}
+              <span className="ml-1 text-[1rem] font-extrabold uppercase text-[#00FF9C]">.m/s</span>
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -1487,10 +1586,15 @@ function RainFallDetail({ sensorId, onClose }: { sensorId?: string; onClose: () 
         
         let res = await sensorsAPI.getAggregatedData(sensorId, { metric: 'rainfall', range: rangeParam }).catch(() => null);
         if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getHistoricalData({ sensorId, metric: 'rainfall', range: rangeParam }).catch(() => null);
+          res = await sensorsAPI.getSensorData(sensorId, { metric: 'rainfall', range: rangeParam }).catch(() => null);
         }
         
-        const rawData = res?.data?.data || res?.data || [];
+        let rawData = res?.data?.data || res?.data || [];
+        if (!Array.isArray(rawData) && typeof rawData === 'object' && rawData !== null) {
+          const firstArrayValue = Object.values(rawData).find(val => Array.isArray(val));
+          if (firstArrayValue) rawData = firstArrayValue;
+          else rawData = [];
+        }
         setChartData(Array.isArray(rawData) ? rawData : []);
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
@@ -1538,7 +1642,14 @@ function RainFallDetail({ sensorId, onClose }: { sensorId?: string; onClose: () 
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex flex-col items-end">
-            <p className="text-xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-4xl">0<span className="ml-1 text-[0.7rem] font-extrabold uppercase text-[#00FF9C] md:text-[1rem]">.mm</span></p>
+            <p className="text-xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-4xl">
+              {chartData.length > 0 
+                ? (typeof chartData[chartData.length - 1].value === 'number' 
+                    ? chartData[chartData.length - 1].value 
+                    : (chartData[chartData.length - 1].avg || chartData[chartData.length - 1].average || 0))
+                : '0'}
+              <span className="ml-1 text-[0.7rem] font-extrabold uppercase text-[#00FF9C] md:text-[1rem]">.mm</span>
+            </p>
           </div>
           <button
             onClick={onClose}
