@@ -21,6 +21,20 @@ export function useDashboardState() {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [backendDevices, setBackendDevices] = useState<any[]>([]);
+
+  const fetchBackendDevices = async () => {
+    try {
+      const typeParam = selectedDeviceType.toUpperCase();
+      const res = await sensorsAPI.getSensors({ type: typeParam });
+      const data = res.data?.data || res.data || [];
+      if (Array.isArray(data)) {
+        setBackendDevices(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch backend devices:', e);
+    }
+  };
 
   // 1. Initial Load: Get Farms
   useEffect(() => {
@@ -58,13 +72,13 @@ export function useDashboardState() {
         setIsLoading(true);
         
         // Fetch from dashboard specific endpoints + statistics fallback
-        const [overviewRes, statsRes, devicesRes, farmDevicesRes, alertsRes, aiRes] = await Promise.all([
+        const [overviewRes, statsRes, devicesRes, alertsRes, aiRes, sensorsRes] = await Promise.all([
           dashboardAPI.getDashboardOverview().catch(() => ({ data: null })),
           dashboardAPI.getFarmStatistics(selectedFarmId).catch(() => ({ data: null })),
           dashboardAPI.getFarmDevices(selectedFarmId).catch(() => ({ data: null })),
-          devicesAPI.getDevices(selectedFarmId).catch(() => ({ data: null })),
           dashboardAPI.getAlerts().catch(() => ({ data: null })),
           dashboardAPI.getAIInsights(selectedFarmId).catch(() => ({ data: null })),
+          sensorsAPI.getSensors({ type: selectedDeviceType.toUpperCase() }).catch(() => ({ data: null })),
         ]);
 
         const overview = overviewRes.data?.overview;
@@ -83,7 +97,7 @@ export function useDashboardState() {
           }
         };
         addDevices(devicesRes);
-        addDevices(farmDevicesRes);
+        addDevices(sensorsRes); // Add backend sensors as devices
         
         const alertsData = alertsRes.data?.data || alertsRes.data || [];
         const aiData = aiRes.data || [];
@@ -91,13 +105,15 @@ export function useDashboardState() {
         console.log('DEBUG overviewRes:', overviewRes.data);
         console.log('DEBUG statsRes:', statsRes.data);
         console.log('DEBUG devicesRes:', devicesRes.data);
-        console.log('DEBUG farmDevicesRes:', farmDevicesRes.data);
         console.log('DEBUG alertsRes:', alertsRes.data);
         console.log('DEBUG aiRes:', aiRes.data);
+        console.log('DEBUG sensorsRes:', sensorsRes.data);
 
         // Find current device (Nest)
-        // If there's only one nest, it will be the first one in the list
-        const primaryDevice = devices[0];
+        // Match index from available devices
+        const primaryDevice = backendDevices[currentDeviceIndex % (backendDevices.length || 1)] || 
+                             devices[currentDeviceIndex % (devices.length || 1)] || 
+                             devices[0];
 
         // Fetch latest sensor data if we have a device
         let sensorLatestData = null;
@@ -220,7 +236,7 @@ export function useDashboardState() {
     
     const intervalId = setInterval(fetchFarmData, 10 * 60 * 1000); // Poll every 10 minutes
     return () => clearInterval(intervalId);
-  }, [selectedFarmId, farms]);
+  }, [selectedFarmId, farms, currentDeviceIndex, backendDevices]);
 
   // ─── UI Logic ───
   // Update time every minute
@@ -238,14 +254,68 @@ export function useDashboardState() {
     }
   }, [searchParams, selectedDeviceType]);
 
-  const deviceList = DEVICE_LIBRARY[selectedDeviceType];
-  const currentDevice = deviceList[currentDeviceIndex % deviceList.length];
+  useEffect(() => {
+    fetchBackendDevices();
+  }, [selectedDeviceType]);
 
-  const cycleDevice = (direction: 1 | -1) => {
+  const deviceList = useMemo(() => {
+    const mockList = DEVICE_LIBRARY[selectedDeviceType] || [];
+    
+    if (backendDevices.length > 0) {
+      const mappedBackend = backendDevices.map((d, idx) => ({
+        id: d.id || d._id || `backend-${idx}`,
+        deviceType: selectedDeviceType,
+        name: d.name || d.deviceId || `Device ${idx + 1}`,
+        subtitle: 'IoT Field Intelligence Tower',
+        image: selectedDeviceType === 'seed' ? '/seed.png' : '/NEST.png',
+        area: d.field?.area ? `${d.field.area} acres` : '4.6 acres',
+        location: d.farm?.name || 'Sunrise Farm',
+        boundary: 'Polygon',
+        soilType: d.field?.soilType || 'Loamy',
+        irrigationType: d.field?.irrigationType || 'Sprinkler',
+        crops: d.crops?.map((c: any) => c.name) || ['Corn', 'Cabbage'],
+        raw: d
+      }));
+
+      const combined = [...mappedBackend];
+      mockList.forEach((mockItem, index) => {
+        if (combined.length < 3) {
+          combined.push({
+            ...mockItem,
+            id: `mock-${mockItem.id || index}`,
+            name: `${mockItem.name} (Demo)`
+          });
+        }
+      });
+
+      return combined;
+    }
+    return mockList;
+  }, [backendDevices, selectedDeviceType]);
+
+  const currentDevice = deviceList[currentDeviceIndex % (deviceList.length || 1)] || {
+    name: 'Sunrise Farm',
+    deviceType: 'nest',
+    subtitle: 'IoT Field Intelligence Tower',
+    image: '/NEST.png',
+    soilType: 'Sandy Loam',
+    area: '4.6 acres',
+    location: 'Hassan',
+    irrigationType: 'Sprinkler',
+    boundary: 'Polygon',
+    crops: ['Corn', 'Cabbage']
+  };
+
+  const cycleDevice = async (direction: 1 | -1) => {
+    // Trigger API on click
+    await fetchBackendDevices();
+    
     setCurrentDeviceIndex((prev) => {
+      const listLen = deviceList.length;
+      if (listLen === 0) return 0;
       const next = prev + direction;
-      if (next < 0) return deviceList.length - 1;
-      if (next >= deviceList.length) return 0;
+      if (next < 0) return listLen - 1;
+      if (next >= listLen) return 0;
       return next;
     });
   };
