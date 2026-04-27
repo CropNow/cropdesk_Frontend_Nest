@@ -631,7 +631,7 @@ function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
 
 import { useEffect } from 'react';
 
-function RealDataChart({ data }: { data: any[] }) {
+function RealDataChart({ data, chartType = 'bar' }: { data: any[]; chartType?: 'bar' | 'line' }) {
   console.log('RealDataChart received data:', data);
 
   if (!data || data.length === 0) {
@@ -643,7 +643,6 @@ function RealDataChart({ data }: { data: any[] }) {
   }
 
   const points = data.map((d: any) => {
-    // Try to find well-known keys first, converting to number just in case they are strings
     const possibleKeys = ['value', 'avg', 'average', 'reading', 'val'];
     let val: number | undefined;
     
@@ -658,15 +657,12 @@ function RealDataChart({ data }: { data: any[] }) {
     }
 
     if (val === undefined) {
-      // Fallback: Find the first property that is a valid number and isn't an ID or timestamp
       for (const key in d) {
         const keyLower = key.toLowerCase();
         if (keyLower.includes('id') || keyLower.includes('time') || keyLower.includes('date') || keyLower.includes('created') || keyLower.includes('updated')) {
           continue;
         }
-        
         const num = Number(d[key]);
-        // Only accept it if it's a valid number and not a boolean or empty string
         if (d[key] !== null && d[key] !== '' && typeof d[key] !== 'boolean' && !isNaN(num)) {
           val = num;
           break;
@@ -691,10 +687,31 @@ function RealDataChart({ data }: { data: any[] }) {
     return `${x},${y}`;
   }).join(' ');
 
-  // Handle single point case
-  const path = points.length === 1 
-    ? `M ${padding},${height/2} L ${width-padding},${height/2}`
-    : svgPoints;
+  const barCount = points.length;
+  const step = (width - 2 * padding) / (barCount || 1);
+  const currentBarWidth = barCount > 1 ? Math.max(step * 0.6, 4) : 40;
+
+  const bars = points.map((val, i) => {
+    const x = barCount > 1 
+      ? padding + i * step + (step - currentBarWidth) / 2
+      : width / 2 - currentBarWidth / 2;
+    const barHeight = ((val - minVal) / (range || 1)) * (height - 2 * padding);
+    const y = height - padding - Math.max(barHeight, 4);
+
+    return (
+      <rect
+        key={i}
+        x={x}
+        y={y}
+        width={currentBarWidth}
+        height={Math.max(barHeight, 4)}
+        fill="#00FF9C"
+        fillOpacity={0.8}
+        rx={Math.min(currentBarWidth / 4, 6)}
+        className="drop-shadow-[0_0_10px_rgba(0,255,156,0.3)]"
+      />
+    );
+  });
 
   return (
     <svg className="h-full w-full" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
@@ -704,10 +721,15 @@ function RealDataChart({ data }: { data: any[] }) {
           <line key={idx} x1="0" y1={y} x2={width} y2={y} stroke="white" strokeOpacity="0.04" strokeWidth={1} />
         );
       })}
-      {points.length > 1 ? (
-        <polyline fill="none" stroke="#00FF9C" strokeWidth="3" points={svgPoints} className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]" />
+      
+      {chartType === 'line' ? (
+        points.length > 1 ? (
+          <polyline fill="none" stroke="#00FF9C" strokeWidth="3" points={svgPoints} className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]" />
+        ) : (
+          <circle cx={width/2} cy={height/2} r="4" fill="#00FF9C" className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]" />
+        )
       ) : (
-        <circle cx={width/2} cy={height/2} r="4" fill="#00FF9C" className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]" />
+        <g>{bars}</g>
       )}
     </svg>
   );
@@ -720,26 +742,26 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
 
   const getMetricKey = (title: string) => {
     const map: Record<string, string | null> = {
-      'Nitrogen': null,
-      'Organic Carbon': null,
+      'Nitrogen': 'nitrogen',
+      'Organic Carbon': 'organicCarbon',
       'Soil Temperature at Surface': 'soil_temperature',
-      'Phosphorus': null,
-      'Potassium': null,
-      'PH Level': null,
+      'Phosphorus': 'phosphorus',
+      'Potassium': 'potassium',
+      'PH Level': 'ph',
       'Soil Moisture at Surface': 'soil_moisture_1',
       'Wind Direction': 'wind_direction',
       'Wind Speed': 'wind_speed',
       'Rain Fall': 'rainfall',
+      'Solar Radiation': 'solar_radiation',
       'PM 2.5': 'pm2_5',
       'PM 10': 'pm10',
       'CO2': 'co2',
       'Air Temperature': 'temperature',
       'Humidity': 'humidity',
       'Air Pressure': 'pressure',
-      'SO2': null,
-      'NO2': null,
-      'O3': null,
-      'Leaf Wetness': 'leaf_wetness'
+      'SO2': 'so2',
+      'NO2': 'no2',
+      'O3': 'o3'
     };
     return map[title] || null;
   };
@@ -834,7 +856,7 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
       </div>
 
       <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[260px]">
-        <RealDataChart data={chartData} />
+        <RealDataChart data={chartData} chartType={sensor?.title?.toLowerCase()?.includes('wind') ? 'line' : 'bar'} />
       </div>
     </div>
   );
@@ -847,26 +869,26 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
 
   const getMetricKey = (title: string) => {
     const map: Record<string, string | null> = {
-      'Nitrogen': null,
-      'Organic Carbon': null,
+      'Nitrogen': 'nitrogen',
+      'Organic Carbon': 'organicCarbon',
       'Soil Temperature at Surface': 'soil_temperature',
-      'Phosphorus': null,
-      'Potassium': null,
-      'PH Level': null,
+      'Phosphorus': 'phosphorus',
+      'Potassium': 'potassium',
+      'PH Level': 'ph',
       'Soil Moisture at Surface': 'soil_moisture_1',
       'Wind Direction': 'wind_direction',
       'Wind Speed': 'wind_speed',
       'Rain Fall': 'rainfall',
+      'Solar Radiation': 'solar_radiation',
       'PM 2.5': 'pm2_5',
       'PM 10': 'pm10',
       'CO2': 'co2',
       'Air Temperature': 'temperature',
       'Humidity': 'humidity',
       'Air Pressure': 'pressure',
-      'SO2': null,
-      'NO2': null,
-      'O3': null,
-      'Leaf Wetness': 'leaf_wetness'
+      'SO2': 'so2',
+      'NO2': 'no2',
+      'O3': 'o3'
     };
     return map[title] || null;
   };
@@ -967,7 +989,7 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
       </div>
 
       <div className="relative flex h-[220px] w-full items-end justify-center overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-0 md:h-[300px]">
-        <RealDataChart data={chartData} />
+        <RealDataChart data={chartData} chartType={sensor?.title?.toLowerCase()?.includes('wind') ? 'line' : 'bar'} />
       </div>
     </div>
   );
@@ -1661,7 +1683,7 @@ function RainFallDetail({ sensorId, onClose }: { sensorId?: string; onClose: () 
       </div>
 
       <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[260px]">
-        <RealDataChart data={chartData} />
+        <RealDataChart data={chartData} chartType="bar" />
       </div>
     </div>
   );
