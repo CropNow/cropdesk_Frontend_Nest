@@ -66,7 +66,6 @@ export function DashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
         <DeviceSection
-          variant="v1"
           device={dashboardData?.currentDevice || currentDevice}
           selectedDeviceType={selectedDeviceType}
           currentDeviceIndex={currentDeviceIndex}

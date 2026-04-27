@@ -17,7 +17,6 @@ export const ROUTES = {
   DASHBOARD: {
     ROOT: '/',
     HOME: '/dashboard',
-    DASHBOARD_V2: '/dashboard-v2',
   },
 
   // Devices routes

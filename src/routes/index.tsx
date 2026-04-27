@@ -8,7 +8,6 @@ import { ROUTES } from '../constants/routeConstants';
 
 // Import your page components
 import DashboardPage from '../pages/dashboard/DashboardPage';
-import DashboardV2Page from '../pages/dashboard/DashboardV2Page';
 // import LoginPage from '../pages/auth/LoginPage';
 // import NotFoundPage from '../pages/errors/NotFoundPage';
 
@@ -29,10 +28,6 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.DASHBOARD.HOME,
         element: <DashboardPage />,
-      },
-      {
-        path: ROUTES.DASHBOARD.DASHBOARD_V2,
-        element: <DashboardV2Page />,
       },
 
       // Device routes

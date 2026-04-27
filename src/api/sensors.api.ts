@@ -56,7 +56,7 @@ export const sensorsAPI = {
    * Get min/max/avg over time
    */
   getAggregatedData: (sensorId: string, params?: any) =>
-    apiClient.get(`/sensor-data/sensors/${sensorId}/aggregate`, { params }),
+    apiClient.get(`/sensors/${sensorId}/data/aggregate`, { params }),
   /**
    * Update sensor calibration
    */

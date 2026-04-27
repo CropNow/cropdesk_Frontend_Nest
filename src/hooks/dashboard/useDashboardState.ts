@@ -4,6 +4,7 @@ import { DEVICE_LIBRARY, DeviceType, FARM_STATUS_METRICS } from '../../constants
 import { isDeviceType } from '../../utils/deviceUtils';
 import { dashboardAPI } from '../../api/dashboard.api';
 import { sensorsAPI } from '../../api/sensors.api';
+import { devicesAPI } from '../../api/devices.api';
 
 export function useDashboardState() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -57,19 +58,42 @@ export function useDashboardState() {
         setIsLoading(true);
         
         // Fetch from dashboard specific endpoints + statistics fallback
-        const [overviewRes, statsRes, devicesRes, alertsRes, aiRes] = await Promise.all([
+        const [overviewRes, statsRes, devicesRes, farmDevicesRes, alertsRes, aiRes] = await Promise.all([
           dashboardAPI.getDashboardOverview().catch(() => ({ data: null })),
           dashboardAPI.getFarmStatistics(selectedFarmId).catch(() => ({ data: null })),
           dashboardAPI.getFarmDevices(selectedFarmId).catch(() => ({ data: null })),
+          devicesAPI.getDevices(selectedFarmId).catch(() => ({ data: null })),
           dashboardAPI.getAlerts().catch(() => ({ data: null })),
           dashboardAPI.getAIInsights(selectedFarmId).catch(() => ({ data: null })),
         ]);
 
         const overview = overviewRes.data?.overview;
         const stats = statsRes.data?.data || statsRes.data;
-        const devices = devicesRes.data?.data || [];
+        
+        let devices = [];
+        const addDevices = (res: any) => {
+          if (!res || !res.data) return;
+          const data = res.data?.data || res.data?.devices || (Array.isArray(res.data) ? res.data : []);
+          if (Array.isArray(data)) {
+            data.forEach((d: any) => {
+              if (d && !devices.some((existing: any) => (existing.id || existing._id) === (d.id || d._id))) {
+                devices.push(d);
+              }
+            });
+          }
+        };
+        addDevices(devicesRes);
+        addDevices(farmDevicesRes);
+        
         const alertsData = alertsRes.data?.data || alertsRes.data || [];
         const aiData = aiRes.data || [];
+
+        console.log('DEBUG overviewRes:', overviewRes.data);
+        console.log('DEBUG statsRes:', statsRes.data);
+        console.log('DEBUG devicesRes:', devicesRes.data);
+        console.log('DEBUG farmDevicesRes:', farmDevicesRes.data);
+        console.log('DEBUG alertsRes:', alertsRes.data);
+        console.log('DEBUG aiRes:', aiRes.data);
 
         // Find current device (Nest)
         // If there's only one nest, it will be the first one in the list
@@ -92,36 +116,70 @@ export function useDashboardState() {
           }
         }
 
+        // Fallback: if no primary device found, fetch all sensors directly
+        if (!sensorLatestData) {
+          try {
+            const allSensorsRes = await sensorsAPI.getSensors();
+            const allSensors = allSensorsRes.data?.data || allSensorsRes.data || [];
+            
+            if (allSensors.length > 0) {
+              const firstSensor = allSensors[0];
+              const sensorId = firstSensor.id || firstSensor._id;
+              const latestRes = await sensorsAPI.getLatestReading(sensorId);
+              const latestDataArr = latestRes.data?.data || latestRes.data;
+              if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
+                sensorLatestData = { ...latestDataArr[0], deviceId: sensorId };
+              } else if (!Array.isArray(latestDataArr) && latestDataArr) {
+                sensorLatestData = { ...latestDataArr, deviceId: sensorId };
+              }
+            }
+          } catch (fallbackErr) {
+            console.error('Failed to fetch fallback sensor data', fallbackErr);
+          }
+        }
+
         // Map metrics from statistics or fallback
         const mappedMetrics = FARM_STATUS_METRICS.map(m => {
-          if (m.id === 'soil-moisture' && stats?.currentConditions?.avgSoilMoisture !== null) {
-            return { ...m, value: stats.currentConditions.avgSoilMoisture };
+          const liveMoisture = sensorLatestData?.values?.soil_moisture_1 || sensorLatestData?.values?.soil_moisture || sensorLatestData?.soil_moisture;
+          const liveTemp = sensorLatestData?.values?.soil_temperature || sensorLatestData?.values?.temperature || sensorLatestData?.temperature;
+          const liveHumidity = sensorLatestData?.values?.humidity || sensorLatestData?.humidity;
+          const liveWindSpeed = sensorLatestData?.values?.wind_speed || sensorLatestData?.wind_speed;
+
+          if (m.id === 'soil-moisture') {
+            const val = liveMoisture !== undefined && liveMoisture !== null ? liveMoisture : stats?.currentConditions?.avgSoilMoisture;
+            if (val !== undefined && val !== null) return { ...m, value: val };
           }
-          if (m.id === 'temperature' && stats?.currentConditions?.avgTemperature !== null) {
-            return { ...m, value: stats.currentConditions.avgTemperature };
+          if (m.id === 'temperature') {
+            const val = liveTemp !== undefined && liveTemp !== null ? liveTemp : stats?.currentConditions?.avgTemperature;
+            if (val !== undefined && val !== null) return { ...m, value: val };
           }
-          if (m.id === 'humidity' && stats?.currentConditions?.avgHumidity !== null) {
-            return { ...m, value: stats.currentConditions.avgHumidity };
+          if (m.id === 'humidity') {
+            const val = liveHumidity !== undefined && liveHumidity !== null ? liveHumidity : stats?.currentConditions?.avgHumidity;
+            if (val !== undefined && val !== null) return { ...m, value: val };
+          }
+          if (m.id === 'wind-speed') {
+            const val = liveWindSpeed !== undefined && liveWindSpeed !== null ? liveWindSpeed : stats?.currentConditions?.avgWindSpeed;
+            if (val !== undefined && val !== null) return { ...m, value: val };
           }
           return m;
         });
 
         setDashboardData({
-          farm: farms.find(f => (f.id || f._id) === selectedFarmId) || primaryDevice?.farm,
+          farm: farms.find(f => (f.id || f._id) === selectedFarmId) || primaryDevice?.farm || (overview?.farmName ? { name: overview.farmName } : null),
           health: {
-            overallHealth: overview?.performance?.healthScore || 85,
+            overallHealth: overview?.performance?.healthScore || stats?.overallStatus || 85,
             metrics: mappedMetrics,
           },
           sensors: {
-            activeSensorsCount: sensorLatestData?.values ? Object.keys(sensorLatestData.values).filter(k => sensorLatestData.values[k] !== undefined && sensorLatestData.values[k] !== null).length : (stats?.overview?.activeSensors || (devices.filter((d: any) => d.status === 'active').length) || 0),
-            totalSensorsCount: stats?.overview?.totalSensors || devices.length || 0,
+            activeSensorsCount: sensorLatestData?.values ? Object.keys(sensorLatestData.values).filter(k => sensorLatestData.values[k] !== undefined && sensorLatestData.values[k] !== null).length : (stats?.overview?.activeSensors || (Array.isArray(devices) ? devices.filter((d: any) => d.status === 'active').length : 0) || overview?.sensors || 0),
+            totalSensorsCount: stats?.overview?.totalSensors || (Array.isArray(devices) ? devices.length : 0) || overview?.sensors || 0,
             latestData: sensorLatestData,
           },
           alerts: { 
-            cards: alertsData,
+          cards: alertsData,
             activeCount: overview?.activeAlerts || alertsData.length || 0
           },
-          waterSavings: null, // Endpoint not yet identified in backend
+          waterSavings: null,
           aiInsights: aiData,
           currentDevice: primaryDevice ? {
             name: primaryDevice.name,
@@ -135,7 +193,19 @@ export function useDashboardState() {
             irrigationType: primaryDevice.field?.irrigationType || 'N/A',
             boundary: 'Polygon',
             crops: primaryDevice.crops?.map((c: any) => c.name) || []
-          } : null,
+          } : {
+            name: overview?.farmName || stats?.farmName || 'Sunrise Farm',
+            serialNumber: 'N/A',
+            deviceType: 'nest',
+            subtitle: 'IoT Field Intelligence Tower',
+            image: '/NEST.png',
+            soilType: overview?.soilType || stats?.soilType || 'Sandy Loam',
+            area: overview?.area || stats?.area || '4.6 acres',
+            location: overview?.location || stats?.location || 'Hassan',
+            irrigationType: overview?.irrigation || stats?.irrigation || 'Sprinkler',
+            boundary: overview?.boundary || stats?.boundary || 'Polygon',
+            crops: overview?.crops || stats?.crops || ['Corn', 'Cabbage']
+          },
         });
         
         setError(null);
@@ -147,6 +217,9 @@ export function useDashboardState() {
     };
 
     fetchFarmData();
+    
+    const intervalId = setInterval(fetchFarmData, 10 * 60 * 1000); // Poll every 10 minutes
+    return () => clearInterval(intervalId);
   }, [selectedFarmId, farms]);
 
   // ─── UI Logic ───
