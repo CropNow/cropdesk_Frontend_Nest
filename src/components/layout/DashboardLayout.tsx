@@ -6,7 +6,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <main className="relative min-h-screen bg-bgMain px-4 pb-10 pt-8 text-textHeading sm:px-6 lg:pl-28 lg:pr-10">
+    <main className="relative min-h-screen bg-bgMain px-4 pb-10 pt-20 text-textHeading sm:px-6 lg:pl-28 lg:pr-10 lg:pt-8">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

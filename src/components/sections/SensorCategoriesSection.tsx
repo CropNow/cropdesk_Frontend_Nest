@@ -209,7 +209,7 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             </div>
             <div>
               <h2 className="text-xl font-bold leading-tight tracking-tight text-textHeading md:text-[1.6rem]">Weather Sensors</h2>
-              <p className="mt-0.5 whitespace-nowrap text-[0.75rem] font-medium text-textHint md:text-[0.9rem]">3 active sensors</p>
+              <p className="mt-0.5 whitespace-nowrap text-sm font-medium text-textHint md:text-[0.9rem]">3 active sensors</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 transition-opacity hover:opacity-50">
@@ -243,7 +243,7 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
-                      <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
+                      <span className="text-xs font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
                     </div>
                     <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === sensor.id ? 'rotate-180' : ''}`} />
                   </div>
@@ -429,7 +429,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             </div>
             <div>
               <h2 className="text-xl font-bold leading-tight tracking-tight text-white md:text-[1.6rem]">Soil Sensors</h2>
-              <p className="mt-0.5 whitespace-nowrap text-[0.75rem] font-medium text-white/75 md:text-[0.9rem]">
+              <p className="mt-0.5 whitespace-nowrap text-sm font-medium text-white/75 md:text-[0.9rem]">
                 {soilSensors.length} active sensors
               </p>
             </div>
@@ -753,7 +753,7 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             </div>
             <div>
               <h2 className="text-xl font-bold leading-tight tracking-tight text-textHeading md:text-[1.6rem]">Air Sensors</h2>
-              <p className="mt-0.5 whitespace-nowrap text-[0.75rem] font-medium text-textHint md:text-[0.9rem]">10 active sensors</p>
+              <p className="mt-0.5 whitespace-nowrap text-sm font-medium text-textHint md:text-[0.9rem]">10 active sensors</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 transition-opacity hover:opacity-50">

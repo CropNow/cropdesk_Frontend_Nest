@@ -154,7 +154,7 @@ export function RadialDeviceLayoutV2({
           <div className="translate-x-4 flex items-center justify-between gap-6 pr-1">
             <MobileAttribute 
               label="Location" 
-              value={<span className="whitespace-nowrap">{device.location}</span>} 
+              value={<span>{device.location}</span>} 
               icon={<MapPin className="h-3 w-3" />} 
             />
             <div className="flex items-center gap-2 pt-2 ml-4">
