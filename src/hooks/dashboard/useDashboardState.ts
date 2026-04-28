@@ -116,6 +116,18 @@ export function useDashboardState() {
                              devices[currentDeviceIndex % (devices.length || 1)] || 
                              devices[0];
 
+        // Fetch all sensors to get the true sensor ID for aggregate requests
+        let actualSensorId = null;
+        try {
+          const allSensorsRes = await sensorsAPI.getSensors();
+          const allSensors = allSensorsRes.data?.data || allSensorsRes.data || [];
+          if (allSensors.length > 0) {
+            actualSensorId = allSensors[0]._id || allSensors[0].id;
+          }
+        } catch (err) {
+          console.error('Failed to fetch sensors', err);
+        }
+
         // Fetch latest sensor data if we have a device
         let sensorLatestData = null;
         if (primaryDevice && (primaryDevice.id || primaryDevice._id)) {
@@ -124,31 +136,24 @@ export function useDashboardState() {
             const latestRes = await sensorsAPI.getLatestReading(deviceId);
             const latestDataArr = latestRes.data?.data || latestRes.data;
             if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
-              sensorLatestData = { ...latestDataArr[0], deviceId };
+              sensorLatestData = { ...latestDataArr[0], deviceId, sensorId: actualSensorId };
             } else if (!Array.isArray(latestDataArr) && latestDataArr) {
-              sensorLatestData = { ...latestDataArr, deviceId };
+              sensorLatestData = { ...latestDataArr, deviceId, sensorId: actualSensorId };
             }
           } catch (e) {
             console.error('Failed to fetch latest sensor data', e);
           }
         }
 
-        // Fallback: if no primary device found, fetch all sensors directly
-        if (!sensorLatestData) {
+        // Fallback: if no primary device found, use actualSensorId to get latest reading
+        if (!sensorLatestData && actualSensorId) {
           try {
-            const allSensorsRes = await sensorsAPI.getSensors();
-            const allSensors = allSensorsRes.data?.data || allSensorsRes.data || [];
-            
-            if (allSensors.length > 0) {
-              const firstSensor = allSensors[0];
-              const sensorId = firstSensor.id || firstSensor._id;
-              const latestRes = await sensorsAPI.getLatestReading(sensorId);
-              const latestDataArr = latestRes.data?.data || latestRes.data;
-              if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
-                sensorLatestData = { ...latestDataArr[0], deviceId: sensorId };
-              } else if (!Array.isArray(latestDataArr) && latestDataArr) {
-                sensorLatestData = { ...latestDataArr, deviceId: sensorId };
-              }
+            const latestRes = await sensorsAPI.getLatestReading(actualSensorId);
+            const latestDataArr = latestRes.data?.data || latestRes.data;
+            if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
+              sensorLatestData = { ...latestDataArr[0], deviceId: actualSensorId, sensorId: actualSensorId };
+            } else if (!Array.isArray(latestDataArr) && latestDataArr) {
+              sensorLatestData = { ...latestDataArr, deviceId: actualSensorId, sensorId: actualSensorId };
             }
           } catch (fallbackErr) {
             console.error('Failed to fetch fallback sensor data', fallbackErr);
@@ -191,6 +196,8 @@ export function useDashboardState() {
             activeSensorsCount: sensorLatestData?.values ? Object.keys(sensorLatestData.values).filter(k => sensorLatestData.values[k] !== undefined && sensorLatestData.values[k] !== null).length : (stats?.overview?.activeSensors || (Array.isArray(devices) ? devices.filter((d: any) => d.status === 'active').length : 0) || overview?.sensors || 0),
             totalSensorsCount: stats?.overview?.totalSensors || (Array.isArray(devices) ? devices.length : 0) || overview?.sensors || 0,
             latestData: sensorLatestData,
+            deviceId: primaryDevice?.id || primaryDevice?._id || sensorLatestData?.deviceId || sensorLatestData?.sensorId || sensorLatestData?.id || sensorLatestData?._id,
+            sensorId: actualSensorId || sensorLatestData?.sensorId || sensorLatestData?.id || sensorLatestData?._id,
           },
           alerts: { 
           cards: alertsData,
