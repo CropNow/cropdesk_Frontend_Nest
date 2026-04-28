@@ -3,17 +3,30 @@
  */
 
 import { useState } from 'react';
-import { settingsAPI } from '../../api/settings.api';
-import { ProfileSettings } from '../../types/settings.types';
+import { userAPI } from '../../api/user.api';
 
 export const useProfileSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const updateProfile = async (data: Partial<ProfileSettings>) => {
+  const fetchProfile = async () => {
     try {
       setIsLoading(true);
-      await settingsAPI.updateProfile(data);
+      const response = await userAPI.getMe();
+      setError(null);
+      return response.data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch profile');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateProfile = async (data: any) => {
+    try {
+      setIsLoading(true);
+      await userAPI.updateProfile(data);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');
@@ -23,5 +36,5 @@ export const useProfileSettings = () => {
     }
   };
 
-  return { updateProfile, isLoading, error };
+  return { fetchProfile, updateProfile, isLoading, error };
 };

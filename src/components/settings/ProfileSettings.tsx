@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ProfileSettingsState } from './SettingsLayout';
+import { useProfileSettings } from '../../hooks/settings/useProfileSettings';
 
 interface ProfileSettingsProps {
   values: ProfileSettingsState;
@@ -11,10 +12,31 @@ interface ProfileSettingsProps {
 
 export function ProfileSettings({ values, onChange, onSave, isSaving }: ProfileSettingsProps) {
   const [error, setError] = useState('');
+  const { fetchProfile, updateProfile, isLoading: isUpdating } = useProfileSettings();
 
-  const handleSave = () => {
-    if (!values.name.trim() || !values.email.trim()) {
-      setError('Name and email are required.');
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await fetchProfile();
+        if (profile) {
+          onChange({
+            firstName: profile.firstName || values.firstName,
+            lastName: profile.lastName || values.lastName,
+            email: profile.email || values.email,
+            phone: profile.phone || values.phone,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load profile:', err);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  const handleSave = async () => {
+    if (!values.firstName.trim() || !values.lastName.trim() || !values.email.trim()) {
+      setError('First name, last name, and email are required.');
       return;
     }
 
@@ -23,22 +45,43 @@ export function ProfileSettings({ values, onChange, onSave, isSaving }: ProfileS
       return;
     }
 
-    setError('');
-    onSave();
+    try {
+      setError('');
+      await updateProfile({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        phone: values.phone,
+      });
+      onSave(); // Still call parent onSave to show toast/manage layout state
+    } catch (err) {
+      setError('Failed to update profile. Please try again.');
+    }
   };
 
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-2">
-          <span className="text-sm text-textLabel">Name</span>
+          <span className="text-sm text-textLabel">First Name</span>
           <input
-            value={values.name}
-            onChange={(event) => onChange({ name: event.target.value })}
+            value={values.firstName}
+            onChange={(event) => onChange({ firstName: event.target.value })}
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
           />
         </label>
 
+        <label className="space-y-2">
+          <span className="text-sm text-textLabel">Last Name</span>
+          <input
+            value={values.lastName}
+            onChange={(event) => onChange({ lastName: event.target.value })}
+            className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
+          />
+        </label>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-2">
           <span className="text-sm text-textLabel">Email</span>
           <input
@@ -48,9 +91,7 @@ export function ProfileSettings({ values, onChange, onSave, isSaving }: ProfileS
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
           />
         </label>
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-2">
           <span className="text-sm text-textLabel">Phone</span>
           <input
@@ -59,7 +100,9 @@ export function ProfileSettings({ values, onChange, onSave, isSaving }: ProfileS
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
           />
         </label>
+      </div>
 
+      <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-2">
           <span className="text-sm text-textLabel">Profile Picture Upload</span>
           <input
@@ -84,10 +127,10 @@ export function ProfileSettings({ values, onChange, onSave, isSaving }: ProfileS
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={handleSave}
-        disabled={isSaving}
+        disabled={isSaving || isUpdating}
         className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSaving ? 'Saving...' : 'Save Changes'}
+        {isSaving || isUpdating ? 'Saving...' : 'Save Changes'}
       </motion.button>
     </div>
   );

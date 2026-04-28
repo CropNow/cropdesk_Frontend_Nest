@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Activity } from 'lucide-react';
 import { FIS_CARDS } from '../../constants/deviceConstants';
 
 /**
@@ -27,18 +28,20 @@ export function FISAlertSection({ data }: { data?: any }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {cards.map((card: any) => (
-          <div key={card.title} className="rounded-xl border border-cardBorder bg-cardBg/30 p-6 transition-all hover:bg-cardBg/50">
-            <div className="mb-5 flex items-center gap-4">
-              <span className="grid h-12 w-12 place-items-center rounded-xl bg-cardBg/50 border border-cardBorder">
-                <card.icon className="h-5 w-5 text-[#00FF9C]" />
-              </span>
-              <h4 className="text-xl font-bold text-white tracking-tight whitespace-nowrap">{card.title}</h4>
-            </div>
+        {cards.map((card: any) => {
+          const IconComponent = typeof card.icon === 'function' || typeof card.icon === 'object' ? card.icon : (FIS_CARDS.find((c: any) => c.title === card.title)?.icon || Activity);
+          return (
+            <div key={card.title} className="rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition-all hover:bg-white/[0.05]">
+              <div className="mb-5 flex items-center gap-4">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 backdrop-blur-md border border-white/5 shadow-inner">
+                  {IconComponent ? <IconComponent className="h-5 w-5 text-[#00FF9C]" /> : null}
+                </span>
+                <h4 className="text-xl font-bold text-white tracking-tight whitespace-nowrap">{card.title}</h4>
+              </div>
 
-            <p className="text-sm font-medium leading-relaxed text-white/60 min-h-[48px] line-clamp-2">
-              {card.body}
-            </p>
+              <p className="text-sm font-medium leading-relaxed text-white/60 min-h-[48px] line-clamp-2">
+                {card.body}
+              </p>
 
             <div className="mt-6 flex flex-col gap-3">
               <div className="flex items-center justify-between">
@@ -69,7 +72,8 @@ export function FISAlertSection({ data }: { data?: any }) {
               </div>
             </div>
           </div>
-        ))}
+        );
+      })}
       </div>
 
       <div className="mt-4 rounded-xl border border-cardBorder bg-cardBg/30 p-4">
