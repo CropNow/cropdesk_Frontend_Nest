@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { Bell, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 /**
  * WelcomeHeader - Top welcome section with time and weather
@@ -15,6 +17,8 @@ interface WelcomeHeaderProps {
 }
 
 export function WelcomeHeader({ currentTime, userName = 'User', weather }: WelcomeHeaderProps) {
+  const { theme, toggleTheme } = useTheme();
+
   const displayWeather = useMemo(() => {
     if (weather) return weather;
     return {
@@ -69,13 +73,32 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
           </p>
         </div>
 
-        <div className="flex flex-col items-start gap-2 sm:gap-3 lg:items-end">
-          <div className="mt-1 hidden sm:flex items-baseline gap-2 sm:gap-3">
-            <p className="text-2xl font-extrabold tracking-tighter text-textHeading sm:text-3xl lg:text-4xl">
+        <div className="flex flex-col items-end justify-center">
+          {/* Web View Controls - Hidden on mobile/tablet */}
+          <div className="hidden lg:flex items-center gap-2 mb-1.5">
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-cardBorder bg-cardBg/50 text-textSecondary transition-all hover:border-accentPrimary/40 hover:text-accentPrimary hover:bg-cardBg shadow-sm"
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-cardBorder bg-cardBg/50 text-textSecondary transition-all hover:border-accentPrimary/40 hover:text-accentPrimary hover:bg-cardBg shadow-sm"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+          </div>
+
+          <div className="hidden sm:flex items-baseline gap-2 sm:gap-3">
+            <p className="text-2xl font-extrabold tracking-tighter text-textHeading sm:text-3xl lg:text-[34px] leading-none">
               {displayWeather.temp.split(' ')[0]}
-              <span className="text-lg text-textMuted sm:text-xl lg:text-3xl">°C</span>
+              <span className="text-lg text-textMuted sm:text-xl lg:text-2xl">°C</span>
             </p>
-            <p className="text-xs font-medium text-textSecondary sm:text-lg">{displayWeather.condition}</p>
+            <p className="text-xs font-medium text-textSecondary sm:text-base lg:text-lg">{displayWeather.condition}</p>
           </div>
         </div>
       </div>

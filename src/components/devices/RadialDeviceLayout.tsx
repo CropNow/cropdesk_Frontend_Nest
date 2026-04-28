@@ -91,7 +91,7 @@ export function RadialDeviceLayout({
       label: 'Crops',
       value: (
         <div className="mt-1 flex max-w-[220px] flex-nowrap gap-1.5 overflow-x-auto pr-1 md:max-w-[200px] md:flex-wrap md:overflow-visible">
-          {(device.crops || []).map((crop: any, idx: number) => {
+          {(device.crops || []).slice(0, 1).map((crop: any, idx: number) => {
             const cropName = typeof crop === 'string' ? crop : (crop.name || crop.scientificName || 'Crop');
             return (
               <span

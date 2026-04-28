@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { FIS_CARDS } from '../../constants/deviceConstants';
 

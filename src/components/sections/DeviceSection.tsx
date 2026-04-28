@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { DeviceData, DeviceType } from '../../constants/deviceConstants';
 import { RadialDeviceLayout } from '../devices/RadialDeviceLayout';
