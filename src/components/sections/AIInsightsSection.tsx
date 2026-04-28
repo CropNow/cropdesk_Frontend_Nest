@@ -5,7 +5,14 @@ import { normalizeAIInsights } from '../../utils/aiInsights';
  * AIInsightsSection - AI-generated insights about farm conditions
  */
 export function AIInsightsSection({ data }: { data?: any }) {
-  const insights = normalizeAIInsights(data);
+  let insights = AI_INSIGHTS;
+  
+  if (Array.isArray(data) && data.length > 0) {
+    insights = data;
+  } else if (data && typeof data === 'object') {
+    if (Array.isArray(data.data) && data.data.length > 0) insights = data.data;
+    else if (Array.isArray(data.insights) && data.insights.length > 0) insights = data.insights;
+  }
 
   return (
     <motion.div

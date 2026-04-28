@@ -101,7 +101,8 @@ export function useDashboardState() {
         addDevices(sensorsRes); // Add backend sensors as devices
         
         const alertsData = alertsRes.data?.data || alertsRes.data || [];
-        const aiData = normalizeAIInsights(aiRes.data);
+        const aiDataRaw = aiRes.data?.data || aiRes.data?.insights || aiRes.data;
+        const aiData = Array.isArray(aiDataRaw) ? aiDataRaw : (typeof aiDataRaw === 'object' && aiDataRaw !== null ? [] : []);
 
         console.log('DEBUG overviewRes:', overviewRes.data);
         console.log('DEBUG statsRes:', statsRes.data);
@@ -189,7 +190,7 @@ export function useDashboardState() {
         setDashboardData({
           farm: farms.find(f => (f.id || f._id) === selectedFarmId) || primaryDevice?.farm || (overview?.farmName ? { name: overview.farmName } : null),
           health: {
-            overallHealth: overview?.performance?.healthScore || stats?.overallStatus || 85,
+            overallHealth: aiRes.data?.raw?.farm_status?.farm_health_percentage || overview?.performance?.healthScore || stats?.overallStatus || 85,
             metrics: mappedMetrics,
           },
           sensors: {
@@ -200,11 +201,37 @@ export function useDashboardState() {
             sensorId: actualSensorId || sensorLatestData?.sensorId || sensorLatestData?.id || sensorLatestData?._id,
           },
           alerts: { 
-          cards: alertsData,
-            activeCount: overview?.activeAlerts || alertsData.length || 0
+            cards: aiRes.data?.cards || alertsData,
+            activeCount: aiRes.data?.cards?.length || overview?.activeAlerts || alertsData.length || 0,
+            suggestion: aiRes.data?.raw?.prescription ? {
+              title: `Prescription (${aiRes.data.raw.prescription.priority || 'Normal'})`,
+              body: aiRes.data.raw.prescription.actions?.join(' ') || 'No critical prescription actions.',
+              confidence: aiRes.data.raw.aqi?.confidence ? `${Math.round(aiRes.data.raw.aqi.confidence * 100)}%` : '95%',
+            } : undefined
           },
           waterSavings: null,
-          aiInsights: aiData,
+          aiInsights: aiRes.data?.raw ? [
+            ...(aiRes.data.raw.irrigation ? [{
+              title: 'Irrigation',
+              description: aiRes.data.raw.irrigation.advisory,
+              level: aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'good' : 'warn'
+            }] : []),
+            ...(aiRes.data.raw.fungal_disease ? [{
+              title: 'Fungal',
+              description: aiRes.data.raw.fungal_disease.recommendation,
+              level: aiRes.data.raw.fungal_disease.activity_level?.toLowerCase() === 'low' ? 'good' : 'warn'
+            }] : []),
+            ...(aiRes.data.raw.pest ? [{
+              title: 'Pest',
+              description: aiRes.data.raw.pest.recommendation,
+              level: aiRes.data.raw.pest.pest_risk_level?.toLowerCase() === 'low' ? 'good' : 'warn'
+            }] : []),
+            ...(aiRes.data.raw.aqi ? [{
+              title: 'AQI',
+              description: aiRes.data.raw.aqi.plant_impact,
+              level: (aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'low stress' || aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'optimal') ? 'good' : 'warn'
+            }] : [])
+          ] : aiData,
           currentDevice: primaryDevice ? {
             name: primaryDevice.name,
             serialNumber: primaryDevice.serialNumber,

@@ -76,10 +76,10 @@ export function FISAlertSection({ data }: { data?: any }) {
       })}
       </div>
 
-      <div className="mt-4 rounded-xl border border-cardBorder bg-cardBg/30 p-4">
-        <p className="text-lg font-semibold">Suggestion</p>
+      <div className="mt-4 rounded-2xl border border-[#00FF9C]/25 bg-[#00FF9C]/10 p-4">
+        <p className="text-lg font-semibold">{suggestion.title || 'Prescription'}</p>
         <p className="mt-1 text-textBody">
-          Deploy sub-surface irrigation now. Solar intensity is rising, hydrate early to maximize yield.
+          {suggestion.body}
         </p>
         <div className="mt-4 h-3 rounded-full bg-black/30">
           <motion.div
