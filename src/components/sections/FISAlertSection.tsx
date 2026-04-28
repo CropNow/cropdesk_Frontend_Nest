@@ -7,7 +7,7 @@ import { FIS_CARDS } from '../../constants/deviceConstants';
  * FISAlertSection - Field Intelligence System alerts (V2 design with linear progress bars)
  */
 export function FISAlertSection({ data }: { data?: any }) {
-  const cards = data?.cards || FIS_CARDS;
+  const cards = Array.isArray(data?.cards) ? data.cards : FIS_CARDS;
   const suggestion = data?.suggestion || {
     title: 'Suggestion',
     body: 'Deploy sub-surface irrigation now. Solar intensity is rising, hydrate early to maximize yield.',

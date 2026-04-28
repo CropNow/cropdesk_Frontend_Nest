@@ -17,7 +17,7 @@ interface SettingsSidebarProps {
 
 const TAB_ICONS: Record<SettingsTab, React.ComponentType<{ className?: string }>> = {
   profile: User,
-  farm: Tractor,
+
   devices: SettingsIcon,
   notifications: Bell,
   appearance: Palette,

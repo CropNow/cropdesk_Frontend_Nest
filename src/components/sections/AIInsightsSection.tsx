@@ -6,7 +6,8 @@ import { AI_INSIGHTS } from '../../constants/deviceConstants';
  * AIInsightsSection - AI-generated insights about farm conditions
  */
 export function AIInsightsSection({ data }: { data?: any }) {
-  const insights = data || AI_INSIGHTS;
+  // Ensure insights is always an array to prevent crash
+  const insights = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : AI_INSIGHTS || []);
 
   return (
     <motion.div

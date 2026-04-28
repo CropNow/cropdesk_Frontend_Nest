@@ -631,7 +631,7 @@ function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
 
 import { useEffect } from 'react';
 
-function RealDataChart({ data, chartType = 'bar' }: { data: any[]; chartType?: 'bar' | 'line' }) {
+function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24 Hours', metricKey = '' }: { data: any[]; chartType?: 'bar' | 'line'; unit?: string; selectedRange?: string; metricKey?: string }) {
   console.log('RealDataChart received data:', data);
 
   if (!data || data.length === 0) {
@@ -643,15 +643,22 @@ function RealDataChart({ data, chartType = 'bar' }: { data: any[]; chartType?: '
   }
 
   const points = data.map((d: any) => {
-    const possibleKeys = ['value', 'avg', 'average', 'reading', 'val'];
     let val: number | undefined;
     
-    for (const key of possibleKeys) {
-      if (d[key] !== undefined && d[key] !== null) {
-        const num = Number(d[key]);
-        if (!isNaN(num)) {
-          val = num;
-          break;
+    if (metricKey && d[metricKey] !== undefined && d[metricKey] !== null) {
+      const num = Number(d[metricKey]);
+      if (!isNaN(num)) val = num;
+    }
+
+    if (val === undefined) {
+      const possibleKeys = ['value', 'avg', 'average', 'reading', 'val'];
+      for (const key of possibleKeys) {
+        if (d[key] !== undefined && d[key] !== null) {
+          const num = Number(d[key]);
+          if (!isNaN(num)) {
+            val = num;
+            break;
+          }
         }
       }
     }
@@ -677,26 +684,37 @@ function RealDataChart({ data, chartType = 'bar' }: { data: any[]; chartType?: '
   const minVal = Math.min(...points, 0);
   const range = maxVal - minVal;
 
-  const width = 800;
-  const height = 200;
-  const padding = 20;
+  const displayMin = range === 0 ? minVal - 1 : minVal;
+  const displayMax = range === 0 ? maxVal + 1 : maxVal;
+  const displayRange = displayMax - displayMin;
 
-  const svgPoints = points.map((val, i) => {
-    const x = padding + (i / (points.length - 1 || 1)) * (width - 2 * padding);
-    const y = height - padding - ((val - minVal) / (range || 1)) * (height - 2 * padding);
-    return `${x},${y}`;
-  }).join(' ');
+  const width = 800;
+  const height = 200; // Reduced to fit standard containers better
+  const paddingLeft = 70;
+  const paddingRight = 30;
+  const paddingTop = 15;
+  const paddingBottom = 35; // Adjusted to ensure labels fit within 200 units
+
+  const getX = (index: number) => {
+    return paddingLeft + (index / (points.length - 1 || 1)) * (width - paddingLeft - paddingRight);
+  };
+
+  const getY = (val: number) => {
+    return height - paddingBottom - ((val - displayMin) / (displayRange || 1)) * (height - paddingTop - paddingBottom);
+  };
+
+  const svgPoints = points.map((val, i) => `${getX(i)},${getY(val)}`).join(' ');
 
   const barCount = points.length;
-  const step = (width - 2 * padding) / (barCount || 1);
-  const currentBarWidth = barCount > 1 ? Math.max(step * 0.6, 4) : 40;
+  const step = (width - paddingLeft - paddingRight) / (barCount || 1);
+  const currentBarWidth = barCount > 1 ? Math.max(step * 0.7, 4) : 40;
 
   const bars = points.map((val, i) => {
     const x = barCount > 1 
-      ? padding + i * step + (step - currentBarWidth) / 2
-      : width / 2 - currentBarWidth / 2;
-    const barHeight = ((val - minVal) / (range || 1)) * (height - 2 * padding);
-    const y = height - padding - Math.max(barHeight, 4);
+      ? paddingLeft + i * step + (step - currentBarWidth) / 2
+      : paddingLeft + (width - paddingLeft - paddingRight) / 2 - currentBarWidth / 2;
+    const barHeight = ((val - displayMin) / (displayRange || 1)) * (height - paddingTop - paddingBottom);
+    const y = height - paddingBottom - Math.max(barHeight, 4);
 
     return (
       <rect
@@ -707,26 +725,105 @@ function RealDataChart({ data, chartType = 'bar' }: { data: any[]; chartType?: '
         height={Math.max(barHeight, 4)}
         fill="#00FF9C"
         fillOpacity={0.8}
-        rx={Math.min(currentBarWidth / 4, 6)}
+        rx={Math.min(currentBarWidth / 4, 8)}
         className="drop-shadow-[0_0_10px_rgba(0,255,156,0.3)]"
       />
     );
   });
 
+  const getFormattedLabel = (d: any) => {
+    if (!d) return '';
+    const timeKey = ['timestamp', 'createdAt', 'time', 'date', 'updatedAt', 'created_at', 'updated_at', 'ts'].find(k => d[k]);
+    if (!timeKey) return '';
+    
+    try {
+      const date = new Date(d[timeKey]);
+      if (isNaN(date.getTime())) return '';
+      
+      if (selectedRange === '24 Hours') {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      } else if (selectedRange === '7 Days') {
+        return date.toLocaleDateString([], { weekday: 'short' });
+      } else if (selectedRange === '1 Month') {
+        return date.getDate().toString();
+      } else {
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const labelsWithIndices = data.map((d, i) => ({ 
+    label: getFormattedLabel(d), 
+    index: i 
+  })).filter(l => l.label !== '');
+
+  const uniqueLabels = labelsWithIndices.filter((item, pos, self) => 
+    self.findIndex(v => v.label === item.label) === pos
+  );
+
+  const finalLabelCount = Math.min(6, uniqueLabels.length);
+  const finalLabels = [];
+  if (uniqueLabels.length > 0) {
+    for (let i = 0; i < finalLabelCount; i++) {
+      finalLabels.push(uniqueLabels[Math.floor((i * (uniqueLabels.length - 1)) / (finalLabelCount - 1 || 1))]);
+    }
+  }
+
   return (
-    <svg className="h-full w-full" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-      {[0.25, 0.5, 0.75, 1].map((ratio, idx) => {
-        const y = height - padding - ratio * (height - 2 * padding);
+    <svg className="h-full w-full overflow-visible" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+      {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
+        const val = displayMin + ratio * displayRange;
+        const y = getY(val);
         return (
-          <line key={idx} x1="0" y1={y} x2={width} y2={y} stroke="white" strokeOpacity="0.04" strokeWidth={1} />
+          <g key={`y-${idx}`}>
+            <line 
+              x1={paddingLeft} 
+              y1={y} 
+              x2={width - paddingRight} 
+              y2={y} 
+              stroke="white" 
+              strokeOpacity={idx === 0 ? "0.2" : "0.05"} 
+              strokeWidth={idx === 0 ? 2 : 1} 
+            />
+            <text 
+              x={paddingLeft - 12} 
+              y={y + 4} 
+              fill="white" 
+              fillOpacity="0.7" 
+              fontSize="12" 
+              fontWeight="900"
+              textAnchor="end"
+              className="select-none tabular-nums"
+            >
+              {val.toFixed(val > 10 ? 0 : 1)}{unit}
+            </text>
+          </g>
         );
       })}
+
+      {finalLabels.map((l, i) => (
+        <text
+          key={`x-${i}`}
+          x={getX(l.index)}
+          y={height - 10}
+          fill="white"
+          fillOpacity="0.7" 
+          fontSize="12" 
+          fontWeight="900"
+          textAnchor="middle"
+          className="select-none"
+        >
+          {l.label}
+        </text>
+      ))}
       
       {chartType === 'line' ? (
         points.length > 1 ? (
-          <polyline fill="none" stroke="#00FF9C" strokeWidth="3" points={svgPoints} className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]" />
+          <polyline fill="none" stroke="#00FF9C" strokeWidth="4" points={svgPoints} className="drop-shadow-[0_0_15px_rgba(0,255,156,0.5)]" />
         ) : (
-          <circle cx={width/2} cy={height/2} r="4" fill="#00FF9C" className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]" />
+          <circle cx={getX(0)} cy={getY(points[0])} r="7" fill="#00FF9C" className="drop-shadow-[0_0_15px_rgba(0,255,156,0.5)]" />
         )
       ) : (
         <g>{bars}</g>
@@ -781,11 +878,25 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
           '7 Days': '7d',
           '1 Month': '30d'
         };
+        const intervalMap: Record<string, string> = {
+          '24 Hours': '1h',
+          '7 Days': '1d',
+          '1 Month': '1d'
+        };
         const rangeParam = rangeMap[selectedRange] || '7d';
+        const intervalParam = intervalMap[selectedRange] || '1d';
         
-        let res = await sensorsAPI.getAggregatedData(sensorId, { metric, range: rangeParam }).catch(() => null);
+        let res = await sensorsAPI.getAggregatedData(sensorId, { 
+          metric, 
+          range: rangeParam,
+          interval: intervalParam 
+        }).catch(() => null);
         if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getSensorData(sensorId, { metric, range: rangeParam }).catch(() => null);
+          res = await sensorsAPI.getSensorData(sensorId, { 
+            metric, 
+            range: rangeParam,
+            interval: intervalParam
+          }).catch(() => null);
         }
         
         let rawData = res?.data?.data || res?.data || [];
@@ -855,8 +966,8 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
         </div>
       </div>
 
-      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[260px]">
-        <RealDataChart data={chartData} chartType={sensor?.title?.toLowerCase()?.includes('wind') ? 'line' : 'bar'} />
+      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center p-0 md:mt-1 md:h-[260px]">
+        <RealDataChart data={chartData} unit={sensor.unit} selectedRange={selectedRange} metricKey={getMetricKey(sensor.title)} chartType={sensor?.title?.toLowerCase()?.includes('wind') ? 'line' : 'bar'} />
       </div>
     </div>
   );
@@ -908,11 +1019,25 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
           '7 Days': '7d',
           '1 Month': '30d'
         };
+        const intervalMap: Record<string, string> = {
+          '24 Hours': '1h',
+          '7 Days': '1d',
+          '1 Month': '1d'
+        };
         const rangeParam = rangeMap[selectedRange] || '7d';
+        const intervalParam = intervalMap[selectedRange] || '1d';
         
-        let res = await sensorsAPI.getAggregatedData(sensorId, { metric, range: rangeParam }).catch(() => null);
+        let res = await sensorsAPI.getAggregatedData(sensorId, { 
+          metric, 
+          range: rangeParam,
+          interval: intervalParam 
+        }).catch(() => null);
         if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getSensorData(sensorId, { metric, range: rangeParam }).catch(() => null);
+          res = await sensorsAPI.getSensorData(sensorId, { 
+            metric, 
+            range: rangeParam,
+            interval: intervalParam 
+          }).catch(() => null);
         }
         
         let rawData = res?.data?.data || res?.data || [];
@@ -988,8 +1113,8 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
         </div>
       </div>
 
-      <div className="relative flex h-[220px] w-full items-end justify-center overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-0 md:h-[300px]">
-        <RealDataChart data={chartData} chartType={sensor?.title?.toLowerCase()?.includes('wind') ? 'line' : 'bar'} />
+      <div className="relative flex h-[220px] w-full items-end justify-center rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-0 md:h-[300px]">
+        <RealDataChart data={chartData} unit={sensor.unit} selectedRange={selectedRange} metricKey={getMetricKey(sensor.title)} chartType={sensor?.title?.toLowerCase()?.includes('wind') ? 'line' : 'bar'} />
       </div>
     </div>
   );
@@ -1280,11 +1405,26 @@ function WindDirectionDetail({ sensorId, onClose }: { sensorId?: string; onClose
           '7 Days': '7d',
           '1 Month': '30d'
         };
+        const intervalMap: Record<string, string> = {
+          '24 Hours': '1h',
+          '7 Days': '1d',
+          '1 Month': '1d'
+        };
         const rangeParam = rangeMap[selectedRange] || '7d';
+        const intervalParam = intervalMap[selectedRange] || '1d';
+        const metric = 'wind_direction';
         
-        let res = await sensorsAPI.getAggregatedData(sensorId, { metric: 'wind_direction', range: rangeParam }).catch(() => null);
+        let res = await sensorsAPI.getAggregatedData(sensorId, { 
+          metric, 
+          range: rangeParam,
+          interval: intervalParam 
+        }).catch(() => null);
         if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getSensorData(sensorId, { metric: 'wind_direction', range: rangeParam }).catch(() => null);
+          res = await sensorsAPI.getSensorData(sensorId, { 
+            metric, 
+            range: rangeParam,
+            interval: intervalParam
+          }).catch(() => null);
         }
         
         let rawData = res?.data?.data || res?.data || [];
@@ -1389,11 +1529,25 @@ function WindSpeedDetail({ sensorId, onClose }: { sensorId?: string; onClose: ()
           '7 Days': '7d',
           '1 Month': '30d'
         };
+        const intervalMap: Record<string, string> = {
+          '24 Hours': '1h',
+          '7 Days': '1d',
+          '1 Month': '1d'
+        };
         const rangeParam = rangeMap[selectedRange] || '7d';
+        const intervalParam = intervalMap[selectedRange] || '1d';
         
-        let res = await sensorsAPI.getAggregatedData(sensorId, { metric: 'wind_speed', range: rangeParam }).catch(() => null);
+        let res = await sensorsAPI.getAggregatedData(sensorId, { 
+          metric: 'wind_speed', 
+          range: rangeParam,
+          interval: intervalParam 
+        }).catch(() => null);
         if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getSensorData(sensorId, { metric: 'wind_speed', range: rangeParam }).catch(() => null);
+          res = await sensorsAPI.getSensorData(sensorId, { 
+            metric: 'wind_speed', 
+            range: rangeParam,
+            interval: intervalParam
+          }).catch(() => null);
         }
         
         let rawData = res?.data?.data || res?.data || [];
@@ -1475,8 +1629,8 @@ function WindSpeedDetail({ sensorId, onClose }: { sensorId?: string; onClose: ()
         </div>
       </div>
 
-      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[260px]">
-        <RealDataChart data={chartData} />
+      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center p-0 md:mt-1 md:h-[260px]">
+        <RealDataChart data={chartData} unit="m/s" selectedRange={selectedRange} metricKey="wind_speed" chartType="line" />
       </div>
     </div>
   );
@@ -1604,11 +1758,25 @@ function RainFallDetail({ sensorId, onClose }: { sensorId?: string; onClose: () 
           '7 Days': '7d',
           '1 Month': '30d'
         };
+        const intervalMap: Record<string, string> = {
+          '24 Hours': '1h',
+          '7 Days': '1d',
+          '1 Month': '1d'
+        };
         const rangeParam = rangeMap[selectedRange] || '7d';
+        const intervalParam = intervalMap[selectedRange] || '1d';
         
-        let res = await sensorsAPI.getAggregatedData(sensorId, { metric: 'rainfall', range: rangeParam }).catch(() => null);
+        let res = await sensorsAPI.getAggregatedData(sensorId, { 
+          metric: 'rainfall', 
+          range: rangeParam,
+          interval: intervalParam 
+        }).catch(() => null);
         if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getSensorData(sensorId, { metric: 'rainfall', range: rangeParam }).catch(() => null);
+          res = await sensorsAPI.getSensorData(sensorId, { 
+            metric: 'rainfall', 
+            range: rangeParam,
+            interval: intervalParam
+          }).catch(() => null);
         }
         
         let rawData = res?.data?.data || res?.data || [];
@@ -1682,8 +1850,8 @@ function RainFallDetail({ sensorId, onClose }: { sensorId?: string; onClose: () 
         </div>
       </div>
 
-      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[260px]">
-        <RealDataChart data={chartData} chartType="bar" />
+      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center p-0 md:mt-1 md:h-[260px]">
+        <RealDataChart data={chartData} unit="mm" selectedRange={selectedRange} metricKey="rainfall" chartType="bar" />
       </div>
     </div>
   );

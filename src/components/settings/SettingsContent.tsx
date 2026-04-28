@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ProfileSettings } from './ProfileSettings';
-import { FarmSettings } from './FarmSettings';
+
 import { DeviceSettings } from './DeviceSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { AppearanceSettings } from './AppearanceSettings';
@@ -52,16 +52,7 @@ export function SettingsContent({
             />
           ) : null}
 
-          {activeTab === 'farm' ? (
-            <FarmSettings
-              values={settings.farm}
-              onChange={(patch) =>
-                setSettings((prev) => ({ ...prev, farm: { ...prev.farm, ...patch } }))
-              }
-              onSave={() => onSave('farm')}
-              isSaving={isSaving}
-            />
-          ) : null}
+
 
           {activeTab === 'devices' ? (
             <DeviceSettings
