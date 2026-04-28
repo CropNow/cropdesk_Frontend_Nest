@@ -1,4 +1,3 @@
-import React from 'react';
 import { useDashboardState } from '../../hooks/dashboard/useDashboardState';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
@@ -110,5 +109,3 @@ export function DashboardPage() {
     </DashboardLayout>
   );
 }
-
-export default DashboardPage;

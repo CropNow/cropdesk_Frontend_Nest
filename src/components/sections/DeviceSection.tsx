@@ -15,27 +15,6 @@ export function DeviceSection({
   currentDeviceIndex,
   cycleDevice,
 }: DeviceSectionProps) {
-  if (variant === 'v2') {
-    return (
-      <motion.section
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.05 }}
-        className="relative overflow-hidden rounded-xl border border-cardBorder bg-cardBg/50 p-6 backdrop-blur-sm"
-      >
-        <div className="relative mb-5 flex items-center justify-start">
-          <h2 className="text-lg font-bold sm:text-3xl max-w-[180px] sm:max-w-none">{device.name}</h2>
-        </div>
-        <RadialDeviceLayoutV2
-          device={device}
-          selectedDeviceType={selectedDeviceType}
-          currentDeviceIndex={currentDeviceIndex}
-          cycleDevice={cycleDevice}
-        />
-      </motion.section>
-    );
-  }
-
   return (
     <motion.section
       initial={{ y: 20, opacity: 0 }}

@@ -19,7 +19,6 @@ export function LoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log('🚀 [Login Page] Sign-in button clicked');
     setError('');
     setIsLoading(true);
 

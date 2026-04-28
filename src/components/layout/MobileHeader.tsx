@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Menu, Bell, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -51,11 +51,9 @@ export function MobileHeader({ onOpenSidebar, isSidebarOpen = false }: MobileHea
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, [lastScrollY, isModalOpen]);
 
-  // Mock notifications - can be expanded later
-  const notifications = useMemo(() => [], []);
-  const unreadCount = notifications.filter((item: any) => item.unread).length;
+  const unreadCount = 0;
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {

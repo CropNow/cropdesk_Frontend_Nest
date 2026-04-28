@@ -19,6 +19,15 @@ const RegisterPage = lazy(() =>
 const OTPVerifyPage = lazy(() =>
   import('./pages/auth/OTPVerifyPage').then(module => ({ default: module.OTPVerifyPage }))
 );
+const ForgotPasswordPage = lazy(() =>
+  import('./pages/auth/ForgotPasswordPage').then(module => ({ default: module.ForgotPasswordPage }))
+);
+const ResetPasswordPage = lazy(() =>
+  import('./pages/auth/ResetPasswordPage').then(module => ({ default: module.ResetPasswordPage }))
+);
+const NotFoundPage = lazy(() =>
+  import('./pages/errors/NotFoundPage').then(module => ({ default: module.NotFoundPage }))
+);
 
 function withRouteLoader(element: ReactNode) {
   return <Suspense fallback={<RouteLoader />}>{element}</Suspense>;
@@ -32,6 +41,8 @@ export function App() {
         <Route path="/login" element={withRouteLoader(<LoginPage />)} />
         <Route path="/register" element={withRouteLoader(<RegisterPage />)} />
         <Route path="/verify-otp" element={withRouteLoader(<OTPVerifyPage />)} />
+        <Route path="/forgot-password" element={withRouteLoader(<ForgotPasswordPage />)} />
+        <Route path="/reset-password" element={withRouteLoader(<ResetPasswordPage />)} />
 
         {/* Protected routes (sidebar + content) */}
         <Route element={<ProtectedRoute />}>
@@ -39,6 +50,9 @@ export function App() {
           <Route path="/dashboard" element={withRouteLoader(<DashboardPage />)} />
           <Route path="/settings" element={withRouteLoader(<SettingsPage />)} />
         </Route>
+
+        {/* Catch-all */}
+        <Route path="*" element={withRouteLoader(<NotFoundPage />)} />
       </Routes>
     </div>
   );

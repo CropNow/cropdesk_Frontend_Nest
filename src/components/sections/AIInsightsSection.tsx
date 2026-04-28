@@ -1,9 +1,6 @@
 import { motion } from 'framer-motion';
-import { normalizeAIInsights } from '../../utils/aiInsights';
+import { AI_INSIGHTS } from '../../constants/deviceConstants';
 
-/**
- * AIInsightsSection - AI-generated insights about farm conditions
- */
 export function AIInsightsSection({ data }: { data?: any }) {
   let insights = AI_INSIGHTS;
   

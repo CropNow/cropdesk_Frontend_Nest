@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
@@ -8,7 +8,6 @@ import {
   Droplets,
   Download,
   Leaf,
-  Mail,
   Radio,
   Thermometer,
   Wind,
@@ -18,6 +17,27 @@ import { useToast } from '../../contexts/ToastContext';
 import { SENSOR_CARDS } from '../../constants/deviceConstants';
 import { useLockBodyScroll } from '../../hooks/common/useLockBodyScroll';
 import { sensorsAPI } from '../../api/sensors.api';
+
+function RangeDropdown({ value, options, onChange, triggerClassName }: {
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+  triggerClassName?: string;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`w-full appearance-none border border-white/10 bg-white/[0.05] text-[#00FF9C] outline-none transition-colors hover:bg-white/[0.08] ${triggerClassName || ''}`}
+    >
+      {options.map((opt) => (
+        <option key={opt} value={opt} className="bg-bgCard text-textPrimary">
+          {opt}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 /**
  * SensorCategoriesSection - interactive sensor insights
@@ -173,21 +193,18 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
       <AnimatePresence>
         {showWeatherDetails && (
           <WeatherSensorsModal
-            isOpen={showWeatherDetails}
             onClose={() => setShowWeatherDetails(false)}
             data={{ ...(data?.latestData || {}), deviceId: data?.deviceId || data?.latestData?.deviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
           />
         )}
         {showSoilDetails && (
           <SoilSensorsModal
-            isOpen={showSoilDetails}
             onClose={() => setShowSoilDetails(false)}
             data={{ ...(data?.latestData || {}), deviceId: data?.deviceId || data?.latestData?.deviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
           />
         )}
         {showAirDetails && (
           <AirSensorsModal
-            isOpen={showAirDetails}
             onClose={() => setShowAirDetails(false)}
             data={{ ...(data?.latestData || {}), deviceId: data?.deviceId || data?.latestData?.deviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
           />
@@ -197,15 +214,10 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
   );
 }
 
-function WeatherSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: () => void; data?: any }) {
+function WeatherSensorsModal({ onClose, data }: { onClose: () => void; data?: any }) {
   const [activeMetric, setActiveMetric] = useState<string | null>(null);
 
   const toggleMetric = (metric: string) => {
-    console.log(`[WeatherSensorsModal] Clicked ${metric}`);
-    console.log('data?.deviceId:', data?.deviceId);
-    console.log('data?.sensorId:', data?.sensorId);
-    console.log('data?.id:', data?.id);
-    console.log('Full sensor data object:', data);
     setActiveMetric((prev) => (prev === metric ? null : metric));
   };
 
@@ -421,15 +433,10 @@ function WeatherSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClo
   );
 }
 
-function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: () => void; data?: any }) {
+function SoilSensorsModal({ onClose, data }: { onClose: () => void; data?: any }) {
   const [activeSensor, setActiveSensor] = useState<string | null>(null);
 
   const toggleSensor = (sensorTitle: string) => {
-    console.log(`[SoilSensorsModal] Clicked ${sensorTitle}`);
-    console.log('data?.deviceId:', data?.deviceId);
-    console.log('data?.sensorId:', data?.sensorId);
-    console.log('data?.id:', data?.id);
-    console.log('Full sensor data object:', data);
     setActiveSensor((prev) => (prev === sensorTitle ? null : sensorTitle));
   };
 
@@ -627,8 +634,6 @@ function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
 }
 
 function RealDataChart({ data, chartType = 'bar' }: { data: any[]; chartType?: 'bar' | 'line' }) {
-  console.log('RealDataChart received data:', data);
-
   if (!data || data.length === 0) {
     return (
       <div className="absolute inset-0 flex items-center justify-center">
@@ -991,7 +996,7 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
   );
 }
 
-function AirSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: () => void; data?: any }) {
+function AirSensorsModal({ onClose, data }: { onClose: () => void; data?: any }) {
   const [activeSensor, setActiveSensor] = useState<string | null>(null);
 
   const airSensors = [
@@ -1014,11 +1019,6 @@ function AirSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: 
   const activeSensorIndex = airSensors.findIndex((sensor) => sensor.id === activeSensor);
 
   const toggleSensor = (id: string) => {
-    console.log(`[AirSensorsModal] Clicked sensor id: ${id}`);
-    console.log('data?.deviceId:', data?.deviceId);
-    console.log('data?.sensorId:', data?.sensorId);
-    console.log('data?.id:', data?.id);
-    console.log('Full sensor data object:', data);
     setActiveSensor(activeSensor === id ? null : id);
   };
 
@@ -1454,22 +1454,6 @@ function WindSpeedDetail({ sensorId, onClose }: { sensorId?: string; onClose: ()
   );
 }
 
-function WindSpeedChart() {
-  return (
-    <svg className="h-full w-full" viewBox="0 0 800 300" preserveAspectRatio="none">
-      {[0, 20, 40, 60, 80].map((val) => {
-        const y = 250 - (val / 80) * 230;
-        return (
-          <g key={val}>
-            <text x="30" y={y + 5} fill="white" fillOpacity="0.6" fontSize="11" fontWeight="bold" className="tabular-nums select-none">{val}</text>
-            <line x1="60" y1={y} x2="780" y2={y} stroke="white" strokeOpacity="0.04" strokeDasharray="4 4" />
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
 function WindDirectionRadar({ size = 320, liveData = [] }: { size?: number; liveData?: any[] }) {
   const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
   const center = size / 2;
@@ -1655,18 +1639,3 @@ function RainFallDetail({ sensorId, onClose }: { sensorId?: string; onClose: () 
   );
 }
 
-function RainFallChart() {
-  return (
-    <svg className="h-full w-full" viewBox="0 0 800 300" preserveAspectRatio="none">
-      {[0, 20, 40, 60, 80].map((val) => {
-        const y = 250 - (val / 80) * 230;
-        return (
-          <g key={val}>
-            <text x="30" y={y + 5} fill="white" fillOpacity="0.6" fontSize="11" fontWeight="bold" className="tabular-nums select-none">{val}</text>
-            <line x1="60" y1={y} x2="780" y2={y} stroke="white" strokeOpacity="0.04" strokeDasharray="4 4" />
-          </g>
-        );
-      })}
-    </svg>
-  );
-}

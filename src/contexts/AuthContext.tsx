@@ -47,12 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    console.log('🔐 [Auth] Attempting login for:', email);
     try {
       const response = await authAPI.login({ email, password });
-      console.log('✅ [Auth] Login API Success:', response.data);
-      
-      // Extract from backend structure: { accessToken, data: { user } }
       const { accessToken, data: responseData } = response.data;
       const user = responseData.user;
       
@@ -73,10 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (data: RegisterRequest): Promise<boolean> => {
-    console.log('📝 [Auth] Attempting registration for:', data.email);
     try {
-      const response = await authAPI.register(data);
-      console.log('✅ [Auth] Registration API Success:', response.data);
+      await authAPI.register(data);
       return true;
     } catch (error: any) {
       console.error('❌ [Auth] Registration Failed:', error.response?.data || error.message);

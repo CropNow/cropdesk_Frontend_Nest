@@ -359,8 +359,6 @@ export function DeviceSettings({
         manufacturer: wizardData.manufacturer.trim() || 'GGSPL',
       };
 
-      console.log('Final Sensor Payload:', JSON.stringify(payload, null, 2));
-
       await sensorsAPI.createSensor(payload);
 
       onAdd({
