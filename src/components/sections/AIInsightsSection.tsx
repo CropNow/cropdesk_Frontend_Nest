@@ -6,8 +6,14 @@ import { AI_INSIGHTS } from '../../constants/deviceConstants';
  * AIInsightsSection - AI-generated insights about farm conditions
  */
 export function AIInsightsSection({ data }: { data?: any }) {
-  // Ensure insights is always an array to prevent crash
-  const insights = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : AI_INSIGHTS || []);
+  let insights = AI_INSIGHTS;
+  
+  if (Array.isArray(data) && data.length > 0) {
+    insights = data;
+  } else if (data && typeof data === 'object') {
+    if (Array.isArray(data.data) && data.data.length > 0) insights = data.data;
+    else if (Array.isArray(data.insights) && data.insights.length > 0) insights = data.insights;
+  }
 
   return (
     <motion.div
