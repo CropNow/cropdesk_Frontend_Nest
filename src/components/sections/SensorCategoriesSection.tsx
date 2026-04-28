@@ -20,7 +20,7 @@ import { useLockBodyScroll } from '../../hooks/common/useLockBodyScroll';
 import { sensorsAPI } from '../../api/sensors.api';
 
 /**
- * SensorCategoriesSection - DashboardV2Page-equivalent interactive sensor insights
+ * SensorCategoriesSection - interactive sensor insights
  */
 
 export function SensorCategoriesSection({ data }: { data?: any }) {
@@ -626,8 +626,6 @@ function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
   );
 }
 
-import { useEffect } from 'react';
-
 function RealDataChart({ data, chartType = 'bar' }: { data: any[]; chartType?: 'bar' | 'line' }) {
   console.log('RealDataChart received data:', data);
 
@@ -940,6 +938,8 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
               </button>
             ))}
           </div>
+        </div>
+      </div>
 
       <p className="mb-4 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-white/40 md:hidden">{selectedRange} Trend</p>
 

@@ -7,9 +7,6 @@ import { RouteLoader } from './components/common/RouteLoader';
 const DashboardPage = lazy(() =>
   import('./pages/dashboard/DashboardPage').then(module => ({ default: module.DashboardPage }))
 );
-const DashboardV2Page = lazy(() =>
-  import('./pages/dashboard/DashboardV2Page').then(module => ({ default: module.DashboardV2Page }))
-);
 const SettingsPage = lazy(() =>
   import('./pages/SettingsPage').then(module => ({ default: module.SettingsPage }))
 );
@@ -40,7 +37,6 @@ export function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={withRouteLoader(<DashboardPage />)} />
-          <Route path="/dashboard2" element={withRouteLoader(<DashboardV2Page />)} />
           <Route path="/settings" element={withRouteLoader(<SettingsPage />)} />
         </Route>
       </Routes>
