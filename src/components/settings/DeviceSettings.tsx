@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Cpu, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { DeviceKind, DeviceSettingsState } from './SettingsLayout';
+import { useDevices } from '../../hooks/devices/useDevices';
+import { useEffect } from 'react';
+import { farmersAPI } from '../../api/farmers.api';
+import { farmsAPI } from '../../api/farms.api';
+import { fieldsAPI } from '../../api/fields.api';
+import { cropsAPI } from '../../api/crops.api';
+import { sensorsAPI } from '../../api/sensors.api';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -19,10 +26,11 @@ interface NewDevicePayload {
 interface DeviceSettingsProps {
   devices: DeviceSettingsState[];
   onAdd: (payload: NewDevicePayload) => void;
-  onRemove: (id: number) => void;
-  onRename: (id: number, name: string) => void;
-  onToggleStatus: (id: number) => void;
-  onUpdateDetails: (id: number, patch: Partial<DeviceSettingsState>) => void;
+  onRemove: (id: any) => void;
+  onRename: (id: any, name: string) => void;
+  onToggleStatus: (id: any) => void;
+  onUpdateDetails: (id: any, patch: Partial<DeviceSettingsState>) => void;
+  onDevicesLoad: (devices: DeviceSettingsState[]) => void;
   onSave: () => void;
   isSaving: boolean;
 }
@@ -34,13 +42,61 @@ export function DeviceSettings({
   onRename,
   onToggleStatus,
   onUpdateDetails,
+  onDevicesLoad,
   onSave,
   isSaving,
 }: DeviceSettingsProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [step, setStep] = useState<WizardStep>(1);
   const [error, setError] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { fetchDevices, isLoading } = useDevices();
+
+  const refreshDevices = async (fieldId?: string) => {
+    try {
+      const data = await fetchDevices(fieldId);
+      if (data && Array.isArray(data)) {
+        const mappedDevices: DeviceSettingsState[] = data.map((sensor: any) => {
+          // Map backend type to frontend DeviceKind
+          let mappedType: DeviceKind = 'Seed';
+          const typeUpper = (sensor.type || '').toUpperCase();
+          if (typeUpper === 'NEST') {
+            mappedType = 'NEST';
+          } else if (typeUpper === 'SEED' || typeUpper === 'SOIL') {
+            mappedType = 'Seed';
+          } else if (typeUpper === 'DRONE') {
+            mappedType = 'Drone';
+          }
+
+          // Map backend status to frontend status
+          const statusLower = (sensor.status || '').toLowerCase();
+          const mappedStatus: 'Connected' | 'Offline' =
+            statusLower === 'active' || statusLower === 'connected' ? 'Connected' : 'Offline';
+
+          return {
+            id: sensor._id,
+            type: mappedType,
+            name: sensor.name || 'Unnamed Device',
+            status: mappedStatus,
+            serialNumber: sensor.serialNumber || sensor._id?.toString() || 'N/A',
+            model: sensor.model || 'ms-200',
+            manufacturer: sensor.manufacturer || 'cropnow',
+            fieldId: sensor.fieldId || 'N/A',
+            firmware: sensor.firmware || 'v1.0',
+            connectedOn: sensor.createdAt ? new Date(sensor.createdAt).toLocaleDateString('en-US') : 'N/A',
+          };
+        });
+        onDevicesLoad(mappedDevices);
+      }
+    } catch (err) {
+      console.error('Failed to load devices:', err);
+    }
+  };
+
+  useEffect(() => {
+    refreshDevices();
+  }, []);
 
   const [wizardData, setWizardData] = useState({
     farmerName: '',
@@ -54,14 +110,13 @@ export function DeviceSettings({
     area: '',
     boundaryType: 'Polygon',
     soilType: 'Loamy',
-    irrigation: 'Drip',
+    irrigationType: 'Drip',
     cropName: '',
     plantingDate: '',
     expectedHarvest: '',
     cultivationArea: '',
     name: '',
     type: 'Seed' as DeviceKind,
-    fieldId: 'subhash',
     serialNumber: '',
     manufacturer: '',
     model: '',
@@ -76,6 +131,11 @@ export function DeviceSettings({
     installDate: new Date().toLocaleDateString('en-US'),
     installer: 'CropNow Team',
     notes: '',
+    farmerId: '',
+    farmId: '',
+    fieldId: '',
+    cropId: '',
+    location: '',
   });
 
   const resetWizard = () => {
@@ -93,14 +153,13 @@ export function DeviceSettings({
       area: '',
       boundaryType: 'Polygon',
       soilType: 'Loamy',
-      irrigation: 'Drip',
+      irrigationType: 'Drip',
       cropName: '',
       plantingDate: '',
       expectedHarvest: '',
       cultivationArea: '',
       name: '',
       type: 'Seed',
-      fieldId: 'subhash',
       serialNumber: '',
       manufacturer: '',
       model: '',
@@ -115,75 +174,163 @@ export function DeviceSettings({
       installDate: new Date().toLocaleDateString('en-US'),
       installer: 'CropNow Team',
       notes: '',
+      farmerId: '',
+      farmId: '',
+      fieldId: '',
+      cropId: '',
+      location: '',
     });
     setError('');
   };
 
-  const goNext = () => {
-    if (step === 1) {
-      if (
-        !wizardData.farmerName.trim() ||
-        !wizardData.phoneNumber.trim() ||
-        !wizardData.emailAddress.trim() ||
-        !wizardData.village.trim() ||
-        !wizardData.district.trim() ||
-        !wizardData.farmerState.trim()
-      ) {
-        setError('Farmer details are required.');
-        return;
-      }
-      setError('');
-    }
+  const goNext = async () => {
+    setIsSubmitting(true);
+    setError('');
 
-    if (step === 2) {
-      if (
-        !wizardData.farmName.trim() ||
-        !wizardData.addressLine.trim() ||
-        !wizardData.city.trim() ||
-        !wizardData.state.trim() ||
-        !wizardData.country.trim() ||
-        !wizardData.zipCode.trim() ||
-        !wizardData.soilType.trim() ||
-        !wizardData.irrigationType.trim() ||
-        !wizardData.farmingType.trim()
-      ) {
-        setError('Farm details are required.');
-        return;
-      }
-      setError('');
-    }
+    try {
+      if (step === 1) {
+        if (
+          !wizardData.farmerName.trim() ||
+          !wizardData.phoneNumber.trim() ||
+          !wizardData.emailAddress.trim() ||
+          !wizardData.village.trim() ||
+          !wizardData.district.trim() ||
+          !wizardData.farmerState.trim()
+        ) {
+          setError('Farmer details are required.');
+          setIsSubmitting(false);
+          return;
+        }
 
-    if (step === 3) {
-      if (!wizardData.fieldName.trim() || !wizardData.area.trim() || !wizardData.boundaryType.trim()) {
-        setError('Field details are required.');
-        return;
-      }
-      setError('');
-    }
+        const response = await farmersAPI.createFarmer({
+          name: wizardData.farmerName,
+          phone: wizardData.phoneNumber,
+          email: wizardData.emailAddress,
+          village: wizardData.village,
+          district: wizardData.district,
+          state: wizardData.farmerState,
+        });
 
-    if (step === 4) {
-      if (
-        !wizardData.cropName.trim() ||
-        !wizardData.plantingDate.trim() ||
-        !wizardData.expectedHarvest.trim() ||
-        !wizardData.cultivationArea.trim()
-      ) {
-        setError('Crop details are required.');
-        return;
+        const createdFarmer = response.data?.data || response.data;
+        if (createdFarmer?._id) {
+          setWizardData((prev) => ({ ...prev, farmerId: createdFarmer._id }));
+        }
       }
-      setError('');
-    }
 
-    if (step === 5) {
-      if (!wizardData.name.trim() || !wizardData.serialNumber.trim()) {
-        setError('Device identity and serial number are required.');
-        return;
+      if (step === 2) {
+        if (
+          !wizardData.farmName.trim() ||
+          !wizardData.addressLine.trim() ||
+          !wizardData.city.trim() ||
+          !wizardData.state.trim() ||
+          !wizardData.country.trim() ||
+          !wizardData.zipCode.trim() ||
+          !wizardData.soilType.trim() ||
+          !wizardData.irrigationType.trim() ||
+          !wizardData.farmingType.trim()
+        ) {
+          setError('Farm details are required.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const response = await farmsAPI.createFarm({
+          farmerId: wizardData.farmerId,
+          name: wizardData.farmName,
+          location: {
+            address: wizardData.addressLine,
+            city: wizardData.city,
+            state: wizardData.state,
+            country: wizardData.country,
+            zipCode: wizardData.zipCode,
+          },
+          area: parseFloat(wizardData.area) || 0,
+          unit: 'acres', // Defaulting to acres
+          soilType: wizardData.soilType.toLowerCase(),
+          irrigationType: wizardData.irrigationType.toLowerCase(),
+          farmingType: wizardData.farmingType,
+        });
+
+        if (response.data?.data?._id) {
+          setWizardData((prev) => ({ ...prev, farmId: response.data.data._id }));
+        }
       }
-      setError('');
-    }
 
-    if (step < 5) {
-      setStep((prev) => (prev + 1) as WizardStep);
+      if (step === 3) {
+        if (!wizardData.fieldName.trim() || !wizardData.area.trim()) {
+          setError('Field details are required.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const response = await fieldsAPI.createField({
+          farmId: wizardData.farmId,
+          name: wizardData.fieldName,
+          area: parseFloat(wizardData.area) || 0,
+          soil: { type: wizardData.soilType.toLowerCase() },
+          irrigation: { type: wizardData.irrigationType.toLowerCase() },
+          boundary: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [77.5946, 12.9716],
+                [77.5956, 12.9716],
+                [77.5956, 12.9726],
+                [77.5946, 12.9726],
+                [77.5946, 12.9716],
+              ],
+            ],
+          },
+        });
+
+        const createdFieldId = response.data?.data?._id || response.data?._id;
+        if (createdFieldId) {
+          setWizardData((prev) => ({ ...prev, fieldId: createdFieldId }));
+        }
+      }
+
+      if (step === 4) {
+        if (
+          !wizardData.cropName.trim() ||
+          !wizardData.plantingDate.trim() ||
+          !wizardData.expectedHarvest.trim() ||
+          !wizardData.cultivationArea.trim()
+        ) {
+          setError('Crop details are required.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const response = await cropsAPI.createCrop({
+          fieldId: wizardData.fieldId,
+          name: wizardData.cropName,
+          plantingDate: new Date(wizardData.plantingDate).toISOString(),
+          expectedHarvestDate: new Date(wizardData.expectedHarvest).toISOString(),
+          area: parseFloat(wizardData.cultivationArea) || 0,
+        });
+
+        const createdCropId = response.data?.data?._id || response.data?._id;
+        if (createdCropId) {
+          setWizardData((prev) => ({ ...prev, cropId: createdCropId }));
+        }
+      }
+
+      if (step === 5) {
+        if (!wizardData.name.trim() || !wizardData.serialNumber.trim()) {
+          setError('Device identity and serial number are required.');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      if (step < 5) {
+        setStep((prev) => (prev + 1) as WizardStep);
+      }
+    } catch (err) {
+      setError('Failed to save data. Please try again.');
+      console.error('Wizard error:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -193,24 +340,48 @@ export function DeviceSettings({
     }
   };
 
-  const submitWizard = () => {
+  const submitWizard = async () => {
     if (!wizardData.name.trim() || !wizardData.serialNumber.trim()) {
       setError('Device identity and serial number are required.');
       return;
     }
 
+    setIsSubmitting(true);
     setError('');
-    onAdd({
-      type: wizardData.type,
-      name: wizardData.name.trim(),
-      status: wizardData.status,
-      serialNumber: wizardData.serialNumber.trim(),
-      manufacturer: wizardData.manufacturer.trim() || 'cropnow',
-      model: wizardData.model.trim() || 'ms-200',
-      fieldId: wizardData.fieldId,
-      firmware: wizardData.firmware.trim() || 'v1.0',
-    });
-    resetWizard();
+
+    try {
+      const payload = {
+        name: wizardData.name.trim(),
+        type: wizardData.type === 'Seed' ? 'SEED' : 'NEST',
+        fieldId: wizardData.fieldId,
+        unit: 'composite',
+        serialNumber: wizardData.serialNumber.trim(),
+        manufacturer: wizardData.manufacturer.trim() || 'GGSPL',
+      };
+
+      console.log('Final Sensor Payload:', JSON.stringify(payload, null, 2));
+
+      await sensorsAPI.createSensor(payload);
+
+      onAdd({
+        type: wizardData.type,
+        name: wizardData.name.trim(),
+        status: wizardData.status,
+        serialNumber: wizardData.serialNumber.trim(),
+        manufacturer: wizardData.manufacturer.trim() || 'cropnow',
+        model: wizardData.model.trim() || 'ms-200',
+        fieldId: wizardData.fieldId,
+        firmware: wizardData.firmware.trim() || 'v1.0',
+      });
+      resetWizard();
+      // Re-fetch devices for the current field and update parent state
+      refreshDevices(wizardData.fieldId);
+    } catch (err) {
+      setError('Failed to create device. Please try again.');
+      console.error('Submit wizard error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSave = () => {
@@ -228,175 +399,175 @@ export function DeviceSettings({
   return (
     <div className="space-y-4">
       <div className={showWizard ? 'pointer-events-none select-none blur-sm' : ''}>
-      <div className="rounded-2xl border border-cardBorder bg-bgInput p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-textBody">Add New Device</p>
-          <button
-            type="button"
-            onClick={() => setShowWizard(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary"
-          >
-            <Plus className="h-4 w-4" />
-            Add Device
-          </button>
+        <div className="rounded-2xl border border-cardBorder bg-bgInput p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-textBody">Add New Device</p>
+            <button
+              type="button"
+              onClick={() => setShowWizard(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary"
+            >
+              <Plus className="h-4 w-4" />
+              Add Device
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="space-y-3">
-        {devices.map((device) => (
-          <motion.div
-            key={device.id}
-            layout
-            className="rounded-2xl border border-cardBorder bg-bgInput p-4"
-          >
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-accentPrimary/15 text-accentPrimary">
-                  <Cpu className="h-5 w-5" />
-                </span>
-                <div>
-                  {editingId === device.id ? (
-                    <input
-                      value={device.name}
-                      onChange={(event) => onRename(device.id, event.target.value)}
-                      className="w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-xl font-bold text-textHeading outline-none transition focus:border-accentPrimary/60"
-                    />
-                  ) : (
-                    <p className="text-xl font-bold text-textHeading">{device.name}</p>
-                  )}
-                  <p className="text-sm uppercase text-textSecondary">{device.type}</p>
+        <div className="space-y-3">
+          {devices.map((device) => (
+            <motion.div
+              key={device.id}
+              layout
+              className="rounded-2xl border border-cardBorder bg-bgInput p-4"
+            >
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-11 w-11 place-items-center rounded-full bg-accentPrimary/15 text-accentPrimary">
+                    <Cpu className="h-5 w-5" />
+                  </span>
+                  <div>
+                    {editingId === device.id ? (
+                      <input
+                        value={device.name}
+                        onChange={(event) => onRename(device.id, event.target.value)}
+                        className="w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-xl font-bold text-textHeading outline-none transition focus:border-accentPrimary/60"
+                      />
+                    ) : (
+                      <p className="text-xl font-bold text-textHeading">{device.name}</p>
+                    )}
+                    <p className="text-sm uppercase text-textSecondary">{device.type}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => onToggleStatus(device.id)}
+                    className={[
+                      'rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition',
+                      device.status === 'Connected'
+                        ? 'bg-rose-200 text-rose-600'
+                        : 'bg-amber-200 text-amber-700',
+                    ].join(' ')}
+                  >
+                    {device.status === 'Connected' ? 'Active' : 'Offline'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingId(editingId === device.id ? null : device.id)}
+                    className="text-textLabel transition hover:text-textHeading"
+                    aria-label="Edit device"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onRemove(device.id)}
+                    className="text-textLabel transition hover:text-rose-300"
+                    aria-label="Remove device"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => onToggleStatus(device.id)}
-                  className={[
-                    'rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition',
-                    device.status === 'Connected'
-                      ? 'bg-rose-200 text-rose-600'
-                      : 'bg-amber-200 text-amber-700',
-                  ].join(' ')}
-                >
-                  {device.status === 'Connected' ? 'Active' : 'Offline'}
-                </button>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-textMuted">Serial Number</p>
+                  {editingId === device.id ? (
+                    <input
+                      value={device.serialNumber}
+                      onChange={(event) => onUpdateDetails(device.id, { serialNumber: event.target.value })}
+                      className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-textHeading">{device.serialNumber}</p>
+                  )}
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => setEditingId(editingId === device.id ? null : device.id)}
-                  className="text-textLabel transition hover:text-textHeading"
-                  aria-label="Edit device"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
+                <div>
+                  <p className="text-xs font-semibold uppercase text-textMuted">Model</p>
+                  {editingId === device.id ? (
+                    <input
+                      value={device.model}
+                      onChange={(event) => onUpdateDetails(device.id, { model: event.target.value })}
+                      className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-textHeading">{device.model}</p>
+                  )}
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => onRemove(device.id)}
-                  className="text-textLabel transition hover:text-rose-300"
-                  aria-label="Remove device"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div>
+                  <p className="text-xs font-semibold uppercase text-textMuted">Manufacturer</p>
+                  {editingId === device.id ? (
+                    <input
+                      value={device.manufacturer}
+                      onChange={(event) => onUpdateDetails(device.id, { manufacturer: event.target.value })}
+                      className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-textHeading">{device.manufacturer}</p>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase text-textMuted">Field ID</p>
+                  {editingId === device.id ? (
+                    <input
+                      value={device.fieldId}
+                      onChange={(event) => onUpdateDetails(device.id, { fieldId: event.target.value })}
+                      className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-textHeading">{device.fieldId}</p>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase text-textMuted">Firmware</p>
+                  {editingId === device.id ? (
+                    <input
+                      value={device.firmware}
+                      onChange={(event) => onUpdateDetails(device.id, { firmware: event.target.value })}
+                      className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-textHeading">{device.firmware}</p>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase text-textMuted">Connected</p>
+                  {editingId === device.id ? (
+                    <input
+                      value={device.connectedOn}
+                      onChange={(event) => onUpdateDetails(device.id, { connectedOn: event.target.value })}
+                      className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-textHeading">{device.connectedOn}</p>
+                  )}
+                </div>
               </div>
-            </div>
+            </motion.div>
+          ))}
+        </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <p className="text-xs font-semibold uppercase text-textMuted">Serial Number</p>
-                {editingId === device.id ? (
-                  <input
-                    value={device.serialNumber}
-                    onChange={(event) => onUpdateDetails(device.id, { serialNumber: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm text-textHeading">{device.serialNumber}</p>
-                )}
-              </div>
+        {error ? <p className="text-sm text-rose-300">{error}</p> : null}
 
-              <div>
-                <p className="text-xs font-semibold uppercase text-textMuted">Model</p>
-                {editingId === device.id ? (
-                  <input
-                    value={device.model}
-                    onChange={(event) => onUpdateDetails(device.id, { model: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm text-textHeading">{device.model}</p>
-                )}
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase text-textMuted">Manufacturer</p>
-                {editingId === device.id ? (
-                  <input
-                    value={device.manufacturer}
-                    onChange={(event) => onUpdateDetails(device.id, { manufacturer: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm text-textHeading">{device.manufacturer}</p>
-                )}
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase text-textMuted">Field ID</p>
-                {editingId === device.id ? (
-                  <input
-                    value={device.fieldId}
-                    onChange={(event) => onUpdateDetails(device.id, { fieldId: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm text-textHeading">{device.fieldId}</p>
-                )}
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase text-textMuted">Firmware</p>
-                {editingId === device.id ? (
-                  <input
-                    value={device.firmware}
-                    onChange={(event) => onUpdateDetails(device.id, { firmware: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm text-textHeading">{device.firmware}</p>
-                )}
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase text-textMuted">Connected</p>
-                {editingId === device.id ? (
-                  <input
-                    value={device.connectedOn}
-                    onChange={(event) => onUpdateDetails(device.id, { connectedOn: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-cardBorder bg-bgInput px-2 py-1 text-sm text-textHeading outline-none"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm text-textHeading">{device.connectedOn}</p>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-
-      <motion.button
-        type="button"
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={handleSave}
-        disabled={isSaving}
-        className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSaving ? 'Saving...' : 'Save Changes'}
-      </motion.button>
+        <motion.button
+          type="button"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleSave}
+          disabled={isSaving}
+          className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isSaving ? 'Saving...' : 'Save Changes'}
+        </motion.button>
       </div>
 
       {showWizard ? (
@@ -622,7 +793,7 @@ export function DeviceSettings({
                       className="w-full rounded-xl border border-cardBorder bg-bgInput px-4 py-3 text-lg text-textHeading outline-none"
                     >
                       <option value="Conventional">Conventional</option>
-                      <option value="Organic">Organic</option>
+                      <option value="organic">Organic</option>
                       <option value="Mixed">Mixed</option>
                     </select>
                   </div>
@@ -696,8 +867,8 @@ export function DeviceSettings({
                     <div>
                       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-textHint">Irrigation *</p>
                       <select
-                        value={wizardData.irrigation}
-                        onChange={(event) => setWizardData((prev) => ({ ...prev, irrigation: event.target.value }))}
+                        value={wizardData.irrigationType}
+                        onChange={(event) => setWizardData((prev) => ({ ...prev, irrigationType: event.target.value }))}
                         className="w-full rounded-xl border border-cardBorder bg-bgInput px-4 py-3 text-lg text-textHeading outline-none"
                       >
                         <option value="Drip">Drip</option>
@@ -780,16 +951,11 @@ export function DeviceSettings({
                       </select>
                     </div>
                     <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-textHint">Field *</p>
-                      <select
-                        value={wizardData.fieldId}
-                        onChange={(event) => setWizardData((prev) => ({ ...prev, fieldId: event.target.value }))}
-                        className="w-full rounded-xl border border-cardBorder bg-bgInput px-4 py-3 text-lg text-textHeading outline-none"
-                      >
-                        <option value="subhash">subhash</option>
-                        <option value="block-a">block-a</option>
-                        <option value="green-valley">green-valley</option>
-                      </select>
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-textHint">Selected Field *</p>
+                      <div className="w-full rounded-xl border border-cardBorder bg-cardBg/50 px-4 py-3 text-lg text-textHeading">
+                        {wizardData.fieldName || 'No field selected'}
+                        <span className="ml-2 text-xs text-textHint">({wizardData.fieldId || 'No ID'})</span>
+                      </div>
                     </div>
                   </div>
 
@@ -862,23 +1028,15 @@ export function DeviceSettings({
                   {step === 1 ? 'Cancel' : 'Back'}
                 </button>
 
-                {step < 5 ? (
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    className="rounded-xl bg-accentPrimary px-5 py-3 text-lg font-semibold text-black transition hover:bg-accentPrimary/90"
-                  >
-                    Next
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={submitWizard}
-                    className="rounded-xl bg-accentPrimary px-5 py-3 text-lg font-semibold text-black transition hover:bg-accentPrimary/90"
-                  >
-                    Add Device
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={step === 5 ? submitWizard : goNext}
+                  disabled={isSubmitting}
+                  className="flex h-12 min-w-[140px] items-center justify-center rounded-2xl bg-accentPrimary px-8 text-lg font-bold text-black transition hover:bg-[#00e68d] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {step === 5 ? 'Add Device' : 'Next'}
+                </button>
+
               </div>
             </div>
           </div>

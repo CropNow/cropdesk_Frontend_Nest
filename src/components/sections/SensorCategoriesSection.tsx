@@ -17,6 +17,7 @@ import {
 import { useToast } from '../../contexts/ToastContext';
 import { SENSOR_CARDS } from '../../constants/deviceConstants';
 import { useLockBodyScroll } from '../../hooks/common/useLockBodyScroll';
+import { sensorsAPI } from '../../api/sensors.api';
 
 /**
  * SensorCategoriesSection - DashboardV2Page-equivalent interactive sensor insights
@@ -34,17 +35,34 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
 
   const handleExport = async () => {
     try {
+      const sensorId = data?.latestData?.sensorId || data?.latestData?.deviceId;
+      
+      if (!sensorId) {
+        addToast({
+          message: 'No sensor ID found for export.',
+          type: 'error'
+        });
+        return;
+      }
+
       setIsExporting(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      await sensorsAPI.exportData({
+        sensorId,
+        format: 'csv',
+        startDate: '2024-01-01',
+        endDate: '2026-12-31',
+        email: true
+      });
       
       addToast({
-        message: 'Data export started. You will receive an email shortly.',
+        message: 'Data export request sent. You will receive an email shortly.',
         type: 'success'
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Export Error:', error);
       addToast({
-        message: 'Failed to export data. Please try again.',
+        message: error.response?.data?.message || 'Failed to export data. Please try again.',
         type: 'error'
       });
     } finally {
@@ -157,18 +175,21 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
           <WeatherSensorsModal
             isOpen={showWeatherDetails}
             onClose={() => setShowWeatherDetails(false)}
+            data={data?.latestData}
           />
         )}
         {showSoilDetails && (
           <SoilSensorsModal
             isOpen={showSoilDetails}
             onClose={() => setShowSoilDetails(false)}
+            data={data?.latestData}
           />
         )}
         {showAirDetails && (
           <AirSensorsModal
             isOpen={showAirDetails}
             onClose={() => setShowAirDetails(false)}
+            data={data?.latestData}
           />
         )}
       </AnimatePresence>
@@ -176,7 +197,7 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
   );
 }
 
-function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function WeatherSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: () => void; data?: any }) {
   const [activeMetric, setActiveMetric] = useState<string | null>(null);
 
   const weatherSensors = [
@@ -217,54 +238,134 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 md:px-6 md:pt-8 md:pb-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
-            {weatherSensors.map((sensor) => (
-              <div key={sensor.id} className="w-full">
-                <div
-                  onClick={() => setActiveMetric(activeMetric === sensor.id ? null : sensor.id)}
-                  className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 transition-all md:h-[11rem] md:w-[16rem] md:rounded-[2rem] md:p-6 ${activeMetric === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
-                >
-                  <div>
-                    <div
-                      className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl md:mb-4 md:h-10 md:w-10 md:rounded-2xl"
-                      style={{ backgroundColor: `${sensor.color}1A` }}
-                    >
-                      <sensor.icon className="h-6 w-6 md:h-5 md:w-5 text-[#00FF9C]" />
-                    </div>
-                    <p className="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]" title={sensor.title}>
-                      {sensor.title}
-                    </p>
-                    <p className="text-[2rem] font-black leading-none tracking-tighter text-white md:text-[1.75rem]">
-                      {sensor.value}
-                      <span className="ml-1 text-[0.8rem] font-bold tracking-normal text-white/60 md:text-[0.7rem]">{sensor.unit}</span>
-                    </p>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2 md:px-6 md:py-4">
+          <div className="flex flex-col justify-start gap-4 md:flex-row md:flex-wrap md:gap-5">
+            <div className="w-full md:w-auto">
+              <div
+                onClick={() => toggleMetric('Wind Direction')}
+                className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:w-[16rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeMetric === 'Wind Direction' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
+              >
+                <div>
+                  <div
+                    className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                    style={{ backgroundColor: '#A855F71A' }}
+                  >
+                    <Wind className={`h-6 w-6 ${activeMetric === 'Wind Direction' ? 'text-[#00FF9C]' : 'text-[#A855F7]'}`} />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
-                      <span className="text-xs font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
-                    </div>
-                    <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === sensor.id ? 'rotate-180' : ''}`} />
+                  <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Wind Direction</p>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
+                      {data?.values?.wind_direction ?? '0'}
+                    </span>
+                    <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">°</span>
                   </div>
                 </div>
-
-                <AnimatePresence>
-                  {activeMetric === sensor.id && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                      animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
-                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                      className="w-full overflow-hidden lg:hidden"
-                    >
-                      {sensor.id === 'wind-dir' ? <WindDirectionDetail onClose={() => setActiveMetric(null)} /> : 
-                       sensor.id === 'wind-speed' ? <WindSpeedDetail onClose={() => setActiveMetric(null)} /> :
-                       <RainFallDetail onClose={() => setActiveMetric(null)} />}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
+                    <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === 'Wind Direction' ? 'rotate-180' : ''}`} />
+                </div>
               </div>
-            ))}
+
+              <AnimatePresence>
+                {activeMetric === 'Wind Direction' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                    animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                    className="w-full overflow-hidden md:hidden"
+                  >
+                    <WindDirectionDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div
+              onClick={() => toggleMetric('Wind Speed')}
+              className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:w-[16rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeMetric === 'Wind Speed' ? 'border-[#22D3EE] bg-[#22D3EE]/5 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#22D3EE]/30 hover:bg-white/[0.05] active:scale-95'}`}
+            >
+              <div>
+                <div
+                    className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                  style={{ backgroundColor: '#22D3EE1A' }}
+                >
+                  <Wind className={`h-6 w-6 ${activeMetric === 'Wind Speed' ? 'text-[#00FF9C]' : 'text-[#22D3EE]'}`} />
+                </div>
+                <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Wind Speed</p>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
+                    {data?.values?.wind_speed ?? '0'}
+                  </span>
+                  <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">m/s</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
+                  <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
+                </div>
+                <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === 'Wind Speed' ? 'rotate-180' : ''}`} />
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {activeMetric === 'Wind Speed' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  className="w-full overflow-hidden md:hidden"
+                >
+                  <WindSpeedDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="w-full md:w-auto">
+              <div
+                onClick={() => toggleMetric('Rain Fall')}
+                className={`flex h-[12.5rem] w-full cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:w-[16rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeMetric === 'Rain Fall' ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
+              >
+                <div>
+                  <div
+                    className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                    style={{ backgroundColor: '#00FF9C1A' }}
+                  >
+                    <CloudRain className={`h-6 w-6 ${activeMetric === 'Rain Fall' ? 'text-[#00FF9C]' : 'text-[#00FF9C]/80'}`} />
+                  </div>
+                  <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">Rain Fall</p>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
+                      {data?.values?.rainfall ?? '0'}
+                    </span>
+                    <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">mm</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_10px_#00FF9C] md:h-2 md:w-2" />
+                    <span className="text-[0.65rem] font-bold uppercase tracking-widest leading-none text-[#00FF9C] md:text-[0.75rem]">Good</span>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeMetric === 'Rain Fall' ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {activeMetric === 'Rain Fall' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                    animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                    className="w-full overflow-hidden md:hidden"
+                  >
+                    <RainFallDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           <AnimatePresence mode="wait">
@@ -275,9 +376,29 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 exit={{ opacity: 0, height: 0, marginTop: 0 }}
                 className="hidden w-full overflow-hidden lg:block"
               >
-                {activeMetric === 'wind-dir' ? <WindDirectionDetail onClose={() => setActiveMetric(null)} /> : 
-                 activeMetric === 'wind-speed' ? <WindSpeedDetail onClose={() => setActiveMetric(null)} /> :
-                 <RainFallDetail onClose={() => setActiveMetric(null)} />}
+                <WindDirectionDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
+              </motion.div>
+            )}
+            {activeMetric === 'Wind Speed' && (
+              <motion.div
+                key="wind-speed-details"
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                className="hidden w-full overflow-hidden md:block"
+              >
+                <WindSpeedDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
+              </motion.div>
+            )}
+            {activeMetric === 'Rain Fall' && (
+              <motion.div
+                key="rain-fall-details"
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                className="hidden w-full overflow-hidden md:block"
+              >
+                <RainFallDetail sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveMetric(null)} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -289,7 +410,9 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
               <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
               <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-[#00FF9C] md:text-[0.7rem]">All sensors are operational</p>
             </div>
-            <p className="ml-4 text-[0.5rem] font-bold uppercase tracking-[0.1em] text-textHint md:text-[0.6rem]">Last updated: 12/10/2025, 1:08:07 PM</p>
+            <p className="ml-4 text-[0.5rem] font-bold uppercase tracking-[0.1em] text-textHint md:text-[0.6rem]">
+              Last updated: {data?.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A'}
+            </p>
           </div>
         </div>
       </motion.div>
@@ -297,95 +420,7 @@ function WeatherSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   );
 }
 
-function RangeDropdown({
-  value,
-  options,
-  onChange,
-  triggerClassName = '',
-  menuClassName = '',
-}: {
-  value: string;
-  options: string[];
-  onChange: (value: string) => void;
-  triggerClassName?: string;
-  menuClassName?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handlePointerDown = (event: PointerEvent) => {
-      const el = rootRef.current;
-      if (!el) return;
-      if (event.target instanceof Node && !el.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
-
-  return (
-    <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((p) => !p)}
-        className={[
-          'flex w-full items-center justify-between gap-3 border border-white/10 bg-cardBg text-[#00FF9C] outline-none transition-colors hover:bg-white/[0.06]',
-          triggerClassName,
-        ].join(' ')}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        <span className="truncate">{value}</span>
-        <ChevronDown className={['h-4 w-4 text-[#00FF9C]/70 transition-transform', open ? 'rotate-180' : ''].join(' ')} />
-      </button>
-
-      {open ? (
-        <div
-          role="listbox"
-          className={[
-            'absolute left-0 top-full z-50 mt-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-[#0A0E14]/95 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-2xl',
-            menuClassName,
-          ].join(' ')}
-        >
-          {options.map((opt) => {
-            const isActive = opt === value;
-            return (
-              <button
-                key={opt}
-                type="button"
-                role="option"
-                aria-selected={isActive}
-                onClick={() => {
-                  onChange(opt);
-                  setOpen(false);
-                }}
-                className={[
-                  'flex w-full items-center px-4 py-2 text-left text-[0.75rem] font-black uppercase tracking-wider transition-colors',
-                  isActive ? 'bg-[#00FF9C]/10 text-[#00FF9C]' : 'text-white/90 hover:bg-white/[0.06]',
-                ].join(' ')}
-              >
-                {opt}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: () => void; data?: any }) {
   const [activeSensor, setActiveSensor] = useState<string | null>(null);
 
   const toggleSensor = (sensorTitle: string) => {
@@ -393,13 +428,13 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   };
 
   const soilSensors = [
-    { title: 'Nitrogen', value: '0', unit: 'mg/kg', icon: Activity, color: '#00FF9C' },
-    { title: 'Organic Carbon', value: '0', unit: '%', icon: Wind, color: '#00FF9C' },
-    { title: 'Soil Temp at Surface', value: '24.79', unit: '°C', icon: Thermometer, color: '#00FF9C' },
-    { title: 'Phosphorus', value: '0', unit: 'mg/kg', icon: Activity, color: '#00FF9C' },
-    { title: 'Potassium', value: '0', unit: 'mg/kg', icon: Wind, color: '#00FF9C' },
-    { title: 'PH Level', value: '0', unit: 'pH', icon: Thermometer, color: '#00FF9C' },
-    { title: 'Soil Moisture at Surface', value: '57.01', unit: '%', icon: Droplets, color: '#00FF9C' },
+    { title: 'Nitrogen', value: data?.values?.nitrogen ?? '0', unit: 'mg/kg', icon: Activity, color: '#00FF9C' },
+    { title: 'Organic Carbon', value: data?.values?.organicCarbon ?? '0', unit: '%', icon: Wind, color: '#FCD34D' },
+    { title: 'Soil Temperature at Surface', value: data?.values?.soil_temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F87171' },
+    { title: 'Phosphorus', value: data?.values?.phosphorus ?? '0', unit: 'mg/kg', icon: Activity, color: '#22D3EE' },
+    { title: 'Potassium', value: data?.values?.potassium ?? '0', unit: 'mg/kg', icon: Wind, color: '#F59E0B' },
+    { title: 'PH Level', value: data?.values?.ph ?? '0', unit: 'pH', icon: Thermometer, color: '#A855F7' },
+    { title: 'Soil Moisture at Surface', value: data?.values?.soil_moisture_1 ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
   ];
 
   const activeSensorIndex = activeSensor ? soilSensors.findIndex((sensor) => sensor.title === activeSensor) : -1;
@@ -481,7 +516,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                       exit={{ opacity: 0, height: 0, marginTop: 0 }}
                       className="w-full overflow-hidden lg:hidden"
                     >
-                      <SoilSensorDetail sensor={sensor} onClose={() => setActiveSensor(null)} />
+                      <SoilSensorDetail sensor={sensor} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -498,7 +533,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                 exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
                 className="hidden w-full overflow-hidden lg:block"
               >
-                <SoilSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
+                <SoilSensorDetail sensor={activeSensorData} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -545,7 +580,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                         exit={{ opacity: 0, height: 0, marginTop: 0 }}
                         className="w-full overflow-hidden lg:hidden"
                       >
-                        <SoilSensorDetail sensor={sensor} onClose={() => setActiveSensor(null)} />
+                        <SoilSensorDetail sensor={sensor} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -563,7 +598,7 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                 exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
                 className="hidden w-full overflow-hidden lg:block"
               >
-                <SoilSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
+                <SoilSensorDetail sensor={activeSensorData} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -575,7 +610,9 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
               <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
               <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-[#00FF9C] md:text-[0.7rem]">All sensors are operational</p>
             </div>
-            <p className="ml-4 text-[0.5rem] font-bold uppercase tracking-[0.1em] text-textHint md:text-[0.6rem]">Last updated: 12/10/2025, 1:08:07 PM</p>
+            <p className="ml-4 text-[0.5rem] font-bold uppercase tracking-[0.1em] text-textHint md:text-[0.6rem]">
+              Last updated: {data?.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A'}
+            </p>
           </div>
         </div>
       </motion.div>
@@ -583,17 +620,115 @@ function SoilSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   );
 }
 
-function SoilSensorDetail({ sensor, onClose }: { sensor: any; onClose: () => void }) {
+import { useEffect } from 'react';
+
+function RealDataChart({ data }: { data: any[] }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        <p className="text-[0.75rem] font-black uppercase tracking-[0.2em] text-textHint">No Data Available</p>
+      </div>
+    );
+  }
+
+  const points = data.map((d: any) => {
+    const val = typeof d.value === 'number' ? d.value : 
+                (typeof d.avg === 'number' ? d.avg : 
+                (typeof d.average === 'number' ? d.average : 0));
+    return val;
+  });
+
+  const maxVal = Math.max(...points, 1);
+  const minVal = Math.min(...points, 0);
+  const range = maxVal - minVal;
+
+  const width = 800;
+  const height = 200;
+  const padding = 20;
+
+  const svgPoints = points.map((val, i) => {
+    const x = padding + (i / (points.length - 1 || 1)) * (width - 2 * padding);
+    const y = height - padding - ((val - minVal) / (range || 1)) * (height - 2 * padding);
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <svg className="h-full w-full" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+      {[0.25, 0.5, 0.75, 1].map((ratio, idx) => {
+        const y = height - padding - ratio * (height - 2 * padding);
+        return (
+          <line key={idx} x1="0" y1={y} x2={width} y2={y} stroke="white" strokeOpacity="0.04" strokeWidth={1} />
+        );
+      })}
+      <polyline fill="none" stroke="#00FF9C" strokeWidth="3" points={svgPoints} className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]" />
+    </svg>
+  );
+}
+
+function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?: string; onClose: () => void }) {
   const [selectedRange, setSelectedRange] = useState('24 Hours');
+  const [chartData, setChartData] = useState<any[]>([]);
   const ranges = ['24 Hours', '7 Days', '1 Month'];
+
+  const getMetricKey = (title: string) => {
+    const map: Record<string, string> = {
+      'Nitrogen': 'nitrogen',
+      'Organic Carbon': 'organicCarbon',
+      'Soil Temperature at Surface': 'soil_temperature',
+      'Phosphorus': 'phosphorus',
+      'Potassium': 'potassium',
+      'PH Level': 'ph',
+      'Soil Moisture at Surface': 'soil_moisture_1',
+      'Wind Direction': 'wind_direction',
+      'Wind Speed': 'wind_speed',
+      'Rain Fall': 'rainfall',
+      'PM 2.5': 'pm2_5',
+      'PM 10': 'pm10',
+      'CO2': 'co2',
+      'Air Temperature': 'temperature',
+      'Humidity': 'humidity',
+      'Air Pressure': 'pressure',
+      'SO2': 'so2',
+      'NO2': 'no2',
+      'O3': 'o3',
+      'Leaf Wetness': 'leaf_wetness'
+    };
+    return map[title] || title.toLowerCase().replace(/\s+/g, '_');
+  };
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!sensorId) return;
+      try {
+        const metric = getMetricKey(sensor.title);
+        const rangeMap: Record<string, string> = {
+          '24 Hours': '24h',
+          '7 Days': '7d',
+          '1 Month': '30d'
+        };
+        const rangeParam = rangeMap[selectedRange] || '7d';
+        
+        let res = await sensorsAPI.getAggregatedData(sensorId, { metric, range: rangeParam }).catch(() => null);
+        if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
+          res = await sensorsAPI.getHistoricalData({ sensorId, metric, range: rangeParam }).catch(() => null);
+        }
+        
+        const rawData = res?.data?.data || res?.data || [];
+        setChartData(Array.isArray(rawData) ? rawData : []);
+      } catch (err) {
+        console.error('Failed to fetch chart data:', err);
+      }
+    };
+    fetchHistory();
+  }, [sensorId, selectedRange, sensor.title]);
 
   return (
     <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:px-6 md:pt-6 md:pb-4">
       <div className="mb-4 flex w-full items-start justify-between md:mb-6">
         <div className="z-20 flex flex-col items-start gap-3 md:gap-5">
           <div className="text-left">
-            <h3 className="mb-1 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">{sensor.displayName || sensor.title}</h3>
-            <p className="text-[0.6rem] font-medium tracking-wide text-white/70 md:text-xs">24-Hour Trend</p>
+            <h3 className="mb-1 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">{sensor.title}</h3>
+            <p className="text-[0.6rem] font-medium tracking-wide text-textHint md:text-xs">{selectedRange} Trend</p>
           </div>
 
           <div className="hidden flex-wrap gap-3 md:flex">
@@ -634,19 +769,69 @@ function SoilSensorDetail({ sensor, onClose }: { sensor: any; onClose: () => voi
         </div>
       </div>
 
-      <div className="relative mt-6 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-8 md:h-[210px]">
-        <WindSpeedChart />
-        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center md:bottom-2">
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/70 md:text-[0.75rem]">No Data</p>
-        </div>
+      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[260px]">
+        <RealDataChart data={chartData} />
       </div>
     </div>
   );
 }
 
-function AirSensorDetail({ sensor, onClose }: { sensor: any; onClose: () => void }) {
+function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?: string; onClose: () => void }) {
   const [selectedRange, setSelectedRange] = useState('24 Hours');
+  const [chartData, setChartData] = useState<any[]>([]);
   const ranges = ['24 Hours', '7 Days', '1 Month'];
+
+  const getMetricKey = (title: string) => {
+    const map: Record<string, string> = {
+      'Nitrogen': 'nitrogen',
+      'Organic Carbon': 'organicCarbon',
+      'Soil Temperature at Surface': 'soil_temperature',
+      'Phosphorus': 'phosphorus',
+      'Potassium': 'potassium',
+      'PH Level': 'ph',
+      'Soil Moisture at Surface': 'soil_moisture_1',
+      'Wind Direction': 'wind_direction',
+      'Wind Speed': 'wind_speed',
+      'Rain Fall': 'rainfall',
+      'PM 2.5': 'pm2_5',
+      'PM 10': 'pm10',
+      'CO2': 'co2',
+      'Air Temperature': 'temperature',
+      'Humidity': 'humidity',
+      'Air Pressure': 'pressure',
+      'SO2': 'so2',
+      'NO2': 'no2',
+      'O3': 'o3',
+      'Leaf Wetness': 'leaf_wetness'
+    };
+    return map[title] || title.toLowerCase().replace(/\s+/g, '_');
+  };
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!sensorId) return;
+      try {
+        const metric = getMetricKey(sensor.title);
+        const rangeMap: Record<string, string> = {
+          '24 Hours': '24h',
+          '7 Days': '7d',
+          '1 Month': '30d'
+        };
+        const rangeParam = rangeMap[selectedRange] || '7d';
+        
+        let res = await sensorsAPI.getAggregatedData(sensorId, { metric, range: rangeParam }).catch(() => null);
+        if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
+          res = await sensorsAPI.getHistoricalData({ sensorId, metric, range: rangeParam }).catch(() => null);
+        }
+        
+        const rawData = res?.data?.data || res?.data || [];
+        setChartData(Array.isArray(rawData) ? rawData : []);
+      } catch (err) {
+        console.error('Failed to fetch chart data:', err);
+      }
+    };
+    fetchHistory();
+  }, [sensorId, selectedRange, sensor.title]);
 
   return (
     <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:px-6 md:pt-6 md:pb-4">
@@ -669,14 +854,12 @@ function AirSensorDetail({ sensor, onClose }: { sensor: any; onClose: () => void
             ))}
           </div>
 
-          <div className="relative w-full min-w-[130px] md:hidden">
-            <RangeDropdown
-              value={selectedRange}
-              options={ranges}
-              onChange={setSelectedRange}
-              triggerClassName="cursor-pointer rounded-full px-4 py-2 text-[0.7rem] font-black uppercase tracking-wider"
-            />
-          </div>
+      <p className="mb-4 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-white/40 md:hidden">{selectedRange} Trend</p>
+
+      <div className="mb-8 hidden items-start justify-between md:flex">
+        <div>
+          <h3 className="mb-1 text-2xl font-bold leading-tight tracking-tight text-white md:text-[1.75rem]">{sensor.title}</h3>
+          <p className="text-[0.75rem] font-medium uppercase tracking-widest text-white/40 md:text-[0.85rem]">{selectedRange} Trend</p>
         </div>
 
         <div className="flex items-center gap-4 md:gap-8">
@@ -695,30 +878,46 @@ function AirSensorDetail({ sensor, onClose }: { sensor: any; onClose: () => void
         </div>
       </div>
 
-      <div className="relative mt-6 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-8 md:h-[210px]">
-        <WindSpeedChart />
-        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center md:bottom-2">
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/70 md:text-[0.75rem]">No Data</p>
+      <div className="mb-6 max-w-[200px] md:mb-8 md:max-w-[180px]">
+        <div className="relative">
+          <select
+            value={selectedRange}
+            onChange={(e) => setSelectedRange(e.target.value)}
+            className="w-full appearance-none cursor-pointer rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-[0.75rem] font-black uppercase tracking-wider text-[#00FF9C] outline-none transition-colors hover:bg-white/[0.08] md:px-5"
+          >
+            {ranges.map((range) => (
+              <option key={range} value={range} className="bg-[#0A0E14] text-white uppercase">
+                {range}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+            <ChevronDown className="h-4 w-4 text-[#00FF9C]/60" />
+          </div>
         </div>
+      </div>
+
+      <div className="relative flex h-[220px] w-full items-end justify-center overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-0 md:h-[300px]">
+        <RealDataChart data={chartData} />
       </div>
     </div>
   );
 }
 
-function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function AirSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: () => void; data?: any }) {
   const [activeSensor, setActiveSensor] = useState<string | null>(null);
 
   const airSensors = [
-    { id: 'pm25', title: 'PM 2.5', value: '7', unit: 'µg/m³', icon: Activity, color: '#00FF9C' },
-    { id: 'pm10', title: 'PM 10', value: '7', unit: 'µg/m³', icon: Activity, color: '#00FF9C' },
-    { id: 'co2', title: 'CO2', displayName: <>CO<sub>2</sub></>, value: '0', unit: 'ppm', icon: Cloud, color: '#00FF9C' },
-    { id: 'temp', title: 'Air Temp', value: '0', unit: '°C', icon: Thermometer, color: '#00FF9C' },
-    { id: 'hum', title: 'Humidity', value: '0', unit: '%', icon: Droplets, color: '#00FF9C' },
-    { id: 'pres', title: 'Air Pressure', value: '999', unit: 'hPa', icon: Activity, color: '#00FF9C' },
-    { id: 'so2', title: 'SO2', displayName: <>SO<sub>2</sub></>, value: '0.47', unit: 'ppm', icon: Activity, color: '#00FF9C' },
-    { id: 'no2', title: 'NO2', displayName: <>NO<sub>2</sub></>, value: '0.18', unit: 'ppm', icon: Activity, color: '#00FF9C' },
-    { id: 'o3', title: 'O3', value: '0.02', unit: 'ppm', icon: Activity, color: '#00FF9C' },
-    { id: 'leaf', title: 'Leaf Wetness', value: '0', unit: '%', icon: Leaf, color: '#00FF9C' },
+    { id: 'pm25', title: 'PM 2.5', value: data?.values?.pm2_5 ?? '7', unit: 'µg/m³', icon: Activity, color: '#3B82F6' },
+    { id: 'pm10', title: 'PM 10', value: data?.values?.pm10 ?? '7', unit: 'µg/m³', icon: Activity, color: '#22D3EE' },
+    { id: 'co2', title: 'CO2', displayName: <>CO<sub>2</sub></>, value: data?.values?.co2 ?? '0', unit: 'ppm', icon: Cloud, color: '#E5E7EB' },
+    { id: 'temp', title: 'Air Temperature', value: data?.values?.temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
+    { id: 'hum', title: 'Humidity', value: data?.values?.humidity ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
+    { id: 'pres', title: 'Air Pressure', value: data?.values?.pressure ?? '999', unit: 'hPa', icon: Activity, color: '#3B82F6' },
+    { id: 'so2', title: 'SO2', displayName: <>SO<sub>2</sub></>, value: data?.values?.so2 ?? '0.47', unit: 'ppm', icon: Activity, color: '#FBBF24' },
+    { id: 'no2', title: 'NO2', displayName: <>NO<sub>2</sub></>, value: data?.values?.no2 ?? '0.18', unit: 'ppm', icon: Activity, color: '#F97316' },
+    { id: 'o3', title: 'O3', value: data?.values?.o3 ?? '0.02', unit: 'ppm', icon: Activity, color: '#22C55E' },
+    { id: 'leaf', title: 'Leaf Wetness', value: data?.values?.leaf_wetness ?? '0', unit: '%', icon: Leaf, color: '#22C55E' },
   ];
 
   const row1 = airSensors.slice(0, 4);
@@ -801,7 +1000,7 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                       exit={{ opacity: 0, height: 0, marginTop: 0 }}
                       className="w-full overflow-hidden lg:hidden"
                     >
-                      <AirSensorDetail sensor={sensor} onClose={() => setActiveSensor(null)} />
+                      <AirSensorDetail sensor={sensor} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -861,7 +1060,7 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                       exit={{ opacity: 0, height: 0, marginTop: 0 }}
                       className="w-full overflow-hidden lg:hidden"
                     >
-                      <AirSensorDetail sensor={sensor} onClose={() => setActiveSensor(null)} />
+                      <AirSensorDetail sensor={sensor} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -877,7 +1076,7 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
                 className="hidden overflow-hidden lg:block"
               >
-                <AirSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
+                <AirSensorDetail sensor={activeSensorData} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -937,7 +1136,7 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
                 className="hidden overflow-hidden lg:block"
               >
-                <AirSensorDetail sensor={activeSensorData} onClose={() => setActiveSensor(null)} />
+                <AirSensorDetail sensor={activeSensorData} sensorId={data?.deviceId || data?.sensorId || data?.id} onClose={() => setActiveSensor(null)} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -949,7 +1148,9 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
               <div className="h-1.5 w-1.5 rounded-full bg-[#00FF9C] shadow-[0_0_8px_rgba(0,255,156,0.6)]" />
               <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-[#00FF9C] md:text-[0.7rem]">All sensors are operational</p>
             </div>
-            <p className="ml-4 text-[0.5rem] font-bold uppercase tracking-[0.1em] text-textHint md:text-[0.6rem]">Last updated: 12/10/2025, 1:08:07 PM</p>
+            <p className="ml-4.5 text-[0.6rem] font-medium tracking-tight text-textHint md:text-[0.7rem]">
+              Last updated: {data?.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A'}
+            </p>
           </div>
         </div>
       </motion.div>
@@ -957,9 +1158,48 @@ function AirSensorsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   );
 }
 
-function WindDirectionDetail({ onClose }: { onClose: () => void }) {
+function WindDirectionDetail({ sensorId, onClose }: { sensorId?: string; onClose: () => void }) {
   const [selectedRange, setSelectedRange] = useState('24 Hours');
+  const [chartData, setChartData] = useState<any[]>([]);
   const ranges = ['24 Hours', '7 Days', '1 Month'];
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!sensorId) return;
+      try {
+        const rangeMap: Record<string, string> = {
+          '24 Hours': '24h',
+          '7 Days': '7d',
+          '1 Month': '30d'
+        };
+        const rangeParam = rangeMap[selectedRange] || '7d';
+        
+        let res = await sensorsAPI.getAggregatedData(sensorId, { metric: 'wind_direction', range: rangeParam }).catch(() => null);
+        if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
+          res = await sensorsAPI.getHistoricalData({ sensorId, metric: 'wind_direction', range: rangeParam }).catch(() => null);
+        }
+        
+        const rawData = res?.data?.data || res?.data || [];
+        setChartData(Array.isArray(rawData) ? rawData : []);
+      } catch (err) {
+        console.error('Failed to fetch chart data:', err);
+      }
+    };
+    fetchHistory();
+  }, [sensorId, selectedRange]);
+
+  // Get the most recent wind direction value
+  const latestDirection = chartData.length > 0 
+    ? (typeof chartData[chartData.length - 1].value === 'number' 
+        ? chartData[chartData.length - 1].value 
+        : (chartData[chartData.length - 1].avg || chartData[chartData.length - 1].average || 0))
+    : 0;
+
+  const getDirectionLabel = (deg: number) => {
+    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const index = Math.round(deg / 45) % 8;
+    return dirs[index >= 0 ? index : index + 8];
+  };
 
   return (
     <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-3 md:rounded-[2rem] md:px-5 md:pt-5 md:pb-3">
@@ -994,9 +1234,9 @@ function WindDirectionDetail({ onClose }: { onClose: () => void }) {
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex flex-col items-end">
-            <p className="text-3xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-4xl">N</p>
+            <p className="text-3xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-4xl">{getDirectionLabel(latestDirection)}</p>
             <div className="mt-0.5 flex items-center gap-1.5 md:mt-0.5">
-              <span className="text-[0.8rem] font-bold text-textHint md:text-sm">0°</span>
+              <span className="text-[0.8rem] font-bold text-[#00FF9C]/60 md:text-sm">{Math.round(latestDirection)}°</span>
               <Wind className="h-3 w-3 text-[#00FF9C]/40 md:h-4 md:w-4" />
             </div>
           </div>
@@ -1009,16 +1249,42 @@ function WindDirectionDetail({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      <div className="relative mx-auto mt-2 flex aspect-square w-full max-w-[180px] items-center justify-center md:mt-0 md:max-w-[280px]">
-        <WindDirectionRadar key={selectedRange} range={selectedRange} />
+      <div className="relative mx-auto mt-4 flex aspect-square w-full max-w-[200px] items-center justify-center md:mt-2 md:max-w-[380px]">
+        <WindDirectionRadar key={selectedRange} liveData={chartData} />
       </div>
     </div>
   );
 }
 
-function WindSpeedDetail({ onClose }: { onClose: () => void }) {
+function WindSpeedDetail({ sensorId, onClose }: { sensorId?: string; onClose: () => void }) {
   const [selectedRange, setSelectedRange] = useState('24 Hours');
+  const [chartData, setChartData] = useState<any[]>([]);
   const ranges = ['24 Hours', '7 Days', '1 Month'];
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!sensorId) return;
+      try {
+        const rangeMap: Record<string, string> = {
+          '24 Hours': '24h',
+          '7 Days': '7d',
+          '1 Month': '30d'
+        };
+        const rangeParam = rangeMap[selectedRange] || '7d';
+        
+        let res = await sensorsAPI.getAggregatedData(sensorId, { metric: 'wind_speed', range: rangeParam }).catch(() => null);
+        if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
+          res = await sensorsAPI.getHistoricalData({ sensorId, metric: 'wind_speed', range: rangeParam }).catch(() => null);
+        }
+        
+        const rawData = res?.data?.data || res?.data || [];
+        setChartData(Array.isArray(rawData) ? rawData : []);
+      } catch (err) {
+        console.error('Failed to fetch chart data:', err);
+      }
+    };
+    fetchHistory();
+  }, [sensorId, selectedRange]);
 
   return (
     <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-4 md:rounded-[2rem] md:px-5 md:pt-5 md:pb-3">
@@ -1026,7 +1292,7 @@ function WindSpeedDetail({ onClose }: { onClose: () => void }) {
         <div className="z-20 flex flex-col items-start gap-3 md:gap-5">
           <div className="text-left">
             <h3 className="mb-1 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">Wind Speed</h3>
-            <p className="text-[0.6rem] font-medium tracking-wide text-white/70 md:text-xs">24-Hour Trend</p>
+            <p className="text-[0.6rem] font-medium tracking-wide text-textHint md:text-xs">{selectedRange} Trend</p>
           </div>
 
           <div className="hidden flex-wrap gap-3 md:flex">
@@ -1053,7 +1319,7 @@ function WindSpeedDetail({ onClose }: { onClose: () => void }) {
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex flex-col items-end">
-            <p className="text-3xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-3xl">0<span className="ml-1 text-[1rem] font-extrabold text-[#00FF9C]">m/s</span></p>
+            <p className="text-3xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-4xl">0<span className="ml-1 text-[1rem] font-extrabold uppercase text-[#00FF9C]">.m/s</span></p>
           </div>
           <button
             onClick={onClose}
@@ -1064,11 +1330,8 @@ function WindSpeedDetail({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[210px]">
-        <WindSpeedChart />
-        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center md:bottom-2">
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/70 md:text-[0.75rem]">No Data</p>
-        </div>
+      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[260px]">
+        <RealDataChart data={chartData} />
       </div>
     </div>
   );
@@ -1090,20 +1353,28 @@ function WindSpeedChart() {
   );
 }
 
-function WindDirectionRadar({ size = 320, range = '24 Hours' }: { size?: number; range?: string }) {
+function WindDirectionRadar({ size = 320, liveData = [] }: { size?: number; liveData?: any[] }) {
   const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
   const center = size / 2;
   const radius = size * 0.4;
 
-  const data =
-    range === '24 Hours'
-      ? [0, 0, 0, 0, 0, 0, 0, 0]
-      : range === '7 Days'
-        ? [1, 0, 0, 0, 0, 0, 0, 0]
-        : [0, 0, 1, 0, 0, 0, 0, 0];
+  // Calculate direction occurrences
+  const distribution = [0, 0, 0, 0, 0, 0, 0, 0];
+  
+  if (liveData && liveData.length > 0) {
+    liveData.forEach((d) => {
+      const val = typeof d.value === 'number' ? d.value : (d.avg || d.average || 0);
+      const idx = Math.round(val / 45) % 8;
+      const safeIdx = idx >= 0 ? idx : idx + 8;
+      distribution[safeIdx] += 1;
+    });
+  }
 
-  const isEmpty = range === '24 Hours';
-  const hasData = !isEmpty;
+  const maxOccurrences = Math.max(...distribution, 1);
+  const scaledData = distribution.map((count) => (count > 0 ? 0.3 + 0.7 * (count / maxOccurrences) : 0));
+
+  const hasData = liveData.length > 0;
+  const mostFrequentIdx = distribution.indexOf(Math.max(...distribution));
 
   const getCoordinates = (index: number, value: number) => {
     const angle = (index * (360 / directions.length) - 90) * (Math.PI / 180);
@@ -1114,10 +1385,10 @@ function WindDirectionRadar({ size = 320, range = '24 Hours' }: { size?: number;
   };
 
   const gridLevels = [0.25, 0.5, 0.75, 1];
-  const dataPoints = data.map((val, i) => getCoordinates(i, val));
+  const dataPoints = scaledData.map((val, i) => getCoordinates(i, val));
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full drop-shadow-[0_0_34px_rgba(0,255,156,0.2)]" preserveAspectRatio="xMidYMid meet">
+    <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full drop-shadow-[0_0_20px_rgba(0,255,156,0.1)]" preserveAspectRatio="xMidYMid meet">
       {gridLevels.map((level, i) => {
         const points = directions.map((_, idx) => {
           const p = getCoordinates(idx, level);
@@ -1162,29 +1433,55 @@ function WindDirectionRadar({ size = 320, range = '24 Hours' }: { size?: number;
           transition={{ duration: 0.5 }}
           x1={center}
           y1={center}
-          x2={dataPoints[data.indexOf(1)].x}
-          y2={dataPoints[data.indexOf(1)].y}
+          x2={dataPoints[mostFrequentIdx].x}
+          y2={dataPoints[mostFrequentIdx].y}
           stroke="#00FF9C"
-          strokeWidth={6}
+          strokeWidth={5}
           strokeLinecap="round"
-          className="drop-shadow-[0_0_22px_rgba(0,255,156,0.95)]"
+          className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]"
         />
       )}
     </svg>
   );
 }
 
-function RainFallDetail({ onClose }: { onClose: () => void }) {
+function RainFallDetail({ sensorId, onClose }: { sensorId?: string; onClose: () => void }) {
   const [selectedRange, setSelectedRange] = useState('24 Hours');
+  const [chartData, setChartData] = useState<any[]>([]);
   const ranges = ['24 Hours', '7 Days', '1 Month'];
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!sensorId) return;
+      try {
+        const rangeMap: Record<string, string> = {
+          '24 Hours': '24h',
+          '7 Days': '7d',
+          '1 Month': '30d'
+        };
+        const rangeParam = rangeMap[selectedRange] || '7d';
+        
+        let res = await sensorsAPI.getAggregatedData(sensorId, { metric: 'rainfall', range: rangeParam }).catch(() => null);
+        if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
+          res = await sensorsAPI.getHistoricalData({ sensorId, metric: 'rainfall', range: rangeParam }).catch(() => null);
+        }
+        
+        const rawData = res?.data?.data || res?.data || [];
+        setChartData(Array.isArray(rawData) ? rawData : []);
+      } catch (err) {
+        console.error('Failed to fetch chart data:', err);
+      }
+    };
+    fetchHistory();
+  }, [sensorId, selectedRange]);
 
   return (
     <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:px-5 md:pt-5 md:pb-3">
       <div className="mb-4 flex w-full items-start justify-between md:mb-5">
         <div className="z-20 flex flex-col items-start gap-3 md:gap-5">
           <div className="text-left">
-            <h3 className="mb-0.5 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">Rain Fall</h3>
-            <p className="text-[0.5rem] font-medium tracking-wide text-white/70 md:text-xs">24-Hour Trend</p>
+            <h3 className="mb-0.5 text-lg font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">Rain Fall</h3>
+            <p className="text-[0.5rem] font-medium tracking-wide text-textHint md:text-xs">{selectedRange} Trend</p>
           </div>
 
           <div className="hidden flex-wrap gap-3 md:flex">
@@ -1211,7 +1508,7 @@ function RainFallDetail({ onClose }: { onClose: () => void }) {
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex flex-col items-end">
-            <p className="text-3xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-3xl">0<span className="ml-1 text-[1rem] font-extrabold text-[#00FF9C]">mm</span></p>
+            <p className="text-xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-4xl">0<span className="ml-1 text-[0.7rem] font-extrabold uppercase text-[#00FF9C] md:text-[1rem]">.mm</span></p>
           </div>
           <button
             onClick={onClose}
@@ -1222,11 +1519,8 @@ function RainFallDetail({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[210px]">
-        <RainFallChart />
-        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center md:bottom-2">
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/70 md:text-[0.75rem]">No Data</p>
-        </div>
+      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center overflow-hidden p-0 md:mt-1 md:h-[260px]">
+        <RealDataChart data={chartData} />
       </div>
     </div>
   );

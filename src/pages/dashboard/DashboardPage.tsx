@@ -1,3 +1,4 @@
+import React from 'react';
 import { useDashboardState } from '../../hooks/dashboard/useDashboardState';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
@@ -34,7 +35,7 @@ export function DashboardPage() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bgMain p-10 text-center">
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-8 backdrop-blur-xl">
+        <div className="rounded-3xl border border-red-500/20 bg-red-500/5 p-8 backdrop-blur-xl">
           <p className="text-xl font-bold text-red-400">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -47,18 +48,25 @@ export function DashboardPage() {
     );
   }
 
-  const displayWeather = dashboardData?.weather ? {
-    temp: `${dashboardData.weather.temperature} C`,
-    condition: dashboardData.weather.condition,
-    city: `${dashboardData.weather.city}, ${dashboardData.weather.country}`
-  } : {
-    ...weatherSummary,
-    city: dashboardData?.farm?.name ? `${dashboardData.farm.name}, ${dashboardData.farm.location?.city || ''}` : weatherSummary.city
-  };
+  // Use weather from dashboardData if available, otherwise fallback
+  const displayWeather = dashboardData?.weather
+    ? {
+        temp: `${dashboardData.weather.temperature} C`,
+        condition: dashboardData.weather.condition,
+        city: `${dashboardData.weather.city}, ${dashboardData.weather.country}`,
+      }
+    : {
+        ...weatherSummary,
+        city: dashboardData?.farm?.name
+          ? `${dashboardData.farm.name}, ${dashboardData.farm.location?.city || ''}`
+          : weatherSummary.city,
+      };
 
   return (
     <DashboardLayout>
       <BentoGrid className="space-y-4 sm:space-y-6">
+
+        {/* Header */}
         <BentoCard className="rounded-xl" enableBorderGlow clickEffect>
           <WelcomeHeader
             currentTime={currentTime}
@@ -67,21 +75,18 @@ export function DashboardPage() {
           />
         </BentoCard>
 
-        <div className="grid gap-4 sm:gap-6 xl:grid-cols-[1fr_1.2fr]">
-          <BentoCard className="rounded-xl" enableBorderGlow clickEffect>
-            <DeviceSection
-              variant="v1"
-              device={dashboardData?.currentDevice || currentDevice}
-              selectedDeviceType={selectedDeviceType}
-              currentDeviceIndex={currentDeviceIndex}
-              cycleDevice={cycleDevice}
-            />
-          </BentoCard>
-          <BentoCard className="rounded-xl" enableBorderGlow clickEffect>
-            <FarmHealthSection data={dashboardData?.health} />
-          </BentoCard>
+        {/* Device + Health */}
+        <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
+          <DeviceSection
+            device={dashboardData?.currentDevice || currentDevice}
+            selectedDeviceType={selectedDeviceType}
+            currentDeviceIndex={currentDeviceIndex}
+            cycleDevice={cycleDevice}
+          />
+          <FarmHealthSection data={dashboardData?.health} />
         </div>
 
+        {/* Sensors + Alerts */}
         <section className="grid gap-4 sm:gap-6 xl:grid-cols-5">
           <BentoCard className="rounded-xl xl:col-span-2" enableBorderGlow clickEffect>
             <SensorCategoriesSection data={dashboardData?.sensors} />
@@ -91,6 +96,7 @@ export function DashboardPage() {
           </BentoCard>
         </section>
 
+        {/* AI + Water */}
         <section className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           <BentoCard className="rounded-xl lg:col-span-2" enableBorderGlow clickEffect>
             <AIInsightsSection data={dashboardData?.aiInsights} />
@@ -99,6 +105,7 @@ export function DashboardPage() {
             <WaterSavingsSection data={dashboardData?.waterSavings} />
           </BentoCard>
         </section>
+
       </BentoGrid>
     </DashboardLayout>
   );

@@ -20,7 +20,7 @@ export const userAPI = {
    * Update user profile
    */
   updateProfile: (data: any) =>
-    apiClient.patch('/users/profile', data),
+    apiClient.patch('/users/me', data),
 
   /**
    * Upload user avatar

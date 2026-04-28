@@ -2,14 +2,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { DeviceData, DeviceType } from '../../constants/deviceConstants';
 import { RadialDeviceLayout } from '../devices/RadialDeviceLayout';
-import { RadialDeviceLayoutV2 } from '../devices/RadialDeviceLayoutV2';
 
 interface DeviceSectionProps {
   device: DeviceData;
   selectedDeviceType: DeviceType;
   currentDeviceIndex: number;
   cycleDevice: (dir: 1 | -1) => void;
-  variant?: 'v1' | 'v2';
 }
 
 export function DeviceSection({
@@ -17,7 +15,6 @@ export function DeviceSection({
   selectedDeviceType,
   currentDeviceIndex,
   cycleDevice,
-  variant = 'v2',
 }: DeviceSectionProps) {
   if (variant === 'v2') {
     return (

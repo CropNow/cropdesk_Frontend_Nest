@@ -2,7 +2,6 @@
  * Centralized API client configuration
  * Handles base URL, interceptors, error handling, and request/response transformation
  */
-
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // API Client instance

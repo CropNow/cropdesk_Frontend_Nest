@@ -27,7 +27,7 @@ export function FarmHealthSection({ data }: { data?: any }) {
           <CircularGauge value={overallHealth} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FARM_STATUS_METRICS.map((metric, index) => (
+          {metrics.map((metric, index) => (
             <motion.div
               key={metric.id}
               initial={{ opacity: 0, y: 12 }}
@@ -50,7 +50,7 @@ export function FarmHealthSection({ data }: { data?: any }) {
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          {FARM_STATUS_METRICS.map((metric) => (
+          {metrics.map((metric) => (
             <FarmStatusCard key={metric.id} metric={metric} />
           ))}
         </div>
