@@ -17,7 +17,7 @@ const STORAGE_KEY = 'cropdesk_auth';
 const TOKEN_KEY = 'authToken';
 
 /* ─── Context ─── */
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /* ─── Provider ─── */
 export function AuthProvider({ children }: { children: ReactNode }) {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DEVICE_LIBRARY, DeviceType, FARM_STATUS_METRICS } from '../../constants/deviceConstants';
 import { isDeviceType } from '../../utils/deviceUtils';
+import { normalizeAIInsights } from '../../utils/aiInsights';
 import { dashboardAPI } from '../../api/dashboard.api';
 
 export function useDashboardState() {
@@ -68,7 +69,7 @@ export function useDashboardState() {
         const stats = statsRes.data?.data || statsRes.data;
         const devices = devicesRes.data?.data || [];
         const alertsData = alertsRes.data?.data || alertsRes.data || [];
-        const aiData = aiRes.data || [];
+        const aiData = normalizeAIInsights(aiRes.data);
 
         // Find current device (Nest)
         // If there's only one nest, it will be the first one in the list

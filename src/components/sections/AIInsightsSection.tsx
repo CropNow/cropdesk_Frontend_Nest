@@ -1,12 +1,11 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import { AI_INSIGHTS } from '../../constants/deviceConstants';
+import { normalizeAIInsights } from '../../utils/aiInsights';
 
 /**
  * AIInsightsSection - AI-generated insights about farm conditions
  */
 export function AIInsightsSection({ data }: { data?: any }) {
-  const insights = data || AI_INSIGHTS;
+  const insights = normalizeAIInsights(data);
 
   return (
     <motion.div

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Droplets, Leaf, MapPin } from 'lucide-react';
+import { ChevronRight, Droplets, Leaf, MapPin } from 'lucide-react';
 import { DeviceData, DeviceType } from '../../constants/deviceConstants';
 
 /**
@@ -14,6 +14,7 @@ interface RadialDeviceLayoutProps {
   selectedDeviceType: DeviceType;
   currentDeviceIndex: number;
   cycleDevice: (dir: 1 | -1) => void;
+  showTitle?: boolean;
 }
 
 export function RadialDeviceLayout({
@@ -21,6 +22,7 @@ export function RadialDeviceLayout({
   selectedDeviceType,
   currentDeviceIndex,
   cycleDevice,
+  showTitle = true,
 }: RadialDeviceLayoutProps) {
   const [isMdUp, setIsMdUp] = useState(false);
 
@@ -111,14 +113,20 @@ export function RadialDeviceLayout({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold tracking-tight text-textHeading md:hidden max-w-[180px]">{device.name}</h2>
+      {showTitle && (
+        <h2 className="max-w-[180px] text-xl font-semibold tracking-tight text-textHeading md:hidden">
+          {device.name}
+        </h2>
+      )}
 
       <div className="flex flex-row gap-2 md:items-center md:gap-4">
       <div className="flex w-[35%] shrink-0 flex-col items-center md:w-2/5">
         {/* Device name */}
-        <h2 className="hidden self-start text-xl font-semibold tracking-tight text-textHeading md:block md:text-2xl">
-          {device.name}
-        </h2>
+        {showTitle && (
+          <h2 className="hidden self-start text-xl font-semibold tracking-tight text-textHeading md:block md:text-2xl">
+            {device.name}
+          </h2>
+        )}
 
         {/* Floating device image with radial glow */}
         <div className="relative mt-8 flex min-h-[240px] w-full items-center justify-center pt-6 sm:min-h-[370px] md:mt-4 md:min-h-[390px]">
