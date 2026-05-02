@@ -71,6 +71,6 @@ export const sensorsAPI = {
   /**
    * Export sensor data
    */
-  exportData: (data: any) => apiClient.post('/sensor-data/export', data),
+  exportData: (params: any) => apiClient.get('/sensor-data/export', { params }),
 };
 

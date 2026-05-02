@@ -72,12 +72,11 @@ export function useDashboardState() {
         setIsLoading(true);
         
         // Fetch from dashboard specific endpoints + statistics fallback
-        const [overviewRes, statsRes, devicesRes, alertsRes, aiRes, sensorsRes] = await Promise.all([
+        const [overviewRes, statsRes, devicesRes, alertsRes, sensorsRes] = await Promise.all([
           dashboardAPI.getDashboardOverview().catch(() => ({ data: null })),
           dashboardAPI.getFarmStatistics(selectedFarmId).catch(() => ({ data: null })),
           dashboardAPI.getFarmDevices(selectedFarmId).catch(() => ({ data: null })),
           dashboardAPI.getAlerts().catch(() => ({ data: null })),
-          dashboardAPI.getAIInsights(selectedFarmId).catch(() => ({ data: null })),
           sensorsAPI.getSensors({ type: selectedDeviceType.toUpperCase() }).catch(() => ({ data: null })),
         ]);
 
@@ -100,14 +99,11 @@ export function useDashboardState() {
         addDevices(sensorsRes); // Add backend sensors as devices
         
         const alertsData = alertsRes.data?.data || alertsRes.data || [];
-        const aiDataRaw = aiRes.data?.data || aiRes.data?.insights || aiRes.data;
-        const aiData = Array.isArray(aiDataRaw) ? aiDataRaw : (typeof aiDataRaw === 'object' && aiDataRaw !== null ? [] : []);
 
         console.log('DEBUG overviewRes:', overviewRes.data);
         console.log('DEBUG statsRes:', statsRes.data);
         console.log('DEBUG devicesRes:', devicesRes.data);
         console.log('DEBUG alertsRes:', alertsRes.data);
-        console.log('DEBUG aiRes:', aiRes.data);
         console.log('DEBUG sensorsRes:', sensorsRes.data);
 
         // Find current device (Nest)
@@ -130,10 +126,17 @@ export function useDashboardState() {
 
         // Fetch latest sensor data if we have a device
         let sensorLatestData = null;
-        if (primaryDevice && (primaryDevice.id || primaryDevice._id)) {
+        let aiRes: any = { data: null };
+        const deviceId = primaryDevice?.id || primaryDevice?._id;
+
+        if (deviceId) {
           try {
-            const deviceId = primaryDevice.id || primaryDevice._id;
-            const latestRes = await sensorsAPI.getLatestReading(deviceId);
+            const [latestRes, aiResponse] = await Promise.all([
+              sensorsAPI.getLatestReading(deviceId).catch(() => ({ data: null })),
+              dashboardAPI.getAIInsights(selectedFarmId, deviceId).catch(() => ({ data: null }))
+            ]);
+            
+            aiRes = aiResponse;
             const latestDataArr = latestRes.data?.data || latestRes.data;
             if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
               sensorLatestData = { ...latestDataArr[0], deviceId, sensorId: actualSensorId };
@@ -141,23 +144,35 @@ export function useDashboardState() {
               sensorLatestData = { ...latestDataArr, deviceId, sensorId: actualSensorId };
             }
           } catch (e) {
-            console.error('Failed to fetch latest sensor data', e);
+            console.error('Failed to fetch latest sensor and AI data', e);
+          }
+        } else {
+          // Fallback if no device
+          try {
+            aiRes = await dashboardAPI.getAIInsights(selectedFarmId).catch(() => ({ data: null }));
+          } catch (e) {
+            console.error('Failed to fetch AI data', e);
           }
         }
+        
+        const aiDataRaw = aiRes.data?.data || aiRes.data?.insights || aiRes.data;
+        const aiData = Array.isArray(aiDataRaw) ? aiDataRaw : (typeof aiDataRaw === 'object' && aiDataRaw !== null ? [] : []);
 
-        // Fallback: if no primary device found, use actualSensorId to get latest reading
-        if (!sensorLatestData && actualSensorId) {
-          try {
-            const latestRes = await sensorsAPI.getLatestReading(actualSensorId);
-            const latestDataArr = latestRes.data?.data || latestRes.data;
-            if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
-              sensorLatestData = { ...latestDataArr[0], deviceId: actualSensorId, sensorId: actualSensorId };
-            } else if (!Array.isArray(latestDataArr) && latestDataArr) {
-              sensorLatestData = { ...latestDataArr, deviceId: actualSensorId, sensorId: actualSensorId };
+        let hasNoIncomingData = false;
+        if (!sensorLatestData) {
+          hasNoIncomingData = true;
+          sensorLatestData = {
+            deviceId: primaryDevice?.id || primaryDevice?._id || actualSensorId || 'none',
+            sensorId: actualSensorId || 'none',
+            values: {
+              soil_moisture: 0,
+              soil_moisture_1: 0,
+              soil_temperature: 0,
+              temperature: 0,
+              humidity: 0,
+              wind_speed: 0
             }
-          } catch (fallbackErr) {
-            console.error('Failed to fetch fallback sensor data', fallbackErr);
-          }
+          };
         }
 
         // Map metrics from statistics or fallback
@@ -189,27 +204,36 @@ export function useDashboardState() {
         setDashboardData({
           farm: farms.find(f => (f.id || f._id) === selectedFarmId) || primaryDevice?.farm || (overview?.farmName ? { name: overview.farmName } : null),
           health: {
-            overallHealth: aiRes.data?.raw?.farm_status?.farm_health_percentage || overview?.performance?.healthScore || stats?.overallStatus || 85,
+            overallHealth: hasNoIncomingData ? 0 : (aiRes.data?.raw?.farm_status?.farm_health_percentage || overview?.performance?.healthScore || stats?.overallStatus || 85),
             metrics: mappedMetrics,
           },
           sensors: {
-            activeSensorsCount: sensorLatestData?.values ? Object.keys(sensorLatestData.values).filter(k => sensorLatestData.values[k] !== undefined && sensorLatestData.values[k] !== null).length : (stats?.overview?.activeSensors || (Array.isArray(devices) ? devices.filter((d: any) => d.status === 'active').length : 0) || overview?.sensors || 0),
+            activeSensorsCount: hasNoIncomingData ? 0 : (sensorLatestData?.values ? Object.keys(sensorLatestData.values).filter(k => sensorLatestData.values[k] !== undefined && sensorLatestData.values[k] !== null).length : (stats?.overview?.activeSensors || (Array.isArray(devices) ? devices.filter((d: any) => d.status === 'active').length : 0) || overview?.sensors || 0)),
             totalSensorsCount: stats?.overview?.totalSensors || (Array.isArray(devices) ? devices.length : 0) || overview?.sensors || 0,
-            latestData: sensorLatestData,
+            latestData: hasNoIncomingData ? null : sensorLatestData,
             deviceId: primaryDevice?.id || primaryDevice?._id || sensorLatestData?.deviceId || sensorLatestData?.sensorId || sensorLatestData?.id || sensorLatestData?._id,
             sensorId: actualSensorId || sensorLatestData?.sensorId || sensorLatestData?.id || sensorLatestData?._id,
           },
           alerts: { 
-            cards: aiRes.data?.cards || alertsData,
-            activeCount: aiRes.data?.cards?.length || overview?.activeAlerts || alertsData.length || 0,
-            suggestion: aiRes.data?.raw?.prescription ? {
+            cards: hasNoIncomingData ? [] : (aiRes.data?.cards || alertsData),
+            activeCount: hasNoIncomingData ? 0 : (aiRes.data?.cards?.length || overview?.activeAlerts || alertsData.length || 0),
+            suggestion: hasNoIncomingData ? {
+              title: 'No Data',
+              body: 'No alerts for this device.',
+              confidence: '0%',
+            } : (aiRes.data?.raw?.prescription ? {
               title: `Prescription (${aiRes.data.raw.prescription.priority || 'Normal'})`,
               body: aiRes.data.raw.prescription.actions?.join(' ') || 'No critical prescription actions.',
               confidence: aiRes.data.raw.aqi?.confidence ? `${Math.round(aiRes.data.raw.aqi.confidence * 100)}%` : '95%',
-            } : undefined
+            } : undefined)
           },
           waterSavings: null,
-          aiInsights: aiRes.data?.raw ? [
+          aiInsights: hasNoIncomingData ? [
+            { title: 'Irrigation', description: 'Nil prediction - no sensor data.', level: 'warn' },
+            { title: 'Fungal', description: 'Nil prediction - no sensor data.', level: 'warn' },
+            { title: 'Pest', description: 'Nil prediction - no sensor data.', level: 'warn' },
+            { title: 'AQI', description: 'Nil prediction - no sensor data.', level: 'warn' }
+          ] : (aiRes.data?.raw ? [
             ...(aiRes.data.raw.irrigation ? [{
               title: 'Irrigation',
               description: aiRes.data.raw.irrigation.advisory,
@@ -230,7 +254,7 @@ export function useDashboardState() {
               description: aiRes.data.raw.aqi.plant_impact,
               level: (aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'low stress' || aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'optimal') ? 'good' : 'warn'
             }] : [])
-          ] : aiData,
+          ] : aiData),
           currentDevice: primaryDevice ? {
             name: primaryDevice.name,
             serialNumber: primaryDevice.serialNumber,
