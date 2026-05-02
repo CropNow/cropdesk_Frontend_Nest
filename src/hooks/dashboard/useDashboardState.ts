@@ -205,6 +205,8 @@ export function useDashboardState() {
           farm: farms.find(f => (f.id || f._id) === selectedFarmId) || primaryDevice?.farm || (overview?.farmName ? { name: overview.farmName } : null),
           health: {
             overallHealth: hasNoIncomingData ? 0 : (aiRes.data?.raw?.farm_status?.farm_health_percentage || overview?.performance?.healthScore || stats?.overallStatus || 85),
+            condition: hasNoIncomingData ? 'UNKNOWN' : (aiRes.data?.raw?.farm_status?.farm_condition || 'NORMAL'),
+            stressBreakdown: hasNoIncomingData ? null : aiRes.data?.raw?.farm_status?.stress_breakdown,
             metrics: mappedMetrics,
           },
           sensors: {
@@ -236,22 +238,22 @@ export function useDashboardState() {
           ] : (aiRes.data?.raw ? [
             ...(aiRes.data.raw.irrigation ? [{
               title: 'Irrigation',
-              description: aiRes.data.raw.irrigation.advisory,
+              description: aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'No irrigation needed.' : `Requires ${aiRes.data.raw.irrigation.water_requirement_mm}mm of water.`,
               level: aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'good' : 'warn'
             }] : []),
             ...(aiRes.data.raw.fungal_disease ? [{
               title: 'Fungal',
-              description: aiRes.data.raw.fungal_disease.recommendation,
+              description: aiRes.data.raw.fungal_disease.likely_disease || 'Monitor closely for fungal pressure.',
               level: aiRes.data.raw.fungal_disease.activity_level?.toLowerCase() === 'low' ? 'good' : 'warn'
             }] : []),
             ...(aiRes.data.raw.pest ? [{
               title: 'Pest',
-              description: aiRes.data.raw.pest.recommendation,
+              description: `Risk Level: ${aiRes.data.raw.pest.pest_risk_level}. Leaf wetness: ${aiRes.data.raw.pest.leaf_wetness_pct}%.`,
               level: aiRes.data.raw.pest.pest_risk_level?.toLowerCase() === 'low' ? 'good' : 'warn'
             }] : []),
             ...(aiRes.data.raw.aqi ? [{
               title: 'AQI',
-              description: aiRes.data.raw.aqi.plant_impact,
+              description: aiRes.data.raw.aqi.plant_impact || `Dominant Pollutant: ${aiRes.data.raw.aqi.dominant_pollutant}`,
               level: (aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'low stress' || aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'optimal') ? 'good' : 'warn'
             }] : [])
           ] : aiData),
