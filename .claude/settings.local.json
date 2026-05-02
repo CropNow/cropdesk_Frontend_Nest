@@ -15,7 +15,16 @@
       "Bash(python3 /tmp/count_dark.py)",
       "Bash(python3:*)",
       "Bash(grep -E \"\\\\.\\(ts|tsx|json\\)$\")",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(claude mcp *)",
+      "mcp__ruflo__hooks_session-start",
+      "Bash(npm view *)",
+      "Bash(npm ls *)"
     ]
+  },
+  "enabledPlugins": {
+    "ruflo-core@ruflo": true,
+    "ruflo-swarm@ruflo": true,
+    "ruflo-autopilot@ruflo": true
   }
 }

@@ -9,13 +9,17 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+        // Outfit is loaded in src/index.css. Keep Tailwind's font-sans aligned
+        // so utility classes match the actual font on the page.
+        sans: ['Outfit', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
-        accent: '#00FF00',
-        sage: '#749272',
-        medium: '#498A46',
-        primary: '#41933D',
+        // Brand palette: Tailwind Slate + Emerald 700 (human-curated, sunlight-readable)
+        accent: '#34D399',  /* Emerald 400 — was #00FF00 (neon, eye strain) */
+        sage: '#5C7A5A',    /* Slightly deeper than #749272 for contrast */
+        medium: '#3F7A3D',  /* Was #498A46 — denser for outdoor legibility */
+        primary: '#2F7A2C', /* Was #41933D — darker brand green for sunlight */
 
         // CSS variable-backed theme colors
         bgMain: 'var(--bg-main)',

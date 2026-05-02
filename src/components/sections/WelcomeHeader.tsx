@@ -38,7 +38,7 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
         <div className="flex flex-col">
           <div className="flex items-center justify-between sm:block">
             {/* Mobile Welcome Text */}
-            <span className="text-xs font-bold uppercase tracking-[0.15em] text-textLabel sm:hidden mb-0.5 opacity-80">
+            <span className="text-xs font-bold uppercase tracking-wider text-textLabel sm:hidden mb-0.5 opacity-80">
               Welcome back,
             </span>
             
@@ -94,7 +94,7 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
           </div>
 
           <div className="hidden sm:flex items-baseline gap-2 sm:gap-3">
-            <p className="text-2xl font-extrabold tracking-tighter text-textHeading sm:text-3xl lg:text-[34px] leading-none">
+            <p className="text-2xl font-extrabold tracking-tighter text-textHeading sm:text-3xl lg:text-4xl leading-none">
               {displayWeather.temp.split(' ')[0]}
               <span className="text-lg text-textMuted sm:text-xl lg:text-2xl">°C</span>
             </p>

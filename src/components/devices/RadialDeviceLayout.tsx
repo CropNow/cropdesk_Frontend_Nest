@@ -55,7 +55,7 @@ export function RadialDeviceLayout({
       label: 'Soil Type',
       value: typeof device.soilType === 'string' ? device.soilType : (device as any).field?.soil?.type || 'Clay',
       icon: <Leaf className="h-3 w-3" />,
-      delay: 0.08,
+      delay: 0.01,
     },
     {
       label: 'Area',
@@ -65,19 +65,19 @@ export function RadialDeviceLayout({
           <rect x="3" y="3" width="18" height="18" rx="2" />
         </svg>
       ),
-      delay: 0.1,
+      delay: 0.02,
     },
     {
       label: 'Location',
       value: typeof device.location === 'string' ? device.location : (device as any).field?.location?.name || 'Smart Block A',
       icon: <MapPin className="h-3 w-3" />,
-      delay: 0.12,
+      delay: 0.03,
     },
     {
       label: 'Irrigation',
       value: typeof device.irrigationType === 'string' ? device.irrigationType : (device as any).field?.irrigation?.type || 'Drip',
       icon: <Droplets className="h-3 w-3" />,
-      delay: 0.14,
+      delay: 0.04,
     },
     {
       label: 'Boundary',
@@ -87,27 +87,17 @@ export function RadialDeviceLayout({
           <polygon points="12 2 2 19 22 19" />
         </svg>
       ),
-      delay: 0.16,
+      delay: 0.05,
     },
     {
       label: 'Crops',
-      value: (
-        <div className="mt-1 flex max-w-[220px] flex-nowrap gap-1.5 overflow-x-auto pr-1 md:max-w-[200px] md:flex-wrap md:overflow-visible">
-          {(device.crops || []).slice(0, 1).map((crop: any, idx: number) => {
-            const cropName = typeof crop === 'string' ? crop : (crop.name || crop.scientificName || 'Crop');
-            return (
-              <span
-                key={`${cropName}-${idx}`}
-                className="rounded-full border border-accentPrimary/40 bg-accentPrimary/12 px-2.5 py-0.5 text-[10px] font-medium leading-relaxed text-[#9BFFD7]"
-              >
-                {cropName}
-              </span>
-            );
-          })}
-        </div>
-      ),
+      value: (() => {
+        const first: any = (device.crops || [])[0];
+        if (!first) return '—';
+        return typeof first === 'string' ? first : (first.name || first.scientificName || 'Crop');
+      })(),
       icon: <Leaf className="h-3 w-3" />,
-      delay: 0.18,
+      delay: 0.06,
     },
   ];
 
@@ -147,12 +137,15 @@ export function RadialDeviceLayout({
                 key={`${selectedDeviceType}-${currentDeviceIndex}`}
                 src={displayImage}
                 alt={device.name}
-                initial={{ opacity: 0, y: 12, scale: 0.9 }}
+                loading="eager"
+                decoding="async"
+                {...({ fetchpriority: 'high' } as any)}
+                initial={{ opacity: 0, y: 12, scale: 0.95 }}
                 animate={{ opacity: 1, y: [0, -6, 0], scale: 1 }}
                 transition={{
-                  opacity: { duration: 0.35 },
-                  y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' },
-                  scale: { duration: 0.35 },
+                  opacity: { duration: 0.2 },
+                  y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut', delay: 0.4 },
+                  scale: { duration: 0.2 },
                 }}
                 className="relative z-10 max-h-[220px] w-auto object-contain drop-shadow-[0_18px_44px_rgba(0,255,156,0.28)] sm:max-h-[360px] md:max-h-[400px]"
               />
@@ -175,7 +168,7 @@ export function RadialDeviceLayout({
                   key={attr.label}
                   initial={{ opacity: 0, x: 14 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.35, delay: attr.delay }}
+                  transition={{ duration: 0.2, delay: attr.delay }}
                   className="max-w-[220px]"
                   style={{ marginLeft: indentPx }}
                 >
@@ -209,7 +202,7 @@ export function RadialDeviceLayout({
                 key={attr.label}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.35, delay: attr.delay }}
+                transition={{ duration: 0.2, delay: attr.delay }}
                 className="max-w-[200px] space-y-0.5"
                 style={{ marginLeft: Math.round(getArcFactor(index, attrs.length) * 42) }}
               >

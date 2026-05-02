@@ -280,7 +280,7 @@ export function RegisterPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              <p className="mt-1.5 text-[11px] text-textHint">Must be at least 8 characters.</p>
+              <p className="mt-1.5 text-xs text-textHint">Must be at least 8 characters.</p>
             </div>
 
             {/* Confirm Password */}

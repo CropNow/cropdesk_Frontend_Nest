@@ -23,3 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 *.claude*
+*code-review-graph*
+
+# Claude directories
+.claude/
+.claude-flow/
+
+# Project documentation
+PROJECT_DOCUMENTATION.md
+REFACTORING_SUMMARY.md

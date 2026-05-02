@@ -22,7 +22,7 @@ export function FISAlertSection({ data }: { data?: any }) {
     >
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-xl font-semibold tracking-tight text-textHeading md:text-2xl">FIS Alert Engine</h3>
-        <span className="rounded-full border border-[#00FF9C]/30 bg-[#00FF9C]/10 px-3 py-1 text-xs font-semibold text-[#00FF9C]">
+        <span className="rounded-full border border-accentPrimary/40 bg-accentPrimary/10 px-3 py-1 text-xs font-semibold text-accentPrimary dark:border-[#00FF9C]/30 dark:bg-[#00FF9C]/10 dark:text-[#00FF9C]">
           ACTIVE
         </span>
       </div>
@@ -31,15 +31,15 @@ export function FISAlertSection({ data }: { data?: any }) {
         {cards.map((card: any) => {
           const IconComponent = typeof card.icon === 'function' || typeof card.icon === 'object' ? card.icon : (FIS_CARDS.find((c: any) => c.title === card.title)?.icon || Activity);
           return (
-            <div key={card.title} className="rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition-all hover:bg-white/[0.05]">
+            <div key={card.title} className="rounded-[2.5rem] border border-cardBorder bg-cardBg/60 p-6 backdrop-blur-xl transition-all hover:bg-cardBg/80 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.05]">
               <div className="mb-5 flex items-center gap-4">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 backdrop-blur-md border border-white/5 shadow-inner">
-                  {IconComponent ? <IconComponent className="h-5 w-5 text-[#00FF9C]" /> : null}
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 backdrop-blur-md border border-cardBorder shadow-inner dark:border-white/5">
+                  {IconComponent ? <IconComponent className="h-5 w-5 text-accentPrimary dark:text-[#00FF9C]" /> : null}
                 </span>
-                <h4 className="text-xl font-bold text-white tracking-tight whitespace-nowrap">{card.title}</h4>
+                <h4 className="text-xl font-bold text-textHeading tracking-tight whitespace-nowrap">{card.title}</h4>
               </div>
 
-              <p className="text-sm font-medium leading-relaxed text-white/60 min-h-[48px] line-clamp-2">
+              <p className="text-sm font-medium leading-relaxed text-textBody min-h-[48px] line-clamp-2 dark:text-white/60">
                 {card.body}
               </p>
 
@@ -48,14 +48,14 @@ export function FISAlertSection({ data }: { data?: any }) {
                 <span
                   className={[
                     'inline-flex rounded-full px-3 py-1 text-[0.75rem] font-black uppercase tracking-widest',
-                    card.status === 'Optimal' && 'bg-[#00FF9C]/10 text-[#00FF9C] border border-[#00FF9C]/20',
-                    card.status === 'Warning' && 'bg-yellow-400/10 text-yellow-300 border border-yellow-400/20',
-                    card.status === 'Critical' && 'bg-red-400/10 text-red-300 border border-red-400/20',
+                    card.status === 'Optimal' && 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/30 dark:bg-[#00FF9C]/10 dark:text-[#00FF9C] dark:border-[#00FF9C]/20',
+                    card.status === 'Warning' && 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-yellow-400/10 dark:text-yellow-300 dark:border-yellow-400/20',
+                    card.status === 'Critical' && 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-400/10 dark:text-red-300 dark:border-red-400/20',
                   ].join(' ')}
                 >
                   {card.status}
                 </span>
-                <span className="text-xs font-black text-white/40 tracking-tighter">{card.value}%</span>
+                <span className="text-xs font-black text-textMuted tracking-tighter dark:text-white/40">{card.value}%</span>
               </div>
 
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-cardBg/50 border border-cardBorder">
@@ -76,17 +76,17 @@ export function FISAlertSection({ data }: { data?: any }) {
       })}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-[#00FF9C]/25 bg-[#00FF9C]/10 p-4">
-        <p className="text-lg font-semibold">{suggestion.title || 'Prescription'}</p>
+      <div className="mt-4 rounded-2xl border border-accentPrimary/30 bg-accentPrimary/5 p-4 dark:border-[#00FF9C]/25 dark:bg-[#00FF9C]/10">
+        <p className="text-lg font-semibold text-textHeading">{suggestion.title || 'Prescription'}</p>
         <p className="mt-1 text-textBody">
           {suggestion.body}
         </p>
-        <div className="mt-4 h-3 rounded-full bg-black/30">
+        <div className="mt-4 h-3 rounded-full bg-borderColor/60 dark:bg-black/30">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: suggestion.confidence }}
             transition={{ duration: 1.1, delay: 0.2 }}
-            className="h-3 rounded-full bg-gradient-to-r from-[#00FF9C] to-emerald-300"
+            className="h-3 rounded-full bg-gradient-to-r from-accentPrimary to-accentSecondary dark:from-[#00FF9C] dark:to-emerald-300"
           />
         </div>
         <div className="mt-1 flex items-center justify-between text-xs text-textLabel">
@@ -97,7 +97,7 @@ export function FISAlertSection({ data }: { data?: any }) {
         <div className="mt-4 sm:hidden">
           <button
             type="button"
-            className="w-full rounded-xl bg-[#00FF9C]/20 border border-[#00FF9C]/40 py-2.5 text-sm font-semibold text-[#00FF9C] transition hover:bg-[#00FF9C]/30 active:scale-[0.98]"
+            className="w-full rounded-xl bg-accentPrimary/15 border border-accentPrimary/40 py-2.5 text-sm font-semibold text-accentPrimary transition hover:bg-accentPrimary/25 active:scale-[0.98] dark:bg-[#00FF9C]/20 dark:border-[#00FF9C]/40 dark:text-[#00FF9C] dark:hover:bg-[#00FF9C]/30"
           >
             Acknowledge
           </button>
@@ -106,7 +106,7 @@ export function FISAlertSection({ data }: { data?: any }) {
         <div className="hidden sm:mt-4 sm:flex sm:justify-end">
           <button
             type="button"
-            className="rounded-lg border border-[#00FF9C]/30 bg-[#00FF9C]/10 px-4 py-1.5 text-sm font-semibold text-[#00FF9C] transition-all hover:bg-[#00FF9C]/20 active:scale-[0.98]"
+            className="rounded-lg border border-accentPrimary/40 bg-accentPrimary/10 px-4 py-1.5 text-sm font-semibold text-accentPrimary transition-all hover:bg-accentPrimary/20 active:scale-[0.98] dark:border-[#00FF9C]/30 dark:bg-[#00FF9C]/10 dark:text-[#00FF9C] dark:hover:bg-[#00FF9C]/20"
           >
             Acknowledge
           </button>

@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DEVICE_LIBRARY, DeviceType, FARM_STATUS_METRICS } from '../../constants/deviceConstants';
 import { isDeviceType } from '../../utils/deviceUtils';
-import { normalizeAIInsights } from '../../utils/aiInsights';
 import { dashboardAPI } from '../../api/dashboard.api';
 import { sensorsAPI } from '../../api/sensors.api';
-import { devicesAPI } from '../../api/devices.api';
 
 export function useDashboardState() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -15,6 +13,7 @@ export function useDashboardState() {
   const [selectedDeviceType, setSelectedDeviceType] = useState<DeviceType>(initialType);
   const [currentDeviceIndex, setCurrentDeviceIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [refreshTick, setRefreshTick] = useState(0);
 
   // ─── API Data Fetching ───
   const [farms, setFarms] = useState<any[]>([]);
@@ -23,6 +22,13 @@ export function useDashboardState() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [backendDevices, setBackendDevices] = useState<any[]>([]);
+
+  // Refs let the heavy fetch effect read the latest farms/backendDevices
+  // without listing them as dependencies (which caused 2-3x re-fetch loops).
+  const farmsRef = useRef<any[]>([]);
+  const backendDevicesRef = useRef<any[]>([]);
+  useEffect(() => { farmsRef.current = farms; }, [farms]);
+  useEffect(() => { backendDevicesRef.current = backendDevices; }, [backendDevices]);
 
   const fetchBackendDevices = async () => {
     try {
@@ -64,28 +70,32 @@ export function useDashboardState() {
     initFarms();
   }, []);
 
-  // 2. Fetch Farm Data: When farmId changes
+  // 2. Fetch Farm Data: When farmId or selected device type changes.
+  // Reads farms / backendDevices via refs to avoid the dep-loop that previously
+  // caused this effect to fire 2-3x per page load (the >3000ms regression).
   useEffect(() => {
     if (!selectedFarmId) return;
 
     const fetchFarmData = async () => {
       try {
         setIsLoading(true);
-        
-        // Fetch from dashboard specific endpoints + statistics fallback
-        const [overviewRes, statsRes, devicesRes, alertsRes, aiRes, sensorsRes] = await Promise.all([
+
+        // Run ALL initial calls in parallel — including the previously-serial
+        // unfiltered getSensors used to derive actualSensorId.
+        const [overviewRes, statsRes, devicesRes, alertsRes, aiRes, sensorsRes, allSensorsRes] = await Promise.all([
           dashboardAPI.getDashboardOverview().catch(() => ({ data: null })),
           dashboardAPI.getFarmStatistics(selectedFarmId).catch(() => ({ data: null })),
           dashboardAPI.getFarmDevices(selectedFarmId).catch(() => ({ data: null })),
           dashboardAPI.getAlerts().catch(() => ({ data: null })),
           dashboardAPI.getAIInsights(selectedFarmId).catch(() => ({ data: null })),
           sensorsAPI.getSensors({ type: selectedDeviceType.toUpperCase() }).catch(() => ({ data: null })),
+          sensorsAPI.getSensors().catch(() => ({ data: null })),
         ]);
 
         const overview = overviewRes.data?.overview;
         const stats = statsRes.data?.data || statsRes.data;
-        
-        let devices = [];
+
+        const devices: any[] = [];
         const addDevices = (res: any) => {
           if (!res || !res.data) return;
           const data = res.data?.data || res.data?.devices || (Array.isArray(res.data) ? res.data : []);
@@ -99,65 +109,41 @@ export function useDashboardState() {
         };
         addDevices(devicesRes);
         addDevices(sensorsRes); // Add backend sensors as devices
-        
+
         const alertsData = alertsRes.data?.data || alertsRes.data || [];
         const aiDataRaw = aiRes.data?.data || aiRes.data?.insights || aiRes.data;
         const aiData = Array.isArray(aiDataRaw) ? aiDataRaw : (typeof aiDataRaw === 'object' && aiDataRaw !== null ? [] : []);
 
-        console.log('DEBUG overviewRes:', overviewRes.data);
-        console.log('DEBUG statsRes:', statsRes.data);
-        console.log('DEBUG devicesRes:', devicesRes.data);
-        console.log('DEBUG alertsRes:', alertsRes.data);
-        console.log('DEBUG aiRes:', aiRes.data);
-        console.log('DEBUG sensorsRes:', sensorsRes.data);
+        // Read latest snapshots without re-triggering this effect.
+        const backendDevicesNow = backendDevicesRef.current;
+        const farmsNow = farmsRef.current;
 
-        // Find current device (Nest)
-        // Match index from available devices
-        const primaryDevice = backendDevices[currentDeviceIndex % (backendDevices.length || 1)] || 
-                             devices[currentDeviceIndex % (devices.length || 1)] || 
+        // Find current device (Nest). Match index from available devices.
+        const primaryDevice = backendDevicesNow[currentDeviceIndex % (backendDevicesNow.length || 1)] ||
+                             devices[currentDeviceIndex % (devices.length || 1)] ||
                              devices[0];
 
-        // Fetch all sensors to get the true sensor ID for aggregate requests
-        let actualSensorId = null;
-        try {
-          const allSensorsRes = await sensorsAPI.getSensors();
-          const allSensors = allSensorsRes.data?.data || allSensorsRes.data || [];
-          if (allSensors.length > 0) {
-            actualSensorId = allSensors[0]._id || allSensors[0].id;
-          }
-        } catch (err) {
-          console.error('Failed to fetch sensors', err);
-        }
+        // Derive actualSensorId from the parallel allSensors response (no extra round-trip).
+        const allSensors = allSensorsRes.data?.data || allSensorsRes.data || [];
+        const actualSensorId = Array.isArray(allSensors) && allSensors.length > 0
+          ? (allSensors[0]._id || allSensors[0].id)
+          : null;
 
-        // Fetch latest sensor data if we have a device
-        let sensorLatestData = null;
-        if (primaryDevice && (primaryDevice.id || primaryDevice._id)) {
+        // Fetch the single latest sensor reading. Pick the best available id once
+        // and call /latest only one time instead of trying primaryDevice then falling back.
+        const latestId = (primaryDevice && (primaryDevice.id || primaryDevice._id)) || actualSensorId;
+        let sensorLatestData: any = null;
+        if (latestId) {
           try {
-            const deviceId = primaryDevice.id || primaryDevice._id;
-            const latestRes = await sensorsAPI.getLatestReading(deviceId);
+            const latestRes = await sensorsAPI.getLatestReading(latestId);
             const latestDataArr = latestRes.data?.data || latestRes.data;
             if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
-              sensorLatestData = { ...latestDataArr[0], deviceId, sensorId: actualSensorId };
+              sensorLatestData = { ...latestDataArr[0], deviceId: latestId, sensorId: actualSensorId };
             } else if (!Array.isArray(latestDataArr) && latestDataArr) {
-              sensorLatestData = { ...latestDataArr, deviceId, sensorId: actualSensorId };
+              sensorLatestData = { ...latestDataArr, deviceId: latestId, sensorId: actualSensorId };
             }
           } catch (e) {
             console.error('Failed to fetch latest sensor data', e);
-          }
-        }
-
-        // Fallback: if no primary device found, use actualSensorId to get latest reading
-        if (!sensorLatestData && actualSensorId) {
-          try {
-            const latestRes = await sensorsAPI.getLatestReading(actualSensorId);
-            const latestDataArr = latestRes.data?.data || latestRes.data;
-            if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
-              sensorLatestData = { ...latestDataArr[0], deviceId: actualSensorId, sensorId: actualSensorId };
-            } else if (!Array.isArray(latestDataArr) && latestDataArr) {
-              sensorLatestData = { ...latestDataArr, deviceId: actualSensorId, sensorId: actualSensorId };
-            }
-          } catch (fallbackErr) {
-            console.error('Failed to fetch fallback sensor data', fallbackErr);
           }
         }
 
@@ -188,7 +174,7 @@ export function useDashboardState() {
         });
 
         setDashboardData({
-          farm: farms.find(f => (f.id || f._id) === selectedFarmId) || primaryDevice?.farm || (overview?.farmName ? { name: overview.farmName } : null),
+          farm: farmsNow.find((f: any) => (f.id || f._id) === selectedFarmId) || primaryDevice?.farm || (overview?.farmName ? { name: overview.farmName } : null),
           health: {
             overallHealth: aiRes.data?.raw?.farm_status?.farm_health_percentage || overview?.performance?.healthScore || stats?.overallStatus || 85,
             metrics: mappedMetrics,
@@ -268,10 +254,17 @@ export function useDashboardState() {
     };
 
     fetchFarmData();
-    
-    const intervalId = setInterval(fetchFarmData, 10 * 60 * 1000); // Poll every 10 minutes
+    // Heavy effect deps now exclude `farms` and `backendDevices` — they're read
+    // via refs so a state update in either does NOT retrigger this whole fetch.
+  }, [selectedFarmId, selectedDeviceType, currentDeviceIndex, refreshTick]);
+
+  // Poll every 10 minutes — separate effect so the polling timer is only torn
+  // down when the farm actually changes, not on every dashboard re-render.
+  useEffect(() => {
+    if (!selectedFarmId) return;
+    const intervalId = setInterval(() => setRefreshTick((t) => t + 1), 10 * 60 * 1000);
     return () => clearInterval(intervalId);
-  }, [selectedFarmId, farms, currentDeviceIndex, backendDevices]);
+  }, [selectedFarmId]);
 
   // ─── UI Logic ───
   // Update time every minute
@@ -341,10 +334,11 @@ export function useDashboardState() {
     crops: ['Corn', 'Cabbage']
   };
 
-  const cycleDevice = async (direction: 1 | -1) => {
-    // Trigger API on click
-    await fetchBackendDevices();
-    
+  const cycleDevice = (direction: 1 | -1) => {
+    // Refresh the backend device list (fire-and-forget — no await, so the
+    // index update isn't blocked). The heavy effect re-runs on
+    // currentDeviceIndex change for the dashboard data refresh.
+    fetchBackendDevices();
     setCurrentDeviceIndex((prev) => {
       const listLen = deviceList.length;
       if (listLen === 0) return 0;

@@ -1,15 +1,29 @@
+import { Suspense, lazy } from 'react';
 import { useDashboardState } from '../../hooks/dashboard/useDashboardState';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { WelcomeHeader } from '../../components/sections/WelcomeHeader';
 import { DeviceSection } from '../../components/sections/DeviceSection';
 import { FarmHealthSection } from '../../components/sections/FarmHealthSection';
-import { SensorCategoriesSection } from '../../components/sections/SensorCategoriesSection';
 import { FISAlertSection } from '../../components/sections/FISAlertSection';
 import { AIInsightsSection } from '../../components/sections/AIInsightsSection';
 import { WaterSavingsSection } from '../../components/sections/WaterSavingsSection';
 import { BentoCard } from '../../components/common/BentoCard';
 import { BentoGrid } from '../../components/common/BentoGrid';
+
+// Heaviest section on the page — lazy-load so the rest of the dashboard paints first.
+const SensorCategoriesSection = lazy(() =>
+  import('../../components/sections/SensorCategoriesSection').then(m => ({
+    default: m.SensorCategoriesSection,
+  })),
+);
+
+const SensorSkeleton = () => (
+  <div
+    className="h-[360px] w-full animate-pulse rounded-xl bg-cardBg/40"
+    style={{ contentVisibility: 'auto', containIntrinsicSize: '360px' }}
+  />
+);
 
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -88,7 +102,9 @@ export function DashboardPage() {
         {/* Sensors + Alerts */}
         <section className="grid gap-4 sm:gap-6 xl:grid-cols-5">
           <BentoCard className="rounded-xl xl:col-span-2" enableBorderGlow clickEffect>
-            <SensorCategoriesSection data={dashboardData?.sensors} />
+            <Suspense fallback={<SensorSkeleton />}>
+              <SensorCategoriesSection data={dashboardData?.sensors} />
+            </Suspense>
           </BentoCard>
           <BentoCard className="rounded-xl xl:col-span-3" enableBorderGlow clickEffect>
             <FISAlertSection data={dashboardData?.alerts} />

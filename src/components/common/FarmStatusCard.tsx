@@ -22,7 +22,7 @@ export function FarmStatusCard({ metric }: FarmStatusCardProps) {
       <div className="mb-1 text-textLabel sm:mb-2">{icon}</div>
       <div className="mb-0.5 flex items-baseline justify-center gap-0.5">
         <span className="text-lg font-bold tracking-tight text-textHeading sm:text-lg lg:text-2xl">{metric.value}</span>
-        {metric.unit && <span className="text-[13px] font-medium text-textMuted sm:text-sm">{metric.unit}</span>}
+        {metric.unit && <span className="text-sm font-medium text-textMuted">{metric.unit}</span>}
       </div>
       <p className="text-xs font-medium text-textHint sm:text-xs">{metric.label}</p>
     </motion.div>
