@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity } from 'lucide-react';
 import { FIS_CARDS } from '../../constants/deviceConstants';
+import { alertsAPI } from '../../api/alerts.api';
 
 /**
  * FISAlertSection - Field Intelligence System alerts (V2 design with linear progress bars)
@@ -12,6 +13,64 @@ export function FISAlertSection({ data }: { data?: any }) {
     title: 'Suggestion',
     body: 'Deploy sub-surface irrigation now. Solar intensity is rising, hydrate early to maximize yield.',
     confidence: '98.4%',
+  };
+
+  const [isAcknowledged, setIsAcknowledged] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const checkAcknowledgment = () => {
+      const ackTimestamp = localStorage.getItem('fis_alert_acknowledged_at');
+      if (ackTimestamp) {
+        const timestamp = parseInt(ackTimestamp, 10);
+        const now = Date.now();
+        const thirtyMinutes = 30 * 60 * 1000;
+
+        if (now - timestamp < thirtyMinutes) {
+          setIsAcknowledged(true);
+          // Set a timer to reset after the remaining time
+          const remainingTime = thirtyMinutes - (now - timestamp);
+          const timer = setTimeout(() => {
+            setIsAcknowledged(false);
+            localStorage.removeItem('fis_alert_acknowledged_at');
+          }, remainingTime);
+          return () => clearTimeout(timer);
+        } else {
+          localStorage.removeItem('fis_alert_acknowledged_at');
+        }
+      }
+    };
+
+    checkAcknowledgment();
+  }, []);
+
+  const handleAcknowledge = async () => {
+    if (isAcknowledged || isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+      await alertsAPI.createAlert({
+        title: suggestion.title || 'FIS Suggestion',
+        message: suggestion.body,
+        type: 'FIS_ACK',
+        severity: 'info',
+        status: 'acknowledged'
+      });
+
+      const now = Date.now();
+      localStorage.setItem('fis_alert_acknowledged_at', now.toString());
+      setIsAcknowledged(true);
+
+      // Reset after 30 minutes
+      setTimeout(() => {
+        setIsAcknowledged(false);
+        localStorage.removeItem('fis_alert_acknowledged_at');
+      }, 30 * 60 * 1000);
+    } catch (error) {
+      console.error('Failed to acknowledge alert:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -44,37 +103,36 @@ export function FISAlertSection({ data }: { data?: any }) {
                 {card.body}
               </p>
 
-            <div className="mt-6 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span
-                  className={[
-                    'inline-flex rounded-full px-3 py-1 text-[0.65rem] font-black uppercase tracking-widest',
-                    card.status === 'Optimal' && 'bg-[#00FF9C]/10 text-[#00FF9C] border border-[#00FF9C]/20',
-                    card.status === 'Warning' && 'bg-yellow-400/10 text-yellow-300 border border-yellow-400/20',
-                    card.status === 'Critical' && 'bg-red-400/10 text-red-300 border border-red-400/20',
-                  ].join(' ')}
-                >
-                  {card.status}
-                </span>
-                <span className="text-xs font-black text-white/40 tracking-tighter">{card.value}%</span>
-              </div>
+              <div className="mt-6 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span
+                    className={[
+                      'inline-flex rounded-full px-3 py-1 text-[0.65rem] font-black uppercase tracking-widest',
+                      card.status === 'Optimal' && 'bg-[#00FF9C]/10 text-[#00FF9C] border border-[#00FF9C]/20',
+                      card.status === 'Warning' && 'bg-yellow-400/10 text-yellow-300 border border-yellow-400/20',
+                      card.status === 'Critical' && 'bg-red-400/10 text-red-300 border border-red-400/20',
+                    ].join(' ')}
+                  >
+                    {card.status}
+                  </span>
+                  <span className="text-xs font-black text-white/40 tracking-tighter">{card.value}%</span>
+                </div>
 
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5 border border-white/5">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${card.value}%` }}
-                  transition={{ duration: 1.2, ease: "easeOut" }}
-                  className={`h-full rounded-full shadow-[0_0_10px_rgba(0,255,156,0.2)] ${
-                    card.status === 'Optimal' ? 'bg-gradient-to-r from-[#00FF9C] to-emerald-400' :
-                    card.status === 'Warning' ? 'bg-gradient-to-r from-yellow-400 to-amber-500' :
-                    'bg-gradient-to-r from-red-500 to-rose-600'
-                  }`}
-                />
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5 border border-white/5">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${card.value}%` }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
+                    className={`h-full rounded-full shadow-[0_0_10px_rgba(0,255,156,0.2)] ${card.status === 'Optimal' ? 'bg-gradient-to-r from-[#00FF9C] to-emerald-400' :
+                      card.status === 'Warning' ? 'bg-gradient-to-r from-yellow-400 to-amber-500' :
+                        'bg-gradient-to-r from-red-500 to-rose-600'
+                      }`}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
       </div>
 
       <div className="mt-4 rounded-2xl border border-[#00FF9C]/25 bg-[#00FF9C]/10 p-4">
@@ -98,18 +156,22 @@ export function FISAlertSection({ data }: { data?: any }) {
         <div className="mt-4 sm:hidden">
           <button
             type="button"
-            className="w-full rounded-xl bg-[#00FF9C]/20 border border-[#00FF9C]/40 py-2.5 text-sm font-semibold text-[#00FF9C] transition hover:bg-[#00FF9C]/30 active:scale-[0.98]"
+            onClick={handleAcknowledge}
+            disabled={isAcknowledged || isSubmitting}
+            className="w-full rounded-xl bg-[#00FF9C]/20 border border-[#00FF9C]/40 py-2.5 text-sm font-semibold text-[#00FF9C] transition hover:bg-[#00FF9C]/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Acknowledge
+            {isAcknowledged ? 'Acknowledged' : (isSubmitting ? 'Acknowledging...' : 'Acknowledge')}
           </button>
         </div>
 
         <div className="hidden sm:mt-4 sm:flex sm:justify-end">
           <button
             type="button"
-            className="rounded-lg border border-[#00FF9C]/30 bg-[#00FF9C]/10 px-4 py-1.5 text-sm font-semibold text-[#00FF9C] transition-all hover:bg-[#00FF9C]/20 active:scale-[0.98]"
+            onClick={handleAcknowledge}
+            disabled={isAcknowledged || isSubmitting}
+            className="rounded-lg border border-[#00FF9C]/30 bg-[#00FF9C]/10 px-4 py-1.5 text-sm font-semibold text-[#00FF9C] transition-all hover:bg-[#00FF9C]/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Acknowledge
+            {isAcknowledged ? 'Acknowledged' : (isSubmitting ? 'Acknowledging...' : 'Acknowledge')}
           </button>
         </div>
       </div>
