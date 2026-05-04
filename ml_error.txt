@@ -1,0 +1,10 @@
+AxiosError: Request failed with status code 502
+    at settle (file:///C:/Users/Subhash/Documents/GitHub/cropdesk_backendv2/node_modules/axios/lib/core/settle.js:19:12)
+    at IncomingMessage.handleStreamEnd (file:///C:/Users/Subhash/Documents/GitHub/cropdesk_backendv2/node_modules/axios/lib/adapters/http.js:798:11)
+    at IncomingMessage.emit (node:events:531:35)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+    at Axios.request (file:///C:/Users/Subhash/Documents/GitHub/cropdesk_backendv2/node_modules/axios/lib/core/Axios.js:45:41)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async fetchPrediction (file:///C:/Users/Subhash/Documents/GitHub/cropdesk_backendv2/src/ml/ml.adapter.js:64:22)
+    at async generatePredictionForSensor (file:///C:/Users/Subhash/Documents/GitHub/cropdesk_backendv2/src/services/prediction.service.js:57:24)

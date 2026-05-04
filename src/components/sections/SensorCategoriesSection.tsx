@@ -29,11 +29,13 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
   const [showSoilDetails, setShowSoilDetails] = useState(false);
   const [showAirDetails, setShowAirDetails] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   
   const activeSensorsCount = data?.activeSensorsCount ?? 12;
   const isAnySensorModalOpen = showWeatherDetails || showSoilDetails || showAirDetails;
 
-  const handleExport = async () => {
+  const handleExport = async (range: string) => {
+    setShowExportMenu(false);
     try {
       const sensorId = data?.latestData?.sensorId || data?.latestData?.deviceId;
       
@@ -50,8 +52,7 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
       await sensorsAPI.exportData({
         sensorId,
         format: 'csv',
-        startDate: '2024-01-01',
-        endDate: '2026-12-31',
+        range,
         email: true
       });
       
@@ -82,19 +83,53 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-3xl font-bold">Sensor Insights</h3>
-          <button
-            onClick={handleExport}
-            disabled={isExporting}
-            className="group flex items-center gap-2 rounded-xl border border-accentPrimary/20 bg-accentPrimary/5 px-4 py-2 text-sm font-bold text-accentPrimary transition-all hover:bg-accentPrimary/10 disabled:opacity-50"
-            title="Export last 1 month data to email"
-          >
-            {isExporting ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-accentPrimary border-t-transparent" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            <span>Export Data</span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              disabled={isExporting}
+              className="group flex items-center gap-2 rounded-xl border border-accentPrimary/20 bg-accentPrimary/5 px-4 py-2 text-sm font-bold text-accentPrimary transition-all hover:bg-accentPrimary/10 disabled:opacity-50"
+              title="Export data to email"
+            >
+              {isExporting ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-accentPrimary border-t-transparent" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              <span>Export Data</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+            </button>
+            
+            <AnimatePresence>
+              {showExportMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-white/10 bg-cardBg p-2 shadow-xl backdrop-blur-xl z-50"
+                >
+                  <div className="text-xs font-semibold text-textHint mb-2 px-2 pt-1">Select Range</div>
+                  <button
+                    onClick={() => handleExport('7d')}
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-white/5 text-white"
+                  >
+                    Last 7 Days
+                  </button>
+                  <button
+                    onClick={() => handleExport('15d')}
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-white/5 text-white"
+                  >
+                    Last 15 Days
+                  </button>
+                  <button
+                    onClick={() => handleExport('30d')}
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-white/5 text-white"
+                  >
+                    Last 30 Days
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Mobile View - 2x2 grid layout */}

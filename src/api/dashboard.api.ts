@@ -36,10 +36,10 @@ export const dashboardAPI = {
     apiClient.get('/alerts', { params: { limit } }),
 
   /**
-   * Fetch AI insights/predictions for a farm
+   * Fetch AI insights/predictions for a farm and optionally specific device
    */
-  getAIInsights: (farmId: string) =>
-    apiClient.get(`/predictions/farms/${farmId}`),
+  getAIInsights: (farmId: string, deviceId?: string) =>
+    apiClient.get(`/predictions/farms/${farmId}`, { params: { deviceId } }),
 
   /**
    * Fetch specific sensor dashboard context
