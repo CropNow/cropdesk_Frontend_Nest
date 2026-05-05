@@ -5,7 +5,6 @@ import { SettingsContent } from './SettingsContent';
 
 export type SettingsTab =
   | 'profile'
-  | 'farm'
   | 'devices'
   | 'notifications'
   | 'ai'
@@ -24,14 +23,7 @@ export interface ProfileSettingsState {
   profilePicture: string;
 }
 
-export interface FarmSettingsState {
-  farmName: string;
-  location: string;
-  areaAcres: string;
-  cropTypes: string[];
-  soilType: string;
-  irrigationType: string;
-}
+
 
 export interface DeviceSettingsState {
   id: any;
@@ -100,7 +92,6 @@ export interface SystemSettingsState {
 
 export interface SettingsState {
   profile: ProfileSettingsState;
-  farm: FarmSettingsState;
   devices: DeviceSettingsState[];
   notifications: NotificationSettingsState;
   ai: AISettingsState;
@@ -112,7 +103,6 @@ export interface SettingsState {
 
 export const SETTINGS_TABS: Array<{ id: SettingsTab; label: string }> = [
   { id: 'profile', label: 'Profile' },
-  { id: 'farm', label: 'Farm Settings' },
   { id: 'devices', label: 'Devices' },
   { id: 'notifications', label: 'Notifications' },
   { id: 'appearance', label: 'Appearance' },
@@ -128,14 +118,7 @@ const INITIAL_SETTINGS: SettingsState = {
     phone: '+91 98765 43210',
     profilePicture: '',
   },
-  farm: {
-    farmName: 'Green Valley Farm',
-    location: 'Kallakurichi, Tamil Nadu',
-    areaAcres: '12.8',
-    cropTypes: ['Tomato', 'Onion', 'Chili'],
-    soilType: 'Loamy',
-    irrigationType: 'Drip',
-  },
+
   devices: [],
   notifications: {
     pestAlerts: true,

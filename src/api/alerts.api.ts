@@ -41,4 +41,10 @@ export const alertsAPI = {
    */
   getFISAlerts: (farmId: string) =>
     apiClient.get(`/alerts/farm/${farmId}/fis`),
+
+  /**
+   * Create a new alert (acknowledgment)
+   */
+  createAlert: (data: { title: string; message: string; type: string; severity: string; status: string }) =>
+    apiClient.post('/alerts', data),
 };
