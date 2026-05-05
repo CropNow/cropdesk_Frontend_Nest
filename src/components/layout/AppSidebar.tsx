@@ -7,8 +7,10 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageSquare,
   ScanLine,
   Settings,
+  TrendingUp,
   X,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -174,6 +176,40 @@ export function AppSidebar() {
                 </div>
               ) : null}
             </div>
+
+            <NavLink
+              to="/ai-trends"
+              onClick={closeMobile}
+              className={({ isActive }) =>
+                [
+                  'sidebar-item flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
+                  isActive
+                    ? 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20'
+                    : 'text-textSecondary hover:bg-cardBg hover:text-textHeading',
+                  isExpanded ? 'justify-start gap-3' : 'justify-center',
+                ].join(' ')
+              }
+            >
+              <TrendingUp className="h-4.5 w-4.5 shrink-0" />
+              {isExpanded ? <span>AI Trends</span> : null}
+            </NavLink>
+
+            <NavLink
+              to="/chatbot"
+              onClick={closeMobile}
+              className={({ isActive }) =>
+                [
+                  'sidebar-item flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
+                  isActive
+                    ? 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20'
+                    : 'text-textSecondary hover:bg-cardBg hover:text-textHeading',
+                  isExpanded ? 'justify-start gap-3' : 'justify-center',
+                ].join(' ')
+              }
+            >
+              <MessageSquare className="h-4.5 w-4.5 shrink-0" />
+              {isExpanded ? <span>Chatbot</span> : null}
+            </NavLink>
           </nav>
 
           <div className="mt-4 border-t border-borderColor pt-4">

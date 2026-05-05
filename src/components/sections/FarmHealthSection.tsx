@@ -6,7 +6,7 @@ import { CircularGauge } from '../common/CircularGauge';
  * FarmHealthSection - Farm health metrics overview
  */
 export function FarmHealthSection({ data }: { data?: any }) {
-  const overallHealth = data?.overallHealth || 85;
+  const overallHealth = data?.overallHealth || 0;
   const condition = data?.condition;
   const stressBreakdown = data?.stressBreakdown;
 

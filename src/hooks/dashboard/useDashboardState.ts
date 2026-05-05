@@ -23,18 +23,7 @@ export function useDashboardState() {
   const [error, setError] = useState<string | null>(null);
   const [backendDevices, setBackendDevices] = useState<any[]>([]);
 
-  const fetchBackendDevices = async () => {
-    try {
-      const typeParam = selectedDeviceType.toUpperCase();
-      const res = await sensorsAPI.getSensors({ type: typeParam });
-      const data = res.data?.data || res.data || [];
-      if (Array.isArray(data)) {
-        setBackendDevices(data);
-      }
-    } catch (e) {
-      console.error('Failed to fetch backend devices:', e);
-    }
-  };
+  // Consolidated Fetcher logic inside useEffect below
 
   // 1. Initial Load: Get Farms
   useEffect(() => {
@@ -71,19 +60,14 @@ export function useDashboardState() {
       try {
         setIsLoading(true);
         
-        // Fetch from dashboard specific endpoints + statistics fallback
-        const [overviewRes, statsRes, devicesRes, alertsRes, sensorsRes] = await Promise.all([
-          dashboardAPI.getDashboardOverview().catch(() => ({ data: null })),
-          dashboardAPI.getFarmStatistics(selectedFarmId).catch(() => ({ data: null })),
+        // Fetch devices and latest readings in parallel where possible
+        // 1. Fetch devices first to establish if we have any sensors
+        const [devicesRes, sensorsRes] = await Promise.all([
           dashboardAPI.getFarmDevices(selectedFarmId).catch(() => ({ data: null })),
-          dashboardAPI.getAlerts().catch(() => ({ data: null })),
           sensorsAPI.getSensors({ type: selectedDeviceType.toUpperCase() }).catch(() => ({ data: null })),
         ]);
 
-        const overview = overviewRes.data?.overview;
-        const stats = statsRes.data?.data || statsRes.data;
-        
-        let devices = [];
+        let devices: any[] = [];
         const addDevices = (res: any) => {
           if (!res || !res.data) return;
           const data = res.data?.data || res.data?.devices || (Array.isArray(res.data) ? res.data : []);
@@ -96,23 +80,36 @@ export function useDashboardState() {
           }
         };
         addDevices(devicesRes);
-        addDevices(sensorsRes); // Add backend sensors as devices
+        addDevices(sensorsRes);
+        setBackendDevices(devices); // Sync state for deviceList memo
+
+        // 2. Decide which APIs to call based on device presence
+        const hasDevices = devices.length > 0;
+        const primaryDevice = devices[currentDeviceIndex % (devices.length || 1)] || devices[0];
+        const deviceId = primaryDevice?.id || primaryDevice?._id;
+
+        const [overviewRes, alertsRes, statsRes, latestRes, aiRes] = await Promise.all([
+          dashboardAPI.getDashboardOverview().catch(() => ({ data: null })),
+          dashboardAPI.getAlerts().catch(() => ({ data: null })),
+          hasDevices 
+            ? dashboardAPI.getFarmStatistics(selectedFarmId).catch(() => ({ data: null }))
+            : Promise.resolve({ data: null }),
+          deviceId
+            ? sensorsAPI.getLatestReading(deviceId).catch(() => ({ data: null }))
+            : Promise.resolve({ data: null }),
+          deviceId
+            ? dashboardAPI.getAIInsights(selectedFarmId, deviceId).catch(() => ({ data: null }))
+            : (hasDevices 
+                ? dashboardAPI.getAIInsights(selectedFarmId).catch(() => ({ data: null }))
+                : Promise.resolve({ data: null })
+              )
+        ]);
+
+        const overview = overviewRes?.data?.overview;
+        const stats = statsRes?.data?.data || statsRes?.data;
+        const alertsData = alertsRes?.data?.data || alertsRes?.data || [];
         
-        const alertsData = alertsRes.data?.data || alertsRes.data || [];
-
-        console.log('DEBUG overviewRes:', overviewRes.data);
-        console.log('DEBUG statsRes:', statsRes.data);
-        console.log('DEBUG devicesRes:', devicesRes.data);
-        console.log('DEBUG alertsRes:', alertsRes.data);
-        console.log('DEBUG sensorsRes:', sensorsRes.data);
-
-        // Find current device (Nest)
-        // Match index from available devices
-        const primaryDevice = backendDevices[currentDeviceIndex % (backendDevices.length || 1)] || 
-                             devices[currentDeviceIndex % (devices.length || 1)] || 
-                             devices[0];
-
-        // Fetch all sensors to get the true sensor ID for aggregate requests
+        // Fetch sensor ID for aggregates
         let actualSensorId = null;
         try {
           const allSensorsRes = await sensorsAPI.getSensors();
@@ -124,38 +121,15 @@ export function useDashboardState() {
           console.error('Failed to fetch sensors', err);
         }
 
-        // Fetch latest sensor data if we have a device
         let sensorLatestData = null;
-        let aiRes: any = { data: null };
-        const deviceId = primaryDevice?.id || primaryDevice?._id;
-
-        if (deviceId) {
-          try {
-            const [latestRes, aiResponse] = await Promise.all([
-              sensorsAPI.getLatestReading(deviceId).catch(() => ({ data: null })),
-              dashboardAPI.getAIInsights(selectedFarmId, deviceId).catch(() => ({ data: null }))
-            ]);
-            
-            aiRes = aiResponse;
-            const latestDataArr = latestRes.data?.data || latestRes.data;
-            if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
-              sensorLatestData = { ...latestDataArr[0], deviceId, sensorId: actualSensorId };
-            } else if (!Array.isArray(latestDataArr) && latestDataArr) {
-              sensorLatestData = { ...latestDataArr, deviceId, sensorId: actualSensorId };
-            }
-          } catch (e) {
-            console.error('Failed to fetch latest sensor and AI data', e);
-          }
-        } else {
-          // Fallback if no device
-          try {
-            aiRes = await dashboardAPI.getAIInsights(selectedFarmId).catch(() => ({ data: null }));
-          } catch (e) {
-            console.error('Failed to fetch AI data', e);
-          }
+        const latestDataArr = latestRes?.data?.data || latestRes?.data;
+        if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
+          sensorLatestData = { ...latestDataArr[0], deviceId, sensorId: actualSensorId };
+        } else if (!Array.isArray(latestDataArr) && latestDataArr) {
+          sensorLatestData = { ...latestDataArr, deviceId, sensorId: actualSensorId };
         }
         
-        const aiDataRaw = aiRes.data?.data || aiRes.data?.insights || aiRes.data;
+        const aiDataRaw = aiRes?.data?.data || aiRes?.data?.insights || aiRes?.data;
         const aiData = Array.isArray(aiDataRaw) ? aiDataRaw : (typeof aiDataRaw === 'object' && aiDataRaw !== null ? [] : []);
 
         let hasNoIncomingData = false;
@@ -202,6 +176,10 @@ export function useDashboardState() {
         });
 
         setDashboardData({
+          onboarding: overviewRes.data?.onboarding || {
+            isComplete: overviewRes.data?.isComplete ?? true,
+            hasSensor: overviewRes.data?.hasSensor ?? (devices.length > 0 || backendDevices.length > 0)
+          },
           farm: farms.find(f => (f.id || f._id) === selectedFarmId) || primaryDevice?.farm || (overview?.farmName ? { name: overview.farmName } : null),
           health: {
             overallHealth: hasNoIncomingData ? 0 : (aiRes.data?.raw?.farm_status?.farm_health_percentage || overview?.performance?.healthScore || stats?.overallStatus || 85),
@@ -300,19 +278,7 @@ export function useDashboardState() {
             irrigationType: primaryDevice.field?.irrigationType || 'N/A',
             boundary: 'Polygon',
             crops: primaryDevice.crops?.map((c: any) => c.name) || []
-          } : {
-            name: overview?.farmName || stats?.farmName || 'Sunrise Farm',
-            serialNumber: 'N/A',
-            deviceType: 'nest',
-            subtitle: 'IoT Field Intelligence Tower',
-            image: '/NEST.png',
-            soilType: overview?.soilType || stats?.soilType || 'Sandy Loam',
-            area: overview?.area || stats?.area || '4.6 acres',
-            location: overview?.location || stats?.location || 'Hassan',
-            irrigationType: overview?.irrigation || stats?.irrigation || 'Sprinkler',
-            boundary: overview?.boundary || stats?.boundary || 'Polygon',
-            crops: overview?.crops || stats?.crops || ['Corn', 'Cabbage']
-          },
+          } : null,
         });
         
         setError(null);
@@ -327,7 +293,7 @@ export function useDashboardState() {
     
     const intervalId = setInterval(fetchFarmData, 10 * 60 * 1000); // Poll every 10 minutes
     return () => clearInterval(intervalId);
-  }, [selectedFarmId, farms, currentDeviceIndex, backendDevices]);
+  }, [selectedFarmId, selectedDeviceType, currentDeviceIndex]);
 
   // ─── UI Logic ───
   // Update time every minute
@@ -345,50 +311,34 @@ export function useDashboardState() {
     }
   }, [searchParams, selectedDeviceType]);
 
-  useEffect(() => {
-    fetchBackendDevices();
-  }, [selectedDeviceType]);
+  // Devices are now fetched within fetchFarmData to ensure consistent state
 
   const deviceList = useMemo(() => {
     const mockList = DEVICE_LIBRARY[selectedDeviceType] || [];
     
     if (backendDevices.length > 0) {
-      const mappedBackend = backendDevices.map((d, idx) => ({
+      return backendDevices.map((d, idx) => ({
         id: d.id || d._id || `backend-${idx}`,
         deviceType: selectedDeviceType,
         name: d.name || d.deviceId || `Device ${idx + 1}`,
         subtitle: 'IoT Field Intelligence Tower',
         image: selectedDeviceType === 'seed' ? '/seed.png' : '/NEST.png',
-        area: d.field?.area ? `${d.field.area} acres` : '4.6 acres',
-        location: d.farm?.name || 'Sunrise Farm',
+        area: d.field?.area ? `${d.field.area} acres` : 'N/A',
+        location: d.farm?.name || 'N/A',
         boundary: 'Polygon',
-        soilType: d.field?.soilType || 'Loamy',
-        irrigationType: d.field?.irrigationType || 'Sprinkler',
-        crops: d.crops?.map((c: any) => c.name) || ['Corn', 'Cabbage'],
+        soilType: d.field?.soilType || 'N/A',
+        irrigationType: d.field?.irrigationType || 'N/A',
+        crops: d.crops?.map((c: any) => c.name) || [],
         raw: d
       }));
-
-      return mappedBackend;
     }
-    return mockList;
+    return [];
   }, [backendDevices, selectedDeviceType]);
 
-  const currentDevice = deviceList[currentDeviceIndex % (deviceList.length || 1)] || {
-    name: 'Sunrise Farm',
-    deviceType: 'nest',
-    subtitle: 'IoT Field Intelligence Tower',
-    image: '/NEST.png',
-    soilType: 'Sandy Loam',
-    area: '4.6 acres',
-    location: 'Hassan',
-    irrigationType: 'Sprinkler',
-    boundary: 'Polygon',
-    crops: ['Corn', 'Cabbage']
-  };
+  const currentDevice = deviceList[currentDeviceIndex % (deviceList.length || 1)] || null;
 
   const cycleDevice = async (direction: 1 | -1) => {
-    // Trigger API on click
-    await fetchBackendDevices();
+    // Trigger API on click (handled by useEffect via currentDeviceIndex change)
     
     setCurrentDeviceIndex((prev) => {
       const listLen = deviceList.length;
@@ -408,9 +358,9 @@ export function useDashboardState() {
 
   const weatherSummary = useMemo(() => {
     return {
-      city: 'Kallakurichi, IN',
-      temp: '30 C',
-      condition: 'Partly cloudy',
+      city: 'N/A',
+      temp: '--',
+      condition: 'Unknown',
     };
   }, []);
 
@@ -427,6 +377,7 @@ export function useDashboardState() {
     error,
     dashboardData,
     farms,
+    backendDevices,
     selectedFarmId,
     setSelectedFarmId,
   };

@@ -9,6 +9,7 @@ import { SensorCategoriesSection } from '../../components/sections/SensorCategor
 import { FISAlertSection } from '../../components/sections/FISAlertSection';
 import { AIInsightsSection } from '../../components/sections/AIInsightsSection';
 import { WaterSavingsSection } from '../../components/sections/WaterSavingsSection';
+import { EmptyDashboard } from '../../components/sections/EmptyDashboard';
 
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -24,10 +25,23 @@ export function DashboardPage() {
     error,
     dashboardData,
     weatherSummary,
+    farms,
+    backendDevices,
   } = useDashboardState();
+
+  const showEmptyDashboard = !isLoading && (!farms?.length || !backendDevices?.length);
 
   if (isLoading) {
     return <LoadingSkeleton />;
+  }
+
+  if (showEmptyDashboard) {
+    return (
+      <EmptyDashboard 
+        currentTime={currentTime}
+        weatherSummary={weatherSummary}
+      />
+    );
   }
 
   if (error) {

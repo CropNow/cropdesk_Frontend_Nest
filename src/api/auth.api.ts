@@ -3,7 +3,7 @@
  */
 
 import apiClient from './client';
-import { LoginRequest, RegisterRequest, AuthResponse, VerifyOTPRequest } from '../types/auth.types';
+import { LoginRequest, RegisterRequest, AuthResponse, VerifyOTPRequest, ChangePasswordRequest } from '../types/auth.types';
 
 export const authAPI = {
   /**
@@ -44,4 +44,10 @@ export const authAPI = {
    * Verify token validity
    */
   verifyToken: () => apiClient.get('/auth/verify'),
+
+  /**
+   * Change user password
+   */
+  changePassword: (data: ChangePasswordRequest) =>
+    apiClient.post('/auth/change-password', data),
 };

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SecuritySettingsState } from './SettingsLayout';
+import { authAPI } from '../../api/auth.api';
 
 interface SecuritySettingsProps {
   values: SecuritySettingsState;
@@ -34,8 +35,13 @@ function ToggleSwitch({ checked, onToggle }: { checked: boolean; onToggle: () =>
 
 export function SecuritySettings({ values, onChange, onLogoutAll, onSave, isSaving }: SecuritySettingsProps) {
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setError('');
+    setSuccess('');
+
     if (values.newPassword || values.confirmPassword || values.currentPassword) {
       if (!values.currentPassword) {
         setError('Current password is required to set a new password.');
@@ -51,9 +57,24 @@ export function SecuritySettings({ values, onChange, onLogoutAll, onSave, isSavi
         setError('New password and confirm password must match.');
         return;
       }
+
+      try {
+        setIsChangingPassword(true);
+        await authAPI.changePassword({
+          currentPassword: values.currentPassword,
+          newPassword: values.newPassword,
+        });
+        
+        setSuccess('Password changed successfully.');
+        onChange({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to change password. Please try again.');
+        return; // Return early so we don't show generic success toast if this failed
+      } finally {
+        setIsChangingPassword(false);
+      }
     }
 
-    setError('');
     onSave();
   };
 
@@ -129,16 +150,17 @@ export function SecuritySettings({ values, onChange, onLogoutAll, onSave, isSavi
       </div>
 
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+      {success ? <p className="text-sm text-emerald-400">{success}</p> : null}
 
       <motion.button
         type="button"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={handleSave}
-        disabled={isSaving}
+        disabled={isSaving || isChangingPassword}
         className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSaving ? 'Saving...' : 'Save Changes'}
+        {isSaving || isChangingPassword ? 'Saving...' : 'Save Changes'}
       </motion.button>
     </div>
   );

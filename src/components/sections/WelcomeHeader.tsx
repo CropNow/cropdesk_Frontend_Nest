@@ -48,9 +48,9 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
   const displayWeather = useMemo(() => {
     if (weather) return weather;
     return {
-      temp: '30 C',
-      condition: 'Partly cloudy',
-      city: 'Green Valley Farm, Kallakurichi',
+      temp: '-- C',
+      condition: 'Unknown',
+      city: 'N/A',
     };
   }, [weather]);
 
@@ -75,7 +75,7 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
             </span>
             <span className="hidden md:inline text-textHint"> • </span>
             <span className="block md:inline mt-1 md:mt-0 text-textSecondary">
-              {displayWeather.city || 'Green Valley Farm, Kallakurichi'} - Smart Block A
+              {displayWeather.city || 'N/A'}
             </span>
           </p>
         </div>

@@ -42,90 +42,9 @@ export type FarmStatusMetric = {
 
 // Device library with all device data
 export const DEVICE_LIBRARY: Record<DeviceType, DeviceData[]> = {
-  nest: [
-    {
-      id: 1,
-      deviceType: 'nest',
-      name: 'NEST Tower A1',
-      subtitle: 'IoT Field Intelligence Tower',
-      image: '/NEST.png',
-      area: '5.2 acres',
-      location: 'Green Valley Farm',
-      boundary: 'Polygon',
-      soilType: 'Loamy',
-      irrigationType: 'Drip',
-      crops: ['Tomato', 'Onion', 'Chili'],
-    },
-    {
-      id: 2,
-      deviceType: 'nest',
-      name: 'NEST Tower B2',
-      subtitle: 'IoT Field Intelligence Tower',
-      image: '/NEST.png',
-      area: '4.6 acres',
-      location: 'Valley Farm',
-      boundary: 'Polygon',
-      soilType: 'Sandy Loam',
-      irrigationType: 'Sprinkler',
-      crops: ['Corn', 'Cabbage'],
-    },
-  ],
-  seed: [
-    {
-      id: 1,
-      deviceType: 'seed',
-      name: 'Seed Rover S1',
-      subtitle: 'Autonomous Ground Scout',
-      image: '/seed.png',
-      area: '6.3 acres',
-      location: 'Green Valley Farm - Sector 1',
-      boundary: 'Linear Path',
-      soilType: 'Loamy',
-      irrigationType: 'Drip',
-      crops: ['Tomato', 'Okra', 'Bean'],
-    },
-    {
-      id: 2,
-      deviceType: 'seed',
-      name: 'Seed Rover S2',
-      subtitle: 'Autonomous Ground Scout',
-      image: '/seed.png',
-      area: '7.0 acres',
-      location: 'Green Valley Farm - Sector 2',
-      boundary: 'Grid Path',
-      soilType: 'Clay Loam',
-      irrigationType: 'Furrow',
-      crops: ['Potato', 'Pea'],
-    },
-  ],
-  aero: [
-    {
-      id: 1,
-      deviceType: 'aero',
-      name: 'Aero Drone X1',
-      subtitle: 'Aerial Monitoring System',
-      image: '/kaptor_drone.png',
-      area: '9.0 acres',
-      location: 'South Block',
-      boundary: 'Aerial Grid',
-      soilType: 'Mixed',
-      irrigationType: 'Mixed',
-      crops: ['All Crops'],
-    },
-    {
-      id: 2,
-      deviceType: 'aero',
-      name: 'Aero Drone X2',
-      subtitle: 'Aerial Monitoring System',
-      image: '/kaptor_drone.png',
-      area: '11.4 acres',
-      location: 'North Block',
-      boundary: 'Aerial Grid',
-      soilType: 'Silt Loam',
-      irrigationType: 'Pivot',
-      crops: ['Wheat', 'Millet'],
-    },
-  ],
+  nest: [],
+  seed: [],
+  aero: [],
 };
 
 // Device labels for UI
@@ -143,44 +62,17 @@ export const SENSOR_CARDS = [
 ];
 
 // FIS (Field Intelligence System) Cards
-export const FIS_CARDS: Array<{ title: string; value: number; status: FisStatus; body: string; icon: React.ElementType }> = [
-  {
-    title: 'Pest Analysis',
-    value: 85,
-    status: 'Warning',
-    body: 'Minor aphid clustering in Sector G-14. Migration projected in 48h.',
-    icon: Bug,
-  },
-  {
-    title: 'Fungal Activity',
-    value: 12,
-    status: 'Optimal',
-    body: 'Spore counts low and environment currently limits propagation.',
-    icon: ShieldCheck,
-  },
-  {
-    title: 'Air Quality',
-    value: 93,
-    status: 'Optimal',
-    body: 'CO2 at 415 ppm, humidity stable for healthy crop respiration.',
-    icon: Wind,
-  },
-];
+export const FIS_CARDS: Array<{ title: string; value: number; status: FisStatus; body: string; icon: React.ElementType }> = [];
 
 // AI insights data
-export const AI_INSIGHTS: Array<{ title: string; description: string; level: 'good' | 'warn' }> = [
-  { title: 'Irrigation', description: 'Moisture trend stable in the last 6h.', level: 'good' },
-  { title: 'Fungal', description: 'Low risk under current temperature profile.', level: 'good' },
-  { title: 'Pest', description: 'Localized hotspots detected in southern rows.', level: 'warn' },
-  { title: 'AQI', description: 'Air quality within expected farm threshold.', level: 'good' },
-];
+export const AI_INSIGHTS: Array<{ title: string; description: string; level: 'good' | 'warn' }> = [];
 
 // Farm status metrics with sensor data
 export const FARM_STATUS_METRICS: FarmStatusMetric[] = [
   {
     id: 'soil-moisture',
     label: 'Soil moisture',
-    value: 54.3,
+    value: 0,
     unit: 'v/v',
     icon: <Waves className="h-5 w-5" />,
     color: 'cyan',
@@ -191,7 +83,7 @@ export const FARM_STATUS_METRICS: FarmStatusMetric[] = [
   {
     id: 'temperature',
     label: 'Temperature',
-    value: 27.5,
+    value: 0,
     unit: '°C',
     icon: <Thermometer className="h-5 w-5" />,
     color: 'orange',
@@ -213,7 +105,7 @@ export const FARM_STATUS_METRICS: FarmStatusMetric[] = [
   {
     id: 'humidity',
     label: 'Humidity',
-    value: 53,
+    value: 0,
     unit: '%',
     icon: <Droplets className="h-5 w-5" />,
     color: 'violet',
@@ -224,7 +116,7 @@ export const FARM_STATUS_METRICS: FarmStatusMetric[] = [
   {
     id: 'visibility',
     label: 'Visibility',
-    value: 24.1,
+    value: 0,
     unit: 'km',
     icon: <Eye className="h-5 w-5" />,
     color: 'emerald',
@@ -235,7 +127,7 @@ export const FARM_STATUS_METRICS: FarmStatusMetric[] = [
   {
     id: 'leaf-wetness',
     label: 'Leaf Wetness',
-    value: 30,
+    value: 0,
     unit: '%',
     icon: <Leaf className="h-5 w-5" />,
     color: 'emerald',

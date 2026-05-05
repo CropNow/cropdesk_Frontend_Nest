@@ -33,6 +33,11 @@ export interface VerifyOTPRequest {
   otp: string;
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface AuthResponse {
   user: User;
   token: string;

@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
  */
 export function WaterSavingsSection({ data }: { data?: any }) {
   const savings = data || {
-    percent: '15.0%',
+    percent: '0.0%',
     total: '0 L',
     daily: '0 L',
   };

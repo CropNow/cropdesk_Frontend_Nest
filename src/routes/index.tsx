@@ -3,13 +3,13 @@
  * This is the root router definition - combine all route subroutes here
  */
 
-import { createBrowserRouter, Outlet } from 'react-router-dom';
+import { createBrowserRouter, Outlet, Navigate } from 'react-router-dom';
 import { ROUTES } from '../constants/routeConstants';
 
 // Import your page components
 import DashboardPage from '../pages/dashboard/DashboardPage';
 // import LoginPage from '../pages/auth/LoginPage';
-// import NotFoundPage from '../pages/errors/NotFoundPage';
+import NotFoundPage from '../pages/errors/NotFoundPage';
 
 // Layout component
 const RootLayout = () => (
@@ -21,9 +21,12 @@ const RootLayout = () => (
 
 export const router = createBrowserRouter([
   {
-    path: '/',
     element: <RootLayout />,
     children: [
+      {
+        path: '/',
+        element: <Navigate to={ROUTES.DASHBOARD.HOME} replace />,
+      },
       // Dashboard routes
       {
         path: ROUTES.DASHBOARD.HOME,
@@ -41,6 +44,11 @@ export const router = createBrowserRouter([
         path: ROUTES.SETTINGS.ROOT,
         // element: <SettingsPage />,
       },
+      // Error routes
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
     ],
   },
 
@@ -48,12 +56,6 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.AUTH.LOGIN,
     // element: <LoginPage />,
-  },
-
-  // Error routes
-  {
-    path: '*',
-    // element: <NotFoundPage />,
   },
 ]);
 

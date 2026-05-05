@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import { SettingsSidebar } from './SettingsSidebar';
 import { SettingsContent } from './SettingsContent';
 
@@ -165,7 +166,12 @@ const INITIAL_SETTINGS: SettingsState = {
 };
 
 export function SettingsLayout() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as SettingsTab) || 'profile';
+  
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    SETTINGS_TABS.some(t => t.id === initialTab) ? initialTab : 'profile'
+  );
   const [settings, setSettings] = useState<SettingsState>(INITIAL_SETTINGS);
   const [savingTab, setSavingTab] = useState<SettingsTab | null>(null);
   const [toastMessage, setToastMessage] = useState('');
