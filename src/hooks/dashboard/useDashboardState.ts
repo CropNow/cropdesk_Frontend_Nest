@@ -217,8 +217,35 @@ export function useDashboardState() {
             sensorId: actualSensorId || sensorLatestData?.sensorId || sensorLatestData?.id || sensorLatestData?._id,
           },
           alerts: { 
-            cards: hasNoIncomingData ? [] : (aiRes.data?.cards || alertsData),
-            activeCount: hasNoIncomingData ? 0 : (aiRes.data?.cards?.length || overview?.activeAlerts || alertsData.length || 0),
+            cards: hasNoIncomingData ? [] : (aiRes.data?.raw ? [
+              ...(aiRes.data.raw.pest ? [{
+                title: 'Pest Analysis',
+                value: Math.round(aiRes.data.raw.pest.pest_risk_score || 0),
+                status: aiRes.data.raw.pest.pest_risk_level?.toUpperCase() === 'LOW' ? 'Optimal' : aiRes.data.raw.pest.pest_risk_level?.toUpperCase() === 'MODERATE' ? 'Warning' : 'Critical',
+                body: aiRes.data.raw.pest.recommendation || `Pest risk is ${aiRes.data.raw.pest.pest_risk_level}. Leaf wetness: ${aiRes.data.raw.pest.leaf_wetness_pct}%.`,
+                icon: 'Bug'
+              }] : []),
+              ...(aiRes.data.raw.fungal_disease ? [{
+                title: 'Fungal Activity',
+                value: Math.round(aiRes.data.raw.fungal_disease.risk_score || 0),
+                status: aiRes.data.raw.fungal_disease.activity_level?.toUpperCase() === 'LOW' ? 'Optimal' : aiRes.data.raw.fungal_disease.activity_level?.toUpperCase() === 'MODERATE' ? 'Warning' : 'Critical',
+                body: aiRes.data.raw.fungal_disease.recommendation || aiRes.data.raw.fungal_disease.likely_disease || 'Monitor closely',
+                icon: 'ShieldCheck'
+              }] : []),
+              ...(aiRes.data.raw.aqi ? [{
+                title: 'Air Quality',
+                value: Math.round(aiRes.data.raw.aqi.aqi || 0),
+                status: (aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'low stress' || aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'optimal') ? 'Optimal' : (aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'moderate' ? 'Warning' : 'Critical'),
+                body: aiRes.data.raw.aqi.farmer_advisory || aiRes.data.raw.aqi.plant_impact || `AQI is ${aiRes.data.raw.aqi.aqi_category}`,
+                icon: 'Wind'
+              }] : [])
+            ] : (aiRes.data?.cards ? aiRes.data.cards.map((c: any) => ({
+              ...c,
+              status: (c.status?.toUpperCase() === 'LOW' || c.status?.toLowerCase() === 'low stress' || c.status?.toLowerCase() === 'optimal') ? 'Optimal' : (c.status?.toUpperCase() === 'MODERATE' || c.status?.toLowerCase() === 'moderate') ? 'Warning' : 'Critical'
+            })) : alertsData)),
+            activeCount: hasNoIncomingData ? 0 : (aiRes.data?.raw ? (
+              (aiRes.data.raw.pest ? 1 : 0) + (aiRes.data.raw.fungal_disease ? 1 : 0) + (aiRes.data.raw.aqi ? 1 : 0)
+            ) : (aiRes.data?.cards?.length || overview?.activeAlerts || alertsData.length || 0)),
             suggestion: hasNoIncomingData ? {
               title: 'No Data',
               body: 'No alerts for this device.',
@@ -238,25 +265,29 @@ export function useDashboardState() {
           ] : (aiRes.data?.raw ? [
             ...(aiRes.data.raw.irrigation ? [{
               title: 'Irrigation',
-              description: aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'No irrigation needed.' : `Requires ${aiRes.data.raw.irrigation.water_requirement_mm}mm of water.`,
+              description: aiRes.data.raw.irrigation.advisory || (aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'No irrigation needed.' : `Requires ${aiRes.data.raw.irrigation.water_requirement_mm}mm of water.`),
               level: aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'good' : 'warn'
             }] : []),
             ...(aiRes.data.raw.fungal_disease ? [{
               title: 'Fungal',
-              description: aiRes.data.raw.fungal_disease.likely_disease || 'Monitor closely for fungal pressure.',
+              description: aiRes.data.raw.fungal_disease.recommendation || aiRes.data.raw.fungal_disease.likely_disease || 'Monitor closely for fungal pressure.',
               level: aiRes.data.raw.fungal_disease.activity_level?.toLowerCase() === 'low' ? 'good' : 'warn'
             }] : []),
             ...(aiRes.data.raw.pest ? [{
               title: 'Pest',
-              description: `Risk Level: ${aiRes.data.raw.pest.pest_risk_level}. Leaf wetness: ${aiRes.data.raw.pest.leaf_wetness_pct}%.`,
+              description: aiRes.data.raw.pest.recommendation || `Risk Level: ${aiRes.data.raw.pest.pest_risk_level}. Leaf wetness: ${aiRes.data.raw.pest.leaf_wetness_pct}%.`,
               level: aiRes.data.raw.pest.pest_risk_level?.toLowerCase() === 'low' ? 'good' : 'warn'
             }] : []),
             ...(aiRes.data.raw.aqi ? [{
               title: 'AQI',
-              description: aiRes.data.raw.aqi.plant_impact || `Dominant Pollutant: ${aiRes.data.raw.aqi.dominant_pollutant}`,
+              description: aiRes.data.raw.aqi.farmer_advisory || aiRes.data.raw.aqi.plant_impact || `Dominant Pollutant: ${aiRes.data.raw.aqi.dominant_pollutant}`,
               level: (aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'low stress' || aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'optimal') ? 'good' : 'warn'
             }] : [])
-          ] : aiData),
+          ] : (aiRes.data?.cards && Array.isArray(aiRes.data.cards) ? aiRes.data.cards.map((c: any) => ({
+            title: c.title,
+            description: c.body,
+            level: (c.status?.toUpperCase() === 'LOW' || c.status?.toLowerCase() === 'low stress' || c.status?.toLowerCase() === 'optimal' || c.status === 'Optimal') ? 'good' : 'warn'
+          })) : aiData)),
           currentDevice: primaryDevice ? {
             name: primaryDevice.name,
             serialNumber: primaryDevice.serialNumber,
@@ -337,18 +368,7 @@ export function useDashboardState() {
         raw: d
       }));
 
-      const combined = [...mappedBackend];
-      mockList.forEach((mockItem, index) => {
-        if (combined.length < 3) {
-          combined.push({
-            ...mockItem,
-            id: `mock-${mockItem.id || index}`,
-            name: `${mockItem.name} (Demo)`
-          });
-        }
-      });
-
-      return combined;
+      return mappedBackend;
     }
     return mockList;
   }, [backendDevices, selectedDeviceType]);
