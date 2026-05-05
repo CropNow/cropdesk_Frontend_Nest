@@ -28,8 +28,11 @@ export function App() {
         {/* Protected routes (sidebar + content) */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+<<<<<<< Updated upstream
           <Route path="/ai-trends" element={<AITrendsPage />} />
           <Route path="/chatbot" element={<ChatbotPage />} />
+=======
+>>>>>>> Stashed changes
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
