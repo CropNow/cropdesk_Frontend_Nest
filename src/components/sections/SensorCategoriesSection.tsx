@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
@@ -33,6 +33,8 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
   
   const activeSensorsCount = data?.activeSensorsCount ?? 12;
   const isAnySensorModalOpen = showWeatherDetails || showSoilDetails || showAirDetails;
+  // The deviceId used for nest-device API (serialNumber like "01")
+  const nestDeviceId = data?.serialNumber || data?.deviceId || data?.latestData?.deviceId;
 
   const handleExport = async (range: string) => {
     setShowExportMenu(false);
@@ -210,21 +212,21 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
           <WeatherSensorsModal
             isOpen={showWeatherDetails}
             onClose={() => setShowWeatherDetails(false)}
-            data={{ ...(data?.latestData || {}), deviceId: data?.deviceId || data?.latestData?.deviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
+            data={{ ...(data?.latestData || {}), deviceId: nestDeviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
           />
         )}
         {showSoilDetails && (
           <SoilSensorsModal
             isOpen={showSoilDetails}
             onClose={() => setShowSoilDetails(false)}
-            data={{ ...(data?.latestData || {}), deviceId: data?.deviceId || data?.latestData?.deviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
+            data={{ ...(data?.latestData || {}), deviceId: nestDeviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
           />
         )}
         {showAirDetails && (
           <AirSensorsModal
             isOpen={showAirDetails}
             onClose={() => setShowAirDetails(false)}
-            data={{ ...(data?.latestData || {}), deviceId: data?.deviceId || data?.latestData?.deviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
+            data={{ ...(data?.latestData || {}), deviceId: nestDeviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
           />
         )}
       </AnimatePresence>
@@ -664,7 +666,63 @@ function SoilSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
   );
 }
 
-import { useEffect } from 'react';
+
+
+/**
+ * Fetches chart data from the nest-device/data API for a given date range.
+ * Returns an array of { timestamp, values } objects, one per day.
+ */
+async function fetchNestChartData(deviceId: string, selectedRange: string): Promise<any[]> {
+  if (!deviceId) return [];
+
+  const daysMap: Record<string, number> = {
+    '24 Hours': 1,
+    '7 Days': 7,
+    '1 Month': 30,
+  };
+  const days = daysMap[selectedRange] || 1;
+
+  const results: any[] = [];
+  const now = new Date();
+
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, '0'),
+      String(d.getDate()).padStart(2, '0'),
+    ].join('/');
+
+    try {
+      const res = await sensorsAPI.getNestDeviceData(deviceId, dateStr);
+      const nestData = res?.data;
+      if (nestData?.success && nestData?.data?.values) {
+        results.push({
+          timestamp: nestData.data.timestamp || nestData.data.time || d.toISOString(),
+          ...nestData.data.values,
+        });
+      } else {
+        // Push zero entry for offline/missing days
+        results.push({
+          timestamp: d.toISOString(),
+          pm1_0: 0, pm2_5: 0, pm10: 0, co2: 0, voc: 0,
+          temperature: 0, humidity: 0, wind_speed: 0, wind_dir: 0,
+          o3: 0, no2: 0, co: 0, leaf: 0,
+        });
+      }
+    } catch {
+      results.push({
+        timestamp: d.toISOString(),
+        pm1_0: 0, pm2_5: 0, pm10: 0, co2: 0, voc: 0,
+        temperature: 0, humidity: 0, wind_speed: 0, wind_dir: 0,
+        o3: 0, no2: 0, co: 0, leaf: 0,
+      });
+    }
+  }
+
+  return results;
+}
 
 function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24 Hours', metricKey = '' }: { data: any[]; chartType?: 'bar' | 'line'; unit?: string; selectedRange?: string; metricKey?: string }) {
   console.log('RealDataChart received data:', data);
@@ -907,40 +965,8 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
           setChartData([]);
           return;
         }
-        
-        const rangeMap: Record<string, string> = {
-          '24 Hours': '24h',
-          '7 Days': '7d',
-          '1 Month': '30d'
-        };
-        const intervalMap: Record<string, string> = {
-          '24 Hours': '1h',
-          '7 Days': '1d',
-          '1 Month': '1d'
-        };
-        const rangeParam = rangeMap[selectedRange] || '7d';
-        const intervalParam = intervalMap[selectedRange] || '1d';
-        
-        let res = await sensorsAPI.getAggregatedData(sensorId, { 
-          metric, 
-          range: rangeParam,
-          interval: intervalParam 
-        }).catch(() => null);
-        if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getSensorData(sensorId, { 
-            metric, 
-            range: rangeParam,
-            interval: intervalParam
-          }).catch(() => null);
-        }
-        
-        let rawData = res?.data?.data || res?.data || [];
-        if (!Array.isArray(rawData) && typeof rawData === 'object' && rawData !== null) {
-          const firstArrayValue = Object.values(rawData).find(val => Array.isArray(val));
-          if (firstArrayValue) rawData = firstArrayValue;
-          else rawData = [];
-        }
-        setChartData(Array.isArray(rawData) ? rawData : []);
+        const rawData = await fetchNestChartData(sensorId, selectedRange);
+        setChartData(rawData);
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
       }
@@ -1048,40 +1074,8 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
           setChartData([]);
           return;
         }
-        
-        const rangeMap: Record<string, string> = {
-          '24 Hours': '24h',
-          '7 Days': '7d',
-          '1 Month': '30d'
-        };
-        const intervalMap: Record<string, string> = {
-          '24 Hours': '1h',
-          '7 Days': '1d',
-          '1 Month': '1d'
-        };
-        const rangeParam = rangeMap[selectedRange] || '7d';
-        const intervalParam = intervalMap[selectedRange] || '1d';
-        
-        let res = await sensorsAPI.getAggregatedData(sensorId, { 
-          metric, 
-          range: rangeParam,
-          interval: intervalParam 
-        }).catch(() => null);
-        if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getSensorData(sensorId, { 
-            metric, 
-            range: rangeParam,
-            interval: intervalParam 
-          }).catch(() => null);
-        }
-        
-        let rawData = res?.data?.data || res?.data || [];
-        if (!Array.isArray(rawData) && typeof rawData === 'object' && rawData !== null) {
-          const firstArrayValue = Object.values(rawData).find(val => Array.isArray(val));
-          if (firstArrayValue) rawData = firstArrayValue;
-          else rawData = [];
-        }
-        setChartData(Array.isArray(rawData) ? rawData : []);
+        const rawData = await fetchNestChartData(sensorId, selectedRange);
+        setChartData(rawData);
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
       }
@@ -1159,15 +1153,15 @@ function AirSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: 
   const [activeSensor, setActiveSensor] = useState<string | null>(null);
 
   const airSensors = [
-    { id: 'pm25', title: 'PM 2.5', value: data?.values?.pm2_5 ?? '7', unit: 'µg/m³', icon: Activity, color: '#3B82F6' },
-    { id: 'pm10', title: 'PM 10', value: data?.values?.pm10 ?? '7', unit: 'µg/m³', icon: Activity, color: '#22D3EE' },
+    { id: 'pm25', title: 'PM 2.5', value: data?.values?.pm2_5 ?? '0', unit: 'µg/m³', icon: Activity, color: '#3B82F6' },
+    { id: 'pm10', title: 'PM 10', value: data?.values?.pm10 ?? '0', unit: 'µg/m³', icon: Activity, color: '#22D3EE' },
     { id: 'co2', title: 'CO2', displayName: <>CO<sub>2</sub></>, value: data?.values?.co2 ?? '0', unit: 'ppm', icon: Cloud, color: '#E5E7EB' },
     { id: 'temp', title: 'Air Temperature', value: data?.values?.temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
     { id: 'hum', title: 'Humidity', value: data?.values?.humidity ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
-    { id: 'pres', title: 'Air Pressure', value: data?.values?.pressure ?? '999', unit: 'hPa', icon: Activity, color: '#3B82F6' },
-    { id: 'so2', title: 'SO2', displayName: <>SO<sub>2</sub></>, value: data?.values?.so2 ?? '0.47', unit: 'ppm', icon: Activity, color: '#FBBF24' },
-    { id: 'no2', title: 'NO2', displayName: <>NO<sub>2</sub></>, value: data?.values?.no2 ?? '0.18', unit: 'ppm', icon: Activity, color: '#F97316' },
-    { id: 'o3', title: 'O3', value: data?.values?.o3 ?? '0.02', unit: 'ppm', icon: Activity, color: '#22C55E' },
+    { id: 'pres', title: 'Air Pressure', value: data?.values?.pressure ?? '0', unit: 'hPa', icon: Activity, color: '#3B82F6' },
+    { id: 'so2', title: 'SO2', displayName: <>SO<sub>2</sub></>, value: data?.values?.so2 ?? '0', unit: 'ppm', icon: Activity, color: '#FBBF24' },
+    { id: 'no2', title: 'NO2', displayName: <>NO<sub>2</sub></>, value: data?.values?.no2 ?? '0', unit: 'ppm', icon: Activity, color: '#F97316' },
+    { id: 'o3', title: 'O3', value: data?.values?.o3 ?? '0', unit: 'ppm', icon: Activity, color: '#22C55E' },
     { id: 'leaf', title: 'Leaf Wetness', value: data?.values?.leaf_wetness ?? '0', unit: '%', icon: Leaf, color: '#22C55E' },
   ];
 
@@ -1435,40 +1429,8 @@ function WindDirectionDetail({ sensorId, onClose }: { sensorId?: string; onClose
     const fetchHistory = async () => {
       if (!sensorId) return;
       try {
-        const rangeMap: Record<string, string> = {
-          '24 Hours': '24h',
-          '7 Days': '7d',
-          '1 Month': '30d'
-        };
-        const intervalMap: Record<string, string> = {
-          '24 Hours': '1h',
-          '7 Days': '1d',
-          '1 Month': '1d'
-        };
-        const rangeParam = rangeMap[selectedRange] || '7d';
-        const intervalParam = intervalMap[selectedRange] || '1d';
-        const metric = 'wind_direction';
-        
-        let res = await sensorsAPI.getAggregatedData(sensorId, { 
-          metric, 
-          range: rangeParam,
-          interval: intervalParam 
-        }).catch(() => null);
-        if (!res || !res.data || (Array.isArray(res.data) && res.data.length === 0)) {
-          res = await sensorsAPI.getSensorData(sensorId, { 
-            metric, 
-            range: rangeParam,
-            interval: intervalParam
-          }).catch(() => null);
-        }
-        
-        let rawData = res?.data?.data || res?.data || [];
-        if (!Array.isArray(rawData) && typeof rawData === 'object' && rawData !== null) {
-          const firstArrayValue = Object.values(rawData).find(val => Array.isArray(val));
-          if (firstArrayValue) rawData = firstArrayValue;
-          else rawData = [];
-        }
-        setChartData(Array.isArray(rawData) ? rawData : []);
+        const rawData = await fetchNestChartData(sensorId, selectedRange);
+        setChartData(rawData);
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
       }

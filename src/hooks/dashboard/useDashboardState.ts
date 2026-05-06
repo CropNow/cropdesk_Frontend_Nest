@@ -86,6 +86,15 @@ export function useDashboardState() {
         const hasDevices = devices.length > 0;
         const primaryDevice = devices[currentDeviceIndex % (devices.length || 1)] || devices[0];
         const deviceId = primaryDevice?.id || primaryDevice?._id;
+        const serialNumber = primaryDevice?.serialNumber || primaryDevice?.deviceId;
+
+        // Format today's date as YYYY/MM/DD for nest-device API
+        const now = new Date();
+        const todayDate = [
+          now.getFullYear(),
+          String(now.getMonth() + 1).padStart(2, '0'),
+          String(now.getDate()).padStart(2, '0')
+        ].join('/');
 
         const [overviewRes, alertsRes, statsRes, latestRes, aiRes] = await Promise.all([
           dashboardAPI.getDashboardOverview().catch(() => ({ data: null })),
@@ -93,8 +102,8 @@ export function useDashboardState() {
           hasDevices 
             ? dashboardAPI.getFarmStatistics(selectedFarmId).catch(() => ({ data: null }))
             : Promise.resolve({ data: null }),
-          deviceId
-            ? sensorsAPI.getLatestReading(deviceId).catch(() => ({ data: null }))
+          serialNumber
+            ? sensorsAPI.getNestDeviceData(serialNumber, todayDate).catch(() => ({ data: null }))
             : Promise.resolve({ data: null }),
           deviceId
             ? dashboardAPI.getAIInsights(selectedFarmId, deviceId).catch(() => ({ data: null }))
@@ -107,7 +116,7 @@ export function useDashboardState() {
         const overview = overviewRes?.data?.overview;
         const stats = statsRes?.data?.data || statsRes?.data;
         const alertsData = alertsRes?.data?.data || alertsRes?.data || [];
-        
+
         // Fetch sensor ID for aggregates
         let actualSensorId = null;
         try {
@@ -120,40 +129,45 @@ export function useDashboardState() {
           console.error('Failed to fetch sensors', err);
         }
 
+        // Parse nest-device/data response
+        // Response: { success, status: 'online'|'offline', data: { deviceId, time, timestamp, values: {...} } }
         let sensorLatestData = null;
-        const latestDataArr = latestRes?.data?.data || latestRes?.data;
-        if (Array.isArray(latestDataArr) && latestDataArr.length > 0) {
-          sensorLatestData = { ...latestDataArr[0], deviceId, sensorId: actualSensorId };
-        } else if (!Array.isArray(latestDataArr) && latestDataArr) {
-          sensorLatestData = { ...latestDataArr, deviceId, sensorId: actualSensorId };
+        const nestResponse = latestRes?.data;
+        const isDeviceOnline = nestResponse?.status === 'online';
+        if (nestResponse?.success && nestResponse?.data) {
+          sensorLatestData = {
+            ...nestResponse.data,
+            deviceId: serialNumber || deviceId,
+            sensorId: actualSensorId,
+            isOnline: isDeviceOnline,
+          };
         }
         
         const aiDataRaw = aiRes?.data?.data || aiRes?.data?.insights || aiRes?.data;
         const aiData = Array.isArray(aiDataRaw) ? aiDataRaw : (typeof aiDataRaw === 'object' && aiDataRaw !== null ? [] : []);
 
-        let hasNoIncomingData = false;
+        const isOffline = !isDeviceOnline || !sensorLatestData;
+        let hasNoIncomingData = isOffline;
         if (!sensorLatestData) {
-          hasNoIncomingData = true;
           sensorLatestData = {
-            deviceId: primaryDevice?.id || primaryDevice?._id || actualSensorId || 'none',
+            deviceId: serialNumber || primaryDevice?.id || primaryDevice?._id || actualSensorId || 'none',
             sensorId: actualSensorId || 'none',
+            isOnline: false,
             values: {
-              soil_moisture: 0,
-              soil_moisture_1: 0,
-              soil_temperature: 0,
-              temperature: 0,
-              humidity: 0,
-              wind_speed: 0
+              pm1_0: 0, pm2_5: 0, pm10: 0, co2: 0, voc: 0,
+              temperature: 0, humidity: 0, temperature2: 0, humidity2: 0,
+              leaf: 0, wind_speed: 0, wind_dir: 0, ch2o: 0, co: 0, o3: 0, no2: 0
             }
           };
         }
 
         // Map metrics from statistics or fallback
+        // nest-device values: temperature, humidity, wind_speed, wind_dir, pm2_5, pm10, co2, o3, no2, leaf
         const mappedMetrics = FARM_STATUS_METRICS.map(m => {
-          const liveMoisture = sensorLatestData?.values?.soil_moisture_1 || sensorLatestData?.values?.soil_moisture || sensorLatestData?.soil_moisture;
-          const liveTemp = sensorLatestData?.values?.soil_temperature || sensorLatestData?.values?.temperature || sensorLatestData?.temperature;
-          const liveHumidity = sensorLatestData?.values?.humidity || sensorLatestData?.humidity;
-          const liveWindSpeed = sensorLatestData?.values?.wind_speed || sensorLatestData?.wind_speed;
+          const liveMoisture = sensorLatestData?.values?.soil_moisture_1 || sensorLatestData?.values?.soil_moisture || sensorLatestData?.values?.leaf || 0;
+          const liveTemp = sensorLatestData?.values?.temperature || sensorLatestData?.values?.temperature2 || 0;
+          const liveHumidity = sensorLatestData?.values?.humidity || sensorLatestData?.values?.humidity2 || 0;
+          const liveWindSpeed = sensorLatestData?.values?.wind_speed || 0;
 
           if (m.id === 'soil-moisture') {
             const val = liveMoisture !== undefined && liveMoisture !== null ? liveMoisture : stats?.currentConditions?.avgSoilMoisture;
@@ -187,11 +201,13 @@ export function useDashboardState() {
             metrics: mappedMetrics,
           },
           sensors: {
-            activeSensorsCount: hasNoIncomingData ? 0 : (sensorLatestData?.values ? Object.keys(sensorLatestData.values).filter(k => sensorLatestData.values[k] !== undefined && sensorLatestData.values[k] !== null).length : (stats?.overview?.activeSensors || (Array.isArray(devices) ? devices.filter((d: any) => d.status === 'active').length : 0) || overview?.sensors || 0)),
+            activeSensorsCount: hasNoIncomingData ? 0 : (sensorLatestData?.values ? Object.values(sensorLatestData.values).filter((v: any) => v !== undefined && v !== null && v !== 0).length : 0),
             totalSensorsCount: stats?.overview?.totalSensors || (Array.isArray(devices) ? devices.length : 0) || overview?.sensors || 0,
             latestData: hasNoIncomingData ? null : sensorLatestData,
-            deviceId: primaryDevice?.id || primaryDevice?._id || sensorLatestData?.deviceId || sensorLatestData?.sensorId || sensorLatestData?.id || sensorLatestData?._id,
+            deviceId: serialNumber || primaryDevice?.id || primaryDevice?._id || sensorLatestData?.deviceId,
             sensorId: actualSensorId || sensorLatestData?.sensorId || sensorLatestData?.id || sensorLatestData?._id,
+            serialNumber: serialNumber || null,
+            isOnline: isDeviceOnline,
           },
           alerts: { 
             cards: hasNoIncomingData ? [] : (aiRes.data?.raw ? [
