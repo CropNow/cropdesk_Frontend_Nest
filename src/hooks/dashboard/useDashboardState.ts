@@ -4,7 +4,6 @@ import { DEVICE_LIBRARY, DeviceType, FARM_STATUS_METRICS } from '../../constants
 import { isDeviceType } from '../../utils/deviceUtils';
 import { dashboardAPI } from '../../api/dashboard.api';
 import { sensorsAPI } from '../../api/sensors.api';
-import { devicesAPI } from '../../api/devices.api';
 
 export function useDashboardState() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -234,7 +233,21 @@ export function useDashboardState() {
               confidence: aiRes.data.raw.aqi?.confidence ? `${Math.round(aiRes.data.raw.aqi.confidence * 100)}%` : '95%',
             } : undefined)
           },
-          waterSavings: null,
+          waterSavings: (() => {
+            const irrigation = aiRes.data?.raw?.irrigation;
+            if (!irrigation || hasNoIncomingData) return { percent: '0.0%', total: '0 L', daily: '0 L' };
+            const req = irrigation.water_requirement_mm || 0;
+            // Convert mm to approx litres (assume 1 acre = ~4047 m², 1mm = 4047 L/acre)
+            const areaAcres = parseFloat(primaryDevice?.field?.area || '1') || 1;
+            const litres = Math.round(req * 4.047 * areaAcres);
+            const dailyLitres = Math.round(litres / 1);
+            const saved = irrigation.decision === 'no_irrigation' ? 100 : Math.max(0, 100 - Math.round((req / 50) * 100));
+            return {
+              percent: `${saved}%`,
+              total: `${litres} L`,
+              daily: `${dailyLitres} L`,
+            };
+          })(),
           aiInsights: hasNoIncomingData ? [
             { title: 'Irrigation', description: 'Nil prediction - no sensor data.', level: 'warn' },
             { title: 'Fungal', description: 'Nil prediction - no sensor data.', level: 'warn' },
@@ -357,12 +370,15 @@ export function useDashboardState() {
   };
 
   const weatherSummary = useMemo(() => {
+    const farm = farms[0];
+    const city = farm?.location?.city || farm?.location?.district || farm?.name || 'N/A';
+    const country = farm?.location?.country || 'IN';
     return {
-      city: 'N/A',
+      city: city !== 'N/A' ? `${city}, ${country}` : 'N/A',
       temp: '--',
       condition: 'Unknown',
     };
-  }, []);
+  }, [farms]);
 
   return {
     selectedDeviceType,

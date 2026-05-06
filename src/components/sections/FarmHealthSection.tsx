@@ -18,7 +18,7 @@ export function FarmHealthSection({ data }: { data?: any }) {
   const getConditionColor = (cond?: string) => {
     if (!cond) return 'bg-white/10 text-white border-white/20';
     const c = cond.toLowerCase();
-    if (c.includes('optimal') || c.includes('good') || c.includes('normal')) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+    if (c.includes('healthy') || c.includes('optimal') || c.includes('good') || c.includes('normal')) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
     if (c.includes('moderate') || c.includes('warning')) return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
     if (c.includes('high') || c.includes('severe') || c.includes('critical') || c.includes('danger')) return 'bg-red-500/20 text-red-400 border-red-500/30';
     return 'bg-white/10 text-white border-white/20';

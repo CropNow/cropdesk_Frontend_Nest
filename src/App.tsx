@@ -28,17 +28,15 @@ export function App() {
         {/* Protected routes (sidebar + content) */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
-<<<<<<< Updated upstream
+
           <Route path="/ai-trends" element={<AITrendsPage />} />
           <Route path="/chatbot" element={<ChatbotPage />} />
-=======
->>>>>>> Stashed changes
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
         {/* Global wildcard catch-all for invalid URLs */}
-        <Route 
-          path="*" 
+        <Route
+          path="*"
           element={
             isAuthenticated ? (
               <ProtectedRoute>
@@ -47,7 +45,7 @@ export function App() {
             ) : (
               <NotFoundPage />
             )
-          } 
+          }
         />
       </Routes>
     </div>
