@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Activity,
   Bug,
   CloudSun,
   Droplets,
@@ -56,9 +57,7 @@ export const DEVICE_LABELS: Record<DeviceType, string> = {
 
 // Sensor cards configuration
 export const SENSOR_CARDS = [
-  { title: 'Weather Sensors', icon: CloudSun, accent: 'from-cyan-500/20 to-sky-500/10' },
-  { title: 'Soil Sensors', icon: Leaf, accent: 'from-lime-500/20 to-emerald-500/10' },
-  { title: 'Air Sensors', icon: Wind, accent: 'from-indigo-500/20 to-blue-500/10' },
+  { title: 'Nest Device Sensors', icon: Activity, accent: 'from-[#00FF9C]/20 to-emerald-500/10' },
 ];
 
 // FIS (Field Intelligence System) Cards
@@ -114,17 +113,6 @@ export const FARM_STATUS_METRICS: FarmStatusMetric[] = [
     status: 'optimal',
   },
   {
-    id: 'visibility',
-    label: 'Visibility',
-    value: 0,
-    unit: 'km',
-    icon: <Eye className="h-5 w-5" />,
-    color: 'emerald',
-    min: 0,
-    max: 50,
-    status: 'optimal',
-  },
-  {
     id: 'leaf-wetness',
     label: 'Leaf Wetness',
     value: 0,
@@ -140,6 +128,4 @@ export const FARM_STATUS_METRICS: FarmStatusMetric[] = [
 // Device navigation links
 export const DEVICE_NAV_LINKS = [
   { label: 'NEST', to: '/dashboard?device=nest' },
-  { label: 'Seed', to: '/dashboard?device=seed' },
-  { label: 'Aero Drone', to: '/dashboard?device=aero' },
 ];

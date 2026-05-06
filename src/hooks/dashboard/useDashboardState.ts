@@ -146,8 +146,8 @@ export function useDashboardState() {
         const aiDataRaw = aiRes?.data?.data || aiRes?.data?.insights || aiRes?.data;
         const aiData = Array.isArray(aiDataRaw) ? aiDataRaw : (typeof aiDataRaw === 'object' && aiDataRaw !== null ? [] : []);
 
-        const isOffline = !isDeviceOnline || !sensorLatestData;
-        let hasNoIncomingData = isOffline;
+        const isHistorical = nestResponse?.isHistorical === true;
+        let hasNoIncomingData = !sensorLatestData;
         if (!sensorLatestData) {
           sensorLatestData = {
             deviceId: serialNumber || primaryDevice?.id || primaryDevice?._id || actualSensorId || 'none',
@@ -208,6 +208,8 @@ export function useDashboardState() {
             sensorId: actualSensorId || sensorLatestData?.sensorId || sensorLatestData?.id || sensorLatestData?._id,
             serialNumber: serialNumber || null,
             isOnline: isDeviceOnline,
+            isHistorical: isHistorical,
+            timestamp: sensorLatestData?.timestamp,
           },
           alerts: { 
             cards: hasNoIncomingData ? [] : (aiRes.data?.raw ? [
