@@ -322,7 +322,7 @@ export function useDashboardState() {
 
     fetchFarmData();
     
-    const intervalId = setInterval(fetchFarmData, 10 * 60 * 1000); // Poll every 10 minutes
+    const intervalId = setInterval(fetchFarmData, 30 * 60 * 1000); // Poll every 30 minutes
     return () => clearInterval(intervalId);
   }, [selectedFarmId, selectedDeviceType, currentDeviceIndex]);
 

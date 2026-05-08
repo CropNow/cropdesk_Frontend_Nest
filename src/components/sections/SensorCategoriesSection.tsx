@@ -219,75 +219,97 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
 
 
 
-
 /**
- * Fetches chart data from the nest-device/data API for a given date range.
- * Returns an array of { timestamp, values } objects, one per day.
+ * Fetches chart data from the aggregation API for a given metric and range.
  */
-async function fetchNestChartData(deviceId: string, selectedRange: string): Promise<any[]> {
-  if (!deviceId) return [];
+async function fetchNestChartData(sensorId: string, selectedRange: string, metric: string): Promise<any[]> {
+  if (!sensorId || !metric) return [];
 
-  const daysMap: Record<string, number> = {
-    '24 Hours': 1,
-    '7 Days': 7,
-    '1 Month': 30,
+  const rangeMap: Record<string, string> = {
+    '24 Hours': '24h',
+    '7 Days': '7d',
+    '1 Month': '30d',
   };
-  const days = daysMap[selectedRange] || 1;
 
-  const results: any[] = [];
-  const now = new Date();
+  const aggMap: Record<string, string> = {
+    '24 Hours': 'hour',
+    '7 Days': 'day',
+    '1 Month': 'day',
+  };
 
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const dateStr = [
-      d.getFullYear(),
-      String(d.getMonth() + 1).padStart(2, '0'),
-      String(d.getDate()).padStart(2, '0'),
-    ].join('/');
+  const params = {
+    range: rangeMap[selectedRange] || '7d',
+    aggregation: aggMap[selectedRange] || 'day',
+    metric: metric,
+  };
 
-    try {
-      const res = await sensorsAPI.getNestDeviceData(deviceId, dateStr);
-      const nestData = res?.data;
-      if (nestData?.success && nestData?.data?.values) {
-        results.push({
-          timestamp: nestData.data.timestamp || nestData.data.time || d.toISOString(),
-          ...nestData.data.values,
-        });
-      } else {
-        // Push zero entry for offline/missing days
-        results.push({
-          timestamp: d.toISOString(),
-          pm1_0: 0, pm2_5: 0, pm10: 0, co2: 0, voc: 0,
-          temperature: 0, humidity: 0, wind_speed: 0, wind_dir: 0,
-          o3: 0, no2: 0, co: 0, leaf: 0,
-        });
-      }
-    } catch {
-      results.push({
-        timestamp: d.toISOString(),
-        pm1_0: 0, pm2_5: 0, pm10: 0, co2: 0, voc: 0,
-        temperature: 0, humidity: 0, wind_speed: 0, wind_dir: 0,
-        o3: 0, no2: 0, co: 0, leaf: 0,
-      });
+  try {
+    const res = await sensorsAPI.getAggregatedData(sensorId, params);
+    if (Array.isArray(res.data)) {
+      return res.data.map((item: any) => ({
+        timestamp: item._id,
+        average: item.average,
+        [metric]: item.average,
+      }));
     }
+    return [];
+  } catch (error) {
+    console.error('Failed to fetch aggregated data:', error);
+    return [];
   }
-
-  return results;
 }
 
 function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24 Hours', metricKey = '' }: { data: any[]; chartType?: 'bar' | 'line'; unit?: string; selectedRange?: string; metricKey?: string }) {
   console.log('RealDataChart received data:', data);
 
-  if (!data || data.length === 0) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center">
-        <p className="text-[0.75rem] font-black uppercase tracking-[0.2em] text-textHint">No Data Available</p>
-      </div>
-    );
+  // Pad data to ensure a full timeline is always shown across the X-axis
+  const now = new Date();
+  const isDay = selectedRange === '24 Hours';
+  const isWeek = selectedRange === '7 Days';
+  const pointsCount = isDay ? 24 : (isWeek ? 7 : 30);
+  const intervalMs = isDay ? 3600000 : 86400000;
+  
+  const timeline = Array.from({ length: pointsCount }, (_, i) => {
+    const time = new Date(now.getTime() - (pointsCount - 1 - i) * intervalMs);
+    if (isDay) time.setMinutes(0, 0, 0);
+    else time.setHours(0, 0, 0, 0);
+
+    return {
+      timestamp: time.toISOString(),
+      [metricKey]: 0,
+      average: 0,
+      isPlaceholder: true
+    };
+  });
+
+  if (data && data.length > 0) {
+    data.forEach(realPoint => {
+      const realTime = new Date(realPoint.timestamp || realPoint._id || realPoint.time).getTime();
+      let closestIdx = -1;
+      let minDiff = Infinity;
+      
+      timeline.forEach((slot, idx) => {
+        const diff = Math.abs(new Date(slot.timestamp).getTime() - realTime);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIdx = idx;
+        }
+      });
+
+      if (closestIdx !== -1 && minDiff < intervalMs) {
+        timeline[closestIdx] = { 
+          ...timeline[closestIdx], 
+          ...realPoint, 
+          isPlaceholder: false,
+          [metricKey]: realPoint[metricKey] ?? realPoint.average ?? 0
+        };
+      }
+    });
   }
 
-  const points = data.map((d: any) => {
+  const chartData = timeline;
+
+  const points = chartData.map((d: any) => {
     let val: number | undefined;
     
     if (metricKey && d[metricKey] !== undefined && d[metricKey] !== null) {
@@ -399,7 +421,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
     }
   };
 
-  const labelsWithIndices = data.map((d, i) => ({ 
+  const labelsWithIndices = chartData.map((d: any, i: number) => ({ 
     label: getFormattedLabel(d), 
     index: i 
   })).filter(l => l.label !== '');
@@ -412,7 +434,8 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
   const finalLabels = [];
   if (uniqueLabels.length > 0) {
     for (let i = 0; i < finalLabelCount; i++) {
-      finalLabels.push(uniqueLabels[Math.floor((i * (uniqueLabels.length - 1)) / (finalLabelCount - 1 || 1))]);
+      const idx = Math.floor((i * (uniqueLabels.length - 1)) / (finalLabelCount - 1 || 1));
+      finalLabels.push(uniqueLabels[idx]);
     }
   }
 
@@ -499,6 +522,15 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
       'PM 10': 'pm10',
       'CO2': 'co2',
       'Air Temperature': 'temperature',
+      'VOC': 'voc',
+      'CH2O': 'ch2o',
+      'CO': 'co',
+      'PM 1.0': 'pm1_0',
+      'Temperature 1': 'temperature',
+      'Temperature 2': 'soil_temperature',
+      'Humidity 1': 'humidity',
+      'Humidity 2': 'soil_moisture_1',
+      'Leaf Wetness': 'leaf_wetness',
       'Humidity': 'humidity',
       'Air Pressure': 'pressure',
       'SO2': 'so2',
@@ -517,7 +549,7 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
           setChartData([]);
           return;
         }
-        const rawData = await fetchNestChartData(sensorId, selectedRange);
+        const rawData = await fetchNestChartData(sensorId, selectedRange, metric);
         setChartData(rawData);
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
@@ -608,6 +640,15 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
       'PM 10': 'pm10',
       'CO2': 'co2',
       'Air Temperature': 'temperature',
+      'VOC': 'voc',
+      'CH2O': 'ch2o',
+      'CO': 'co',
+      'PM 1.0': 'pm1_0',
+      'Temperature 1': 'temperature',
+      'Temperature 2': 'soil_temperature',
+      'Humidity 1': 'humidity',
+      'Humidity 2': 'soil_moisture_1',
+      'Leaf Wetness': 'leaf_wetness',
       'Humidity': 'humidity',
       'Air Pressure': 'pressure',
       'SO2': 'so2',
@@ -626,7 +667,7 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
           setChartData([]);
           return;
         }
-        const rawData = await fetchNestChartData(sensorId, selectedRange);
+        const rawData = await fetchNestChartData(sensorId, selectedRange, metric);
         setChartData(rawData);
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
