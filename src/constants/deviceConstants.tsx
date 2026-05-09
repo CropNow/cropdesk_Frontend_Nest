@@ -61,7 +61,11 @@ export const SENSOR_CARDS = [
 ];
 
 // FIS (Field Intelligence System) Cards
-export const FIS_CARDS: Array<{ title: string; value: number; status: FisStatus; body: string; icon: React.ElementType }> = [];
+export const FIS_CARDS: Array<{ title: string; value: number; status: FisStatus; body: string; icon: React.ElementType }> = [
+  { title: 'Pest Analysis', value: 0, status: 'Optimal', body: '', icon: Bug },
+  { title: 'Fungal Activity', value: 0, status: 'Optimal', body: '', icon: ShieldCheck },
+  { title: 'Irrigation Analysis', value: 0, status: 'Optimal', body: '', icon: Droplets },
+];
 
 // AI insights data
 export const AI_INSIGHTS: Array<{ title: string; description: string; level: 'good' | 'warn' }> = [];

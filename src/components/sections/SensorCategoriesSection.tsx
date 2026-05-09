@@ -132,72 +132,90 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
           </div>
         </div>
 
-        {/* Mobile View - 2x2 grid layout */}
-        <div className="grid grid-cols-2 gap-3 sm:hidden">
-          {/* Active Sensors Card */}
-          <div className="relative flex h-full flex-col items-start justify-between rounded-3xl border border-white/10 bg-cardBg p-4">
-            <span className="absolute right-4 top-3 text-xl font-bold text-[#00FF9C]">{activeSensorsCount}</span>
-            <div className="mb-4 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10">
-              <Radio className="h-4 w-4 text-[#00FF9C]" />
-            </div>
-            <p className="text-sm font-semibold leading-tight">
-              Active
-              <br />
-              Sensors
-            </p>
-          </div>
+        {/* Smoother Compact Stacked Layout */}
+        <div className="flex flex-col gap-4">
+          {/* Connectivity Hub Card */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/[0.05] to-transparent p-6 backdrop-blur-xl transition-all"
+          >
+            {/* Soft Status Glow */}
+            <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-full blur-[50px] transition-colors duration-700 ${data?.isOnline ? 'bg-emerald-500/15' : 'bg-red-500/15'}`} />
+            
+            <div className="relative z-10 flex flex-col gap-6">
+              <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`h-2 w-2 rounded-full ${data?.isOnline ? 'animate-pulse bg-emerald-500' : 'bg-red-500'}`} />
+                    <span className={`text-[0.65rem] font-bold uppercase tracking-[0.15em] ${data?.isOnline ? 'text-emerald-400/80' : 'text-red-400/80'}`}>
+                      {data?.isOnline ? 'System Online' : 'System Offline'}
+                    </span>
+                  </div>
+                  <h4 className="text-xl font-bold tracking-tight text-white/90">Connectivity Hub</h4>
+                </div>
+                
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.03] border border-white/5">
+                  <Radio className={`h-4 w-4 ${data?.isOnline ? 'text-emerald-400' : 'text-white/20'}`} />
+                </div>
+              </div>
 
-          {/* Sensor Category Cards */}
+              <div className="flex items-end justify-between">
+                <div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-black tracking-tighter text-white">
+                      {activeSensorsCount}
+                    </span>
+                    <span className="text-lg font-bold text-white/20">
+                      / {data?.totalSensorsCount || 16}
+                    </span>
+                  </div>
+                  <p className="text-[0.6rem] font-bold uppercase tracking-widest text-white/30">Active Sensors</p>
+                </div>
+
+                <div className="flex flex-col items-end text-right">
+                  <p className="text-[0.6rem] font-bold uppercase tracking-widest text-white/20">Last Sync</p>
+                  <p className="text-lg font-bold tracking-tight text-white/80">
+                    {data?.timestamp ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                  </p>
+                  <p className="text-[0.65rem] font-medium text-white/30">
+                    {data?.timestamp ? new Date(data.timestamp).toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Interactive Sensor Entry Cards */}
           {SENSOR_CARDS.map((card) => (
-            <div
+            <motion.div
               key={card.title}
+              whileHover={{ y: -3, scale: 1.002 }}
+              whileTap={{ scale: 0.998 }}
               onClick={() => {
                 if (card.title === 'Nest Device Sensors') setShowNestDetails(true);
               }}
-              className={`flex h-full flex-col items-start justify-between rounded-3xl border border-white/10 bg-cardBg p-4 ${card.title === 'Weather Sensors' || card.title === 'Soil Sensors' || card.title === 'Air Sensors' ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
+              className="group relative cursor-pointer overflow-hidden rounded-[2rem] border border-[#00FF9C]/10 bg-gradient-to-br from-[#00FF9C]/5 via-transparent to-transparent p-6 backdrop-blur-xl transition-all hover:border-[#00FF9C]/25 hover:bg-[#00FF9C]/8"
             >
-              <div className={`mb-4 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${card.accent}`}>
-                <card.icon className="h-4 w-4 text-[#00FF9C]" />
-              </div>
-              <p className="text-sm font-semibold leading-tight">{card.title}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Web View - 2x2 grid layout */}
-        <div className="hidden sm:block">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Active Sensors Card */}
-            <div className="relative flex flex-col items-start justify-between rounded-3xl border border-white/10 bg-cardBg p-5">
-              <span className="absolute right-5 top-4 text-2xl font-bold text-[#00FF9C]">{activeSensorsCount}</span>
-              <div className="mb-5 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10">
-                <Radio className="h-5 w-5 text-[#00FF9C]" />
-              </div>
-              <p className="text-lg font-semibold leading-tight lg:text-xl">
-                Active
-                <br />
-                Sensors
-              </p>
-            </div>
-
-            {/* Sensor Category Cards */}
-            {SENSOR_CARDS.map((card) => (
-              <motion.div
-                key={card.title}
-                whileHover={{ y: -4, scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  if (card.title === 'Nest Device Sensors') setShowNestDetails(true);
-                }}
-                className={`flex flex-col items-start justify-between rounded-3xl border border-white/10 bg-cardBg p-5 ${card.title === 'Weather Sensors' || card.title === 'Soil Sensors' || card.title === 'Air Sensors' ? 'cursor-pointer' : ''}`}
-              >
-                <div className={`mb-5 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${card.accent}`}>
-                  <card.icon className="h-5 w-5 text-[#00FF9C]" />
+              <div className="relative z-10 flex flex-col gap-6">
+                <div className="flex items-center justify-between">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-[1rem] bg-gradient-to-br ${card.accent} border border-white/5 transition-transform group-hover:scale-105`}>
+                    <card.icon className="h-5 w-5 text-[#00FF9C]" />
+                  </div>
+                  <div className="rounded-full bg-white/5 p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                    <ChevronDown className="h-4 w-4 -rotate-90 text-[#00FF9C]" />
+                  </div>
                 </div>
-                <p className="text-lg font-semibold leading-tight lg:text-xl">{card.title}</p>
-              </motion.div>
-            ))}
-          </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <h4 className="text-xl font-bold tracking-tight text-white">{card.title}</h4>
+                  <p className="text-xs font-medium text-white/40">Access detailed telemetry & trends</p>
+                </div>
+              </div>
+
+              {/* Subtle Decorative Accent */}
+              <div className="absolute -bottom-12 -right-12 h-32 w-32 rounded-full bg-[#00FF9C]/3 blur-[60px] transition-colors group-hover:bg-[#00FF9C]/6" />
+            </motion.div>
+          ))}
         </div>
       </motion.div>
 
