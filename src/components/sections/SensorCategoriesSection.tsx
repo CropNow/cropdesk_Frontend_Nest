@@ -630,7 +630,10 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
         console.error('Failed to fetch chart data:', err);
       }
     };
+    
     fetchHistory();
+    const interval = setInterval(fetchHistory, 30 * 60 * 1000);
+    return () => clearInterval(interval);
   }, [sensorId, selectedRange, sensor.title]);
 
   return (
@@ -748,7 +751,10 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
         console.error('Failed to fetch chart data:', err);
       }
     };
+    
     fetchHistory();
+    const interval = setInterval(fetchHistory, 30 * 60 * 1000);
+    return () => clearInterval(interval);
   }, [sensorId, selectedRange, sensor.title]);
 
   return (
