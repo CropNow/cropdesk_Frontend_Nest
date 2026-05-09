@@ -84,13 +84,13 @@ export function FISAlertSection({ data }: { data?: any }) {
       <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#00FF9C]/5 blur-[100px]" />
 
       <div className="mb-6 flex items-center justify-between px-2">
-        <div className="flex flex-col gap-1">
-          <h3 className="text-3xl font-black tracking-tight text-white/90">FIS Alert Engine</h3>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/30">Intelligence Core Active</p>
+        <div className="flex flex-col gap-0.5">
+          <h3 className="text-3xl font-extrabold tracking-tight text-white/90">FIS Alert Engine</h3>
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/40">Intelligence Core Active</p>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-[#00FF9C]/20 bg-[#00FF9C]/10 px-4 py-1.5 shadow-[0_0_20px_rgba(0,255,156,0.1)]">
+        <div className="flex items-center gap-2 rounded-full border border-[#00FF9C]/20 bg-[#00FF9C]/10 px-4 py-2 shadow-[0_0_20px_rgba(0,255,156,0.1)]">
           <div className="h-2 w-2 animate-pulse rounded-full bg-[#00FF9C]" />
-          <span className="text-[0.65rem] font-black uppercase tracking-widest text-[#00FF9C]">Live Monitor</span>
+          <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#00FF9C]">Live Monitor</span>
         </div>
       </div>
 
@@ -121,21 +121,21 @@ export function FISAlertSection({ data }: { data?: any }) {
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-white/10 to-transparent border border-white/5 shadow-inner">
                     {IconComponent && <IconComponent className="h-5 w-5 text-[#00FF9C]" />}
                   </div>
-                  <span className={`rounded-lg border px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-widest ${statusColors[card.status as keyof typeof statusColors]}`}>
+                  <span className={`rounded-lg border px-3 py-1 text-[0.6rem] font-bold uppercase tracking-[0.25em] ${statusColors[card.status as keyof typeof statusColors]}`}>
                     {card.status}
                   </span>
                 </div>
 
                 <h4 className="mb-2 text-xl font-bold tracking-tight text-white/90">{card.title}</h4>
-                <p className="min-h-[3rem] text-sm font-medium leading-relaxed text-white/40 line-clamp-2">
+                <p className="min-h-[3.5rem] text-[0.9rem] font-medium leading-[1.6] text-white/50 line-clamp-2">
                   {card.body}
                 </p>
               </div>
 
               <div className="relative z-10 mt-6">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[0.65rem] font-bold uppercase tracking-widest text-white/20">Risk Factor</span>
-                  <span className="text-sm font-black tabular-nums text-white/60">{card.value}%</span>
+                  <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">Risk Factor</span>
+                  <span className="text-sm font-bold tabular-nums text-white/70">{card.value}%</span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-white/5 border border-white/5">
                   <motion.div
@@ -152,22 +152,22 @@ export function FISAlertSection({ data }: { data?: any }) {
       </div>
 
       <div className="mt-6 overflow-hidden rounded-[2rem] border border-[#00FF9C]/20 bg-gradient-to-br from-[#00FF9C]/10 via-transparent to-transparent p-6 backdrop-blur-xl">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00FF9C]/20 border border-[#00FF9C]/30 shadow-[0_0_15px_rgba(0,255,156,0.1)]">
                 <Activity className="h-5 w-5 text-[#00FF9C]" />
               </div>
-              <div>
+              <div className="flex flex-col">
                 <p className="text-lg font-bold tracking-tight text-white/90">{suggestion.title || 'AI Prescription'}</p>
-                <p className="text-[0.6rem] font-bold uppercase tracking-widest text-[#00FF9C]/60">Expert Recommendation</p>
+                <p className="text-[0.6rem] font-bold uppercase tracking-[0.25em] text-[#00FF9C]/60">Expert Recommendation</p>
               </div>
             </div>
             
             <button
               onClick={handleAcknowledge}
               disabled={isAcknowledged || isSubmitting}
-              className={`hidden sm:flex items-center gap-2 rounded-xl px-6 py-2 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 ${
+              className={`hidden sm:flex items-center gap-2 rounded-xl px-7 py-2.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 ${
                 isAcknowledged 
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
                   : 'bg-[#00FF9C] text-black hover:shadow-[0_0_20px_rgba(0,255,156,0.4)]'
@@ -182,14 +182,14 @@ export function FISAlertSection({ data }: { data?: any }) {
             </button>
           </div>
 
-          <p className="text-[0.95rem] font-medium leading-relaxed text-white/70">
+          <p className="text-[0.95rem] font-medium leading-[1.7] text-white/80">
             {suggestion.body}
           </p>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between px-1">
-              <span className="text-[0.65rem] font-bold uppercase tracking-widest text-white/30">System Confidence</span>
-              <span className="text-xs font-black text-[#00FF9C]">{suggestion.confidence}</span>
+              <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">System Confidence</span>
+              <span className="text-sm font-bold text-[#00FF9C] tabular-nums">{suggestion.confidence}</span>
             </div>
             <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/20 border border-white/5">
               <motion.div
@@ -204,7 +204,7 @@ export function FISAlertSection({ data }: { data?: any }) {
           <button
             onClick={handleAcknowledge}
             disabled={isAcknowledged || isSubmitting}
-            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 sm:hidden ${
+            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 sm:hidden ${
               isAcknowledged 
                 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
                 : 'bg-[#00FF9C] text-black'

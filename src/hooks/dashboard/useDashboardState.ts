@@ -134,12 +134,17 @@ export function useDashboardState() {
         let sensorLatestData = null;
         const nestResponse = latestRes?.data;
         const isDeviceOnline = nestResponse?.status === 'online';
+        
+        // Robust timestamp extraction
+        const apiTimestamp = nestResponse?.data?.timestamp || nestResponse?.data?.time || nestResponse?.timestamp || stats?.latestData?.timestamp || overview?.lastUpdate;
+
         if (nestResponse?.success && nestResponse?.data) {
           sensorLatestData = {
             ...nestResponse.data,
             deviceId: serialNumber || deviceId,
             sensorId: actualSensorId,
             isOnline: isDeviceOnline,
+            timestamp: apiTimestamp // Ensure it's explicitly set here
           };
         }
         
@@ -152,7 +157,8 @@ export function useDashboardState() {
           sensorLatestData = {
             deviceId: serialNumber || primaryDevice?.id || primaryDevice?._id || actualSensorId || 'none',
             sensorId: actualSensorId || 'none',
-            isOnline: false,
+            isOnline: isDeviceOnline, // Use the status from the top level response
+            timestamp: apiTimestamp, // Use extracted timestamp
             values: {
               pm1_0: 0, pm2_5: 0, pm10: 0, co2: 0, voc: 0,
               temperature: 0, humidity: 0, temperature2: 0, humidity2: 0,
@@ -209,7 +215,7 @@ export function useDashboardState() {
             serialNumber: serialNumber || null,
             isOnline: isDeviceOnline,
             isHistorical: isHistorical,
-            timestamp: sensorLatestData?.timestamp,
+            timestamp: apiTimestamp,
           },
           alerts: { 
             cards: hasNoIncomingData ? [] : (aiRes.data?.raw ? [

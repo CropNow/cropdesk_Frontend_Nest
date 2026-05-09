@@ -17,35 +17,61 @@ export function AIInsightsSection({ data }: { data?: any }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.18 }}
-      className="rounded-3xl border border-cardBorder bg-cardBg p-5 backdrop-blur-xl lg:col-span-2"
+      className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-white/[0.05] via-white/[0.02] to-transparent p-6 backdrop-blur-2xl lg:col-span-2"
     >
-      <h3 className="mb-4 text-3xl font-bold">AI Insights</h3>
-      <div className="space-y-3">
-        {insights.map((item: any) => (
-          <motion.div
-            key={item.title}
-            whileHover={{ x: 3 }}
-            className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={[
-                  'h-3 w-3 rounded-full',
-                  item.level === 'good' ? 'bg-accentPrimary' : 'bg-yellow-300',
-                ].join(' ')}
-              />
-              <div>
-                <p className="font-semibold">{item.title}</p>
-                <p className="text-sm text-textSecondary">{item.description}</p>
-              </div>
-            </div>
-            <span className="text-sm text-textMuted">-</span>
-          </motion.div>
-        ))}
+      {/* Decorative Glow */}
+      <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-[#00FF9C]/5 blur-[100px]" />
+
+      <div className="mb-6 flex items-center justify-between px-2">
+        <div className="flex flex-col gap-0.5">
+          <h3 className="text-3xl font-extrabold tracking-tight text-white/90">AI Insights</h3>
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/40">Real-time Farm Analysis</p>
+        </div>
       </div>
+
+      <div className="space-y-4">
+        {insights.map((item: any, idx: number) => {
+          const isWarning = item.level === 'warning' || item.description?.toLowerCase().includes('low') || item.description?.toLowerCase().includes('high');
+          const isOptimal = item.level === 'good' || item.level === 'optimal';
+          
+          return (
+            <motion.div
+              key={item.title + idx}
+              whileHover={{ x: 4, scale: 1.005 }}
+              className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-white/5 bg-white/[0.03] p-4 transition-all hover:bg-white/[0.05] hover:border-white/10"
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className={`h-3 w-3 rounded-full ${isOptimal ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : isWarning ? 'bg-amber-400 shadow-[0_0_10px_#fbbf24]' : 'bg-rose-500 shadow-[0_0_10px_#f43f5e]'}`} />
+                  <div className={`absolute inset-0 h-3 w-3 animate-ping rounded-full opacity-20 ${isOptimal ? 'bg-emerald-500' : isWarning ? 'bg-amber-400' : 'bg-rose-500'}`} />
+                </div>
+                
+                <div className="flex flex-col">
+                  <p className="text-[1.05rem] font-bold tracking-tight text-white/90">{item.title}</p>
+                  <p className="text-[0.85rem] font-medium leading-relaxed text-white/50">{item.description}</p>
+                </div>
+              </div>
+
+              {item.advice && (
+                <div className="hidden sm:block">
+                  <span className="rounded-lg border border-white/5 bg-white/5 px-3 py-1.5 text-[0.65rem] font-bold uppercase tracking-wider text-white/40 opacity-0 transition-opacity group-hover:opacity-100">
+                    ADVICE READY
+                  </span>
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {insights.length === 0 && (
+        <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-white/10">
+          <p className="text-sm font-medium text-white/20">Analyzing data for insights...</p>
+        </div>
+      )}
     </motion.div>
   );
 }
