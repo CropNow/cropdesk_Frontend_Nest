@@ -32,10 +32,8 @@ export const router = createBrowserRouter([
         path: ROUTES.DASHBOARD.HOME,
         element: <DashboardPage />,
       },
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
+
       // Device routes
       {
         path: ROUTES.DEVICES.LIST,

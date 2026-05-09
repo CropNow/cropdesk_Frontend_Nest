@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Cpu, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { DeviceKind, DeviceSettingsState } from './SettingsLayout';
@@ -9,7 +10,6 @@ import { farmsAPI } from '../../api/farms.api';
 import { fieldsAPI } from '../../api/fields.api';
 import { cropsAPI } from '../../api/crops.api';
 import { sensorsAPI } from '../../api/sensors.api';
-import L from 'leaflet';
 import { MapContainer, TileLayer, FeatureGroup } from 'react-leaflet';
 import { GeomanControls } from 'react-leaflet-geoman-v2';
 import 'leaflet/dist/leaflet.css';
@@ -20,12 +20,9 @@ type WizardStep = 1 | 2 | 3 | 4 | 5;
 interface NewDevicePayload {
   type: DeviceKind;
   name: string;
-  status: 'Connected' | 'Offline';
   serialNumber: string;
   manufacturer: string;
-  model: string;
   fieldId: string;
-  firmware: string;
 }
 
 interface DeviceSettingsProps {
@@ -51,10 +48,14 @@ export function DeviceSettings({
   onSave,
   isSaving,
 }: DeviceSettingsProps) {
+  const navigate = useNavigate();
   const [showWizard, setShowWizard] = useState(false);
+  const [step, setStep] = useState<WizardStep>(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [editingId, setEditingId] = useState<any>(null);
-  const { fetchDevices, isLoading } = useDevices();
+  const { fetchDevices } = useDevices();
 
   const refreshDevices = async (fieldId?: string) => {
     try {
@@ -122,9 +123,6 @@ export function DeviceSettings({
     type: 'Seed' as DeviceKind,
     serialNumber: '',
     manufacturer: '',
-    model: '',
-    status: 'Connected' as 'Connected' | 'Offline',
-    firmware: '',
     addressLine: '',
     city: '',
     state: '',
@@ -166,9 +164,6 @@ export function DeviceSettings({
       type: 'Seed',
       serialNumber: '',
       manufacturer: '',
-      model: '',
-      status: 'Connected',
-      firmware: '',
       addressLine: '',
       city: '',
       state: '',
@@ -348,9 +343,14 @@ export function DeviceSettings({
       setError('Device identity and serial number are required.');
       return;
     }
+    if (!wizardData.fieldId) {
+      setError('No field selected. Please complete the Field Details step.');
+      return;
+    }
 
     setIsSubmitting(true);
     setError('');
+    setSuccessMessage('');
 
     try {
       const payload = {
@@ -369,16 +369,21 @@ export function DeviceSettings({
       onAdd({
         type: wizardData.type,
         name: wizardData.name.trim(),
-        status: wizardData.status,
         serialNumber: wizardData.serialNumber.trim(),
-        manufacturer: wizardData.manufacturer.trim() || 'cropnow',
-        model: wizardData.model.trim() || 'ms-200',
+        manufacturer: wizardData.manufacturer.trim() || 'GGSPL',
         fieldId: wizardData.fieldId,
-        firmware: wizardData.firmware.trim() || 'v1.0',
       });
-      resetWizard();
-      // Re-fetch devices for the current field and update parent state
-      refreshDevices(wizardData.fieldId);
+
+      // Refresh device list from backend
+      await refreshDevices(wizardData.fieldId);
+
+      setSuccessMessage('Device added successfully! Redirecting to dashboard...');
+
+      // Navigate to dashboard after a short delay
+      setTimeout(() => {
+        resetWizard();
+        navigate('/dashboard');
+      }, 1500);
     } catch (err) {
       setError('Failed to create device. Please try again.');
       console.error('Submit wizard error:', err);
@@ -1064,53 +1069,20 @@ export function DeviceSettings({
                     />
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-textHint">Manufacturer</p>
-                      <input
-                        value={wizardData.manufacturer}
-                        onChange={(event) => setWizardData((prev) => ({ ...prev, manufacturer: event.target.value }))}
-                        placeholder="e.g. CropNow"
-                        className="w-full rounded-xl border border-cardBorder bg-bgInput px-4 py-3 text-lg text-textHeading outline-none"
-                      />
-                    </div>
-                    <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-textHint">Model</p>
-                      <input
-                        value={wizardData.model}
-                        onChange={(event) => setWizardData((prev) => ({ ...prev, model: event.target.value }))}
-                        placeholder="e.g. MS-200"
-                        className="w-full rounded-xl border border-cardBorder bg-bgInput px-4 py-3 text-lg text-textHeading outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-textHint">Status</p>
-                      <select
-                        value={wizardData.status}
-                        onChange={(event) => setWizardData((prev) => ({ ...prev, status: event.target.value as 'Connected' | 'Offline' }))}
-                        className="w-full rounded-xl border border-cardBorder bg-bgInput px-4 py-3 text-lg text-textHeading outline-none"
-                      >
-                        <option value="Connected">Active</option>
-                        <option value="Offline">Offline</option>
-                      </select>
-                    </div>
-                    <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-textHint">Firmware</p>
-                      <input
-                        value={wizardData.firmware}
-                        onChange={(event) => setWizardData((prev) => ({ ...prev, firmware: event.target.value }))}
-                        placeholder="e.g. v1.0"
-                        className="w-full rounded-xl border border-cardBorder bg-bgInput px-4 py-3 text-lg text-textHeading outline-none"
-                      />
-                    </div>
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-textHint">Manufacturer</p>
+                    <input
+                      value={wizardData.manufacturer}
+                      onChange={(event) => setWizardData((prev) => ({ ...prev, manufacturer: event.target.value }))}
+                      placeholder="e.g. CropNow"
+                      className="w-full rounded-xl border border-cardBorder bg-bgInput px-4 py-3 text-lg text-textHeading outline-none"
+                    />
                   </div>
                 </div>
               ) : null}
 
               {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+              {successMessage ? <p className="text-sm font-semibold text-emerald-400">{successMessage}</p> : null}
             </div>
 
             <div className="border-t border-cardBorder p-6">

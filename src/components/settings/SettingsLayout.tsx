@@ -30,12 +30,12 @@ export interface DeviceSettingsState {
   id: any;
   type: DeviceKind;
   name: string;
-  status: 'Connected' | 'Offline';
+  status?: 'Connected' | 'Offline';
   serialNumber: string;
-  model: string;
+  model?: string;
   manufacturer: string;
   fieldId: string;
-  firmware: string;
+  firmware?: string;
   connectedOn: string;
 }
 
