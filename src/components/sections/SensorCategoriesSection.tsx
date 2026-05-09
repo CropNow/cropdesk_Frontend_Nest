@@ -278,6 +278,7 @@ async function fetchNestChartData(sensorId: string, selectedRange: string, metri
 }
 
 function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24 Hours', metricKey = '' }: { data: any[]; chartType?: 'bar' | 'line'; unit?: string; selectedRange?: string; metricKey?: string }) {
+  const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
   console.log('RealDataChart received data:', data);
 
   // Pad data to ensure a full timeline is always shown across the X-axis
@@ -409,9 +410,13 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
         width={currentBarWidth}
         height={Math.max(barHeight, 4)}
         fill="#00FF9C"
-        fillOpacity={0.8}
+        fillOpacity={selectedPoint === i ? 1 : 0.8}
         rx={Math.min(currentBarWidth / 4, 8)}
-        className="drop-shadow-[0_0_10px_rgba(0,255,156,0.3)]"
+        className="cursor-pointer transition-all drop-shadow-[0_0_10px_rgba(0,255,156,0.3)] hover:fillOpacity-100"
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedPoint(selectedPoint === i ? null : i);
+        }}
       />
     );
   });
@@ -506,13 +511,65 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
       ))}
       
       {chartType === 'line' ? (
-        points.length > 1 ? (
-          <polyline fill="none" stroke="#00FF9C" strokeWidth="4" points={svgPoints} className="drop-shadow-[0_0_15px_rgba(0,255,156,0.5)]" />
-        ) : (
-          <circle cx={getX(0)} cy={getY(points[0])} r="7" fill="#00FF9C" className="drop-shadow-[0_0_15px_rgba(0,255,156,0.5)]" />
-        )
+        <g>
+          {points.length > 1 ? (
+            <polyline fill="none" stroke="#00FF9C" strokeWidth="4" points={svgPoints} className="drop-shadow-[0_0_15px_rgba(0,255,156,0.5)]" />
+          ) : null}
+          {points.map((val, i) => (
+            <circle
+              key={`dot-${i}`}
+              cx={getX(i)}
+              cy={getY(val)}
+              r={selectedPoint === i ? 8 : 6}
+              fill="#00FF9C"
+              fillOpacity={selectedPoint === i ? 1 : 0.4}
+              stroke="#00FF9C"
+              strokeWidth={selectedPoint === i ? 2 : 0}
+              className="cursor-pointer transition-all hover:fillOpacity-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedPoint(selectedPoint === i ? null : i);
+              }}
+            />
+          ))}
+        </g>
       ) : (
-        <g>{bars}</g>
+        <g 
+          onClick={() => setSelectedPoint(null)}
+          className="h-full w-full"
+        >
+          {bars}
+        </g>
+      )}
+
+      {/* Value Label Overlay */}
+      {selectedPoint !== null && points[selectedPoint] !== undefined && (
+        <g>
+          <rect
+            x={getX(selectedPoint) - 35}
+            y={getY(points[selectedPoint]) - 40}
+            width="70"
+            height="30"
+            rx="8"
+            fill="#00FF9C"
+            className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]"
+          />
+          <path
+            d={`M ${getX(selectedPoint) - 6} ${getY(points[selectedPoint]) - 10} L ${getX(selectedPoint)} ${getY(points[selectedPoint]) - 2} L ${getX(selectedPoint) + 6} ${getY(points[selectedPoint]) - 10} Z`}
+            fill="#00FF9C"
+          />
+          <text
+            x={getX(selectedPoint)}
+            y={getY(points[selectedPoint]) - 20}
+            fill="#0A0E14"
+            fontSize="12"
+            fontWeight="900"
+            textAnchor="middle"
+            className="select-none tabular-nums"
+          >
+            {points[selectedPoint].toFixed(1)}{unit}
+          </text>
+        </g>
       )}
     </svg>
   );
