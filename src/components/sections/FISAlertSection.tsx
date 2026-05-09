@@ -75,103 +75,142 @@ export function FISAlertSection({ data }: { data?: any }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.14 }}
-      className="rounded-3xl border border-[#00FF9C]/20 bg-gradient-to-br from-[#00FF9C]/10 via-white/[0.03] to-transparent p-5 backdrop-blur-xl xl:col-span-3"
+      transition={{ delay: 0.15 }}
+      className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-white/[0.05] via-white/[0.02] to-transparent p-6 backdrop-blur-2xl xl:col-span-3"
     >
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-3xl font-bold">FIS Alert Engine</h3>
-        <span className="rounded-full border border-[#00FF9C]/30 bg-[#00FF9C]/10 px-3 py-1 text-xs font-semibold text-[#00FF9C]">
-          ACTIVE
-        </span>
+      {/* Decorative Background Element */}
+      <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#00FF9C]/5 blur-[100px]" />
+
+      <div className="mb-6 flex items-center justify-between px-2">
+        <div className="flex flex-col gap-1">
+          <h3 className="text-3xl font-black tracking-tight text-white/90">FIS Alert Engine</h3>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/30">Intelligence Core Active</p>
+        </div>
+        <div className="flex items-center gap-2 rounded-full border border-[#00FF9C]/20 bg-[#00FF9C]/10 px-4 py-1.5 shadow-[0_0_20px_rgba(0,255,156,0.1)]">
+          <div className="h-2 w-2 animate-pulse rounded-full bg-[#00FF9C]" />
+          <span className="text-[0.65rem] font-black uppercase tracking-widest text-[#00FF9C]">Live Monitor</span>
+        </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-3">
         {cards.map((card: any) => {
           const IconComponent = typeof card.icon === 'function' || typeof card.icon === 'object' ? card.icon : (FIS_CARDS.find((c: any) => c.title === card.title)?.icon || Activity);
+          
+          const statusColors = {
+            Optimal: 'from-emerald-500/20 to-emerald-500/5 text-emerald-400 border-emerald-500/20',
+            Warning: 'from-amber-500/20 to-amber-500/5 text-amber-400 border-amber-500/20',
+            Critical: 'from-rose-500/20 to-rose-500/5 text-rose-400 border-rose-500/20'
+          };
+
+          const barColors = {
+            Optimal: 'from-emerald-400 to-emerald-600 shadow-emerald-500/40',
+            Warning: 'from-amber-400 to-amber-600 shadow-amber-500/40',
+            Critical: 'from-rose-400 to-rose-600 shadow-rose-500/40'
+          };
+
           return (
-            <div key={card.title} className="rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition-all hover:bg-white/[0.05]">
-              <div className="mb-5 flex items-center gap-4">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 backdrop-blur-md border border-white/5 shadow-inner">
-                  {IconComponent ? <IconComponent className="h-5 w-5 text-[#00FF9C]" /> : null}
-                </span>
-                <h4 className="text-xl font-bold text-white tracking-tight whitespace-nowrap">{card.title}</h4>
-              </div>
-
-              <p className="text-sm font-medium leading-relaxed text-white/60 min-h-[48px] line-clamp-2">
-                {card.body}
-              </p>
-
-              <div className="mt-6 flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <span
-                    className={[
-                      'inline-flex rounded-full px-3 py-1 text-[0.65rem] font-black uppercase tracking-widest',
-                      card.status === 'Optimal' && 'bg-[#00FF9C]/10 text-[#00FF9C] border border-[#00FF9C]/20',
-                      card.status === 'Warning' && 'bg-yellow-400/10 text-yellow-300 border border-yellow-400/20',
-                      card.status === 'Critical' && 'bg-red-400/10 text-red-300 border border-red-400/20',
-                    ].join(' ')}
-                  >
+            <motion.div
+              key={card.title}
+              whileHover={{ y: -4, scale: 1.01 }}
+              className="relative flex flex-col justify-between overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.03] p-6 transition-all hover:bg-white/[0.05] hover:border-white/10"
+            >
+              <div className="relative z-10">
+                <div className="mb-6 flex items-center justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-white/10 to-transparent border border-white/5 shadow-inner">
+                    {IconComponent && <IconComponent className="h-5 w-5 text-[#00FF9C]" />}
+                  </div>
+                  <span className={`rounded-lg border px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-widest ${statusColors[card.status as keyof typeof statusColors]}`}>
                     {card.status}
                   </span>
-                  <span className="text-xs font-black text-white/40 tracking-tighter">{card.value}%</span>
                 </div>
 
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5 border border-white/5">
+                <h4 className="mb-2 text-xl font-bold tracking-tight text-white/90">{card.title}</h4>
+                <p className="min-h-[3rem] text-sm font-medium leading-relaxed text-white/40 line-clamp-2">
+                  {card.body}
+                </p>
+              </div>
+
+              <div className="relative z-10 mt-6">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[0.65rem] font-bold uppercase tracking-widest text-white/20">Risk Factor</span>
+                  <span className="text-sm font-black tabular-nums text-white/60">{card.value}%</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white/5 border border-white/5">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${card.value}%` }}
-                    transition={{ duration: 1.2, ease: "easeOut" }}
-                    className={`h-full rounded-full shadow-[0_0_10px_rgba(0,255,156,0.2)] ${card.status === 'Optimal' ? 'bg-gradient-to-r from-[#00FF9C] to-emerald-400' :
-                      card.status === 'Warning' ? 'bg-gradient-to-r from-yellow-400 to-amber-500' :
-                        'bg-gradient-to-r from-red-500 to-rose-600'
-                      }`}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                    className={`h-full rounded-full bg-gradient-to-r shadow-lg ${barColors[card.status as keyof typeof barColors]}`}
                   />
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-[#00FF9C]/25 bg-[#00FF9C]/10 p-4">
-        <p className="text-lg font-semibold">{suggestion.title || 'Prescription'}</p>
-        <p className="mt-1 text-textBody">
-          {suggestion.body}
-        </p>
-        <div className="mt-4 h-3 rounded-full bg-black/30">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: suggestion.confidence }}
-            transition={{ duration: 1.1, delay: 0.2 }}
-            className="h-3 rounded-full bg-gradient-to-r from-[#00FF9C] to-emerald-300"
-          />
-        </div>
-        <div className="mt-1 flex items-center justify-between text-xs text-textLabel">
-          <span>Confidence</span>
-          <span>{suggestion.confidence}</span>
-        </div>
+      <div className="mt-6 overflow-hidden rounded-[2rem] border border-[#00FF9C]/20 bg-gradient-to-br from-[#00FF9C]/10 via-transparent to-transparent p-6 backdrop-blur-xl">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00FF9C]/20 border border-[#00FF9C]/30 shadow-[0_0_15px_rgba(0,255,156,0.1)]">
+                <Activity className="h-5 w-5 text-[#00FF9C]" />
+              </div>
+              <div>
+                <p className="text-lg font-bold tracking-tight text-white/90">{suggestion.title || 'AI Prescription'}</p>
+                <p className="text-[0.6rem] font-bold uppercase tracking-widest text-[#00FF9C]/60">Expert Recommendation</p>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleAcknowledge}
+              disabled={isAcknowledged || isSubmitting}
+              className={`hidden sm:flex items-center gap-2 rounded-xl px-6 py-2 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 ${
+                isAcknowledged 
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+                  : 'bg-[#00FF9C] text-black hover:shadow-[0_0_20px_rgba(0,255,156,0.4)]'
+              }`}
+            >
+              {isAcknowledged ? (
+                <>
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  Acknowledged
+                </>
+              ) : (isSubmitting ? 'Processing...' : 'Acknowledge')}
+            </button>
+          </div>
 
-        <div className="mt-4 sm:hidden">
+          <p className="text-[0.95rem] font-medium leading-relaxed text-white/70">
+            {suggestion.body}
+          </p>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[0.65rem] font-bold uppercase tracking-widest text-white/30">System Confidence</span>
+              <span className="text-xs font-black text-[#00FF9C]">{suggestion.confidence}</span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/20 border border-white/5">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: suggestion.confidence }}
+                transition={{ duration: 1.2, delay: 0.3 }}
+                className="h-full rounded-full bg-gradient-to-r from-[#00FF9C] to-emerald-400 shadow-[0_0_15px_rgba(0,255,156,0.2)]"
+              />
+            </div>
+          </div>
+
           <button
-            type="button"
             onClick={handleAcknowledge}
             disabled={isAcknowledged || isSubmitting}
-            className="w-full rounded-xl bg-[#00FF9C]/20 border border-[#00FF9C]/40 py-2.5 text-sm font-semibold text-[#00FF9C] transition hover:bg-[#00FF9C]/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 sm:hidden ${
+              isAcknowledged 
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+                : 'bg-[#00FF9C] text-black'
+            }`}
           >
-            {isAcknowledged ? 'Acknowledged' : (isSubmitting ? 'Acknowledging...' : 'Acknowledge')}
-          </button>
-        </div>
-
-        <div className="hidden sm:mt-4 sm:flex sm:justify-end">
-          <button
-            type="button"
-            onClick={handleAcknowledge}
-            disabled={isAcknowledged || isSubmitting}
-            className="rounded-lg border border-[#00FF9C]/30 bg-[#00FF9C]/10 px-4 py-1.5 text-sm font-semibold text-[#00FF9C] transition-all hover:bg-[#00FF9C]/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isAcknowledged ? 'Acknowledged' : (isSubmitting ? 'Acknowledging...' : 'Acknowledge')}
+            {isAcknowledged ? 'Acknowledged' : (isSubmitting ? 'Acknowledge' : 'Acknowledge')}
           </button>
         </div>
       </div>

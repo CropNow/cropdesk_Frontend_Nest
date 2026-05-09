@@ -227,19 +227,19 @@ export function useDashboardState() {
                 body: aiRes.data.raw.fungal_disease.recommendation || aiRes.data.raw.fungal_disease.likely_disease || 'Monitor closely',
                 icon: 'ShieldCheck'
               }] : []),
-              ...(aiRes.data.raw.aqi ? [{
-                title: 'Air Quality',
-                value: Math.round(aiRes.data.raw.aqi.aqi || 0),
-                status: (aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'low stress' || aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'optimal') ? 'Optimal' : (aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'moderate' ? 'Warning' : 'Critical'),
-                body: aiRes.data.raw.aqi.farmer_advisory || aiRes.data.raw.aqi.plant_impact || `AQI is ${aiRes.data.raw.aqi.aqi_category}`,
-                icon: 'Wind'
+              ...(aiRes.data.raw.irrigation ? [{
+                title: 'Irrigation Analysis',
+                value: aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 100 : Math.max(0, 100 - Math.round((aiRes.data.raw.irrigation.water_requirement_mm || 0) * 2)),
+                status: aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'Optimal' : 'Warning',
+                body: aiRes.data.raw.irrigation.advisory || (aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'Soil moisture is optimal. No irrigation needed.' : `Irrigation recommended: ${aiRes.data.raw.irrigation.water_requirement_mm}mm required.`),
+                icon: 'Droplets'
               }] : [])
             ] : (aiRes.data?.cards ? aiRes.data.cards.map((c: any) => ({
               ...c,
               status: (c.status?.toUpperCase() === 'LOW' || c.status?.toLowerCase() === 'low stress' || c.status?.toLowerCase() === 'optimal') ? 'Optimal' : (c.status?.toUpperCase() === 'MODERATE' || c.status?.toLowerCase() === 'moderate') ? 'Warning' : 'Critical'
             })) : alertsData)),
             activeCount: hasNoIncomingData ? 0 : (aiRes.data?.raw ? (
-              (aiRes.data.raw.pest ? 1 : 0) + (aiRes.data.raw.fungal_disease ? 1 : 0) + (aiRes.data.raw.aqi ? 1 : 0)
+              (aiRes.data.raw.pest ? 1 : 0) + (aiRes.data.raw.fungal_disease ? 1 : 0) + (aiRes.data.raw.irrigation ? 1 : 0)
             ) : (aiRes.data?.cards?.length || overview?.activeAlerts || alertsData.length || 0)),
             suggestion: hasNoIncomingData ? {
               title: 'No Data',
@@ -248,7 +248,7 @@ export function useDashboardState() {
             } : (aiRes.data?.raw?.prescription ? {
               title: `Prescription (${aiRes.data.raw.prescription.priority || 'Normal'})`,
               body: aiRes.data.raw.prescription.actions?.join(' ') || 'No critical prescription actions.',
-              confidence: aiRes.data.raw.aqi?.confidence ? `${Math.round(aiRes.data.raw.aqi.confidence * 100)}%` : '95%',
+              confidence: aiRes.data.raw.irrigation?.confidence ? `${Math.round(aiRes.data.raw.irrigation.confidence * 100)}%` : '95%',
             } : undefined)
           },
           waterSavings: (() => {
@@ -270,7 +270,7 @@ export function useDashboardState() {
             { title: 'Irrigation', description: 'Nil prediction - no sensor data.', level: 'warn' },
             { title: 'Fungal', description: 'Nil prediction - no sensor data.', level: 'warn' },
             { title: 'Pest', description: 'Nil prediction - no sensor data.', level: 'warn' },
-            { title: 'AQI', description: 'Nil prediction - no sensor data.', level: 'warn' }
+            { title: 'Air Quality', description: 'Nil prediction - no sensor data.', level: 'warn' }
           ] : (aiRes.data?.raw ? [
             ...(aiRes.data.raw.irrigation ? [{
               title: 'Irrigation',
@@ -288,11 +288,11 @@ export function useDashboardState() {
               level: aiRes.data.raw.pest.pest_risk_level?.toLowerCase() === 'low' ? 'good' : 'warn'
             }] : []),
             ...(aiRes.data.raw.aqi ? [{
-              title: 'AQI',
-              description: aiRes.data.raw.aqi.farmer_advisory || aiRes.data.raw.aqi.plant_impact || `Dominant Pollutant: ${aiRes.data.raw.aqi.dominant_pollutant}`,
+              title: 'Air Quality',
+              description: `AQI: ${Math.round(aiRes.data.raw.aqi.aqi || 0)}. ${aiRes.data.raw.aqi.farmer_advisory || aiRes.data.raw.aqi.plant_impact || `Dominant Pollutant: ${aiRes.data.raw.aqi.dominant_pollutant}`}`,
               level: (aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'low stress' || aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'optimal') ? 'good' : 'warn'
             }] : [])
-          ] : (aiRes.data?.cards && Array.isArray(aiRes.data.cards) ? aiRes.data.cards.map((c: any) => ({
+          ] : (aiRes.data?.cards && Array.isArray(aiRes.data.cards) ? aiRes.data.cards.filter((c: any) => !c.title?.toLowerCase().includes('farm status')).map((c: any) => ({
             title: c.title,
             description: c.body,
             level: (c.status?.toUpperCase() === 'LOW' || c.status?.toLowerCase() === 'low stress' || c.status?.toLowerCase() === 'optimal' || c.status === 'Optimal') ? 'good' : 'warn'
