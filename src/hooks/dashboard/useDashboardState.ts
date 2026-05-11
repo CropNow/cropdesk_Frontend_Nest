@@ -21,6 +21,8 @@ export function useDashboardState() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [backendDevices, setBackendDevices] = useState<any[]>([]);
+  const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
+
 
   // Consolidated Fetcher logic inside useEffect below
 
@@ -58,6 +60,7 @@ export function useDashboardState() {
     const fetchFarmData = async () => {
       try {
         setIsLoading(true);
+        setLastFetchTime(new Date());
         
         // Fetch devices and latest readings in parallel where possible
         // 1. Fetch devices first to establish if we have any sensors
@@ -430,5 +433,6 @@ export function useDashboardState() {
     backendDevices,
     selectedFarmId,
     setSelectedFarmId,
+    lastFetchTime,
   };
 }
