@@ -113,8 +113,9 @@ export function FISAlertSection({ data }: { data?: any }) {
           return (
             <motion.div
               key={card.title}
+              layout
               whileHover={{ y: -4, scale: 1.01 }}
-              className="relative flex flex-col justify-between overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.03] p-6 transition-all hover:bg-white/[0.05] hover:border-white/10"
+              className="group relative flex flex-col justify-between overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.03] p-6 transition-all duration-300 hover:bg-white/[0.05] hover:border-white/10"
             >
               <div className="relative z-10">
                 <div className="mb-6 flex items-center justify-between">
@@ -127,9 +128,9 @@ export function FISAlertSection({ data }: { data?: any }) {
                 </div>
 
                 <h4 className="mb-2 text-xl font-bold tracking-tight text-white/90">{card.title}</h4>
-                <p className="min-h-[3.5rem] text-[0.9rem] font-medium leading-[1.6] text-white/50 line-clamp-2">
+                <motion.p layout="position" className="min-h-[3.5rem] text-[0.9rem] font-medium leading-[1.6] text-white/50 line-clamp-2 transition-all duration-300 group-hover:line-clamp-none">
                   {card.body}
-                </p>
+                </motion.p>
               </div>
 
               <div className="relative z-10 mt-6">

@@ -40,6 +40,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
           return (
             <motion.div
               key={item.title + idx}
+              layout
               whileHover={{ x: 4, scale: 1.005 }}
               className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-white/5 bg-white/[0.03] p-4 transition-all hover:bg-white/[0.05] hover:border-white/10"
             >
@@ -51,7 +52,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
                 
                 <div className="flex flex-col">
                   <p className="text-[1.05rem] font-bold tracking-tight text-white/90">{item.title}</p>
-                  <p className="text-[0.85rem] font-medium leading-relaxed text-white/50">{item.description}</p>
+                  <motion.p layout="position" className="text-[0.85rem] font-medium leading-relaxed text-white/50 line-clamp-1 transition-all duration-300 group-hover:line-clamp-none">{item.description}</motion.p>
                 </div>
               </div>
 
