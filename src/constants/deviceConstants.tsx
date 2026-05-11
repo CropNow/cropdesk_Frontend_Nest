@@ -106,6 +106,17 @@ export const FARM_STATUS_METRICS: FarmStatusMetric[] = [
     status: 'optimal',
   },
   {
+    id: 'visibility',
+    label: 'Visibility',
+    value: 0,
+    unit: 'km',
+    icon: <Eye className="h-5 w-5" />,
+    color: 'cyan',
+    min: 0,
+    max: 20,
+    status: 'optimal',
+  },
+  {
     id: 'humidity',
     label: 'Humidity',
     value: 0,

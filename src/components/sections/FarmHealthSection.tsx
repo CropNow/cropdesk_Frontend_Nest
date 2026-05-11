@@ -1,14 +1,29 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { CircularGauge } from '../common/CircularGauge';
+import { FarmStatusMetric } from '../../constants/deviceConstants';
+
+interface FarmHealthData {
+  overallHealth?: number;
+  condition?: string;
+  stressBreakdown?: Record<string, number> | null;
+  metrics?: FarmStatusMetric[];
+}
 
 /**
  * FarmHealthSection - Farm health metrics overview
  */
-export function FarmHealthSection({ data }: { data?: any }) {
+export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
   const overallHealth = data?.overallHealth || 0;
   const condition = data?.condition;
   const stressBreakdown = data?.stressBreakdown;
+  const metrics = Array.isArray(data?.metrics) ? data.metrics : [];
+
+  const roundDisplayValue = (value: unknown): string | number => {
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) return Math.round(numericValue);
+    return String(value ?? '');
+  };
 
   const formatCondition = (str?: string) => {
     if (!str) return '';
@@ -22,6 +37,29 @@ export function FarmHealthSection({ data }: { data?: any }) {
     if (c.includes('moderate') || c.includes('warning')) return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
     if (c.includes('high') || c.includes('severe') || c.includes('critical') || c.includes('danger')) return 'bg-red-500/20 text-red-400 border-red-500/30';
     return 'bg-white/10 text-white border-white/20';
+  };
+
+  const renderMetricCard = (metric: FarmStatusMetric, compact = false) => {
+    const icon = React.isValidElement(metric.icon)
+      ? React.cloneElement(metric.icon as React.ReactElement, { className: compact ? 'h-4 w-4' : 'h-5 w-5' })
+      : metric.icon;
+
+    return (
+      <div key={metric.id} className={`rounded-2xl border border-white/10 bg-black/20 text-center shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${compact ? 'p-3' : 'p-4'}`}>
+        <div className={`mb-2 flex justify-center text-white/75 ${compact ? 'text-lg' : 'text-xl'}`}>
+          {icon}
+        </div>
+        <div className="flex items-baseline justify-center gap-0.5">
+          <span className={`${compact ? 'text-2xl' : 'text-3xl'} font-semibold tracking-tight text-white`}>
+            {roundDisplayValue(metric.value)}
+          </span>
+          {metric.unit && <span className={`${compact ? 'text-sm' : 'text-base'} font-medium text-white/55`}>{metric.unit}</span>}
+        </div>
+        <p className={`mt-1 font-medium text-white/45 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+          {metric.label}
+        </p>
+      </div>
+    );
   };
 
   return (
@@ -57,7 +95,7 @@ export function FarmHealthSection({ data }: { data?: any }) {
                 <div key={key} className="rounded-2xl border border-white/5 bg-black/20 p-3">
                   <div className="mb-1.5 flex items-center justify-between">
                     <span className="text-[10px] font-bold tracking-wider text-white/60">{label}</span>
-                    <span className="text-[10px] font-black text-white/90">{numValue}%</span>
+                    <span className="text-[10px] font-black text-white/90">{Math.round(numValue)}%</span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
                     <motion.div 
@@ -70,6 +108,12 @@ export function FarmHealthSection({ data }: { data?: any }) {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {metrics.length > 0 && (
+          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-3">
+            {metrics.map((metric) => renderMetricCard(metric))}
           </div>
         )}
       </div>
@@ -100,7 +144,7 @@ export function FarmHealthSection({ data }: { data?: any }) {
                 <div key={key} className="rounded-xl border border-white/5 bg-black/20 p-2.5">
                   <div className="mb-1.5 flex items-center justify-between">
                     <span className="text-[9px] font-bold tracking-wider text-white/60">{label}</span>
-                    <span className="text-[9px] font-black text-white/90">{numValue}%</span>
+                    <span className="text-[9px] font-black text-white/90">{Math.round(numValue)}%</span>
                   </div>
                   <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
                     <motion.div 
@@ -113,6 +157,12 @@ export function FarmHealthSection({ data }: { data?: any }) {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {metrics.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {metrics.map((metric) => renderMetricCard(metric, true))}
           </div>
         )}
       </div>

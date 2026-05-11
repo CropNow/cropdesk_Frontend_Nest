@@ -174,6 +174,8 @@ export function useDashboardState() {
           const liveTemp = sensorLatestData?.values?.temperature || sensorLatestData?.values?.temperature2 || 0;
           const liveHumidity = sensorLatestData?.values?.humidity || sensorLatestData?.values?.humidity2 || 0;
           const liveWindSpeed = sensorLatestData?.values?.wind_speed || 0;
+          const liveLeafWetness = sensorLatestData?.values?.leaf ?? aiRes.data?.raw?.pest?.leaf_wetness_pct ?? 0;
+          const liveVisibility = stats?.currentConditions?.avgVisibility ?? overview?.weather?.visibility ?? overview?.weather?.visibilityKm ?? 0;
 
           if (m.id === 'soil-moisture') {
             const val = liveMoisture !== undefined && liveMoisture !== null ? liveMoisture : stats?.currentConditions?.avgSoilMoisture;
@@ -189,6 +191,14 @@ export function useDashboardState() {
           }
           if (m.id === 'wind-speed') {
             const val = liveWindSpeed !== undefined && liveWindSpeed !== null ? liveWindSpeed : stats?.currentConditions?.avgWindSpeed;
+            if (val !== undefined && val !== null) return { ...m, value: val };
+          }
+          if (m.id === 'visibility') {
+            const val = liveVisibility !== undefined && liveVisibility !== null ? liveVisibility : 0;
+            if (val !== undefined && val !== null) return { ...m, value: val };
+          }
+          if (m.id === 'leaf-wetness') {
+            const val = liveLeafWetness !== undefined && liveLeafWetness !== null ? liveLeafWetness : 0;
             if (val !== undefined && val !== null) return { ...m, value: val };
           }
           return m;
