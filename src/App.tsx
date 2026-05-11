@@ -10,6 +10,7 @@ import { ChatbotPage } from './pages/ChatbotPage';
 import NotFoundPage from './pages/errors/NotFoundPage';
 import { ROUTES } from './constants/routeConstants';
 import { useAuth } from './contexts/AuthContext';
+import { PWAInstallButton } from './components/common/PWAInstallButton';
 
 export function App() {
   const { isAuthenticated } = useAuth();
@@ -48,6 +49,7 @@ export function App() {
           }
         />
       </Routes>
+      <PWAInstallButton />
     </div>
   );
 }
