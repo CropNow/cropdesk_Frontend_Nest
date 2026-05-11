@@ -23,7 +23,7 @@ import { sensorsAPI } from '../../api/sensors.api';
  * SensorCategoriesSection - DashboardV2Page-equivalent interactive sensor insights
  */
 
-export function SensorCategoriesSection({ data }: { data?: any }) {
+export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, lastFetchTime?: Date | null }) {
   const { addToast } = useToast();
   const [showNestDetails, setShowNestDetails] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -179,6 +179,16 @@ export function SensorCategoriesSection({ data }: { data?: any }) {
                   </p>
                   <p className="text-[0.65rem] font-medium text-white/30">
                     {data?.timestamp ? new Date(data.timestamp).toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
+
+                <div className="flex flex-col items-end text-right">
+                  <p className="text-[0.6rem] font-bold uppercase tracking-widest text-white/20">Last Fetch</p>
+                  <p className="text-lg font-bold tracking-tight text-white/80">
+                    {lastFetchTime ? lastFetchTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                  </p>
+                  <p className="text-[0.65rem] font-medium text-white/30">
+                    {lastFetchTime ? lastFetchTime.toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
               </div>

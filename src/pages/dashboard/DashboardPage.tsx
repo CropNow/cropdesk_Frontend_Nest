@@ -27,7 +27,9 @@ export function DashboardPage() {
     weatherSummary,
     farms,
     backendDevices,
+    lastFetchTime,
   } = useDashboardState();
+
 
   const showEmptyDashboard = !isLoading && (!farms?.length || !backendDevices?.length);
 
@@ -89,7 +91,8 @@ export function DashboardPage() {
       </div>
 
       <section className="grid gap-6 xl:grid-cols-5">
-        <SensorCategoriesSection data={dashboardData?.sensors} />
+        <SensorCategoriesSection data={dashboardData?.sensors} lastFetchTime={lastFetchTime} />
+
         <FISAlertSection data={dashboardData?.alerts} />
       </section>
 
