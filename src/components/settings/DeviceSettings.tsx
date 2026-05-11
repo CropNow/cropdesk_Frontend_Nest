@@ -392,7 +392,7 @@ export function DeviceSettings({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const hasEmptyName = devices.some((device) => !device.name.trim());
 
     if (hasEmptyName) {
@@ -400,8 +400,58 @@ export function DeviceSettings({
       return;
     }
 
+    setIsSubmitting(true);
     setError('');
-    onSave();
+    setSuccessMessage('');
+    
+    try {
+      // Update all devices that have been modified
+      // NOTE: Backend only allows "name" to be updated via PATCH.
+      // Other fields like serialNumber, model, etc. are rejected.
+      await Promise.all(
+        devices.map((device) =>
+          sensorsAPI.updateSensor(device.id, {
+            name: device.name,
+          })
+        )
+      );
+
+      
+      setSuccessMessage('All changes saved successfully.');
+      onSave();
+      
+      // Auto-clear success message
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError('Failed to save changes. Please check your connection and try again.');
+      console.error('Save error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: any) => {
+    if (!window.confirm('Are you sure you want to delete this device? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      await sensorsAPI.deleteSensor(id);
+      setSuccessMessage('Device deleted successfully.');
+      onRemove(id); // Update parent state immediately
+      
+      // Auto-clear success message
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError('Failed to delete device. Please try again.');
+      console.error('Delete error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -472,8 +522,9 @@ export function DeviceSettings({
 
                   <button
                     type="button"
-                    onClick={() => onRemove(device.id)}
-                    className="text-textLabel transition hover:text-rose-300"
+                    onClick={() => handleDelete(device.id)}
+                    className="text-textLabel transition hover:text-rose-300 disabled:opacity-50"
+                    disabled={isSubmitting}
                     aria-label="Remove device"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -571,10 +622,10 @@ export function DeviceSettings({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={isSaving || isSubmitting}
           className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSaving ? 'Saving...' : 'Save Changes'}
+          {isSaving || isSubmitting ? 'Saving...' : 'Save Changes'}
         </motion.button>
       </div>
 
