@@ -47,6 +47,7 @@ export const ROUTES = {
     UNAUTHORIZED: '/unauthorized',
     SERVER_ERROR: '/500',
   },
+  SUPPORT: '/support',
 };
 
 export default ROUTES;

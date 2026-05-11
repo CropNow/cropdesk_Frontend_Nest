@@ -230,16 +230,22 @@ export function AppSidebar() {
               {isExpanded ? <span>Settings</span> : null}
             </NavLink>
 
-            <button
-              type="button"
-              className={[
-                'sidebar-item mb-2 flex w-full items-center rounded-2xl px-3 py-2.5 text-sm font-semibold text-textPrimary transition-colors hover:bg-black/5 dark:hover:bg-white/10',
-                isExpanded ? 'justify-start gap-3' : 'justify-center',
-              ].join(' ')}
+            <NavLink
+              to="/support"
+              onClick={closeMobile}
+              className={({ isActive }) =>
+                [
+                  'sidebar-item mb-2 flex w-full items-center rounded-2xl px-3 py-2.5 text-sm font-semibold transition-colors',
+                  isActive
+                    ? 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20'
+                    : 'text-textPrimary hover:bg-black/5 dark:hover:bg-white/10',
+                  isExpanded ? 'justify-start gap-3' : 'justify-center',
+                ].join(' ')
+              }
             >
               <CircleHelp className="h-4.5 w-4.5 shrink-0" />
               {isExpanded ? <span>Support</span> : null}
-            </button>
+            </NavLink>
 
             {/* User profile with hover logout */}
             <div
