@@ -37,6 +37,20 @@ interface DeviceSettingsProps {
   isSaving: boolean;
 }
 
+const calculateGeodesicArea = (latLngs: any[]): number => {
+  const earthRadius = 6378137; // Radius in meters
+  let area = 0;
+  const coords = latLngs.map((ll) => [(ll.lat * Math.PI) / 180, (ll.lng * Math.PI) / 180]);
+
+  for (let i = 0; i < coords.length; i++) {
+    const j = (i + 1) % coords.length;
+    area += (coords[j][1] - coords[i][1]) * (2 + Math.sin(coords[i][0]) + Math.sin(coords[j][0]));
+  }
+
+  area = Math.abs((area * earthRadius * earthRadius) / 2.0);
+  return area; // Square meters
+};
+
 export function DeviceSettings({
   devices,
   onAdd,
@@ -952,7 +966,15 @@ export function DeviceSettings({
                                       coords.push([...first]);
                                     }
                                   }
-                                  setWizardData((prev) => ({ ...prev, boundaryCoordinates: coords }));
+
+                                  const areaSqM = calculateGeodesicArea(latlngs);
+                                  const areaAcres = (areaSqM * 0.000247105).toFixed(2);
+
+                                  setWizardData((prev) => ({
+                                    ...prev,
+                                    area: areaAcres,
+                                    boundaryCoordinates: coords,
+                                  }));
                                 }
                               }}
                               onChange={(e: any) => {
@@ -970,7 +992,15 @@ export function DeviceSettings({
                                       coords.push([...first]);
                                     }
                                   }
-                                  setWizardData((prev) => ({ ...prev, boundaryCoordinates: coords }));
+
+                                  const areaSqM = calculateGeodesicArea(latlngs);
+                                  const areaAcres = (areaSqM * 0.000247105).toFixed(2);
+
+                                  setWizardData((prev) => ({
+                                    ...prev,
+                                    area: areaAcres,
+                                    boundaryCoordinates: coords,
+                                  }));
                                 }
                               }}
                               onUpdate={(e: any) => {
@@ -988,7 +1018,15 @@ export function DeviceSettings({
                                       coords.push([...first]);
                                     }
                                   }
-                                  setWizardData((prev) => ({ ...prev, boundaryCoordinates: coords }));
+
+                                  const areaSqM = calculateGeodesicArea(latlngs);
+                                  const areaAcres = (areaSqM * 0.000247105).toFixed(2);
+
+                                  setWizardData((prev) => ({
+                                    ...prev,
+                                    area: areaAcres,
+                                    boundaryCoordinates: coords,
+                                  }));
                                 }
                               }}
                               onMapRemove={() => {

@@ -22,7 +22,8 @@ export function useDashboardState() {
   const [error, setError] = useState<string | null>(null);
   const [backendDevices, setBackendDevices] = useState<any[]>([]);
   const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
-
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const [locationName, setLocationName] = useState<string>('');
 
   // Consolidated Fetcher logic inside useEffect below
 
@@ -345,6 +346,68 @@ export function useDashboardState() {
     return () => clearInterval(intervalId);
   }, [selectedFarmId, selectedDeviceType, currentDeviceIndex]);
 
+  // ─── Weather Data Fetching ───
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        let lat = 28.61; // Default: New Delhi
+        let lon = 77.2;
+        let name = 'New Delhi, IN';
+
+        // 1. Try to get location from selected farm
+        const selectedFarm = farms.find((f) => (f.id || f._id) === selectedFarmId);
+        if (selectedFarm?.location?.latitude && selectedFarm?.location?.longitude) {
+          lat = parseFloat(selectedFarm.location.latitude);
+          lon = parseFloat(selectedFarm.location.longitude);
+          name = selectedFarm.location.city
+            ? `${selectedFarm.location.city}, ${selectedFarm.location.country || 'IN'}`
+            : selectedFarm.name;
+        } else if (navigator.geolocation) {
+          // 2. Fallback to browser geolocation
+          try {
+            const position: any = await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+            });
+            lat = position.coords.latitude;
+            lon = position.coords.longitude;
+
+            // Reverse geocode to get city name
+            const geoRes = await fetch(
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`,
+            );
+            const geoData = await geoRes.json();
+            name = geoData.city || geoData.locality || `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+          } catch (geoErr) {
+            console.warn('Geolocation failed, using default', geoErr);
+          }
+        }
+
+        setLocationName(name);
+
+        const weatherRes = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&hourly=temperature_2m`,
+        );
+        const weather = await weatherRes.json();
+        setWeatherData(weather);
+      } catch (err) {
+        console.error('Weather Fetch Error:', err);
+      }
+    };
+
+    if (farms.length > 0 || !isLoading) {
+      fetchWeather();
+    }
+  }, [selectedFarmId, farms, isLoading]);
+
+  const getWeatherDescription = (code: number) => {
+    if (code === 0) return 'Clear Sky';
+    if (code >= 1 && code <= 3) return 'Partly Cloudy';
+    if (code >= 45 && code <= 48) return 'Foggy';
+    if (code >= 51 && code <= 67) return 'Rainy';
+    if (code >= 71) return 'Snowy';
+    return 'Cloudy';
+  };
+
   // ─── UI Logic ───
   // Update time every minute
   useEffect(() => {
@@ -407,6 +470,14 @@ export function useDashboardState() {
   };
 
   const weatherSummary = useMemo(() => {
+    if (weatherData?.current) {
+      return {
+        city: locationName,
+        temp: `${Math.round(weatherData.current.temperature_2m)}`,
+        condition: getWeatherDescription(weatherData.current.weather_code),
+      };
+    }
+
     const farm = farms[0];
     const city = farm?.location?.city || farm?.location?.district || farm?.name || 'N/A';
     const country = farm?.location?.country || 'IN';
@@ -415,7 +486,7 @@ export function useDashboardState() {
       temp: '--',
       condition: 'Unknown',
     };
-  }, [farms]);
+  }, [weatherData, locationName, farms]);
 
   return {
     selectedDeviceType,
