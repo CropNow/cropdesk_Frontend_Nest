@@ -61,6 +61,27 @@ export function useDashboardState() {
     const fetchFarmData = async () => {
       try {
         setIsLoading(true);
+        
+        const cacheKey = `dashboard_data_${selectedFarmId}_${selectedDeviceType}_${currentDeviceIndex}`;
+        const cachedStr = localStorage.getItem(cacheKey);
+        
+        if (cachedStr) {
+          try {
+            const cached = JSON.parse(cachedStr);
+            const now = Date.now();
+            if (now - cached.timestamp < 30 * 60 * 1000) {
+              // Use cached data if within 30 minutes
+              setDashboardData(cached.data);
+              setBackendDevices(cached.devices);
+              setLastFetchTime(new Date(cached.timestamp));
+              setIsLoading(false);
+              return;
+            }
+          } catch (e) {
+            console.error('Cache parse error', e);
+          }
+        }
+
         setLastFetchTime(new Date());
         
         // Fetch devices and latest readings in parallel where possible
@@ -208,7 +229,7 @@ export function useDashboardState() {
           return m;
         });
 
-        setDashboardData({
+        const finalDashboardData = {
           onboarding: overviewRes.data?.onboarding || {
             isComplete: overviewRes.data?.isComplete ?? true,
             hasSensor: overviewRes.data?.hasSensor ?? (devices.length > 0 || backendDevices.length > 0)
@@ -330,7 +351,20 @@ export function useDashboardState() {
             boundary: 'Polygon',
             crops: primaryDevice.crops?.map((c: any) => c.name) || []
           } : null,
-        });
+        };
+
+        setDashboardData(finalDashboardData);
+        
+        // Save to cache to ensure we strictly fetch every 30 mins
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify({
+            timestamp: Date.now(),
+            data: finalDashboardData,
+            devices: devices
+          }));
+        } catch (e) {
+          console.error('Failed to cache dashboard data', e);
+        }
         
         setError(null);
       } catch (err: any) {
