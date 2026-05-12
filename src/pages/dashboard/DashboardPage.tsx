@@ -1,17 +1,22 @@
-import React from 'react';
+import { lazy, Suspense } from 'react';
 import { useDashboardState } from '../../hooks/dashboard/useDashboardState';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { WelcomeHeader } from '../../components/sections/WelcomeHeader';
 import { DeviceSection } from '../../components/sections/DeviceSection';
 import { FarmHealthSection } from '../../components/sections/FarmHealthSection';
-import { SensorCategoriesSection } from '../../components/sections/SensorCategoriesSection';
-import { FISAlertSection } from '../../components/sections/FISAlertSection';
-import { AIInsightsSection } from '../../components/sections/AIInsightsSection';
-import { WaterSavingsSection } from '../../components/sections/WaterSavingsSection';
 import { EmptyDashboard } from '../../components/sections/EmptyDashboard';
 
+// Defer below-the-fold sections so above-the-fold (Welcome + Device + FarmHealth)
+// can paint without waiting for these chunks.
+const SensorCategoriesSection = lazy(() => import('../../components/sections/SensorCategoriesSection').then(m => ({ default: m.SensorCategoriesSection })));
+const FISAlertSection = lazy(() => import('../../components/sections/FISAlertSection').then(m => ({ default: m.FISAlertSection })));
+const AIInsightsSection = lazy(() => import('../../components/sections/AIInsightsSection').then(m => ({ default: m.AIInsightsSection })));
+const WaterSavingsSection = lazy(() => import('../../components/sections/WaterSavingsSection').then(m => ({ default: m.WaterSavingsSection })));
+
 import { useAuth } from '../../contexts/AuthContext';
+
+const SectionFallback = () => <div className="h-48 rounded-3xl border border-cardBorder bg-cardBg" />;
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -91,14 +96,21 @@ export function DashboardPage() {
       </div>
 
       <section className="grid gap-6 xl:grid-cols-5">
-        <SensorCategoriesSection data={dashboardData?.sensors} lastFetchTime={lastFetchTime} />
-
-        <FISAlertSection data={dashboardData?.alerts} />
+        <Suspense fallback={<SectionFallback />}>
+          <SensorCategoriesSection data={dashboardData?.sensors} lastFetchTime={lastFetchTime} />
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <FISAlertSection data={dashboardData?.alerts} />
+        </Suspense>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
-        <AIInsightsSection data={dashboardData?.aiInsights} />
-        <WaterSavingsSection data={dashboardData?.waterSavings} />
+        <Suspense fallback={<SectionFallback />}>
+          <AIInsightsSection data={dashboardData?.aiInsights} />
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <WaterSavingsSection data={dashboardData?.waterSavings} />
+        </Suspense>
       </section>
     </DashboardLayout>
   );

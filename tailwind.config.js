@@ -9,7 +9,11 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+        // Match the @import in src/index.css. "Plus Jakarta Sans" was declared here but
+        // only Outfit + JetBrains Mono are actually loaded, so `font-sans` was silently
+        // falling back to the system stack.
+        sans: ['Outfit', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       colors: {
         accent: '#00FF00',

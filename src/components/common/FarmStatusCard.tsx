@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FarmStatusMetric } from '../../constants/deviceConstants';
+import { FARM_STATUS_METRICS, FarmStatusMetric } from '../../constants/deviceConstants';
 
 /**
  * FarmStatusCard - Displays individual farm metrics with icons
@@ -10,9 +10,23 @@ interface FarmStatusCardProps {
 }
 
 export function FarmStatusCard({ metric }: FarmStatusCardProps) {
-  const icon = React.isValidElement(metric.icon)
-    ? React.cloneElement(metric.icon as React.ReactElement, { className: 'h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6' })
-    : metric.icon;
+  // metric.icon can arrive deserialized from localStorage cache as a plain object
+  // (no $$typeof). Falling back to the local FARM_STATUS_METRICS catalogue keeps
+  // React from receiving a bare object as a child (the source of #31).
+  const ICON_CLASS = 'h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6';
+  const raw = metric.icon as unknown;
+  let icon: React.ReactNode;
+  if (React.isValidElement(raw)) {
+    icon = React.cloneElement(raw as React.ReactElement, { className: ICON_CLASS });
+  } else if (typeof raw === 'function') {
+    const IconComp = raw as React.ComponentType<{ className?: string }>;
+    icon = <IconComp className={ICON_CLASS} />;
+  } else {
+    const fallback = FARM_STATUS_METRICS.find((m) => m.id === metric.id)?.icon;
+    icon = React.isValidElement(fallback)
+      ? React.cloneElement(fallback as React.ReactElement, { className: ICON_CLASS })
+      : null;
+  }
 
   return (
     <motion.div

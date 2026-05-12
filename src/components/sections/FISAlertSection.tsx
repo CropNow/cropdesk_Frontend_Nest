@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { isValidElement, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity } from 'lucide-react';
 import { X } from 'lucide-react';
@@ -100,7 +100,14 @@ export function FISAlertSection({ data }: { data?: any }) {
 
       <div className="grid gap-5 lg:grid-cols-3">
         {cards.map((card: any) => {
-          const IconComponent = typeof card.icon === 'function' || typeof card.icon === 'object' ? card.icon : (FIS_CARDS.find((c: any) => c.title === card.title)?.icon || Activity);
+          // card.icon may be: a component (function), a rendered React element (object with $$typeof),
+          // a string (icon name from API), or undefined. Only functions are safe to render as <Icon />.
+          const rawIcon = card.icon;
+          const isComponent = typeof rawIcon === 'function';
+          const isElement = isValidElement(rawIcon);
+          const IconComponent = isComponent
+            ? rawIcon
+            : (FIS_CARDS.find((c: any) => c.title === card.title)?.icon || Activity);
           
           const statusColors = {
             Optimal: 'from-emerald-500/20 to-emerald-500/5 text-emerald-400 border-emerald-500/20',
@@ -126,7 +133,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                 <div className="mb-4 flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
                     <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-white/10 to-transparent border border-white/5">
-                      {IconComponent && <IconComponent className="h-4 w-4 text-[#00FF9C]" />}
+                      {isElement ? rawIcon : (IconComponent && <IconComponent className="h-4 w-4 text-[#00FF9C]" />)}
                     </div>
                     <h4 className="text-lg font-bold tracking-tight text-white/90 leading-tight pt-0.5">{card.title}</h4>
                   </div>

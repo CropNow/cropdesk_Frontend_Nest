@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { CircularGauge } from '../common/CircularGauge';
-import { FarmStatusMetric } from '../../constants/deviceConstants';
+import { FARM_STATUS_METRICS, FarmStatusMetric } from '../../constants/deviceConstants';
 
 interface FarmHealthData {
   overallHealth?: number;
@@ -40,9 +40,24 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
   };
 
   const renderMetricCard = (metric: FarmStatusMetric, compact = false) => {
-    const icon = React.isValidElement(metric.icon)
-      ? React.cloneElement(metric.icon as React.ReactElement, { className: compact ? 'h-4 w-4' : 'h-5 w-5' })
-      : metric.icon;
+    // metric.icon may be: a real React element (local constants), a plain object
+    // shaped like an element (API JSON loses $$typeof — would crash with #31),
+    // a function component, or undefined. Anything that isn't a valid element or
+    // a function gets replaced by the local fallback so React never receives a
+    // bare object as a child.
+    const raw = metric.icon as unknown;
+    let icon: React.ReactNode;
+    if (React.isValidElement(raw)) {
+      icon = React.cloneElement(raw as React.ReactElement, { className: compact ? 'h-4 w-4' : 'h-5 w-5' });
+    } else if (typeof raw === 'function') {
+      const IconComp = raw as React.ComponentType<{ className?: string }>;
+      icon = <IconComp className={compact ? 'h-4 w-4' : 'h-5 w-5'} />;
+    } else {
+      const fallback = FARM_STATUS_METRICS.find((m) => m.id === metric.id)?.icon;
+      icon = React.isValidElement(fallback)
+        ? React.cloneElement(fallback as React.ReactElement, { className: compact ? 'h-4 w-4' : 'h-5 w-5' })
+        : null;
+    }
 
     const displayValue = roundDisplayValue(metric.value);
     return (

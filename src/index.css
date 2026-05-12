@@ -88,7 +88,63 @@
   body {
     @apply bg-bgMain text-textPrimary font-sans transition-colors duration-300;
     font-family: 'Outfit', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
+
+  /* --- Light-theme rescue layer --------------------------------------------
+   * Many components hard-code `text-white/X` and `bg-white/X` for the dark
+   * surface. In light mode those become invisible (white on white). Remap
+   * them via attribute selectors so the existing JSX keeps working while
+   * we migrate components onto theme tokens progressively.
+   * ------------------------------------------------------------------------ */
+  :root:not(.dark) {
+    color-scheme: light;
+  }
+
+  :root:not(.dark) [class*="text-white"] {
+    color: var(--text-body);
+  }
+  :root:not(.dark) .text-white\/90,
+  :root:not(.dark) .text-white\/80 {
+    color: var(--text-heading);
+  }
+  :root:not(.dark) .text-white\/70,
+  :root:not(.dark) .text-white\/60 {
+    color: var(--text-body);
+  }
+  :root:not(.dark) .text-white\/50,
+  :root:not(.dark) .text-white\/40 {
+    color: var(--text-secondary);
+  }
+  :root:not(.dark) .text-white\/30,
+  :root:not(.dark) .text-white\/20,
+  :root:not(.dark) .text-white\/10 {
+    color: var(--text-hint);
+  }
+
+  /* Soft glass surfaces — keep contrast in light mode */
+  :root:not(.dark) [class*="bg-white/[0.03]"],
+  :root:not(.dark) [class*="bg-white/[0.05]"],
+  :root:not(.dark) [class*="bg-white/[0.02]"] {
+    background-color: rgba(15, 23, 42, 0.03);
+  }
+  :root:not(.dark) [class*="border-white/5"],
+  :root:not(.dark) [class*="border-white/10"],
+  :root:not(.dark) [class*="border-white/20"] {
+    border-color: rgba(15, 23, 42, 0.10);
+  }
+  :root:not(.dark) [class*="bg-black/20"],
+  :root:not(.dark) [class*="bg-black/80"] {
+    background-color: rgba(15, 23, 42, 0.04);
+  }
+}
+
+@layer utilities {
+  /* Typography helpers — clamp + tabular nums for stable numeric UI */
+  .num-stable { font-variant-numeric: tabular-nums; }
+  .tracking-display { letter-spacing: -0.02em; }
 }
 
 @layer components {
