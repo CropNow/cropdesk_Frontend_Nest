@@ -10,11 +10,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CropDesk Farmer Dashboard</title>
     <script>
+      // Emergency cache bust to fix white screen issues
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          names.forEach(name => {
+            if (name.includes('cropdesk-v1') || name.includes('cropdesk-v2')) {
+              caches.delete(name);
+            }
+          });
+        });
+      }
+
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('SW Registered'))
-            .catch(err => console.log('SW Reg Failed', err));
+          navigator.serviceWorker.register('/sw.js').then(reg => {
+            reg.update(); // Force check for sw.js updates
+          });
+        });
+
+        // Automatically reload the page when the service worker updates
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
         });
       }
     </script>
