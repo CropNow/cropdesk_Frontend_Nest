@@ -7,9 +7,10 @@ import {
   CloudRain,
   Droplets,
   Download,
+  Gauge,
   Leaf,
   Mail,
-  Radio,
+  Sun,
   Thermometer,
   Wind,
   X,
@@ -79,115 +80,60 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-3xl border border-white/10 bg-cardBg p-5 backdrop-blur-xl xl:col-span-2"
+        className="rounded-3xl border border-white/10 bg-cardBg p-5 backdrop-blur-xl xl:col-span-1"
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-3xl font-bold">Sensor Insights</h3>
-          <div className="relative">
-            <button
-              onClick={() => setShowExportMenu(!showExportMenu)}
-              disabled={isExporting}
-              className="group flex items-center gap-2 rounded-xl border border-accentPrimary/20 bg-accentPrimary/5 px-4 py-2 text-sm font-bold text-accentPrimary transition-all hover:bg-accentPrimary/10 disabled:opacity-50"
-              title="Export data to email"
-            >
-              {isExporting ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-accentPrimary border-t-transparent" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              <span>Export Data</span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
-            </button>
-            
-            <AnimatePresence>
-              {showExportMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-white/10 bg-cardBg p-2 shadow-xl backdrop-blur-xl z-50"
-                >
-                  <div className="text-xs font-semibold text-textHint mb-2 px-2 pt-1">Select Range</div>
-                  <button
-                    onClick={() => handleExport('7d')}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-white/5 text-white"
-                  >
-                    Last 7 Days
-                  </button>
-                  <button
-                    onClick={() => handleExport('15d')}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-white/5 text-white"
-                  >
-                    Last 15 Days
-                  </button>
-                  <button
-                    onClick={() => handleExport('30d')}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-white/5 text-white"
-                  >
-                    Last 30 Days
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
         </div>
 
         {/* Smoother Compact Stacked Layout */}
         <div className="flex flex-col gap-4">
           {/* Connectivity Hub Card */}
           <motion.div
-            whileHover={{ y: -2 }}
-            className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/[0.05] to-transparent p-6 backdrop-blur-xl transition-all"
+            className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/[0.02] to-transparent p-3 sm:p-4 backdrop-blur-xl transition-all max-w-[420px]"
           >
             {/* Soft Status Glow */}
-            <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-full blur-[50px] transition-colors duration-700 ${data?.isOnline ? 'bg-emerald-500/15' : 'bg-red-500/15'}`} />
-            
-            <div className="relative z-10 flex flex-col gap-6">
-              <div className="flex items-start justify-between">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className={`h-2 w-2 rounded-full ${data?.isOnline ? 'animate-pulse bg-emerald-500' : 'bg-red-500'}`} />
-                    <span className={`text-[0.65rem] font-bold uppercase tracking-[0.15em] ${data?.isOnline ? 'text-emerald-400/80' : 'text-red-400/80'}`}>
-                      {data?.isOnline ? 'System Online' : 'System Offline'}
-                    </span>
-                  </div>
-                  <h4 className="text-xl font-bold tracking-tight text-white/90">Connectivity Hub</h4>
-                </div>
-                
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.03] border border-white/5">
-                  <Radio className={`h-4 w-4 ${data?.isOnline ? 'text-emerald-400' : 'text-white/20'}`} />
-                </div>
+            <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-full blur-[50px] transition-colors duration-700 ${data?.isOnline ? 'bg-emerald-500/12' : 'bg-red-500/12'}`} />
+
+            <div className="relative z-10 flex flex-col gap-3">
+              {/* System Status */}
+              <div className="flex items-center gap-1.5">
+                <div className={`h-2 w-2 rounded-full ${data?.isOnline ? 'animate-pulse bg-emerald-500' : 'bg-red-500'}`} />
+                <span className={`text-[0.65rem] font-bold uppercase tracking-[0.15em] ${data?.isOnline ? 'text-emerald-400/80' : 'text-red-400/80'}`}>
+                  {data?.isOnline ? 'System Online' : 'System Offline'}
+                </span>
               </div>
 
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black tracking-tighter text-white">
-                      {activeSensorsCount}
-                    </span>
-                    <span className="text-lg font-bold text-white/20">
-                      / {data?.totalSensorsCount || 16}
-                    </span>
-                  </div>
-                  <p className="text-[0.6rem] font-bold uppercase tracking-widest text-white/30">Active Sensors</p>
-                </div>
+              {/* Title */}
+              <h4 className="text-lg font-bold tracking-tight text-white/90">Connectivity Hub</h4>
 
-                <div className="flex flex-col items-end text-right">
-                  <p className="text-[0.6rem] font-bold uppercase tracking-widest text-white/20">Last Sync</p>
-                  <p className="text-lg font-bold tracking-tight text-white/80">
+              {/* Active Sensors */}
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-white">{activeSensorsCount}</span>
+                  <span className="text-sm font-bold text-white/50">/ {data?.totalSensorsCount || 16}</span>
+                </div>
+                <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/60">ACTIVE SENSORS</p>
+              </div>
+
+              {/* Last Sync and Last Fetch - Vertical */}
+              <div className="space-y-2.5">
+                <div>
+                  <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/50">Last Sync</p>
+                  <p className="text-2xl font-bold tracking-tight text-white/90">
                     {data?.timestamp ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </p>
-                  <p className="text-[0.65rem] font-medium text-white/30">
+                  <p className="text-[0.75rem] font-medium text-white/50">
                     {data?.timestamp ? new Date(data.timestamp).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
 
-                <div className="flex flex-col items-end text-right">
-                  <p className="text-[0.6rem] font-bold uppercase tracking-widest text-white/20">Last Fetch</p>
-                  <p className="text-lg font-bold tracking-tight text-white/80">
+                <div>
+                  <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/50">Last Fetch</p>
+                  <p className="text-2xl font-bold tracking-tight text-white/90">
                     {lastFetchTime ? lastFetchTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </p>
-                  <p className="text-[0.65rem] font-medium text-white/30">
+                  <p className="text-[0.75rem] font-medium text-white/50">
                     {lastFetchTime ? lastFetchTime.toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
@@ -196,36 +142,83 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
           </motion.div>
 
           {/* Interactive Sensor Entry Cards */}
-          {SENSOR_CARDS.map((card) => (
-            <motion.div
-              key={card.title}
-              whileHover={{ y: -3, scale: 1.002 }}
-              whileTap={{ scale: 0.998 }}
-              onClick={() => {
-                if (card.title === 'Nest Device Sensors') setShowNestDetails(true);
-              }}
-              className="group relative cursor-pointer overflow-hidden rounded-[2rem] border border-[#00FF9C]/10 bg-gradient-to-br from-[#00FF9C]/5 via-transparent to-transparent p-6 backdrop-blur-xl transition-all hover:border-[#00FF9C]/25 hover:bg-[#00FF9C]/8"
-            >
-              <div className="relative z-10 flex flex-col gap-6">
-                <div className="flex items-center justify-between">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-[1rem] bg-gradient-to-br ${card.accent} border border-white/5 transition-transform group-hover:scale-105`}>
-                    <card.icon className="h-5 w-5 text-[#00FF9C]" />
-                  </div>
-                  <div className="rounded-full bg-white/5 p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                    <ChevronDown className="h-4 w-4 -rotate-90 text-[#00FF9C]" />
-                  </div>
-                </div>
+          {SENSOR_CARDS.map((card) => {
+            const isNest = card.title === 'Nest Device Sensors';
+            return (
+              <React.Fragment key={card.title}>
+                <motion.div
+                  onClick={() => { if (isNest) setShowNestDetails(true); }}
+                  className={`group relative cursor-pointer overflow-hidden rounded-[2rem] border border-[#00FF9C]/10 bg-gradient-to-br ${card.accent} ${isNest ? 'p-3 sm:p-4 max-w-[420px]' : 'p-4 sm:p-6'} backdrop-blur-xl transition-all`}
+                >
+                  <div className="relative z-10 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xl font-bold tracking-tight text-white">{card.title}</h4>
+                      <div className="ml-3">
+                        <ChevronDown className="h-5 w-5 -rotate-90 text-[#00FF9C]" />
+                      </div>
+                    </div>
 
-                <div className="flex flex-col gap-0.5">
-                  <h4 className="text-xl font-bold tracking-tight text-white">{card.title}</h4>
-                  <p className="text-xs font-medium text-white/40">Access detailed telemetry & trends</p>
-                </div>
-              </div>
+                    {/* Subtitle removed for compactness */}
+                  </div>
 
-              {/* Subtle Decorative Accent */}
-              <div className="absolute -bottom-12 -right-12 h-32 w-32 rounded-full bg-[#00FF9C]/3 blur-[60px] transition-colors group-hover:bg-[#00FF9C]/6" />
-            </motion.div>
-          ))}
+                  {/* Subtle Decorative Accent */}
+                  <div className="absolute -bottom-12 -right-12 h-32 w-32 rounded-full bg-[#00FF9C]/3 blur-[60px]" />
+                </motion.div>
+
+                {isNest && (
+                  <div className="mt-2">
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowExportMenu(!showExportMenu)}
+                        disabled={isExporting}
+                        className="group flex w-full items-center justify-center gap-2 rounded-xl border border-accentPrimary/20 bg-accentPrimary/10 px-4 py-2.5 text-sm font-bold text-accentPrimary transition-all hover:bg-accentPrimary/20 disabled:opacity-50"
+                        title="Export data to email"
+                      >
+                        {isExporting ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-accentPrimary border-t-transparent" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                        <span>Export Data</span>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      <AnimatePresence>
+                        {showExportMenu && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute right-0 bottom-full mb-2 w-56 rounded-lg border border-white/30 bg-white/95 dark:bg-bgMain/100 p-2 shadow-lg z-60 backdrop-blur-0"
+                          >
+                            <div className="text-xs font-semibold text-black/80 dark:text-white/70 mb-2 px-2 pt-1">Select Range</div>
+                            <button
+                              onClick={() => handleExport('7d')}
+                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/6 text-black dark:text-white"
+                            >
+                              Last 7 Days
+                            </button>
+                            <button
+                              onClick={() => handleExport('15d')}
+                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/6 text-black dark:text-white"
+                            >
+                              Last 15 Days
+                            </button>
+                            <button
+                              onClick={() => handleExport('30d')}
+                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/6 text-black dark:text-white"
+                            >
+                              Last 30 Days
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
       </motion.div>
 
@@ -853,6 +846,9 @@ function NestSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
     { id: 'leaf', title: 'Leaf Wetness', value: data?.values?.leaf ?? '0', unit: '%', icon: Leaf, color: '#22C55E' },
     { id: 'wind_speed', title: 'Wind Speed', value: data?.values?.wind_speed ?? '0', unit: 'm/s', icon: Wind, color: '#60A5FA' },
     { id: 'wind_dir', title: 'Wind Direction', value: data?.values?.wind_dir ?? '0', unit: '°', icon: Wind, color: '#60A5FA' },
+    { id: 'pressure', title: 'Pressure', value: data?.values?.pressure ?? '0', unit: 'hPa', icon: Gauge, color: '#8B5CF6' },
+    { id: 'solar_radiation', title: 'Solar Radiation', value: data?.values?.solar_radiation ?? '0', unit: 'W/m²', icon: Sun, color: '#FBBF24' },
+    { id: 'rainfall', title: 'Rainfall', value: data?.values?.rainfall ?? '0', unit: 'mm', icon: CloudRain, color: '#06B6D4' },
   ];
 
   const gridGroups = [];

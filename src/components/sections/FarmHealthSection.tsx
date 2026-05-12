@@ -44,18 +44,24 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
       ? React.cloneElement(metric.icon as React.ReactElement, { className: compact ? 'h-4 w-4' : 'h-5 w-5' })
       : metric.icon;
 
+    const displayValue = roundDisplayValue(metric.value);
     return (
-      <div key={metric.id} className={`rounded-2xl border border-white/10 bg-black/20 text-center shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${compact ? 'p-3' : 'p-4'}`}>
-        <div className={`mb-2 flex justify-center text-white/75 ${compact ? 'text-lg' : 'text-xl'}`}>
+      <div
+        key={metric.id}
+        role="group"
+        aria-label={`${metric.label} ${displayValue}${metric.unit ? ' ' + metric.unit : ''}`}
+        className={`rounded-2xl border border-white/10 bg-black/20 text-center shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${compact ? 'p-3' : 'p-4'}`}
+      >
+        <div className={`mb-2 flex justify-center text-white/80 ${compact ? 'text-lg' : 'text-xl'}`} aria-hidden="true">
           {icon}
         </div>
         <div className="flex items-baseline justify-center gap-0.5">
           <span className={`${compact ? 'text-2xl' : 'text-3xl'} font-semibold tracking-tight text-white`}>
-            {roundDisplayValue(metric.value)}
+            {displayValue}
           </span>
-          {metric.unit && <span className={`${compact ? 'text-sm' : 'text-base'} font-medium text-white/55`}>{metric.unit}</span>}
+          {metric.unit && <span className={`${compact ? 'text-sm' : 'text-base'} font-medium text-white/70`}>{metric.unit}</span>}
         </div>
-        <p className={`mt-1 font-medium text-white/45 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+        <p className={`mt-1 font-medium text-white/70 ${compact ? 'text-[10px]' : 'text-xs'}`}>
           {metric.label}
         </p>
       </div>

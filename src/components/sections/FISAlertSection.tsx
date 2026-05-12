@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Activity } from 'lucide-react';
+import { X } from 'lucide-react';
 import { FIS_CARDS } from '../../constants/deviceConstants';
 import { alertsAPI } from '../../api/alerts.api';
+import { useTheme } from '../../contexts/ThemeContext';
 
 /**
  * FISAlertSection - Field Intelligence System alerts (V2 design with linear progress bars)
@@ -17,6 +19,8 @@ export function FISAlertSection({ data }: { data?: any }) {
 
   const [isAcknowledged, setIsAcknowledged] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<any | null>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const checkAcknowledgment = () => {
@@ -78,7 +82,7 @@ export function FISAlertSection({ data }: { data?: any }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
-      className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-white/[0.05] via-white/[0.02] to-transparent p-6 backdrop-blur-2xl xl:col-span-3"
+      className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-white/[0.05] via-white/[0.02] to-transparent p-6 backdrop-blur-2xl xl:col-span-4"
     >
       {/* Decorative Background Element */}
       <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#00FF9C]/5 blur-[100px]" />
@@ -110,34 +114,38 @@ export function FISAlertSection({ data }: { data?: any }) {
             Critical: 'from-rose-400 to-rose-600 shadow-rose-500/40'
           };
 
+          const isViewableCard = ['Pest Analysis', 'Fungal Activity', 'Irrigation Analysis'].includes(card.title);
+
           return (
             <motion.div
               key={card.title}
-              whileHover={{ y: -4, scale: 1.01 }}
-              className="relative flex flex-col justify-between overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.03] p-6 transition-all hover:bg-white/[0.05] hover:border-white/10"
+              className="relative flex flex-col justify-between overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.03] p-4 transition-all hover:bg-white/[0.05] hover:border-white/10"
             >
               <div className="relative z-10">
-                <div className="mb-6 flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-white/10 to-transparent border border-white/5 shadow-inner">
-                    {IconComponent && <IconComponent className="h-5 w-5 text-[#00FF9C]" />}
+                {/* Icon and Title - Horizontal Layout */}
+                <div className="mb-4 flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-white/10 to-transparent border border-white/5">
+                      {IconComponent && <IconComponent className="h-4 w-4 text-[#00FF9C]" />}
+                    </div>
+                    <h4 className="text-lg font-bold tracking-tight text-white/90 leading-tight pt-0.5">{card.title}</h4>
                   </div>
-                  <span className={`rounded-lg border px-3 py-1 text-[0.6rem] font-bold uppercase tracking-[0.25em] ${statusColors[card.status as keyof typeof statusColors]}`}>
+                  <span className={`flex-shrink-0 rounded-lg border px-2.5 py-1 text-[0.55rem] font-bold uppercase tracking-[0.25em] whitespace-nowrap ${statusColors[card.status as keyof typeof statusColors]}`}>
                     {card.status}
                   </span>
                 </div>
 
-                <h4 className="mb-2 text-xl font-bold tracking-tight text-white/90">{card.title}</h4>
-                <p className="min-h-[3.5rem] text-[0.9rem] font-medium leading-[1.6] text-white/50 line-clamp-2">
+                <p className="mb-4 text-[0.85rem] font-medium leading-[1.5] text-white/50 line-clamp-2">
                   {card.body}
                 </p>
               </div>
 
-              <div className="relative z-10 mt-6">
+              <div className="relative z-10">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">Risk Factor</span>
+                  <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">Metrics</span>
                   <span className="text-sm font-bold tabular-nums text-white/70">{card.value}%</span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white/5 border border-white/5">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white/5 border border-white/5 mb-3">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${card.value}%` }}
@@ -145,11 +153,118 @@ export function FISAlertSection({ data }: { data?: any }) {
                     className={`h-full rounded-full bg-gradient-to-r shadow-lg ${barColors[card.status as keyof typeof barColors]}`}
                   />
                 </div>
+                
+                {isViewableCard && (
+                  <button
+                    onClick={() => setSelectedCard(card)}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-white/60 transition-all hover:bg-white/10 hover:text-white/80 hover:border-white/20"
+                  >
+                    View More
+                  </button>
+                )}
               </div>
             </motion.div>
           );
         })}
       </div>
+
+      {/* Detail Modal */}
+      <AnimatePresence>
+        {selectedCard && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center"
+          >
+            <div className="absolute inset-0 bg-black/80" onClick={() => setSelectedCard(null)} />
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className={`relative z-10 mx-4 w-full max-w-3xl overflow-hidden rounded-2xl shadow-xl ${theme === 'dark' ? 'bg-bgMain/100 text-white' : 'bg-white text-black'}`}
+              style={{ maxHeight: '90vh' }}
+            >
+              <div className="flex items-start justify-between border-b border-white/6 px-5 py-4">
+                <div className="max-w-[80%]">
+                  <h3 className="text-2xl md:text-3xl font-bold leading-tight">{selectedCard.title}</h3>
+                  <p className="text-base md:text-lg mt-2 text-white/80" style={{ color: theme === 'dark' ? undefined : 'rgba(0,0,0,0.7)' }}>{selectedCard.body}</p>
+                </div>
+                <button onClick={() => setSelectedCard(null)} className="ml-4 p-2 text-white/60 hover:opacity-80">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className={`p-5 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+                {/* Card-specific fields (advisory displayed once above) */}
+                {selectedCard.title === 'Pest Analysis' && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Pest Risk Score</h4>
+                      <p className="mt-1 text-xl md:text-2xl font-bold">{selectedCard.value ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Rainfall (mm)</h4>
+                      <p className="mt-1 text-xl md:text-2xl font-bold">{selectedCard.rainfall_mm ?? selectedCard.rainfall ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Recommendation</h4>
+                      <p className="mt-1 text-base md:text-lg text-white/60">{selectedCard.recommendation ?? selectedCard.body ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Temperature</h4>
+                      <p className="mt-1 text-xl md:text-2xl font-bold">{selectedCard.temperature ?? 'N/A'}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedCard.title === 'Irrigation Analysis' && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Confidence</h4>
+                      <p className="mt-1 text-xl md:text-2xl font-bold">{selectedCard.confidence ?? data?.suggestion?.confidence ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Decision</h4>
+                      <p className="mt-1 text-xl md:text-2xl font-bold">{selectedCard.decision ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Water Requirement</h4>
+                      <p className="mt-1 text-xl md:text-2xl font-bold">{selectedCard.water_requirement_mm ?? selectedCard.water_requirement ?? 'N/A'}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedCard.title === 'Fungal Activity' && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Activity Level</h4>
+                      <p className="mt-1 text-xl md:text-2xl font-bold">{selectedCard.activity_level ?? selectedCard.activity ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Dew Point</h4>
+                      <p className="mt-1 text-xl md:text-2xl font-bold">{selectedCard.dew_point ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Leaf Wetness</h4>
+                      <p className="mt-1 text-xl md:text-2xl font-bold">{selectedCard.leaf_wetness_pct ?? selectedCard.leaf ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Likely Disease</h4>
+                      <p className="mt-1 text-base md:text-lg text-white/60">{selectedCard.likely_disease ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-base md:text-lg font-semibold text-white/80">Recommendation</h4>
+                      <p className="mt-1 text-base md:text-lg text-white/60">{selectedCard.recommendation ?? selectedCard.body ?? 'N/A'}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="mt-6 overflow-hidden rounded-[2rem] border border-[#00FF9C]/20 bg-gradient-to-br from-[#00FF9C]/10 via-transparent to-transparent p-6 backdrop-blur-xl">
         <div className="flex flex-col gap-5">
