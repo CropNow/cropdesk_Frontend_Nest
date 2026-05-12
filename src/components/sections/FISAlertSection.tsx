@@ -135,7 +135,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                   </span>
                 </div>
 
-                <p className="mb-4 text-[0.85rem] font-medium leading-[1.5] text-white/50 line-clamp-2">
+                <motion.p layout="position" className="mb-4 text-[0.85rem] font-medium leading-[1.5] text-white/50 line-clamp-2 transition-all duration-300 group-hover:line-clamp-none">
                   {card.body}
                 </motion.p>
               </div>
