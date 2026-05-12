@@ -7,9 +7,11 @@ import { RegisterPage } from './pages/auth/RegisterPage';
 import { OTPVerifyPage } from './pages/auth/OTPVerifyPage';
 import { AITrendsPage } from './pages/AITrendsPage';
 import { ChatbotPage } from './pages/ChatbotPage';
+import { SupportPage } from './pages/SupportPage';
 import NotFoundPage from './pages/errors/NotFoundPage';
 import { ROUTES } from './constants/routeConstants';
 import { useAuth } from './contexts/AuthContext';
+import { PWAInstallButton } from './components/common/PWAInstallButton';
 
 export function App() {
   const { isAuthenticated } = useAuth();
@@ -32,6 +34,7 @@ export function App() {
           <Route path="/ai-trends" element={<AITrendsPage />} />
           <Route path="/chatbot" element={<ChatbotPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/support" element={<SupportPage />} />
         </Route>
 
         {/* Global wildcard catch-all for invalid URLs */}
@@ -48,6 +51,7 @@ export function App() {
           }
         />
       </Routes>
+      <PWAInstallButton />
     </div>
   );
 }

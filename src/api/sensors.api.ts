@@ -74,6 +74,18 @@ export const sensorsAPI = {
   exportData: (params: any) => apiClient.get('/sensor-data/export', { params }),
 
   /**
+   * Update a sensor
+   */
+  updateSensor: (sensorId: string, data: any) =>
+    apiClient.patch(`/sensors/${sensorId}`, data),
+
+  /**
+   * Delete a sensor
+   */
+  deleteSensor: (sensorId: string) =>
+    apiClient.delete(`/sensors/${sensorId}`),
+
+  /**
    * Get Nest device data for a specific deviceId and date
    * @param deviceId - Device serial number e.g. "01"
    * @param date - Date in YYYY/MM/DD format e.g. "2026/05/06"
@@ -81,4 +93,5 @@ export const sensorsAPI = {
   getNestDeviceData: (deviceId: string, date: string) =>
     apiClient.get('/nest-device/data', { params: { deviceId, date } }),
 };
+
 

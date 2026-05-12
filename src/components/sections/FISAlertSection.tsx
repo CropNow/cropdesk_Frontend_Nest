@@ -137,7 +137,7 @@ export function FISAlertSection({ data }: { data?: any }) {
 
                 <p className="mb-4 text-[0.85rem] font-medium leading-[1.5] text-white/50 line-clamp-2">
                   {card.body}
-                </p>
+                </motion.p>
               </div>
 
               <div className="relative z-10">
