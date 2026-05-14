@@ -52,7 +52,9 @@ export function AIInsightsSection({ data }: { data?: any }) {
                 
                 <div className="flex flex-col">
                   <p className="text-[1.05rem] font-bold tracking-tight text-white/90">{item.title}</p>
-                  <motion.p layout="position" className="text-[0.85rem] font-medium leading-relaxed text-white/50 line-clamp-1 transition-all duration-300 group-hover:line-clamp-none">{item.description}</motion.p>
+                  <motion.p layout="position" className="text-[0.85rem] font-medium leading-relaxed text-white/50 line-clamp-1 transition-all duration-300 group-hover:line-clamp-none">
+                    {typeof item.description === 'object' && item.description !== null ? JSON.stringify(item.description) : item.description}
+                  </motion.p>
                 </div>
               </div>
 

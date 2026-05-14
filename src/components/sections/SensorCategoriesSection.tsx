@@ -121,20 +121,20 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
                 <div>
                   <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/50">Last Sync</p>
                   <p className="text-2xl font-bold tracking-tight text-white/90">
-                    {data?.timestamp ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </p>
                   <p className="text-[0.75rem] font-medium text-white/50">
-                    {data?.timestamp ? new Date(data.timestamp).toLocaleDateString() : 'N/A'}
+                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/50">Last Fetch</p>
                   <p className="text-2xl font-bold tracking-tight text-white/90">
-                    {lastFetchTime ? lastFetchTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </p>
                   <p className="text-[0.75rem] font-medium text-white/50">
-                    {lastFetchTime ? lastFetchTime.toLocaleDateString() : 'N/A'}
+                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
               </div>
@@ -839,16 +839,18 @@ function NestSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
     { id: 'co', title: 'CO', value: data?.values?.co ?? '0', unit: 'ppm', icon: Activity, color: '#F59E0B' },
     { id: 'no2', title: 'NO2', value: data?.values?.no2 ?? '0', unit: 'ppm', icon: Activity, color: '#F97316' },
     { id: 'o3', title: 'O3', value: data?.values?.o3 ?? '0', unit: 'ppm', icon: Activity, color: '#22C55E' },
-    { id: 'temp1', title: 'Temperature 1', value: data?.values?.temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
-    { id: 'temp2', title: 'Temperature 2', value: data?.values?.temperature2 ?? '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
-    { id: 'hum1', title: 'Humidity 1', value: data?.values?.humidity ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
-    { id: 'hum2', title: 'Humidity 2', value: data?.values?.humidity2 ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
+    { id: 'temperature', title: 'Air Temperature', value: data?.values?.temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
+    { id: 'humidity', title: 'Air Humidity', value: data?.values?.humidity ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
+    { id: 'soil_temp1', title: 'Soil Temp 1', value: data?.values?.soil_temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F97316' },
+    { id: 'soil_temp2', title: 'Soil Temp 2', value: data?.values?.soil_temperature_2 ?? '0', unit: '°C', icon: Thermometer, color: '#F97316' },
+    { id: 'soil_mois1', title: 'Soil Moisture 1', value: data?.values?.soil_moisture_1 ?? '0', unit: '%', icon: Droplets, color: '#06B6D4' },
+    { id: 'soil_mois2', title: 'Soil Moisture 2', value: data?.values?.soil_moisture_2 ?? '0', unit: '%', icon: Droplets, color: '#06B6D4' },
     { id: 'leaf', title: 'Leaf Wetness', value: data?.values?.leaf ?? '0', unit: '%', icon: Leaf, color: '#22C55E' },
     { id: 'wind_speed', title: 'Wind Speed', value: data?.values?.wind_speed ?? '0', unit: 'm/s', icon: Wind, color: '#60A5FA' },
     { id: 'wind_dir', title: 'Wind Direction', value: data?.values?.wind_dir ?? '0', unit: '°', icon: Wind, color: '#60A5FA' },
     { id: 'pressure', title: 'Pressure', value: data?.values?.pressure ?? '0', unit: 'hPa', icon: Gauge, color: '#8B5CF6' },
     { id: 'solar_radiation', title: 'Solar Radiation', value: data?.values?.solar_radiation ?? '0', unit: 'W/m²', icon: Sun, color: '#FBBF24' },
-    { id: 'rainfall', title: 'Rainfall', value: data?.values?.rainfall ?? '0', unit: 'mm', icon: CloudRain, color: '#06B6D4' },
+    { id: 'rainfall', title: 'Rainfall', value: data?.values?.rainfall ?? '0', unit: 'mm', icon: CloudRain, color: '#3B82F6' },
   ];
 
   const gridGroups = [];

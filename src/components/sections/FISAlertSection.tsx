@@ -143,7 +143,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                 </div>
 
                 <p className="mb-4 text-[0.85rem] font-medium leading-[1.5] text-white/50 line-clamp-2 transition-all duration-300 group-hover:line-clamp-none">
-                  {card.body}
+                  {typeof card.body === 'object' && card.body !== null ? JSON.stringify(card.body) : card.body}
                 </p>
               </div>
 
@@ -305,7 +305,7 @@ export function FISAlertSection({ data }: { data?: any }) {
           </div>
 
           <p className="text-[0.95rem] font-medium leading-[1.7] text-white/80">
-            {suggestion.body}
+            {typeof suggestion.body === 'object' && suggestion.body !== null ? JSON.stringify(suggestion.body) : suggestion.body}
           </p>
 
           <div className="flex flex-col gap-2.5">
