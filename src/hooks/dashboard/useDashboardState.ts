@@ -195,7 +195,7 @@ export function useDashboardState() {
         // Map metrics from statistics or fallback
         // nest-device values: temperature, humidity, wind_speed, wind_dir, pm2_5, pm10, co2, o3, no2, leaf
         const mappedMetrics = FARM_STATUS_METRICS.map(m => {
-          const liveMoisture = sensorLatestData?.values?.soil_moisture_1 || sensorLatestData?.values?.soil_moisture || sensorLatestData?.values?.leaf || 0;
+          const liveMoisture = sensorLatestData?.values?.soil_moisture_1 !== undefined ? (Number(sensorLatestData.values.soil_moisture_1) / 100) : (sensorLatestData?.values?.soil_moisture !== undefined ? (Number(sensorLatestData.values.soil_moisture) / 100) : (sensorLatestData?.values?.leaf || 0));
           const liveTemp = sensorLatestData?.values?.temperature || sensorLatestData?.values?.temperature2 || 0;
           const liveHumidity = sensorLatestData?.values?.humidity || sensorLatestData?.values?.humidity2 || 0;
           const liveWindSpeed = sensorLatestData?.values?.wind_speed || 0;
