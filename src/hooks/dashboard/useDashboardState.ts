@@ -65,7 +65,7 @@ export function useDashboardState() {
         const cacheKey = `dashboard_data_${selectedFarmId}_${selectedDeviceType}_${currentDeviceIndex}`;
         const cachedStr = localStorage.getItem(cacheKey);
         
-        if (cachedStr) {
+        if (cachedStr && false) { // Temporarily bypassed to clear old Visibility cache
           try {
             const cached = JSON.parse(cachedStr);
             const now = Date.now();
@@ -198,9 +198,9 @@ export function useDashboardState() {
           const liveMoisture = sensorLatestData?.values?.soil_moisture_1 !== undefined ? (Number(sensorLatestData.values.soil_moisture_1) / 100) : (sensorLatestData?.values?.soil_moisture !== undefined ? (Number(sensorLatestData.values.soil_moisture) / 100) : (sensorLatestData?.values?.leaf || 0));
           const liveTemp = sensorLatestData?.values?.temperature || sensorLatestData?.values?.temperature2 || 0;
           const liveHumidity = sensorLatestData?.values?.humidity || sensorLatestData?.values?.humidity2 || 0;
-          const liveWindSpeed = sensorLatestData?.values?.wind_speed || 0;
+          const liveWindSpeed = sensorLatestData?.values?.wind_speed;
           const liveLeafWetness = sensorLatestData?.values?.leaf ?? aiRes.data?.raw?.pest?.leaf_wetness_pct ?? 0;
-          const liveVisibility = stats?.currentConditions?.avgVisibility ?? overview?.weather?.visibility ?? overview?.weather?.visibilityKm ?? 0;
+          const liveO3 = sensorLatestData?.values?.o3 ?? 0;
 
           if (m.id === 'soil-moisture') {
             const val = liveMoisture !== undefined && liveMoisture !== null ? liveMoisture : stats?.currentConditions?.avgSoilMoisture;
@@ -218,8 +218,8 @@ export function useDashboardState() {
             const val = liveWindSpeed !== undefined && liveWindSpeed !== null ? liveWindSpeed : stats?.currentConditions?.avgWindSpeed;
             if (val !== undefined && val !== null) return { ...m, value: val };
           }
-          if (m.id === 'visibility') {
-            const val = liveVisibility !== undefined && liveVisibility !== null ? liveVisibility : 0;
+          if (m.id === 'o3') {
+            const val = liveO3 !== undefined && liveO3 !== null ? liveO3 : 0;
             if (val !== undefined && val !== null) return { ...m, value: val };
           }
           if (m.id === 'leaf-wetness') {
@@ -482,7 +482,13 @@ export function useDashboardState() {
     return [];
   }, [backendDevices, selectedDeviceType]);
 
-  const currentDevice = deviceList[currentDeviceIndex % (deviceList.length || 1)] || null;
+  const currentDevice = useMemo(() => {
+    const device = deviceList[currentDeviceIndex % (deviceList.length || 1)] || null;
+    if (device && dashboardData?.sensors) {
+      return { ...device, isOnline: dashboardData.sensors.isOnline };
+    }
+    return device ? { ...device, isOnline: device.raw?.status === 'online' || device.raw?.status === 'active' } : null;
+  }, [deviceList, currentDeviceIndex, dashboardData]);
 
   const cycleDevice = async (direction: 1 | -1) => {
     // Trigger API on click (handled by useEffect via currentDeviceIndex change)
