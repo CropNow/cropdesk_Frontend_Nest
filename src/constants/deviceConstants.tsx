@@ -109,7 +109,7 @@ export const FARM_STATUS_METRICS: FarmStatusMetric[] = [
     id: 'o3',
     label: 'Ozone (O3)',
     value: 0,
-    unit: 'ppb',
+    unit: 'ppm',
     icon: <CloudSun className="h-5 w-5" />,
     color: 'cyan',
     min: 0,

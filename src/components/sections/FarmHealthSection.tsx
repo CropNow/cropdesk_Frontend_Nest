@@ -21,7 +21,12 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
 
   const roundDisplayValue = (value: unknown): string | number => {
     const numericValue = Number(value);
-    if (Number.isFinite(numericValue)) return Math.round(numericValue);
+    if (Number.isFinite(numericValue)) {
+      if (numericValue > 0 && numericValue < 10 && !Number.isInteger(numericValue)) {
+        return Number(numericValue.toFixed(2));
+      }
+      return Math.round(numericValue);
+    }
     return String(value ?? '');
   };
 
