@@ -344,10 +344,10 @@ export function useDashboardState() {
             deviceType: primaryDevice.type?.toLowerCase() || 'nest',
             subtitle: 'IoT Field Intelligence Tower',
             image: primaryDevice.type?.toLowerCase() === 'seed' ? '/seed.png' : '/NEST.png',
-            soilType: primaryDevice.field?.soilType || 'N/A',
+            soilType: (primaryDevice.field?.soil?.type || primaryDevice.field?.soilType) ? String(primaryDevice.field?.soil?.type || primaryDevice.field?.soilType).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A',
             area: primaryDevice.field?.area ? `${primaryDevice.field.area} acres` : 'N/A',
             location: primaryDevice.farm?.name || 'N/A',
-            irrigationType: primaryDevice.field?.irrigationType || 'N/A',
+            irrigationType: (primaryDevice.field?.irrigation?.type || primaryDevice.field?.irrigationType) ? String(primaryDevice.field?.irrigation?.type || primaryDevice.field?.irrigationType).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A',
             boundary: 'Polygon',
             crops: primaryDevice.crops?.map((c: any) => c.name) || []
           } : null,
@@ -473,8 +473,8 @@ export function useDashboardState() {
         area: d.field?.area ? `${d.field.area} acres` : 'N/A',
         location: d.farm?.name || 'N/A',
         boundary: 'Polygon',
-        soilType: d.field?.soilType || 'N/A',
-        irrigationType: d.field?.irrigationType || 'N/A',
+        soilType: (d.field?.soil?.type || d.field?.soilType) ? String(d.field?.soil?.type || d.field?.soilType).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A',
+        irrigationType: (d.field?.irrigation?.type || d.field?.irrigationType) ? String(d.field?.irrigation?.type || d.field?.irrigationType).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A',
         crops: d.crops?.map((c: any) => c.name) || [],
         raw: d
       }));
