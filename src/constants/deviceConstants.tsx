@@ -7,6 +7,7 @@ import {
   Eye,
   Leaf,
   ShieldCheck,
+  Sun,
   Thermometer,
   Waves,
   Wind,
@@ -73,14 +74,14 @@ export const AI_INSIGHTS: Array<{ title: string; description: string; level: 'go
 // Farm status metrics with sensor data
 export const FARM_STATUS_METRICS: FarmStatusMetric[] = [
   {
-    id: 'soil-moisture',
-    label: 'Soil moisture',
+    id: 'solar-radiation',
+    label: 'Solar Radiation',
     value: 0,
-    unit: 'v/v',
-    icon: <Waves className="h-5 w-5" />,
-    color: 'cyan',
+    unit: 'W/m²',
+    icon: <Sun className="h-5 w-5" />,
+    color: 'orange',
     min: 0,
-    max: 100,
+    max: 1200,
     status: 'optimal',
   },
   {

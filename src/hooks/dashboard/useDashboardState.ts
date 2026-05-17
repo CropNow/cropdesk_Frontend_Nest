@@ -195,15 +195,15 @@ export function useDashboardState() {
         // Map metrics from statistics or fallback
         // nest-device values: temperature, humidity, wind_speed, wind_dir, pm2_5, pm10, co2, o3, no2, leaf
         const mappedMetrics = FARM_STATUS_METRICS.map(m => {
-          const liveMoisture = sensorLatestData?.values?.soil_moisture_1 !== undefined ? (Number(sensorLatestData.values.soil_moisture_1) / 100) : (sensorLatestData?.values?.soil_moisture !== undefined ? (Number(sensorLatestData.values.soil_moisture) / 100) : (sensorLatestData?.values?.leaf || 0));
+          const liveSolarRadiation = sensorLatestData?.values?.solar_radiation ?? 0;
           const liveTemp = sensorLatestData?.values?.temperature || sensorLatestData?.values?.temperature2 || 0;
           const liveHumidity = sensorLatestData?.values?.humidity || sensorLatestData?.values?.humidity2 || 0;
           const liveWindSpeed = sensorLatestData?.values?.wind_speed;
           const liveLeafWetness = sensorLatestData?.values?.leaf ?? aiRes.data?.raw?.pest?.leaf_wetness_pct ?? 0;
           const liveO3 = sensorLatestData?.values?.o3 ?? 0;
 
-          if (m.id === 'soil-moisture') {
-            const val = liveMoisture !== undefined && liveMoisture !== null ? liveMoisture : stats?.currentConditions?.avgSoilMoisture;
+          if (m.id === 'solar-radiation') {
+            const val = liveSolarRadiation !== undefined && liveSolarRadiation !== null ? liveSolarRadiation : 0;
             if (val !== undefined && val !== null) return { ...m, value: val };
           }
           if (m.id === 'temperature') {
