@@ -16,6 +16,7 @@ const OTPVerifyPage = lazy(() => import('./pages/auth/OTPVerifyPage').then(m => 
 const AITrendsPage = lazy(() => import('./pages/AITrendsPage').then(m => ({ default: m.AITrendsPage })));
 const ChatbotPage = lazy(() => import('./pages/ChatbotPage').then(m => ({ default: m.ChatbotPage })));
 const SupportPage = lazy(() => import('./pages/SupportPage').then(m => ({ default: m.SupportPage })));
+const DeviceLogsPage = lazy(() => import('./pages/DeviceLogsPage').then(m => ({ default: m.DeviceLogsPage })));
 const NotFoundPage = lazy(() => import('./pages/errors/NotFoundPage'));
 
 export function App() {
@@ -38,6 +39,7 @@ export function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
 
             <Route path="/ai-trends" element={<AITrendsPage />} />
+            <Route path="/device-logs" element={<DeviceLogsPage />} />
             <Route path="/chatbot" element={<ChatbotPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/support" element={<SupportPage />} />

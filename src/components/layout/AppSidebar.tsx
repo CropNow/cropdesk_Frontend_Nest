@@ -25,6 +25,7 @@ const deviceLinks: DeviceLink[] = [
   { label: 'NEST', to: '/dashboard?device=nest' },
   { label: 'Seed', to: '/dashboard?device=seed' },
   { label: 'Aero Drone', to: '/dashboard?device=aero' },
+  { label: 'Device Logs', to: '/device-logs' },
 ];
 
 export function AppSidebar() {
@@ -43,7 +44,7 @@ export function AppSidebar() {
   };
 
   const isDevicesSectionActive = useMemo(() => {
-    return location.pathname === '/dashboard' && location.search.includes('device=');
+    return (location.pathname === '/dashboard' && location.search.includes('device=')) || location.pathname === '/device-logs';
   }, [location.pathname, location.search]);
 
   const isExpanded = isMobileOpen || isDockedOpen;
