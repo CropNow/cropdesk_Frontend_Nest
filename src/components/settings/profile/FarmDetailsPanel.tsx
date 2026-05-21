@@ -173,10 +173,13 @@ export function FarmDetailsPanel() {
                 onChange={(e) => setFormData({ ...formData, soilType: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               >
-                <option value="Loamy">Loamy</option>
-                <option value="Sandy">Sandy</option>
-                <option value="Clay">Clay</option>
-                <option value="Silt">Silt</option>
+                <option value="red_soil">Red Soil</option>
+                <option value="black_soil">Black Soil (Regur)</option>
+                <option value="laterite_soil">Laterite Soil</option>
+                <option value="alluvial_soil">Alluvial Soil</option>
+                <option value="sandy_coastal_soil">Sandy / Coastal Soil</option>
+                <option value="forest_soil">Forest Soil</option>
+                <option value="saline_alkali_soil">Saline / Alkali Soil</option>
               </select>
             </label>
             <label className="space-y-2">

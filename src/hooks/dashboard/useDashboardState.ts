@@ -270,7 +270,7 @@ export function useDashboardState() {
               }] : []),
               ...(aiRes.data.raw.irrigation ? [{
                 title: 'Irrigation Analysis',
-                value: aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 100 : Math.max(0, 100 - Math.round((aiRes.data.raw.irrigation.water_requirement_mm || 0) * 2)),
+                value: aiRes.data.raw.irrigation.confidence ? Math.round(aiRes.data.raw.irrigation.confidence * 100) : (aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 100 : Math.max(0, 100 - Math.round((aiRes.data.raw.irrigation.water_requirement_mm || 0) * 2))),
                 status: aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'Optimal' : 'Warning',
                 body: aiRes.data.raw.irrigation.advisory || (aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'Soil moisture is optimal. No irrigation needed.' : `Irrigation recommended: ${aiRes.data.raw.irrigation.water_requirement_mm}mm required.`),
                 icon: 'Droplets'

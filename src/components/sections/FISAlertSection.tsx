@@ -308,20 +308,7 @@ export function FISAlertSection({ data }: { data?: any }) {
             {typeof suggestion.body === 'object' && suggestion.body !== null ? JSON.stringify(suggestion.body) : suggestion.body}
           </p>
 
-          <div className="flex flex-col gap-2.5">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">System Confidence</span>
-              <span className="text-sm font-bold text-[#00FF9C] tabular-nums">{suggestion.confidence}</span>
-            </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/20 border border-white/5">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: suggestion.confidence }}
-                transition={{ duration: 1.2, delay: 0.3 }}
-                className="h-full rounded-full bg-gradient-to-r from-[#00FF9C] to-emerald-400 shadow-[0_0_15px_rgba(0,255,156,0.2)]"
-              />
-            </div>
-          </div>
+
 
           <button
             onClick={handleAcknowledge}
