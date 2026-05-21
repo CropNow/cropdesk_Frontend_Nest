@@ -67,7 +67,7 @@ export function useDashboardState() {
         
         if (cachedStr && false) { // Temporarily bypassed to clear old Visibility cache
           try {
-            const cached = JSON.parse(cachedStr);
+            const cached = JSON.parse(cachedStr as string);
             const now = Date.now();
             if (now - cached.timestamp < 30 * 60 * 1000) {
               // Use cached data if within 30 minutes
@@ -243,7 +243,7 @@ export function useDashboardState() {
           },
           sensors: {
             activeSensorsCount: hasNoIncomingData ? 0 : (sensorLatestData?.values ? Object.values(sensorLatestData.values).filter((v: any) => v !== undefined && v !== null && v !== 0).length : 0),
-            totalSensorsCount: stats?.overview?.totalSensors || (Array.isArray(devices) ? devices.length : 0) || overview?.sensors || 0,
+            totalSensorsCount: 22,
             latestData: hasNoIncomingData ? null : sensorLatestData,
             deviceId: serialNumber || primaryDevice?.id || primaryDevice?._id || sensorLatestData?.deviceId,
             sensorId: actualSensorId || sensorLatestData?.sensorId || sensorLatestData?.id || sensorLatestData?._id,

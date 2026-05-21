@@ -613,7 +613,13 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
       'Air Pressure': 'pressure',
       'SO2': 'so2',
       'NO2': 'no2',
-      'O3': 'o3'
+      'O3': 'o3',
+      'Soil Moisture 1': 'soil_moisture_1',
+      'Soil Moisture 2': 'soil_moisture_2',
+      'Soil Temp 1': 'soil_temperature',
+      'Soil Temp 2': 'soil_temperature_2',
+      'Air Humidity': 'humidity',
+      'Pressure': 'pressure'
     };
     return map[title] || null;
   };
@@ -734,7 +740,13 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
       'Air Pressure': 'pressure',
       'SO2': 'so2',
       'NO2': 'no2',
-      'O3': 'o3'
+      'O3': 'o3',
+      'Soil Moisture 1': 'soil_moisture_1',
+      'Soil Moisture 2': 'soil_moisture_2',
+      'Soil Temp 1': 'soil_temperature',
+      'Soil Temp 2': 'soil_temperature_2',
+      'Air Humidity': 'humidity',
+      'Pressure': 'pressure'
     };
     return map[title] || null;
   };
@@ -843,8 +855,8 @@ function NestSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
     { id: 'humidity', title: 'Air Humidity', value: data?.values?.humidity ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
     { id: 'soil_temp1', title: 'Soil Temp 1', value: data?.values?.soil_temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F97316' },
     { id: 'soil_temp2', title: 'Soil Temp 2', value: data?.values?.soil_temperature_2 ?? '0', unit: '°C', icon: Thermometer, color: '#F97316' },
-    { id: 'soil_mois1', title: 'Soil Moisture 1', value: data?.values?.soil_moisture_1 !== undefined ? Number(data.values.soil_moisture_1) / 100 : '0', unit: 'v/v', icon: Droplets, color: '#06B6D4' },
-    { id: 'soil_mois2', title: 'Soil Moisture 2', value: data?.values?.soil_moisture_2 !== undefined ? Number(data.values.soil_moisture_2) / 100 : '0', unit: 'v/v', icon: Droplets, color: '#06B6D4' },
+    { id: 'soil_mois1', title: 'Soil Moisture 1', value: data?.values?.soil_moisture_1 !== undefined ? (Number(data.values.soil_moisture_1) / 100).toFixed(2) : '0', unit: 'v/v', icon: Droplets, color: '#06B6D4' },
+    { id: 'soil_mois2', title: 'Soil Moisture 2', value: data?.values?.soil_moisture_2 !== undefined ? (Number(data.values.soil_moisture_2) / 100).toFixed(2) : '0', unit: 'v/v', icon: Droplets, color: '#06B6D4' },
     { id: 'leaf', title: 'Leaf Wetness', value: data?.values?.leaf ?? '0', unit: '%', icon: Leaf, color: '#22C55E' },
     { id: 'wind_speed', title: 'Wind Speed', value: data?.values?.wind_speed ?? '0', unit: 'm/s', icon: Wind, color: '#60A5FA' },
     { id: 'wind_dir', title: 'Wind Direction', value: data?.values?.wind_dir ?? '0', unit: '°', icon: Wind, color: '#60A5FA' },

@@ -11,7 +11,7 @@ type DeviceLog = {
   type: string;
   serialNumber: string;
   isOnline: boolean;
-  lastOnTiming: string | null;
+  installationDate: string | null;
   lastOfflineTiming: string | null;
   offlineDuration: string | null;
   farmName?: string;
@@ -40,10 +40,9 @@ export function DeviceLogsPage() {
       const logsData: DeviceLog[] = await Promise.all(
         nestSensors.map(async (sensor: any) => {
           let isOnline = false;
-          let lastOn = null;
+          let statusTxt = 'Unknown';
           let lastOffline = null;
           let offlineDurationStr = null;
-          let statusTxt = 'Unknown';
 
           try {
             if (sensor.serialNumber) {
@@ -52,13 +51,11 @@ export function DeviceLogsPage() {
               
               if (data?.status === 'online') {
                 isOnline = true;
-                lastOn = data?.data?.timestamp || new Date().toISOString();
                 statusTxt = 'Active & Streaming';
               } else {
                 isOnline = false;
-                lastOn = data?.lastValidTimestamp || null;
-                lastOffline = data?.lastValidTimestamp || sensor.updatedAt || null;
                 statusTxt = data?.reason || 'Device Offline';
+                lastOffline = data?.lastValidTimestamp || sensor.updatedAt || null;
                 
                 if (lastOffline) {
                   const diff = Date.now() - new Date(lastOffline).getTime();
@@ -86,7 +83,7 @@ export function DeviceLogsPage() {
             type: sensor.type || 'NEST',
             serialNumber: sensor.serialNumber || 'N/A',
             isOnline,
-            lastOnTiming: lastOn,
+            installationDate: sensor.createdAt || sensor.installationDate || null,
             lastOfflineTiming: lastOffline,
             offlineDuration: offlineDurationStr,
             farmName: sensor.farm?.name || 'Main Farm',
@@ -185,7 +182,7 @@ export function DeviceLogsPage() {
               <tr>
                 <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Device Name</th>
                 <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Status</th>
-                <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Last ON Timing</th>
+                <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Installation Date</th>
                 <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Last Offline Timing</th>
                 <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Offline Duration</th>
               </tr>
@@ -220,8 +217,8 @@ export function DeviceLogsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-textSecondary">
-                        <Activity className="h-4 w-4 text-emerald-500/70" />
-                        <span>{formatTime(log.lastOnTiming)}</span>
+                        <Clock className="h-4 w-4 text-emerald-500/70" />
+                        <span>{formatTime(log.installationDate)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
