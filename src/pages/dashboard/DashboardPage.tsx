@@ -29,7 +29,6 @@ export function DashboardPage() {
     cycleDevice,
     error,
     dashboardData,
-    weatherSummary,
     farms,
     backendDevices,
     lastFetchTime,
@@ -46,7 +45,6 @@ export function DashboardPage() {
     return (
       <EmptyDashboard 
         currentTime={currentTime}
-        weatherSummary={weatherSummary}
       />
     );
   }
@@ -67,21 +65,10 @@ export function DashboardPage() {
     );
   }
 
-  // Use weather from dashboardData if available, otherwise use from hook
-  const displayWeather = dashboardData?.weather ? {
-    temp: `${dashboardData.weather.temperature} C`,
-    condition: dashboardData.weather.condition,
-    city: `${dashboardData.weather.city}, ${dashboardData.weather.country}`
-  } : {
-    ...weatherSummary,
-    city: dashboardData?.farm?.name ? `${dashboardData.farm.name}, ${dashboardData.farm.location?.city || ''}` : weatherSummary.city
-  };
-
   return (
     <DashboardLayout>
       <WelcomeHeader 
         currentTime={currentTime} 
-        weather={displayWeather} 
         userName={user ? `${user.firstName} ${user.lastName}` : 'Farmer'}
       />
 

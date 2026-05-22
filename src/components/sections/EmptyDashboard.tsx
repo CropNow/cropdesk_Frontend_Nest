@@ -7,19 +7,12 @@ import { WelcomeHeader } from './WelcomeHeader';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface EmptyDashboardProps {
-  weatherSummary: any;
   currentTime: Date;
 }
 
-export function EmptyDashboard({ weatherSummary, currentTime }: EmptyDashboardProps) {
+export function EmptyDashboard({ currentTime }: EmptyDashboardProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  const displayWeather = {
-    temp: weatherSummary?.temp || '--',
-    condition: weatherSummary?.condition || 'Unknown',
-    city: weatherSummary?.city || 'N/A'
-  };
 
   const handleAddDevice = () => {
     navigate('/settings?tab=devices');
@@ -41,7 +34,6 @@ export function EmptyDashboard({ weatherSummary, currentTime }: EmptyDashboardPr
     <DashboardLayout>
       <WelcomeHeader
         currentTime={currentTime}
-        weather={displayWeather}
         userName={user ? `${user.firstName} ${user.lastName}` : 'Farmer'}
       />
 
