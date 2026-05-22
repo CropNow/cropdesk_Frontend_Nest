@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { FIS_CARDS } from '../../constants/deviceConstants';
 import { alertsAPI } from '../../api/alerts.api';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * FISAlertSection - Field Intelligence System alerts (V2 design with linear progress bars)
@@ -21,6 +22,7 @@ export function FISAlertSection({ data }: { data?: any }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCard, setSelectedCard] = useState<any | null>(null);
   const { theme } = useTheme();
+  const { addToast } = useToast();
 
   useEffect(() => {
     const checkAcknowledgment = () => {
@@ -64,6 +66,7 @@ export function FISAlertSection({ data }: { data?: any }) {
       const now = Date.now();
       localStorage.setItem('fis_alert_acknowledged_at', now.toString());
       setIsAcknowledged(true);
+      addToast({ message: 'Prescription Acknowledged Successfully', type: 'success' });
 
       // Reset after 30 minutes
       setTimeout(() => {

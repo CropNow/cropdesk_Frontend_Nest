@@ -52,9 +52,21 @@ export function AIInsightsSection({ data }: { data?: any }) {
                 
                 <div className="flex flex-col">
                   <p className="text-[1.05rem] font-bold tracking-tight text-white/90">{item.title}</p>
-                  <motion.p layout="position" className="text-[0.85rem] font-medium leading-relaxed text-white/50 line-clamp-1 transition-all duration-300 group-hover:line-clamp-none">
-                    {typeof item.description === 'object' && item.description !== null ? JSON.stringify(item.description) : item.description}
-                  </motion.p>
+                  <motion.div layout="position" className="flex flex-col transition-all duration-300">
+                    <p className="text-[0.85rem] font-medium leading-relaxed text-white/50 line-clamp-1 group-hover:line-clamp-none">
+                      {typeof item.description === 'object' && item.description !== null ? JSON.stringify(item.description) : item.description}
+                    </p>
+                    {item.farmer_advisory && (
+                      <p className="mt-1 text-[0.85rem] font-medium leading-relaxed text-white/50">
+                        {item.farmer_advisory}
+                      </p>
+                    )}
+                    {item.plant_impact && (
+                      <p className="mt-1 text-[0.85rem] font-medium leading-relaxed text-white/50">
+                        {item.plant_impact}
+                      </p>
+                    )}
+                  </motion.div>
                 </div>
               </div>
 

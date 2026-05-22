@@ -292,7 +292,7 @@ export function useDashboardState() {
               confidence: aiRes.data.raw.irrigation?.confidence ? `${Math.round(aiRes.data.raw.irrigation.confidence * 100)}%` : '95%',
             } : undefined)
           },
-          waterSavings: (() => {
+          waterSavings: overview?.waterSavings || (() => {
             const irrigation = aiRes.data?.raw?.irrigation;
             if (!irrigation || hasNoIncomingData) return { percent: '0.0%', total: '0 L', daily: '0 L' };
             const req = irrigation.water_requirement_mm || 0;
@@ -330,13 +330,17 @@ export function useDashboardState() {
             }] : []),
             ...(aiRes.data.raw.aqi ? [{
               title: 'Air Quality',
-              description: `AQI: ${Math.round(aiRes.data.raw.aqi.aqi || 0)}. ${aiRes.data.raw.aqi.farmer_advisory || aiRes.data.raw.aqi.plant_impact || `Dominant Pollutant: ${aiRes.data.raw.aqi.dominant_pollutant}`}`,
-              level: (aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'low stress' || aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'optimal') ? 'good' : 'warn'
+              description: `AQI: ${Math.round(aiRes.data.raw.aqi.aqi || 0)}${aiRes.data.raw.aqi.dominant_pollutant ? `. Dominant Pollutant: ${aiRes.data.raw.aqi.dominant_pollutant.toUpperCase().replace('_', '.')}` : ''}`,
+              level: (aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'low stress' || aiRes.data.raw.aqi.aqi_category?.toLowerCase() === 'optimal') ? 'good' : 'warn',
+              farmer_advisory: aiRes.data.raw.aqi.farmer_advisory,
+              plant_impact: aiRes.data.raw.aqi.plant_impact
             }] : [])
           ] : (aiRes.data?.cards && Array.isArray(aiRes.data.cards) ? aiRes.data.cards.filter((c: any) => !c.title?.toLowerCase().includes('farm status')).map((c: any) => ({
             title: c.title,
             description: c.body,
-            level: (c.status?.toUpperCase() === 'LOW' || c.status?.toLowerCase() === 'low stress' || c.status?.toLowerCase() === 'optimal' || c.status === 'Optimal') ? 'good' : 'warn'
+            level: (c.status?.toUpperCase() === 'LOW' || c.status?.toLowerCase() === 'low stress' || c.status?.toLowerCase() === 'optimal' || c.status === 'Optimal') ? 'good' : 'warn',
+            farmer_advisory: c.farmer_advisory,
+            plant_impact: c.plant_impact
           })) : aiData)),
           currentDevice: primaryDevice ? {
             name: primaryDevice.name,
