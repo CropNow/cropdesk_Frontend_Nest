@@ -1,10 +1,12 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { Navigate, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginPage } from './pages/auth/LoginPage';
 import { useAuth } from './contexts/AuthContext';
 import { PWAInstallButton } from './components/common/PWAInstallButton';
 import { LoadingSkeleton } from './components/common/LoadingSkeleton';
+import { LoadingPage } from './components/common/LoadingPage';
+import { AnimatePresence } from 'framer-motion';
 
 // Lazy-load non-critical routes to shrink the initial bundle. The dashboard is the
 // post-login landing page, so split it so it loads in parallel with auth/login chunks
@@ -20,11 +22,26 @@ const DeviceLogsPage = lazy(() => import('./pages/DeviceLogsPage').then(m => ({ 
 const NotFoundPage = lazy(() => import('./pages/errors/NotFoundPage'));
 
 export function App() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [minSplashTimeElapsed, setMinSplashTimeElapsed] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinSplashTimeElapsed(true);
+    }, 2500); // 2.5 seconds minimum splash screen
+    return () => clearTimeout(timer);
+  }, []);
+
+  const showSplash = authLoading || !minSplashTimeElapsed;
 
   return (
-    <div className="min-h-screen w-full bg-bgMain text-textPrimary font-sans transition-colors duration-300">
-      <Suspense fallback={<LoadingSkeleton />}>
+    <>
+      <AnimatePresence>
+        {showSplash && <LoadingPage key="splash" />}
+      </AnimatePresence>
+      
+      <div className="min-h-screen w-full bg-bgMain text-textPrimary font-sans transition-colors duration-300">
+        <Suspense fallback={<LoadingSkeleton />}>
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
@@ -62,5 +79,6 @@ export function App() {
       </Suspense>
       <PWAInstallButton />
     </div>
+    </>
   );
 }
