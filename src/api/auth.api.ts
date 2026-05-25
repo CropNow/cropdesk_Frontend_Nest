@@ -50,5 +50,10 @@ export const authAPI = {
    */
   changePassword: (data: ChangePasswordRequest) =>
     apiClient.post('/auth/change-password', data),
+
+  /**
+   * Get all active sessions
+   */
+  getSessions: () => apiClient.get('/auth/sessions'),
 };
 

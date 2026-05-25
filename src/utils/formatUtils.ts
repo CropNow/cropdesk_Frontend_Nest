@@ -93,3 +93,49 @@ export const getStatusColor = (status: string): string => {
   };
   return colors[status] || 'gray';
 };
+
+export const parseUserAgent = (ua: string): string => {
+  if (!ua) return 'Unknown Device';
+  
+  const lowerUA = ua.toLowerCase();
+  
+  let browser = 'Unknown Browser';
+  if (lowerUA.includes('postman')) browser = 'Postman';
+  else if (lowerUA.includes('edg/')) browser = 'Edge';
+  else if (lowerUA.includes('chrome')) browser = 'Chrome';
+  else if (lowerUA.includes('firefox')) browser = 'Firefox';
+  else if (lowerUA.includes('safari') && !lowerUA.includes('chrome')) browser = 'Safari';
+  else if (lowerUA.includes('opera') || lowerUA.includes('opr/')) browser = 'Opera';
+  
+  let os = 'Unknown OS';
+  if (lowerUA.includes('windows')) os = 'Windows';
+  else if (lowerUA.includes('mac')) os = 'MacOS';
+  else if (lowerUA.includes('linux') && !lowerUA.includes('android')) os = 'Linux';
+  else if (lowerUA.includes('android')) os = 'Android';
+  else if (lowerUA.includes('ios') || lowerUA.includes('iphone') || lowerUA.includes('ipad')) os = 'iOS';
+  
+  if (browser === 'Postman') return 'Postman API Client';
+  return `${browser} on ${os}`;
+};
+
+export const formatTimeAgo = (dateString: string): string => {
+  if (!dateString) return 'Unknown time';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return 'Just now';
+  
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+  
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}h ago`;
+  
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 30) return `${diffInDays}d ago`;
+  
+  return date.toLocaleDateString();
+};

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { SecuritySettingsState } from './SettingsLayout';
+import { SecuritySettingsState, SessionState } from './SettingsLayout';
 import { authAPI } from '../../api/auth.api';
+import { parseUserAgent, formatTimeAgo } from '../../utils/formatUtils';
 
 interface SecuritySettingsProps {
   values: SecuritySettingsState;
@@ -37,6 +38,26 @@ export function SecuritySettings({ values, onChange, onLogoutAll, onSave, isSavi
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [sessions, setSessions] = useState<SessionState[]>(values.activeSessions || []);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        setIsLoadingSessions(true);
+        const response = await authAPI.getSessions();
+        const data = response.data?.data || response.data;
+        if (Array.isArray(data)) {
+          setSessions(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch active sessions:', err);
+      } finally {
+        setIsLoadingSessions(false);
+      }
+    };
+    fetchSessions();
+  }, []);
 
   const handleSave = async () => {
     setError('');
@@ -132,17 +153,27 @@ export function SecuritySettings({ values, onChange, onLogoutAll, onSave, isSavi
           </button>
         </div>
 
-        {values.activeSessions.length === 0 ? (
+        {isLoadingSessions ? (
+          <p className="text-sm text-textMuted">Loading active sessions...</p>
+        ) : sessions.length === 0 ? (
           <p className="text-sm text-textMuted">No active sessions.</p>
         ) : (
           <div className="space-y-2">
-            {values.activeSessions.map((session) => (
+            {sessions.map((session: any) => (
               <div
-                key={session.id}
+                key={session._id || session.id}
                 className="rounded-xl border border-cardBorder bg-cardBg px-3 py-2"
               >
-                <p className="text-sm font-semibold text-textBody">{session.device}</p>
-                <p className="text-xs text-textMuted">{session.location} • {session.lastActive}</p>
+                <div className="flex items-center space-x-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-textBody">
+                      {session.device || session.deviceName || 'Unknown Device'}
+                    </p>
+                    <p className="text-xs text-textMuted">
+                      {session.location || session.ip || 'Unknown Location'} • {formatTimeAgo(session.lastActive || session.createdAt || '')}
+                    </p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
