@@ -12,6 +12,7 @@ type DeviceLog = {
   serialNumber: string;
   isOnline: boolean;
   installationDate: string | null;
+  lastOnlineTiming: string | null;
   lastOfflineTiming: string | null;
   offlineDuration: string | null;
   farmName?: string;
@@ -44,7 +45,23 @@ export function DeviceLogsPage() {
           let lastOffline = null;
           let offlineDurationStr = null;
 
+          let lastOnline = null;
+
           try {
+            const sensorId = sensor._id || sensor.id;
+            const logsRes = await sensorsAPI.getDeviceLogs(sensorId);
+            const logsArray = logsRes.data?.data || [];
+            
+            const offlineLog = logsArray.find((log: any) => log.event === 'offline');
+            const onlineLog = logsArray.find((log: any) => log.event === 'online');
+            
+            if (offlineLog) {
+              lastOffline = offlineLog.timestamp;
+            }
+            if (onlineLog) {
+              lastOnline = onlineLog.timestamp;
+            }
+
             if (sensor.serialNumber) {
               const nestRes = await sensorsAPI.getNestDeviceData(sensor.serialNumber, todayDate);
               const data = nestRes.data;
@@ -55,15 +72,10 @@ export function DeviceLogsPage() {
               } else {
                 isOnline = false;
                 statusTxt = data?.reason || 'Device Offline';
-                lastOffline = data?.lastValidTimestamp || sensor.updatedAt || null;
                 
-                if (lastOffline) {
-                  const diff = Date.now() - new Date(lastOffline).getTime();
-                  if (diff > 0) {
-                    const hours = Math.floor(diff / (1000 * 60 * 60));
-                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    offlineDurationStr = `${hours}h ${mins}m`;
-                  }
+                // Fallback to old behavior if API doesn't return anything
+                if (!lastOffline) {
+                  lastOffline = data?.lastValidTimestamp || sensor.updatedAt || null;
                 }
               }
             } else {
@@ -71,10 +83,19 @@ export function DeviceLogsPage() {
               isOnline = sensor.status === 'active';
               statusTxt = sensor.status;
             }
+            
+            if (!isOnline && lastOffline) {
+              const diff = Date.now() - new Date(lastOffline).getTime();
+              if (diff > 0) {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                offlineDurationStr = `${hours}h ${mins}m`;
+              }
+            }
           } catch (err) {
             isOnline = false;
             statusTxt = 'Connection Error';
-            lastOffline = sensor.updatedAt || null;
+            if (!lastOffline) lastOffline = sensor.updatedAt || null;
           }
 
           return {
@@ -85,6 +106,7 @@ export function DeviceLogsPage() {
             isOnline,
             installationDate: sensor.createdAt || sensor.installationDate || null,
             lastOfflineTiming: lastOffline,
+            lastOnlineTiming: lastOnline,
             offlineDuration: offlineDurationStr,
             farmName: sensor.farm?.name || 'Main Farm',
             statusText: statusTxt
@@ -183,6 +205,7 @@ export function DeviceLogsPage() {
                 <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Device Name</th>
                 <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Status</th>
                 <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Installation Date</th>
+                <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Last Online Timing</th>
                 <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Last Offline Timing</th>
                 <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">Offline Duration</th>
               </tr>
@@ -219,6 +242,12 @@ export function DeviceLogsPage() {
                       <div className="flex items-center gap-2 text-textSecondary">
                         <Clock className="h-4 w-4 text-emerald-500/70" />
                         <span>{formatTime(log.installationDate)}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-textSecondary">
+                        <Clock className="h-4 w-4 text-emerald-500/70" />
+                        <span>{formatTime(log.lastOnlineTiming)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">

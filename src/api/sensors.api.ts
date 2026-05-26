@@ -57,6 +57,13 @@ export const sensorsAPI = {
    */
   getAggregatedData: (sensorId: string, params?: any) =>
     apiClient.get(`/sensor-data/sensors/${sensorId}/aggregate`, { params }),
+
+  /**
+   * Get device logs
+   */
+  getDeviceLogs: (sensorId: string) =>
+    apiClient.get(`/sensors/${sensorId}/device-logs`),
+
   /**
    * Update sensor calibration
    */
