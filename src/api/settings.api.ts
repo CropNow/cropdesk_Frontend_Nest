@@ -12,17 +12,6 @@ export const settingsAPI = {
   getUserSettings: () => apiClient.get('/settings/user'),
 
   /**
-   * Update notification preferences
-   */
-  updateNotificationSettings: (data: any) =>
-    apiClient.patch('/settings/notifications', data),
-
-  /**
-   * Get notification settings
-   */
-  getNotificationSettings: () => apiClient.get('/settings/notifications'),
-
-  /**
    * Update appearance settings (theme, language, etc.)
    */
   updateAppearanceSettings: (data: any) =>
@@ -61,3 +50,36 @@ export const settingsAPI = {
   disconnectIntegration: (integrationType: string) =>
     apiClient.delete(`/settings/integrations/${integrationType}`),
 };
+
+// ─── Notification-specific API ──────────────────────────────────────────────
+
+export const notificationsAPI = {
+  /**
+   * GET /api/v1/notifications/preferences
+   * Fetch the current user's notification preferences.
+   */
+  getPreferences: () => apiClient.get('/notifications/preferences'),
+
+  /**
+   * PUT /api/v1/notifications/preferences
+   * Update alertTypes and/or channels (partial updates supported).
+   */
+  updatePreferences: (data: {
+    alertTypes?: Partial<Record<'pest' | 'fungal' | 'irrigation' | 'weather', boolean>>;
+    channels?: Partial<Record<'sms' | 'email' | 'push', boolean>>;
+  }) => apiClient.put('/notifications/preferences', data),
+
+  /**
+   * POST /api/v1/notifications/device-token
+   * Register a mobile/web push notification token for the current user.
+   */
+  registerDeviceToken: (token: string) =>
+    apiClient.post('/notifications/device-token', { token }),
+
+  /**
+   * POST /api/v1/notifications/test
+   * Trigger a test notification to verify delivery channels.
+   */
+  sendTestNotification: () => apiClient.post('/notifications/test', {}),
+};
+

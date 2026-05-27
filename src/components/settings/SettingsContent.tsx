@@ -121,17 +121,7 @@ export function SettingsContent({
           ) : null}
 
           {activeTab === 'notifications' ? (
-            <NotificationSettings
-              values={settings.notifications}
-              onChange={(patch) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  notifications: { ...prev.notifications, ...patch },
-                }))
-              }
-              onSave={() => onSave('notifications')}
-              isSaving={isSaving}
-            />
+            <NotificationSettings />
           ) : null}
 
           {activeTab === 'appearance' ? (
