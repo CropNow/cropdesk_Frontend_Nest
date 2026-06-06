@@ -124,11 +124,11 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
                     <span className="text-[10px] font-black text-white/90">{Math.round(numValue)}%</span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                    <motion.div 
+                    <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(numValue, 100)}%` }}
                       transition={{ duration: 1, delay: 0.2 }}
-                      className={`h-full rounded-full ${colorClass}`} 
+                      className={`h-full rounded-full ${colorClass}`}
                     />
                   </div>
                 </div>
@@ -173,11 +173,11 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
                     <span className="text-[9px] font-black text-white/90">{Math.round(numValue)}%</span>
                   </div>
                   <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
-                    <motion.div 
+                    <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(numValue, 100)}%` }}
                       transition={{ duration: 1, delay: 0.2 }}
-                      className={`h-full rounded-full ${colorClass}`} 
+                      className={`h-full rounded-full ${colorClass}`}
                     />
                   </div>
                 </div>

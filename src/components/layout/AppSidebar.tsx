@@ -93,7 +93,7 @@ export function AppSidebar() {
       >
         <div className="relative flex h-full flex-col px-3 py-4 sm:px-4 sm:py-5">
           <div className="mb-5 flex items-center justify-between sm:mb-7">
-<Link
+            <Link
               to="/dashboard"
               className={[
                 'group flex items-center rounded-2xl transition-all duration-200',

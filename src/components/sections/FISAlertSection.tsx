@@ -111,7 +111,7 @@ export function FISAlertSection({ data }: { data?: any }) {
           const IconComponent = isComponent
             ? rawIcon
             : (FIS_CARDS.find((c: any) => c.title === card.title)?.icon || Activity);
-          
+
           const statusColors = {
             Optimal: 'from-emerald-500/20 to-emerald-500/5 text-emerald-400 border-emerald-500/20',
             Warning: 'from-amber-500/20 to-amber-500/5 text-amber-400 border-amber-500/20',
@@ -163,7 +163,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                     className={`h-full rounded-full bg-gradient-to-r shadow-lg ${barColors[card.status as keyof typeof barColors]}`}
                   />
                 </div>
-                
+
                 {isViewableCard && (
                   <button
                     onClick={() => setSelectedCard(card)}
@@ -288,15 +288,14 @@ export function FISAlertSection({ data }: { data?: any }) {
                 <p className="text-[0.6rem] font-bold uppercase tracking-[0.25em] text-[#00FF9C]/60">Expert Recommendation</p>
               </div>
             </div>
-            
+
             <button
               onClick={handleAcknowledge}
               disabled={isAcknowledged || isSubmitting}
-              className={`hidden sm:flex items-center gap-2 rounded-xl px-7 py-2.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 ${
-                isAcknowledged 
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+              className={`hidden sm:flex items-center gap-2 rounded-xl px-7 py-2.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 ${isAcknowledged
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                   : 'bg-[#00FF9C] text-black hover:shadow-[0_0_20px_rgba(0,255,156,0.4)]'
-              }`}
+                }`}
             >
               {isAcknowledged ? (
                 <>
@@ -316,11 +315,10 @@ export function FISAlertSection({ data }: { data?: any }) {
           <button
             onClick={handleAcknowledge}
             disabled={isAcknowledged || isSubmitting}
-            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 sm:hidden ${
-              isAcknowledged 
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 sm:hidden ${isAcknowledged
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                 : 'bg-[#00FF9C] text-black'
-            }`}
+              }`}
           >
             {isAcknowledged ? 'Acknowledged' : (isSubmitting ? 'Acknowledge' : 'Acknowledge')}
           </button>

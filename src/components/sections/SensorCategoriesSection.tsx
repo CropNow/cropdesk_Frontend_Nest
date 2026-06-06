@@ -29,7 +29,7 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
   const [showNestDetails, setShowNestDetails] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
-  
+
   const activeSensorsCount = data?.activeSensorsCount ?? 12;
   const isAnySensorModalOpen = showNestDetails;
   // The deviceId used for nest-device API (serialNumber like "01")
@@ -39,7 +39,7 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
     setShowExportMenu(false);
     try {
       const sensorId = data?.latestData?.sensorId || data?.latestData?.deviceId;
-      
+
       if (!sensorId) {
         addToast({
           message: 'No sensor ID found for export.',
@@ -49,14 +49,14 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
       }
 
       setIsExporting(true);
-      
+
       await sensorsAPI.exportData({
         sensorId,
         format: 'csv',
         range,
         email: true
       });
-      
+
       addToast({
         message: 'Data export request sent. You will receive an email shortly.',
         type: 'success'
@@ -290,7 +290,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
   const isWeek = selectedRange === '7 Days';
   const pointsCount = isDay ? 24 : (isWeek ? 7 : 30);
   const intervalMs = isDay ? 3600000 : 86400000;
-  
+
   const timeline = Array.from({ length: pointsCount }, (_, i) => {
     const time = new Date(now.getTime() - (pointsCount - 1 - i) * intervalMs);
     if (isDay) time.setMinutes(0, 0, 0);
@@ -309,7 +309,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
       const realTime = new Date(realPoint.timestamp || realPoint._id || realPoint.time).getTime();
       let closestIdx = -1;
       let minDiff = Infinity;
-      
+
       timeline.forEach((slot, idx) => {
         const diff = Math.abs(new Date(slot.timestamp).getTime() - realTime);
         if (diff < minDiff) {
@@ -319,9 +319,9 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
       });
 
       if (closestIdx !== -1 && minDiff < intervalMs) {
-        timeline[closestIdx] = { 
-          ...timeline[closestIdx], 
-          ...realPoint, 
+        timeline[closestIdx] = {
+          ...timeline[closestIdx],
+          ...realPoint,
           isPlaceholder: false,
           [metricKey]: realPoint[metricKey] ?? realPoint.average ?? 0
         };
@@ -333,7 +333,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
 
   const points = chartData.map((d: any) => {
     let val: number | undefined;
-    
+
     if (metricKey && d[metricKey] !== undefined && d[metricKey] !== null) {
       const num = Number(d[metricKey]);
       if (!isNaN(num)) val = num;
@@ -365,7 +365,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
         }
       }
     }
-    
+
     return val !== undefined ? val : 0;
   });
 
@@ -399,7 +399,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
   const currentBarWidth = barCount > 1 ? Math.max(step * 0.7, 4) : 40;
 
   const bars = points.map((val, i) => {
-    const x = barCount > 1 
+    const x = barCount > 1
       ? paddingLeft + i * step + (step - currentBarWidth) / 2
       : paddingLeft + (width - paddingLeft - paddingRight) / 2 - currentBarWidth / 2;
     const barHeight = ((val - displayMin) / (displayRange || 1)) * (height - paddingTop - paddingBottom);
@@ -428,11 +428,11 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
     if (!d) return '';
     const timeKey = ['timestamp', 'createdAt', 'time', 'date', 'updatedAt', 'created_at', 'updated_at', 'ts'].find(k => d[k]);
     if (!timeKey) return '';
-    
+
     try {
       const date = new Date(d[timeKey]);
       if (isNaN(date.getTime())) return '';
-      
+
       if (selectedRange === '24 Hours') {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
       } else if (selectedRange === '7 Days') {
@@ -447,12 +447,12 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
     }
   };
 
-  const labelsWithIndices = chartData.map((d: any, i: number) => ({ 
-    label: getFormattedLabel(d), 
-    index: i 
+  const labelsWithIndices = chartData.map((d: any, i: number) => ({
+    label: getFormattedLabel(d),
+    index: i
   })).filter(l => l.label !== '');
 
-  const uniqueLabels = labelsWithIndices.filter((item, pos, self) => 
+  const uniqueLabels = labelsWithIndices.filter((item, pos, self) =>
     self.findIndex(v => v.label === item.label) === pos
   );
 
@@ -472,21 +472,21 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
         const y = getY(val);
         return (
           <g key={`y-${idx}`}>
-            <line 
-              x1={paddingLeft} 
-              y1={y} 
-              x2={width - paddingRight} 
-              y2={y} 
-              stroke="white" 
-              strokeOpacity={idx === 0 ? "0.2" : "0.05"} 
-              strokeWidth={idx === 0 ? 2 : 1} 
+            <line
+              x1={paddingLeft}
+              y1={y}
+              x2={width - paddingRight}
+              y2={y}
+              stroke="white"
+              strokeOpacity={idx === 0 ? "0.2" : "0.05"}
+              strokeWidth={idx === 0 ? 2 : 1}
             />
-            <text 
-              x={paddingLeft - 12} 
-              y={y + 4} 
-              fill="white" 
-              fillOpacity="0.7" 
-              fontSize="12" 
+            <text
+              x={paddingLeft - 12}
+              y={y + 4}
+              fill="white"
+              fillOpacity="0.7"
+              fontSize="12"
               fontWeight="900"
               textAnchor="end"
               className="select-none tabular-nums"
@@ -503,8 +503,8 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
           x={getX(l.index)}
           y={height - 10}
           fill="white"
-          fillOpacity="0.7" 
-          fontSize="12" 
+          fillOpacity="0.7"
+          fontSize="12"
           fontWeight="900"
           textAnchor="middle"
           className="select-none"
@@ -512,7 +512,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
           {l.label}
         </text>
       ))}
-      
+
       {chartType === 'line' ? (
         <g>
           {points.length > 1 ? (
@@ -537,7 +537,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
           ))}
         </g>
       ) : (
-        <g 
+        <g
           onClick={() => setSelectedPoint(null)}
           className="h-full w-full"
         >
@@ -639,7 +639,7 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
         console.error('Failed to fetch chart data:', err);
       }
     };
-    
+
     fetchHistory();
     const interval = setInterval(fetchHistory, 30 * 60 * 1000);
     return () => clearInterval(interval);
@@ -766,7 +766,7 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
         console.error('Failed to fetch chart data:', err);
       }
     };
-    
+
     fetchHistory();
     const interval = setInterval(fetchHistory, 30 * 60 * 1000);
     return () => clearInterval(interval);

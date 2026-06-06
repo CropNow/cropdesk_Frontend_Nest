@@ -7,7 +7,7 @@ import { AI_INSIGHTS } from '../../constants/deviceConstants';
  */
 export function AIInsightsSection({ data }: { data?: any }) {
   let insights = AI_INSIGHTS;
-  
+
   if (Array.isArray(data) && data.length > 0) {
     insights = data;
   } else if (data && typeof data === 'object') {
@@ -36,7 +36,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
         {insights.map((item: any, idx: number) => {
           const isWarning = item.level === 'warning' || item.description?.toLowerCase().includes('low') || item.description?.toLowerCase().includes('high');
           const isOptimal = item.level === 'good' || item.level === 'optimal';
-          
+
           return (
             <motion.div
               key={item.title + idx}
@@ -49,7 +49,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
                   <div className={`h-3 w-3 rounded-full ${isOptimal ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : isWarning ? 'bg-amber-400 shadow-[0_0_10px_#fbbf24]' : 'bg-rose-500 shadow-[0_0_10px_#f43f5e]'}`} />
                   <div className={`absolute inset-0 h-3 w-3 animate-ping rounded-full opacity-20 ${isOptimal ? 'bg-emerald-500' : isWarning ? 'bg-amber-400' : 'bg-rose-500'}`} />
                 </div>
-                
+
                 <div className="flex flex-col">
                   <p className="text-[1.05rem] font-bold tracking-tight text-white/90">{item.title}</p>
                   <motion.div layout="position" className="flex flex-col transition-all duration-300">
