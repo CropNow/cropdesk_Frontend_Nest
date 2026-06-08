@@ -15,7 +15,9 @@
       "Bash(python3 /tmp/count_dark.py)",
       "Bash(python3:*)",
       "Bash(grep -E \"\\\\.\\(ts|tsx|json\\)$\")",
-      "Bash(npm view *)"
+      "Bash(npm view *)",
+      "Read(//c/Users/asnaw/.claude/**)",
+      "Read(//c/Users/asnaw/.claude/skills/graphify/**)"
     ]
   }
 }
