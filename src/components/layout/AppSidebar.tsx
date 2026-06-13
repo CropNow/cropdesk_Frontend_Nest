@@ -1,25 +1,27 @@
 import { useMemo, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleHelp,
   LayoutDashboard,
   LogOut,
-  Menu,
   MessageSquare,
   ScanLine,
   Settings,
   TrendingUp,
-  X,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { MobileHeader } from './MobileHeader';
+import { useSidebar } from '../../contexts/SidebarContext';
 
-type DeviceLink = {
-  label: string;
-  to: string;
-};
+/* ═══════════════════════════════════════════════════════════════════
+   Data
+   ═══════════════════════════════════════════════════════════════════ */
+type DeviceLink = { label: string; to: string };
 
 const deviceLinks: DeviceLink[] = [
   { label: 'NEST', to: '/dashboard?device=nest' },
@@ -28,13 +30,17 @@ const deviceLinks: DeviceLink[] = [
   { label: 'Device Logs', to: '/device-logs' },
 ];
 
+/* ═══════════════════════════════════════════════════════════════════
+   Sidebar
+   ═══════════════════════════════════════════════════════════════════ */
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { addToast } = useToast();
-  const [isDockedOpen, setIsDockedOpen] = useState(false);
+  const { isCollapsed, toggleSidebar } = useSidebar();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isDevicesOpen, setIsDevicesOpen] = useState(true);
   const [showLogout, setShowLogout] = useState(false);
 
   const handleLogout = () => {
@@ -44,262 +50,268 @@ export function AppSidebar() {
   };
 
   const isDevicesSectionActive = useMemo(() => {
-    return (location.pathname === '/dashboard' && location.search.includes('device=')) || location.pathname === '/device-logs';
+    return (
+      (location.pathname === '/dashboard' && location.search.includes('device=')) ||
+      location.pathname === '/device-logs'
+    );
   }, [location.pathname, location.search]);
 
-  const isExpanded = isMobileOpen || isDockedOpen;
-
   const closeMobile = () => setIsMobileOpen(false);
-  const handleDesktopHoverIn = () => {
-    if (window.innerWidth >= 1024) {
-      setIsDockedOpen(true);
-    }
-  };
 
-  const handleDesktopHoverOut = () => {
-    if (window.innerWidth >= 1024) {
-      setIsDockedOpen(false);
-    }
-  };
+  /* ─── Nav item classes ────────────────────────────────────────── */
+  const navItemBase = useMemo(() => {
+    return `sidebar-item group flex w-full items-center rounded-lg py-2 text-scale-helper font-medium transition-all duration-300 ${
+      isCollapsed ? 'justify-center px-0 gap-0' : 'px-3 gap-3'
+    }`;
+  }, [isCollapsed]);
+
+  const navItemActive = useMemo(() => {
+    return `bg-accentPrimary/10 text-accentPrimary border-l-[3px] border-accentPrimary ${
+      isCollapsed ? 'pl-0 pr-[3px]' : 'pl-[9px]'
+    }`;
+  }, [isCollapsed]);
+
+  const navItemInactive = useMemo(() => {
+    return `text-textSecondary hover:bg-bgCardHover hover:text-textHeading border-l-[3px] border-transparent ${
+      isCollapsed ? 'pl-0 pr-[3px]' : 'pl-[9px]'
+    }`;
+  }, [isCollapsed]);
+
+  const subItemBase =
+    'block rounded-md px-3 py-1.5 text-scale-caption font-medium transition-colors';
+  const subItemActive =
+    'bg-accentPrimary/10 text-accentPrimary font-semibold';
+  const subItemInactive =
+    'text-textMuted hover:bg-bgCardHover hover:text-textHeading';
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsMobileOpen(true)}
-        className="lg:hidden fixed left-3 top-3 z-40 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-cardBorder bg-bgSidebar text-textHeading shadow-lg shadow-black/10 dark:shadow-black/20 sm:left-4 sm:top-4 sm:h-10 sm:w-10 sm:rounded-xl"
-        aria-label="Open navigation"
-      >
-        <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
-      </button>
+      {/* ── Mobile header (auto-hide on scroll) ────────────────────── */}
+      <MobileHeader onMenuClick={() => setIsMobileOpen(true)} />
 
-      {isMobileOpen ? (
+      {/* ── Mobile overlay ─────────────────────────────────────────── */}
+      {isMobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 dark:bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
           onClick={closeMobile}
           aria-hidden="true"
         />
-      ) : null}
+      )}
 
+      {/* ── Sidebar panel ──────────────────────────────────────────── */}
       <aside
         className={[
-          'sidebar-shell fixed inset-y-0 left-0 z-50 border-r border-borderSubtle bg-bgSidebar backdrop-blur-2xl transition-all duration-300 lg:bottom-4 lg:left-4 lg:top-4 lg:rounded-[28px] lg:border lg:border-borderSubtle',
-          isExpanded ? 'w-[280px]' : 'w-[72px] sm:w-[84px]',
+          'sidebar-shell fixed inset-y-0 left-0 z-50 flex flex-col border-r border-borderColor bg-bgSidebar transition-all duration-300',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          isCollapsed ? 'lg:w-[80px]' : 'lg:w-[260px]',
         ].join(' ')}
-        onMouseEnter={handleDesktopHoverIn}
-        onMouseLeave={handleDesktopHoverOut}
         aria-label="Sidebar"
       >
-        <div className="relative flex h-full flex-col px-3 py-4 sm:px-4 sm:py-5">
-          <div className="mb-5 flex items-center justify-between sm:mb-7">
-            <Link
-              to="/dashboard"
-              className={[
-                'group flex items-center rounded-2xl transition-all duration-200',
-                isExpanded ? 'gap-3 px-3 py-2' : 'justify-center w-full py-2',
-              ].join(' ')}
-            >
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-accentPrimary/10 border border-accentPrimary/20">
-                <img src="/CropNow_Logo_1-D3AGwrH0.png" alt="CropNow Logo" className="h-6 w-6 object-contain" />
+        {/* ── Header ───────────────────────────────────────────────── */}
+        <div className={`flex h-16 items-center border-b border-borderColor transition-all duration-300 ${isCollapsed ? 'justify-center px-2' : 'justify-between px-5'}`}>
+          <Link to="/dashboard" className="flex items-center gap-2.5 overflow-hidden shrink-0">
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-accentPrimary/10">
+              <img src="/CropNow_Logo_1-D3AGwrH0.png" alt="CropNow Logo" className="h-5 w-5 object-contain" />
+            </span>
+            {!isCollapsed && (
+              <span className="text-[15px] font-bold tracking-tight text-textHeading transition-opacity duration-300">
+                CROPNOW
               </span>
-              {isExpanded ? (
-                <span className="text-lg font-bold tracking-tight text-textHeading">CROPNOW</span>
-              ) : null}
-            </Link>
-
+            )}
+          </Link>
+          
+          {!isCollapsed && (
             <button
               type="button"
-              onClick={closeMobile}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cardBorder text-textMuted hover:text-textHeading hover:bg-cardBg lg:hidden"
-              aria-label="Close navigation"
+              onClick={toggleSidebar}
+              className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg border border-borderColor bg-bgCard text-textSecondary transition hover:border-accentPrimary/40 hover:text-accentPrimary"
+              aria-label="Collapse sidebar"
             >
-              <X className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
-          </div>
+          )}
 
-          <nav className="flex-1 space-y-1" aria-label="Primary">
-            <NavLink
-              to="/dashboard"
-              onClick={closeMobile}
-              className={({ isActive }) =>
-                [
-                  'sidebar-item flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
-                  isActive
-                    ? 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20'
-                    : 'text-textSecondary hover:bg-cardBg hover:text-textHeading',
-                  isExpanded ? 'justify-start gap-3' : 'justify-center',
-                ].join(' ')
+          {isCollapsed && (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg border border-borderColor bg-bgCard text-textSecondary transition hover:border-accentPrimary/40 hover:text-accentPrimary"
+              aria-label="Expand sidebar"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* ── Navigation ───────────────────────────────────────────── */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Primary">
+          {/* Section label: OVERVIEW */}
+          {!isCollapsed && (
+            <p className="mb-2 px-3 text-scale-caption font-bold uppercase tracking-[0.1em] text-textHint">
+              Overview
+            </p>
+          )}
+
+          <NavLink
+            to="/dashboard"
+            end
+            onClick={closeMobile}
+            className={({ isActive }) => `${navItemBase} ${isActive && !isDevicesSectionActive ? navItemActive : navItemInactive}`}
+          >
+            <LayoutDashboard className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            {!isCollapsed && <span>Dashboard</span>}
+          </NavLink>
+
+          {/* Section label: DEVICES */}
+          {!isCollapsed && (
+            <p className="mb-2 mt-6 px-3 text-scale-caption font-bold uppercase tracking-[0.1em] text-textHint">
+              Devices
+            </p>
+          )}
+
+          {/* Expandable Devices group */}
+          <button
+            type="button"
+            onClick={() => {
+              if (isCollapsed) {
+                toggleSidebar();
+              } else {
+                setIsDevicesOpen((v) => !v);
               }
-            >
-              <LayoutDashboard className="h-4.5 w-4.5 shrink-0" />
-              {isExpanded ? <span>Dashboard</span> : null}
-            </NavLink>
+            }}
+            className={`${navItemBase} ${isDevicesSectionActive ? navItemActive : navItemInactive} ${!isCollapsed ? 'justify-between' : ''}`}
+          >
+            <span className="flex items-center gap-3">
+              <ScanLine className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+              {!isCollapsed && <span>My Devices</span>}
+            </span>
+            {!isCollapsed && (
+              <ChevronDown
+                className={`h-4 w-4 text-textMuted transition-transform duration-200 ${isDevicesOpen ? '' : '-rotate-90'}`}
+              />
+            )}
+          </button>
 
-            <div
-              className={[
-                'rounded-2xl',
-                isDevicesSectionActive ? 'bg-black/[0.03] dark:bg-white/[0.06]' : '',
-              ].join(' ')}
-            >
-              <div
-                className={[
-                  'sidebar-item flex items-center rounded-2xl px-3 py-2.5 text-sm font-semibold text-textPrimary',
-                  isExpanded ? 'justify-between' : 'justify-center',
-                ].join(' ')}
+          <AnimatePresence initial={false}>
+            {isDevicesOpen && !isCollapsed && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
               >
-                <div className={['flex items-center', isExpanded ? 'gap-3' : 'justify-center'].join(' ')}>
-                  <ScanLine className="h-4.5 w-4.5 shrink-0" />
-                  {isExpanded ? <span>Devices</span> : null}
-                </div>
-                {isExpanded ? <ChevronDown className="h-4 w-4 text-textSecondary" /> : null}
-              </div>
-
-              {isExpanded ? (
-                <div className="ml-6 border-l border-borderColor/90 pl-4 pb-2">
+                <div className="ml-[18px] border-l border-borderColor pl-4 py-1">
                   {deviceLinks.map((item) => (
                     <NavLink
                       key={item.to}
                       to={item.to}
                       onClick={closeMobile}
                       className={({ isActive }) =>
-                        [
-                          'my-1 block rounded-xl px-3 py-2 text-sm font-medium transition-colors',
-                          isActive
-                            ? 'bg-black text-white dark:bg-white dark:text-black'
-                            : 'text-textSecondary hover:bg-black/5 hover:text-textPrimary dark:hover:bg-white/10 dark:hover:text-textPrimary',
-                        ].join(' ')
+                        `${subItemBase} ${isActive ? subItemActive : subItemInactive} my-0.5`
                       }
                     >
                       {item.label}
                     </NavLink>
                   ))}
                 </div>
-              ) : null}
-            </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            <NavLink
-              to="/ai-trends"
-              onClick={closeMobile}
-              className={({ isActive }) =>
-                [
-                  'sidebar-item flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
-                  isActive
-                    ? 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20'
-                    : 'text-textSecondary hover:bg-cardBg hover:text-textHeading',
-                  isExpanded ? 'justify-start gap-3' : 'justify-center',
-                ].join(' ')
-              }
-            >
-              <TrendingUp className="h-4.5 w-4.5 shrink-0" />
-              {isExpanded ? <span>AI Trends</span> : null}
-            </NavLink>
+          {/* Section label: INTELLIGENCE */}
+          {!isCollapsed && (
+            <p className="mb-2 mt-6 px-3 text-scale-caption font-bold uppercase tracking-[0.1em] text-textHint">
+              Intelligence
+            </p>
+          )}
 
-            <NavLink
-              to="/chatbot"
-              onClick={closeMobile}
-              className={({ isActive }) =>
-                [
-                  'sidebar-item flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
-                  isActive
-                    ? 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20'
-                    : 'text-textSecondary hover:bg-cardBg hover:text-textHeading',
-                  isExpanded ? 'justify-start gap-3' : 'justify-center',
-                ].join(' ')
-              }
-            >
-              <MessageSquare className="h-4.5 w-4.5 shrink-0" />
-              {isExpanded ? <span>Chatbot</span> : null}
-            </NavLink>
-          </nav>
+          <NavLink
+            to="/ai-trends"
+            onClick={closeMobile}
+            className={({ isActive }) => `${navItemBase} ${isActive ? navItemActive : navItemInactive}`}
+          >
+            <TrendingUp className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            {!isCollapsed && <span>AI Trends</span>}
+          </NavLink>
 
-          <div className="mt-4 border-t border-borderColor pt-4">
-            <NavLink
-              to="/settings"
-              onClick={closeMobile}
-              className={({ isActive }) =>
-                [
-                  'sidebar-item mb-2 flex w-full items-center rounded-2xl px-3 py-2.5 text-sm font-semibold transition-colors',
-                  isActive
-                    ? 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20'
-                    : 'text-textPrimary hover:bg-black/5 dark:hover:bg-white/10',
-                  isExpanded ? 'justify-start gap-3' : 'justify-center',
-                ].join(' ')
-              }
-            >
-              <Settings className="h-4.5 w-4.5 shrink-0" />
-              {isExpanded ? <span>Settings</span> : null}
-            </NavLink>
+          <NavLink
+            to="/chatbot"
+            onClick={closeMobile}
+            className={({ isActive }) => `${navItemBase} ${isActive ? navItemActive : navItemInactive}`}
+          >
+            <MessageSquare className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            {!isCollapsed && <span>Chatbot</span>}
+          </NavLink>
+        </nav>
 
-            <NavLink
-              to="/support"
-              onClick={closeMobile}
-              className={({ isActive }) =>
-                [
-                  'sidebar-item mb-2 flex w-full items-center rounded-2xl px-3 py-2.5 text-sm font-semibold transition-colors',
-                  isActive
-                    ? 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20'
-                    : 'text-textPrimary hover:bg-black/5 dark:hover:bg-white/10',
-                  isExpanded ? 'justify-start gap-3' : 'justify-center',
-                ].join(' ')
-              }
-            >
-              <CircleHelp className="h-4.5 w-4.5 shrink-0" />
-              {isExpanded ? <span>Support</span> : null}
-            </NavLink>
+        {/* ── Footer ───────────────────────────────────────────────── */}
+        <div className="border-t border-borderColor px-3 py-3">
+          <NavLink
+            to="/settings"
+            onClick={closeMobile}
+            className={({ isActive }) => `${navItemBase} ${isActive ? navItemActive : navItemInactive}`}
+          >
+            <Settings className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            {!isCollapsed && <span>Settings</span>}
+          </NavLink>
 
-            {/* User profile with hover logout */}
-            <div
-              className="relative"
-              onMouseEnter={() => setShowLogout(true)}
-              onMouseLeave={() => setShowLogout(false)}
-            >
-              {/* Logout popup */}
-              <AnimatePresence>
-                {showLogout && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    transition={{ duration: 0.2 }}
-                    className={[
-                      'absolute z-10 rounded-xl border border-cardBorder bg-bgCard p-1.5 shadow-xl shadow-black/20 dark:shadow-black/40',
-                      isExpanded ? 'bottom-full left-0 right-0 mb-2' : 'bottom-0 left-full mb-0 ml-3',
-                    ].join(' ')}
+          <NavLink
+            to="/support"
+            onClick={closeMobile}
+            className={({ isActive }) => `${navItemBase} mt-1 ${isActive ? navItemActive : navItemInactive}`}
+          >
+            <CircleHelp className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            {!isCollapsed && <span>Support</span>}
+          </NavLink>
+
+          {/* User profile */}
+          <div
+            className="relative mt-3"
+            onMouseEnter={() => setShowLogout(true)}
+            onMouseLeave={() => setShowLogout(false)}
+          >
+            <AnimatePresence>
+              {showLogout && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.15 }}
+                  className={`absolute bottom-full left-0 right-0 mb-1 rounded-lg border border-cardBorder bg-bgCard p-1 shadow-elevated z-50`}
+                >
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-scale-caption font-medium text-red-500 transition-colors hover:bg-red-500/8"
                   >
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span>Logout</span>
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    <LogOut className="h-4 w-4 shrink-0" />
+                    {!isCollapsed && <span>Logout</span>}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-              <button
-                type="button"
-                onClick={() => setShowLogout((p) => !p)}
-                className={[
-                  'sidebar-item flex w-full items-center rounded-2xl px-2 py-2 transition-colors hover:bg-black/5 dark:hover:bg-white/10',
-                  isExpanded ? 'justify-start gap-3' : 'justify-center',
-                ].join(' ')}
-              >
-                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary">
-                  {user ? `${user.firstName[0]}${user.lastName[0]}` : 'U'}
-                </span>
-                {isExpanded ? (
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-textPrimary">
+            <button
+              type="button"
+              onClick={() => setShowLogout((p) => !p)}
+              className={`flex w-full items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-bgCardHover ${isCollapsed ? 'justify-center' : ''}`}
+            >
+              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accentPrimary/15 text-scale-caption font-bold text-accentPrimary">
+                {user ? `${user.firstName[0]}${user.lastName[0]}` : 'U'}
+              </span>
+              {!isCollapsed && (
+                <>
+                  <span className="min-w-0 text-left">
+                    <span className="block truncate text-scale-caption font-semibold text-textHeading">
                       {user ? `${user.firstName} ${user.lastName}` : 'User'}
                     </span>
-                    <span className="block truncate text-xs text-textSecondary">{user?.role ?? ''}</span>
+                    <span className="block truncate text-[11px] text-textMuted">{user?.role ?? ''}</span>
                   </span>
-                ) : null}
-              </button>
-            </div>
+                  <ChevronRight className="ml-auto h-3.5 w-3.5 text-textMuted" />
+                </>
+              )}
+            </button>
           </div>
         </div>
       </aside>
