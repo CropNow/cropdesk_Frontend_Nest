@@ -7,6 +7,7 @@ import { PWAInstallButton } from './components/common/PWAInstallButton';
 import { LoadingSkeleton } from './components/common/LoadingSkeleton';
 import { LoadingPage } from './components/common/LoadingPage';
 import { AnimatePresence } from 'framer-motion';
+import { OfflineBanner } from './components/common/OfflineBanner';
 
 // Lazy-load non-critical routes to shrink the initial bundle. The dashboard is the
 // post-login landing page, so split it so it loads in parallel with auth/login chunks
@@ -41,6 +42,7 @@ export function App() {
       </AnimatePresence>
       
       <div className="min-h-screen w-full bg-bgMain text-textPrimary font-sans transition-colors duration-300">
+        <OfflineBanner />
         <Suspense fallback={<LoadingSkeleton />}>
         <Routes>
           {/* Public routes */}

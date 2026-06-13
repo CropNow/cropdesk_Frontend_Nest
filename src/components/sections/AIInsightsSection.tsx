@@ -9,7 +9,7 @@ import { StatusBadge } from '../ui/StatusBadge';
  */
 export function AIInsightsSection({ data }: { data?: any }) {
   let insights = AI_INSIGHTS;
-  
+
   if (Array.isArray(data) && data.length > 0) {
     insights = data;
   } else if (data && typeof data === 'object') {
@@ -57,7 +57,10 @@ export function AIInsightsSection({ data }: { data?: any }) {
         {/* Bullet list of insights styled with left vertical colored borders */}
         <div className="mt-4 space-y-3">
           {displayInsights.slice(0, 4).map((item: any, idx: number) => {
-            const isWarning = item.level === 'warn' || item.level === 'warning' || item.description?.toLowerCase().includes('low') || item.description?.toLowerCase().includes('high');
+            const descString = typeof item.description === 'object' && item.description !== null
+              ? JSON.stringify(item.description)
+              : (item.description || '');
+            const isWarning = item.level === 'warn' || item.level === 'warning' || descString.toLowerCase().includes('low') || descString.toLowerCase().includes('high');
             const borderColorClass = isWarning ? 'border-amber-500' : 'border-emerald-500';
             
             return (
@@ -66,7 +69,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
                   {item.title || (isWarning ? 'Warning' : 'Analysis')}
                 </span>
                 <p className="text-scale-caption font-medium text-textSecondary leading-relaxed">
-                  {item.description}
+                  {descString}
                 </p>
               </div>
             );
@@ -120,6 +123,9 @@ export function AIInsightsSection({ data }: { data?: any }) {
               <div className="py-6 overflow-y-auto space-y-3" style={{ maxHeight: '60vh' }}>
                 {displayInsights.map((item: any, idx: number) => {
                   const isWarning = item.level === 'warn' || item.level === 'warning';
+                  const descString = typeof item.description === 'object' && item.description !== null
+                    ? JSON.stringify(item.description)
+                    : (item.description || '');
                   return (
                     <div key={idx} className="rounded-lg border border-borderColor bg-bgInput p-4 flex gap-3">
                       <div className="mt-0.5">
@@ -131,7 +137,17 @@ export function AIInsightsSection({ data }: { data?: any }) {
                       </div>
                       <div>
                         <h4 className="text-scale-body font-bold text-textHeading leading-none">{item.title}</h4>
-                        <p className="text-scale-caption text-textSecondary font-medium mt-1.5 leading-relaxed">{item.description}</p>
+                        <p className="text-scale-caption text-textSecondary font-medium mt-1.5 leading-relaxed">{descString}</p>
+                        {item.farmer_advisory && (
+                          <p className="mt-1 text-scale-caption text-textSecondary font-medium leading-relaxed">
+                            <strong>Advisory:</strong> {item.farmer_advisory}
+                          </p>
+                        )}
+                        {item.plant_impact && (
+                          <p className="mt-1 text-scale-caption text-textSecondary font-medium leading-relaxed">
+                            <strong>Impact:</strong> {item.plant_impact}
+                          </p>
+                        )}
                       </div>
                     </div>
                   );

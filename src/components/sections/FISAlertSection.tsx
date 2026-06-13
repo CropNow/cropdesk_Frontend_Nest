@@ -323,6 +323,7 @@ export function FISAlertSection({ data }: { data?: any }) {
           </motion.div>
         )}
       </AnimatePresence>
+
     </motion.div>
   );
 }

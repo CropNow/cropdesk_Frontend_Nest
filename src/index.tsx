@@ -9,6 +9,7 @@ import { FontScaleProvider } from './contexts/FontScaleContext';
 import { SidebarProvider } from './contexts/SidebarContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ToastContainer } from './components/common/ToastContainer';
+import { OnlineStatusProvider } from './contexts/OnlineStatusContext';
 
 render(
   <BrowserRouter>
@@ -17,8 +18,10 @@ render(
         <SidebarProvider>
           <AuthProvider>
             <ToastProvider>
-              <App />
-              <ToastContainer />
+              <OnlineStatusProvider>
+                <App />
+                <ToastContainer />
+              </OnlineStatusProvider>
             </ToastProvider>
           </AuthProvider>
         </SidebarProvider>
