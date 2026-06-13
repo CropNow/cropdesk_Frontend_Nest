@@ -16,6 +16,7 @@ import {
   Send
 } from 'lucide-react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
+import { useOnlineStatus } from '../contexts/OnlineStatusContext';
 
 const FAQ_DATA = [
   {
@@ -71,6 +72,7 @@ const TROUBLESHOOTING_GUIDES = [
 ];
 
 export function SupportPage() {
+  const isOnline = useOnlineStatus();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [activeGuide, setActiveGuide] = useState<number | null>(null);
   const [formState, setFormState] = useState({
@@ -214,6 +216,14 @@ export function SupportPage() {
                   <p className="text-sm text-textSecondary">Submit a ticket and we'll get back to you.</p>
                 </div>
 
+                {/* Offline warning for form */}
+                {!isOnline && (
+                  <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                    <WifiOff className="h-4 w-4 shrink-0" />
+                    <span>Support tickets cannot be sent while offline. Please reconnect to submit.</span>
+                  </div>
+                )}
+
                 {submitted ? (
                   <motion.div 
                     initial={{ scale: 0.9, opacity: 0 }}
@@ -252,8 +262,9 @@ export function SupportPage() {
                       <input 
                         type="text"
                         required
+                        disabled={!isOnline}
                         placeholder="E.g. NEST Sensor offline"
-                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-textHint focus:border-[#00FF9C]/50 focus:outline-none"
+                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-textHint focus:border-[#00FF9C]/50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                         value={formState.subject}
                         onChange={(e) => setFormState({...formState, subject: e.target.value})}
                       />
@@ -263,16 +274,17 @@ export function SupportPage() {
                       <textarea 
                         required
                         rows={4}
+                        disabled={!isOnline}
                         placeholder="Describe the issue in detail..."
-                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-textHint focus:border-[#00FF9C]/50 focus:outline-none"
+                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-textHint focus:border-[#00FF9C]/50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                         value={formState.message}
                         onChange={(e) => setFormState({...formState, message: e.target.value})}
                       />
                     </div>
                     <button
                       type="submit"
-                      disabled={isSubmitting}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00FF9C] py-4 font-bold text-black transition-transform active:scale-95 disabled:opacity-50"
+                      disabled={isSubmitting || !isOnline}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00FF9C] py-4 font-bold text-black transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? 'Sending...' : (
                         <>

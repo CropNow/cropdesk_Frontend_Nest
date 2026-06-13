@@ -7,14 +7,17 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ToastContainer } from './components/common/ToastContainer';
+import { OnlineStatusProvider } from './contexts/OnlineStatusContext';
 
 render(
   <BrowserRouter>
     <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
-          <App />
-          <ToastContainer />
+          <OnlineStatusProvider>
+            <App />
+            <ToastContainer />
+          </OnlineStatusProvider>
         </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
