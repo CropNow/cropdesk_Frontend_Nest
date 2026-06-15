@@ -1,14 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DEVICE_LIBRARY, DeviceType, FARM_STATUS_METRICS } from '../../constants/deviceConstants';
 import { isDeviceType } from '../../utils/deviceUtils';
 import { dashboardAPI } from '../../api/dashboard.api';
 import { sensorsAPI } from '../../api/sensors.api';
-import {
-  saveDashboardCache,
-  loadDashboardCache,
-  getLastSyncTime,
-} from '../../utils/dashboardCache';
 
 export function useDashboardState() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -29,12 +24,6 @@ export function useDashboardState() {
   const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [locationName, setLocationName] = useState<string>('');
-  const [isUsingCachedData, setIsUsingCachedData] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-
-  // Flag: set to true when initFarms loaded data from cache.
-  // Prevents fetchFarmData from resetting backendDevices → null crash.
-  const cacheRestoredRef = useRef(false);
 
   // Consolidated Fetcher logic inside useEffect below
 
@@ -58,24 +47,7 @@ export function useDashboardState() {
         }
       } catch (err: any) {
         console.error('Farms Fetch Error:', err);
-        // ── Offline Recovery: restore from localStorage cache ──────────────
-        // NOTE: We deliberately do NOT call setSelectedFarmId here.
-        // Calling it would trigger the fetchFarmData useEffect, which would
-        // attempt API calls, call setBackendDevices([]), and crash RadialDeviceLayout.
-        // All data is set directly from cache — no secondary fetch needed.
-        const cached = loadDashboardCache();
-        if (cached) {
-          setFarms(cached.farms || []);
-          setBackendDevices(cached.devices || []);
-          setDashboardData(cached.dashboardData);
-          setIsUsingCachedData(true);
-          setLastSyncTime(getLastSyncTime());
-          setLastFetchTime(getLastSyncTime());
-          setError(null);
-          cacheRestoredRef.current = true;
-        } else {
-          setError('Offline and no cached dashboard data available.');
-        }
+        setError(err.message || 'Failed to fetch farms');
         setIsLoading(false);
       }
     };
@@ -86,33 +58,7 @@ export function useDashboardState() {
   useEffect(() => {
     if (!selectedFarmId) return;
 
-    // If initFarms already restored data from cache (offline refresh), skip the
-    // network fetch entirely — it will only fail and wipe backendDevices to [].
-    if (cacheRestoredRef.current) {
-      setIsLoading(false);
-      return;
-    }
-
     const fetchFarmData = async () => {
-      // ── OFFLINE FAST PATH ────────────────────────────────────────────────
-      // If the browser is offline, immediately restore from cache and return.
-      // This MUST happen before setIsLoading(true) and before any API calls
-      // so that backendDevices is never set to [] during an offline session.
-      if (!navigator.onLine) {
-        const offlineCached = loadDashboardCache();
-        if (offlineCached?.dashboardData) {
-          setDashboardData(offlineCached.dashboardData);
-          setBackendDevices(offlineCached.devices || []);
-          setIsUsingCachedData(true);
-          setLastSyncTime(getLastSyncTime());
-          setLastFetchTime(getLastSyncTime());
-          setError(null);
-        }
-        setIsLoading(false);
-        return;
-      }
-      // ── END OFFLINE FAST PATH ─────────────────────────────────────────
-
       try {
         setIsLoading(true);
         
@@ -159,11 +105,7 @@ export function useDashboardState() {
         };
         addDevices(devicesRes);
         addDevices(sensorsRes);
-        // Only overwrite backendDevices when we actually received devices from the API.
-        // When offline, all APIs return null → devices = [] → do NOT wipe existing cached devices.
-        if (devices.length > 0) {
-          setBackendDevices(devices);
-        }
+        setBackendDevices(devices); // Sync state for deviceList memo
 
         // 2. Decide which APIs to call based on device presence
         const hasDevices = devices.length > 0;
@@ -416,40 +358,21 @@ export function useDashboardState() {
         };
 
         setDashboardData(finalDashboardData);
-
-        // ── Persist to offline cache (keyed by farm+device for forward compat) ──
-        saveDashboardCache({
-          dashboardData: finalDashboardData,
-          devices,
-          farms,
-          selectedFarmId,
-        });
-
-        // Also keep the existing per-farm cache for 30-min throttle
+        
+        // Save to cache to ensure we strictly fetch every 30 mins
         try {
           localStorage.setItem(cacheKey, JSON.stringify({
             timestamp: Date.now(),
             data: finalDashboardData,
-            devices,
+            devices: devices
           }));
         } catch (e) {
-          console.error('Failed to save per-farm cache', e);
+          console.error('Failed to cache dashboard data', e);
         }
-
-        setIsUsingCachedData(false);
-        setLastSyncTime(new Date());
+        
         setError(null);
       } catch (err: any) {
         console.error('Dashboard Data Fetch Error:', err);
-        // ── Offline Recovery: restore from localStorage cache ──────────────
-        const cached = loadDashboardCache();
-        if (cached?.dashboardData) {
-          setDashboardData(cached.dashboardData);
-          setBackendDevices(cached.devices || []);
-          setIsUsingCachedData(true);
-          setLastSyncTime(getLastSyncTime());
-          setLastFetchTime(getLastSyncTime());
-        }
       } finally {
         setIsLoading(false);
       }
@@ -626,7 +549,5 @@ export function useDashboardState() {
     selectedFarmId,
     setSelectedFarmId,
     lastFetchTime,
-    isUsingCachedData,
-    lastSyncTime,
   };
 }

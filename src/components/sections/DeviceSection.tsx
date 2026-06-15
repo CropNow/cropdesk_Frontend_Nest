@@ -4,7 +4,7 @@ import { DeviceData, DeviceType } from '../../constants/deviceConstants';
 import { RadialDeviceLayout } from '../devices/RadialDeviceLayout';
 
 interface DeviceSectionProps {
-  device: DeviceData | null;
+  device: DeviceData;
   selectedDeviceType: DeviceType;
   currentDeviceIndex: number;
   cycleDevice: (dir: 1 | -1) => void;
@@ -16,9 +16,6 @@ export function DeviceSection({
   currentDeviceIndex,
   cycleDevice,
 }: DeviceSectionProps) {
-  // Guard: device can be null briefly during cache restore or loading
-  if (!device) return null;
-
   return (
     <motion.section
       initial={{ y: 20, opacity: 0 }}

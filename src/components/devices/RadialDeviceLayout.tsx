@@ -36,12 +36,7 @@ export function RadialDeviceLayout({
   currentDeviceIndex,
   cycleDevice,
 }: RadialDeviceLayoutProps) {
-  // Safety guard — device can be null briefly during offline cache restore.
-  // This prevents 'Cannot read properties of null' crashes.
-  if (!device) return null;
-
   const deviceView = device as DeviceView;
-
 
   /**
    * Compute a horizontal offset that forms a gentle vertical arc on the right side.

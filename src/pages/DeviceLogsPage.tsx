@@ -4,8 +4,6 @@ import { Activity, Radio, WifiOff, Clock, Search, Server, Power, AlertCircle } f
 import { sensorsAPI } from '../api/sensors.api';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { useOnlineStatus } from '../contexts/OnlineStatusContext';
-import { OfflineFallback } from '../components/common/OfflineFallback';
 
 type DeviceLog = {
   id: string;
@@ -22,7 +20,6 @@ type DeviceLog = {
 };
 
 export function DeviceLogsPage() {
-  const isOnline = useOnlineStatus();
   const [logs, setLogs] = useState<DeviceLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -140,21 +137,6 @@ export function DeviceLogsPage() {
 
   if (isLoading) {
     return <LoadingSkeleton />;
-  }
-
-  if (!isOnline) {
-    return (
-      <DashboardLayout>
-        <div>
-          <h1 className="mb-1 text-3xl font-bold text-textHeading">Device Logs</h1>
-          <p className="mb-6 text-sm text-textSecondary">Real-time connectivity and operational history for all deployed devices.</p>
-          <OfflineFallback
-            title="Device Logs Unavailable Offline"
-            description="Live device connectivity logs require an active internet connection to fetch real-time sensor data from your farm."
-          />
-        </div>
-      </DashboardLayout>
-    );
   }
 
   return (

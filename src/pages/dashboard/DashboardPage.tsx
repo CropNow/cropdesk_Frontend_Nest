@@ -6,7 +6,6 @@ import { WelcomeHeader } from '../../components/sections/WelcomeHeader';
 import { DeviceSection } from '../../components/sections/DeviceSection';
 import { FarmHealthSection } from '../../components/sections/FarmHealthSection';
 import { EmptyDashboard } from '../../components/sections/EmptyDashboard';
-import { CachedDataBadge } from '../../components/common/CachedDataBadge';
 
 // Defer below-the-fold sections so above-the-fold (Welcome + Device + FarmHealth)
 // can paint without waiting for these chunks.
@@ -33,16 +32,10 @@ export function DashboardPage() {
     farms,
     backendDevices,
     lastFetchTime,
-    isUsingCachedData,
-    lastSyncTime,
   } = useDashboardState();
 
 
-  // Only show empty state when the API returned ZERO devices AND we have no cached data
-  const showEmptyDashboard =
-    !isLoading &&
-    !isUsingCachedData &&
-    (!farms?.length || !backendDevices?.length);
+  const showEmptyDashboard = !isLoading && (!farms?.length || !backendDevices?.length);
 
   if (isLoading) {
     return <LoadingSkeleton />;
@@ -61,10 +54,7 @@ export function DashboardPage() {
       <div className="flex min-h-screen items-center justify-center bg-bgMain p-10 text-center">
         <div className="rounded-3xl border border-red-500/20 bg-red-500/5 p-8 backdrop-blur-xl">
           <p className="text-xl font-bold text-red-400">{error}</p>
-          <p className="mt-2 text-sm text-textSecondary">
-            You are offline and no cached data is available. Please reconnect to load your dashboard.
-          </p>
-          <button
+          <button 
             onClick={() => window.location.reload()}
             className="mt-4 rounded-xl bg-red-500/20 px-6 py-2 text-sm font-semibold text-red-300 hover:bg-red-500/30"
           >
@@ -77,13 +67,10 @@ export function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <WelcomeHeader
-        currentTime={currentTime}
+      <WelcomeHeader 
+        currentTime={currentTime} 
         userName={user ? `${user.firstName} ${user.lastName}` : 'Farmer'}
       />
-
-      {/* Cached data banner — shown only when rendering offline-persisted data */}
-      {isUsingCachedData && <CachedDataBadge lastSyncTime={lastSyncTime} />}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
         <DeviceSection
