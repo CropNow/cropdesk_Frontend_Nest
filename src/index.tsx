@@ -5,8 +5,6 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { FontScaleProvider } from './contexts/FontScaleContext';
-import { SidebarProvider } from './contexts/SidebarContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ToastContainer } from './components/common/ToastContainer';
 import { OnlineStatusProvider } from './contexts/OnlineStatusContext';
@@ -14,18 +12,14 @@ import { OnlineStatusProvider } from './contexts/OnlineStatusContext';
 render(
   <BrowserRouter>
     <ThemeProvider>
-      <FontScaleProvider>
-        <SidebarProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <OnlineStatusProvider>
-                <App />
-                <ToastContainer />
-              </OnlineStatusProvider>
-            </ToastProvider>
-          </AuthProvider>
-        </SidebarProvider>
-      </FontScaleProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <OnlineStatusProvider>
+            <App />
+            <ToastContainer />
+          </OnlineStatusProvider>
+        </ToastProvider>
+      </AuthProvider>
     </ThemeProvider>
   </BrowserRouter>,
   document.getElementById('root'),

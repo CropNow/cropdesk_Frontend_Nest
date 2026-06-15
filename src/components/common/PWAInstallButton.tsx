@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function PWAInstallButton() {
@@ -7,16 +7,12 @@ export function PWAInstallButton() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const isDismissed = localStorage.getItem('cropdesk_pwa_dismissed') === 'true';
-    
     const handler = (e: any) => {
       // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
       // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
-      if (!isDismissed) {
-        setIsVisible(true);
-      }
+      setIsVisible(true);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -46,15 +42,6 @@ export function PWAInstallButton() {
     setIsVisible(false);
   };
 
-  const handleDismissClick = () => {
-    try {
-      localStorage.setItem('cropdesk_pwa_dismissed', 'true');
-    } catch (err) {
-      console.error(err);
-    }
-    setIsVisible(false);
-  };
-
   if (!isVisible) return null;
 
   return (
@@ -65,30 +52,28 @@ export function PWAInstallButton() {
         exit={{ opacity: 0, y: 50 }}
         className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0"
       >
-        <div className="flex flex-col gap-3 rounded-xl border border-cardBorder bg-cardBg p-4 shadow-elevated w-[320px] sm:w-[360px]">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accentPrimary/10 text-accentPrimary">
-              <Download className="h-5 w-5" />
-            </div>
-            
-            <div className="flex flex-col">
-              <p className="text-scale-body font-bold text-textHeading">Install CropDesk App</p>
-              <p className="text-scale-caption font-medium text-textSecondary">Add to home screen for faster, offline access.</p>
-            </div>
+        <div className="flex items-center gap-4 rounded-2xl border border-[#00FF9C]/30 bg-[#0A0E14]/90 p-4 shadow-[0_0_30px_rgba(0,255,156,0.15)] backdrop-blur-xl">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#00FF9C]/20 text-[#00FF9C]">
+            <Download className="h-5 w-5" />
+          </div>
+          
+          <div className="flex flex-col">
+            <p className="text-sm font-bold text-white">Install CropDesk</p>
+            <p className="text-[0.65rem] font-medium text-white/50">Add to home screen for quick access</p>
           </div>
 
-          <div className="flex items-center justify-end gap-2 mt-1">
-            <button
-              onClick={handleDismissClick}
-              className="rounded-lg border border-cardBorder bg-bgInput px-3.5 py-1.5 text-scale-caption font-semibold text-textSecondary transition hover:bg-cardBorder active:scale-95"
-            >
-              Do it later
-            </button>
+          <div className="flex items-center gap-2">
             <button
               onClick={handleInstallClick}
-              className="rounded-lg bg-accentPrimary px-4 py-1.5 text-scale-caption font-bold text-white transition hover:bg-accentHover active:scale-95 shadow-sm"
+              className="rounded-lg bg-[#00FF9C] px-4 py-1.5 text-xs font-bold text-black transition hover:bg-[#00e68d] active:scale-95"
             >
-              Install Now
+              Install
+            </button>
+            <button
+              onClick={() => setIsVisible(false)}
+              className="rounded-lg p-1.5 text-white/30 transition hover:bg-white/5 hover:text-white"
+            >
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -96,4 +81,3 @@ export function PWAInstallButton() {
     </AnimatePresence>
   );
 }
-

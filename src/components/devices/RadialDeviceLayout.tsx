@@ -105,28 +105,28 @@ export function RadialDeviceLayout({
   ];
 
   return (
-    <div className="flex flex-row items-center justify-between gap-4 md:gap-6">
+    <div className="flex flex-col gap-6 md:flex-row md:items-center">
       {/* ─── LEFT: Device image + navigation ─── */}
-      <div className="flex flex-col items-center w-5/12 md:w-2/5">
+      <div className="flex flex-col items-center md:w-2/5">
         {/* Device name */}
-        <h2 className="self-start truncate whitespace-nowrap text-scale-body sm:text-scale-section font-bold tracking-tight text-textHeading">
+        <h2 className="self-start truncate whitespace-nowrap text-[clamp(1.05rem,1.8vw,1.875rem)] font-semibold tracking-tight text-textHeading sm:text-3xl">
           {device.name}
         </h2>
 
         <div className="mt-1 flex w-full items-center justify-start gap-1.5 self-start">
           <span className={`h-2.5 w-2.5 rounded-full ${deviceView.isOnline ? 'animate-pulse bg-emerald-500' : 'bg-red-500'}`} />
-          <span className={`whitespace-nowrap text-scale-caption font-bold uppercase tracking-[0.16em] ${deviceView.isOnline ? 'text-emerald-500/80 dark:text-emerald-400/80' : 'text-red-500/80 dark:text-red-400/80'}`}>
-            {deviceView.isOnline ? 'Online' : 'Offline'}
+          <span className={`whitespace-nowrap text-[0.75rem] font-bold uppercase tracking-[0.16em] sm:text-sm ${deviceView.isOnline ? 'text-emerald-400/80' : 'text-red-400/80'}`}>
+            {deviceView.isOnline ? 'System Online' : 'System Offline'}
           </span>
         </div>
 
         {/* Floating device image with radial glow */}
-        <div className="relative mt-4 flex min-h-[180px] sm:min-h-[250px] md:min-h-[390px] items-center justify-center w-full">
+        <div className="relative mt-4 flex min-h-[350px] items-center justify-center sm:min-h-[370px] md:min-h-[390px]">
           {/* Green radial glow */}
           <div
-            className="pointer-events-none absolute h-28 w-28 sm:h-52 sm:w-52 md:h-80 md:w-80 animate-pulse duration-4000"
+            className="pointer-events-none absolute h-52 w-52 rounded-full sm:h-72 sm:w-72 md:h-80 md:w-80"
             style={{
-              background: 'radial-gradient(circle, var(--accent-glow) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(0,255,156,0.15), transparent 70%)',
             }}
           />
           {(() => {
@@ -146,7 +146,7 @@ export function RadialDeviceLayout({
                   y: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' },
                   scale: { duration: 0.35 },
                 }}
-                className="relative z-10 max-h-[140px] sm:max-h-[220px] md:max-h-[400px] w-auto object-contain drop-shadow-[0_22px_56px_var(--accent-glow)]"
+                className="relative z-10 max-h-[300px] w-auto object-contain drop-shadow-[0_22px_56px_rgba(0,255,156,0.32)] sm:max-h-[360px] md:max-h-[400px]"
               />
             );
           })()}
@@ -155,7 +155,7 @@ export function RadialDeviceLayout({
       </div>
 
       {/* ─── RIGHT: Attributes in vertical arc ─── */}
-      <div className="relative flex flex-col justify-center gap-3 py-2 pl-4 w-7/12 md:w-3/5 md:pl-10">
+      <div className="relative flex flex-col justify-end gap-5 py-2 pr-14 md:w-3/5 md:pl-10">
         {attrs.map((attr, index) => (
           <motion.div
             key={attr.label}
@@ -166,12 +166,12 @@ export function RadialDeviceLayout({
             style={{ marginLeft: getArcOffset(index, attrs.length) }}
           >
             {/* Label row: icon + text */}
-            <div className="flex items-center gap-1.5 text-[11px] sm:text-scale-caption font-bold uppercase tracking-[0.14em] text-textSecondary">
+            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-textSecondary">
               <span className="text-accentPrimary/70">{attr.icon}</span>
-              <span className="truncate">{attr.label}</span>
+              <span>{attr.label}</span>
             </div>
             {/* Value */}
-            <div className="text-scale-caption sm:text-scale-body font-semibold leading-snug text-textHeading truncate">
+            <div className="text-[17px] font-semibold leading-snug text-textHeading">
               {attr.value}
             </div>
           </motion.div>
@@ -180,7 +180,7 @@ export function RadialDeviceLayout({
         <button
           type="button"
           onClick={() => cycleDevice(1)}
-          className="absolute right-0 top-1/2 grid h-8 w-8 sm:h-10 sm:w-10 -translate-y-1/2 place-items-center rounded-full border border-cardBorder bg-bgInput text-textHeading transition hover:border-accentPrimary/70 hover:text-accentPrimary"
+          className="absolute right-0 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-cardBorder bg-black/20 dark:bg-black/45 text-textHeading transition hover:border-accentPrimary/70 hover:text-accentPrimary"
           aria-label="Next device"
         >
           <ChevronRight className="h-4 w-4" />

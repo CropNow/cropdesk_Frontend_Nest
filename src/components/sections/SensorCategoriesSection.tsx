@@ -9,6 +9,7 @@ import {
   Download,
   Gauge,
   Leaf,
+  Mail,
   Sun,
   Thermometer,
   Wind,
@@ -18,10 +19,9 @@ import { useToast } from '../../contexts/ToastContext';
 import { SENSOR_CARDS } from '../../constants/deviceConstants';
 import { useLockBodyScroll } from '../../hooks/common/useLockBodyScroll';
 import { sensorsAPI } from '../../api/sensors.api';
-import { StatusBadge } from '../ui/StatusBadge';
 
 /**
- * SensorCategoriesSection - Interactive sensor insights
+ * SensorCategoriesSection - DashboardV2Page-equivalent interactive sensor insights
  */
 
 export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, lastFetchTime?: Date | null }) {
@@ -32,6 +32,7 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
 
   const activeSensorsCount = data?.activeSensorsCount ?? 12;
   const isAnySensorModalOpen = showNestDetails;
+  // The deviceId used for nest-device API (serialNumber like "01")
   const nestDeviceId = data?.serialNumber || data?.deviceId || data?.latestData?.deviceId;
 
   const handleExport = async (range: string) => {
@@ -79,133 +80,98 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-cardBorder bg-cardBg p-6 shadow-card xl:col-span-1"
+        className="rounded-3xl border border-white/10 bg-cardBg p-5 backdrop-blur-xl xl:col-span-1"
       >
-        <div className="mb-6">
-          <h3 className="text-scale-section font-bold text-textHeading">Sensor Insights</h3>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-3xl font-bold">Sensor Insights</h3>
         </div>
 
+        {/* Smoother Compact Stacked Layout */}
         <div className="flex flex-col gap-4">
-          {/* Mobile Connectivity Hub - 2x2 grid of 4 cards */}
-          <div className="grid grid-cols-2 gap-3 sm:hidden max-w-[420px]">
-            {/* Active Sensors Card */}
-            <div className="rounded-lg border border-borderColor bg-bgInput p-4 shadow-sm flex flex-col justify-between h-28">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
-                  <Activity className="h-4 w-4" />
-                </span>
-                <span className="text-scale-card font-extrabold text-textHeading">{activeSensorsCount}</span>
-              </div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-textSecondary mt-2">Active</p>
-            </div>
+          {/* Connectivity Hub Card */}
+          <motion.div
+            className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/[0.02] to-transparent p-3 sm:p-4 backdrop-blur-xl transition-all max-w-[420px]"
+          >
+            {/* Soft Status Glow */}
+            <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-full blur-[50px] transition-colors duration-700 ${data?.isOnline ? 'bg-emerald-500/12' : 'bg-red-500/12'}`} />
 
-            {/* Offline Sensors Card */}
-            <div className="rounded-lg border border-borderColor bg-bgInput p-4 shadow-sm flex flex-col justify-between h-28">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
-                  <Cloud className="h-4 w-4" />
-                </span>
-                <span className="text-scale-card font-extrabold text-textHeading">
-                  {Math.max(0, (data?.totalSensorsCount || 16) - activeSensorsCount)}
-                </span>
-              </div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-textSecondary mt-2">Offline</p>
-            </div>
-
-            {/* Total Sensors Card */}
-            <div className="rounded-lg border border-borderColor bg-bgInput p-4 shadow-sm flex flex-col justify-between h-28">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500">
-                  <Gauge className="h-4 w-4" />
-                </span>
-                <span className="text-scale-card font-extrabold text-textHeading">{data?.totalSensorsCount || 16}</span>
-              </div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-textSecondary mt-2">AI Sensors</p>
-            </div>
-
-            {/* Warnings/Alerts Card */}
-            <div className="rounded-lg border border-borderColor bg-bgInput p-4 shadow-sm flex flex-col justify-between h-28">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
-                  <Activity className="h-4 w-4" />
-                </span>
-                <span className="text-scale-card font-extrabold text-textHeading">{data?.warningsCount || 0}</span>
-              </div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-textSecondary mt-2">Warnings</p>
-            </div>
-          </div>
-
-          {/* Desktop Connectivity Hub Card */}
-          <div className="hidden sm:block group relative overflow-hidden rounded-lg border border-borderColor bg-bgInput p-5 max-w-[420px]">
-            <div className="relative z-10 flex flex-col gap-4">
+            <div className="relative z-10 flex flex-col gap-3">
               {/* System Status */}
-              <div>
-                <StatusBadge
-                  label={data?.isOnline ? 'System Online' : 'System Offline'}
-                  variant={data?.isOnline ? 'success' : 'danger'}
-                  size="sm"
-                />
+              <div className="flex items-center gap-1.5">
+                <div className={`h-2 w-2 rounded-full ${data?.isOnline ? 'animate-pulse bg-emerald-500' : 'bg-red-500'}`} />
+                <span className={`text-[0.65rem] font-bold uppercase tracking-[0.15em] ${data?.isOnline ? 'text-emerald-400/80' : 'text-red-400/80'}`}>
+                  {data?.isOnline ? 'System Online' : 'System Offline'}
+                </span>
               </div>
 
               {/* Title */}
-              <h4 className="text-scale-body font-semibold tracking-tight text-textHeading">Connectivity Hub</h4>
+              <h4 className="text-lg font-bold tracking-tight text-white/90">Connectivity Hub</h4>
 
               {/* Active Sensors */}
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-scale-metric font-extrabold text-textHeading">{activeSensorsCount}</span>
-                  <span className="text-scale-body font-bold text-textSecondary">/ {data?.totalSensorsCount || 16}</span>
+                  <span className="text-3xl sm:text-4xl font-extrabold text-white">{activeSensorsCount}</span>
+                  <span className="text-sm font-bold text-white/50">/ {data?.totalSensorsCount || 16}</span>
                 </div>
-                <p className="text-scale-caption font-bold uppercase tracking-wider text-textSecondary">ACTIVE SENSORS</p>
+                <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/60">ACTIVE SENSORS</p>
               </div>
 
-              {/* Last Sync and Last Fetch Grid */}
-              <div className="grid grid-cols-2 gap-4 mt-1 pt-4 border-t border-borderColor">
+              {/* Last Sync and Last Fetch - Vertical */}
+              <div className="space-y-2.5">
                 <div>
-                  <p className="text-scale-caption font-bold uppercase tracking-wider text-textMuted">Last Sync</p>
-                  <p className="text-scale-body font-bold tracking-tight text-textHeading">
+                  <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/50">Last Sync</p>
+                  <p className="text-2xl font-bold tracking-tight text-white/90">
                     {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </p>
-                  <p className="text-scale-caption font-medium text-textSecondary">
+                  <p className="text-[0.75rem] font-medium text-white/50">
                     {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-scale-caption font-bold uppercase tracking-wider text-textMuted">Last Fetch</p>
-                  <p className="text-scale-body font-bold tracking-tight text-textHeading">
+                  <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/50">Last Fetch</p>
+                  <p className="text-2xl font-bold tracking-tight text-white/90">
                     {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </p>
-                  <p className="text-scale-caption font-medium text-textSecondary">
+                  <p className="text-[0.75rem] font-medium text-white/50">
                     {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Interactive Sensor Entry Cards */}
           {SENSOR_CARDS.map((card) => {
             const isNest = card.title === 'Nest Device Sensors';
             return (
               <React.Fragment key={card.title}>
-                <div
+                <motion.div
                   onClick={() => { if (isNest) setShowNestDetails(true); }}
-                  className="group relative cursor-pointer overflow-hidden rounded-lg border border-borderColor bg-bgInput p-5 transition-all hover:border-accentPrimary hover:bg-bgCard shadow-sm max-w-[420px]"
+                  className={`group relative cursor-pointer overflow-hidden rounded-[2rem] border border-[#00FF9C]/10 bg-gradient-to-br ${card.accent} ${isNest ? 'p-3 sm:p-4 max-w-[420px]' : 'p-4 sm:p-6'} backdrop-blur-xl transition-all`}
                 >
-                  <div className="relative z-10 flex items-center justify-between">
-                    <h4 className="text-scale-card font-bold tracking-tight text-textHeading">{card.title}</h4>
-                    <ChevronDown className="h-5 w-5 -rotate-90 text-textSecondary group-hover:text-accentPrimary transition-colors" />
+                  <div className="relative z-10 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xl font-bold tracking-tight text-white">{card.title}</h4>
+                      <div className="ml-3">
+                        <ChevronDown className="h-5 w-5 -rotate-90 text-[#00FF9C]" />
+                      </div>
+                    </div>
+
+                    {/* Subtitle removed for compactness */}
                   </div>
-                </div>
+
+                  {/* Subtle Decorative Accent */}
+                  <div className="absolute -bottom-12 -right-12 h-32 w-32 rounded-full bg-[#00FF9C]/3 blur-[60px]" />
+                </motion.div>
 
                 {isNest && (
-                  <div className="mt-2 max-w-[420px]">
+                  <div className="mt-2">
                     <div className="relative">
                       <button
                         onClick={() => setShowExportMenu(!showExportMenu)}
                         disabled={isExporting}
-                        className="group flex w-full items-center justify-center gap-2 rounded-lg border border-accentPrimary/20 bg-accentPrimary/10 px-4 py-2.5 text-scale-caption font-bold text-accentPrimary transition-all hover:bg-accentPrimary/20 disabled:opacity-50"
+                        className="group flex w-full items-center justify-center gap-2 rounded-xl border border-accentPrimary/20 bg-accentPrimary/10 px-4 py-2.5 text-sm font-bold text-accentPrimary transition-all hover:bg-accentPrimary/20 disabled:opacity-50"
                         title="Export data to email"
                       >
                         {isExporting ? (
@@ -223,24 +189,24 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute right-0 bottom-full mb-2 w-56 rounded-lg border border-borderColor bg-bgCard p-2 shadow-elevated z-60"
+                            className="absolute right-0 bottom-full mb-2 w-56 rounded-lg border border-white/30 bg-white/95 dark:bg-bgMain/100 p-2 shadow-lg z-60 backdrop-blur-0"
                           >
-                            <div className="text-scale-caption font-semibold text-textSecondary mb-2 px-2 pt-1">Select Range</div>
+                            <div className="text-xs font-semibold text-black/80 dark:text-white/70 mb-2 px-2 pt-1">Select Range</div>
                             <button
                               onClick={() => handleExport('7d')}
-                              className="w-full rounded-md px-3 py-2 text-left text-scale-caption font-medium transition-colors hover:bg-bgInput text-textPrimary"
+                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/6 text-black dark:text-white"
                             >
                               Last 7 Days
                             </button>
                             <button
                               onClick={() => handleExport('15d')}
-                              className="w-full rounded-md px-3 py-2 text-left text-scale-caption font-medium transition-colors hover:bg-bgInput text-textPrimary"
+                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/6 text-black dark:text-white"
                             >
                               Last 15 Days
                             </button>
                             <button
                               onClick={() => handleExport('30d')}
-                              className="w-full rounded-md px-3 py-2 text-left text-scale-caption font-medium transition-colors hover:bg-bgInput text-textPrimary"
+                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/6 text-black dark:text-white"
                             >
                               Last 30 Days
                             </button>
@@ -268,6 +234,11 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
     </>
   );
 }
+
+
+
+
+
 
 /**
  * Fetches chart data from the aggregation API for a given metric and range.
@@ -311,7 +282,9 @@ async function fetchNestChartData(sensorId: string, selectedRange: string, metri
 
 function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24 Hours', metricKey = '' }: { data: any[]; chartType?: 'bar' | 'line'; unit?: string; selectedRange?: string; metricKey?: string }) {
   const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
+  console.log('RealDataChart received data:', data);
 
+  // Pad data to ensure a full timeline is always shown across the X-axis
   const now = new Date();
   const isDay = selectedRange === '24 Hours';
   const isWeek = selectedRange === '7 Days';
@@ -405,11 +378,11 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
   const displayRange = displayMax - displayMin;
 
   const width = 800;
-  const height = 200;
+  const height = 200; // Reduced to fit standard containers better
   const paddingLeft = 70;
   const paddingRight = 30;
   const paddingTop = 15;
-  const paddingBottom = 35;
+  const paddingBottom = 35; // Adjusted to ensure labels fit within 200 units
 
   const getX = (index: number) => {
     return paddingLeft + (index / (points.length - 1 || 1)) * (width - paddingLeft - paddingRight);
@@ -439,10 +412,10 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
         y={y}
         width={currentBarWidth}
         height={Math.max(barHeight, 4)}
-        fill="var(--accent-primary)"
+        fill="#00FF9C"
         fillOpacity={selectedPoint === i ? 1 : 0.8}
         rx={Math.min(currentBarWidth / 4, 8)}
-        className="cursor-pointer transition-all hover:fillOpacity-100"
+        className="cursor-pointer transition-all drop-shadow-[0_0_10px_rgba(0,255,156,0.3)] hover:fillOpacity-100"
         onClick={(e) => {
           e.stopPropagation();
           setSelectedPoint(selectedPoint === i ? null : i);
@@ -499,21 +472,22 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
         const y = getY(val);
         return (
           <g key={`y-${idx}`}>
-            <line 
-              x1={paddingLeft} 
-              y1={y} 
-              x2={width - paddingRight} 
-              y2={y} 
-              stroke="var(--border-color)" 
-              strokeOpacity={idx === 0 ? "0.3" : "0.15"} 
-              strokeWidth={idx === 0 ? 2 : 1} 
+            <line
+              x1={paddingLeft}
+              y1={y}
+              x2={width - paddingRight}
+              y2={y}
+              stroke="white"
+              strokeOpacity={idx === 0 ? "0.2" : "0.05"}
+              strokeWidth={idx === 0 ? 2 : 1}
             />
-            <text 
-              x={paddingLeft - 12} 
-              y={y + 4} 
-              fill="var(--text-secondary)" 
-              fontSize="12" 
-              fontWeight="600"
+            <text
+              x={paddingLeft - 12}
+              y={y + 4}
+              fill="white"
+              fillOpacity="0.7"
+              fontSize="12"
+              fontWeight="900"
               textAnchor="end"
               className="select-none tabular-nums"
             >
@@ -528,9 +502,10 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
           key={`x-${i}`}
           x={getX(l.index)}
           y={height - 10}
-          fill="var(--text-secondary)"
-          fontSize="12" 
-          fontWeight="600"
+          fill="white"
+          fillOpacity="0.7"
+          fontSize="12"
+          fontWeight="900"
           textAnchor="middle"
           className="select-none"
         >
@@ -541,17 +516,17 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
       {chartType === 'line' ? (
         <g>
           {points.length > 1 ? (
-            <polyline fill="none" stroke="var(--accent-primary)" strokeWidth="3" points={svgPoints} />
+            <polyline fill="none" stroke="#00FF9C" strokeWidth="4" points={svgPoints} className="drop-shadow-[0_0_15px_rgba(0,255,156,0.5)]" />
           ) : null}
           {points.map((val, i) => (
             <circle
               key={`dot-${i}`}
               cx={getX(i)}
               cy={getY(val)}
-              r={selectedPoint === i ? 7 : 5}
-              fill="var(--accent-primary)"
-              fillOpacity={selectedPoint === i ? 1 : 0.6}
-              stroke="var(--accent-primary)"
+              r={selectedPoint === i ? 8 : 6}
+              fill="#00FF9C"
+              fillOpacity={selectedPoint === i ? 1 : 0.4}
+              stroke="#00FF9C"
               strokeWidth={selectedPoint === i ? 2 : 0}
               className="cursor-pointer transition-all hover:fillOpacity-100"
               onClick={(e) => {
@@ -570,7 +545,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
         </g>
       )}
 
-      {/* Value Label Overlay (Tooltip) */}
+      {/* Value Label Overlay */}
       {selectedPoint !== null && points[selectedPoint] !== undefined && (
         <g>
           <rect
@@ -579,18 +554,19 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
             width="70"
             height="30"
             rx="8"
-            fill="var(--accent-primary)"
+            fill="#00FF9C"
+            className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]"
           />
           <path
             d={`M ${getX(selectedPoint) - 6} ${getY(points[selectedPoint]) - 10} L ${getX(selectedPoint)} ${getY(points[selectedPoint]) - 2} L ${getX(selectedPoint) + 6} ${getY(points[selectedPoint]) - 10} Z`}
-            fill="var(--accent-primary)"
+            fill="#00FF9C"
           />
           <text
             x={getX(selectedPoint)}
             y={getY(points[selectedPoint]) - 20}
-            fill="white"
+            fill="#0A0E14"
             fontSize="12"
-            fontWeight="bold"
+            fontWeight="900"
             textAnchor="middle"
             className="select-none tabular-nums"
           >
@@ -670,20 +646,20 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
   }, [sensorId, selectedRange, sensor.title]);
 
   return (
-    <div className="relative flex w-full flex-col overflow-hidden rounded-xl border border-borderColor bg-bgCard p-5 shadow-card md:p-6">
+    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:p-6">
       <div className="mb-4 flex w-full items-start justify-between md:mb-5">
         <div className="z-20 flex flex-col items-start gap-3 md:gap-5">
           <div className="text-left">
-            <h3 className="mb-1 text-scale-card font-bold leading-none tracking-tight text-textHeading">{sensor.title}</h3>
-            <p className="text-scale-caption font-medium tracking-wide text-textSecondary">{selectedRange} Trend</p>
+            <h3 className="mb-1 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">{sensor.title}</h3>
+            <p className="text-[0.6rem] font-medium tracking-wide text-textHint md:text-xs">{selectedRange} Trend</p>
           </div>
 
-          <div className="hidden flex-wrap gap-2 md:flex">
+          <div className="hidden flex-wrap gap-3 md:flex">
             {ranges.map((range) => (
               <button
                 key={range}
                 onClick={() => setSelectedRange(range)}
-                className={`rounded-lg px-4 py-1.5 text-scale-caption font-semibold transition-all ${selectedRange === range ? 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/30' : 'text-textSecondary border border-borderColor hover:border-textSecondary'}`}
+                className={`rounded-full px-5 py-1.5 text-xs font-bold transition-all ${selectedRange === range ? 'bg-[#00FF9C]/10 text-[#00FF9C] border border-[#00FF9C]/30 shadow-[0_0_15px_rgba(0,255,156,0.15)]' : 'text-textHint border border-white/5 hover:border-white/20'}`}
               >
                 {range}
               </button>
@@ -694,35 +670,35 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
             <select
               value={selectedRange}
               onChange={(e) => setSelectedRange(e.target.value)}
-              className="w-full appearance-none cursor-pointer rounded-lg border border-borderColor bg-bgInput px-4 py-2.5 text-scale-caption font-bold text-accentPrimary outline-none"
+              className="w-full appearance-none cursor-pointer rounded-full border border-white/10 bg-cardBg px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider text-[#00FF9C] outline-none"
             >
               {ranges.map((range) => (
-                <option key={range} value={range} className="bg-bgCard text-textPrimary">{range}</option>
+                <option key={range} value={range} className="bg-bgMain uppercase text-textHeading">{range}</option>
               ))}
             </select>
             <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-              <ChevronDown className="h-4 w-4 text-accentPrimary/60" />
+              <ChevronDown className="h-4 w-4 text-[#00FF9C]/60" />
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex flex-col items-end">
-            <p className="text-scale-metric font-bold leading-none tracking-tighter" style={{ color: sensor.color }}>
+            <p className="text-3xl font-black leading-none tracking-tighter md:text-4xl" style={{ color: sensor.color }}>
               {sensor.value}
-              <span className="ml-1 text-scale-body font-bold uppercase" style={{ color: sensor.color }}>{sensor.unit}</span>
+              <span className="ml-1 text-[1rem] font-extrabold uppercase" style={{ color: sensor.color }}>{sensor.unit}</span>
             </p>
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-borderColor bg-bgInput transition-all hover:bg-borderColor active:scale-95 md:h-9 md:w-9"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 transition-all hover:bg-red-500/20 active:scale-95 md:h-9 md:w-9"
           >
-            <X className="h-4 w-4 text-textSecondary" />
+            <X className="h-5 w-5 text-red-500 md:h-4 md:w-4" strokeWidth={3} />
           </button>
         </div>
       </div>
 
-      <div className="relative mt-2 flex h-[200px] w-full items-end justify-center p-0 md:h-[260px]">
+      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center p-0 md:mt-1 md:h-[260px]">
         <RealDataChart data={chartData} unit={sensor.unit} selectedRange={selectedRange} metricKey={getMetricKey(sensor.title)} chartType={sensor?.title?.toLowerCase()?.includes('wind') ? 'line' : 'bar'} />
       </div>
     </div>
@@ -797,41 +773,41 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
   }, [sensorId, selectedRange, sensor.title]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl border border-borderColor bg-bgCard p-5 shadow-card md:p-6">
+    <div className="relative w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#0A0E14]/90 p-6 backdrop-blur-2xl md:p-8">
       <div className="mb-4 flex items-center justify-between md:hidden">
         <div className="flex items-center gap-4">
-          <h3 className="text-scale-card font-bold tracking-tight text-textHeading">{sensor.title}</h3>
-          <p className="text-scale-card font-bold leading-none tracking-tighter text-accentPrimary">
+          <h3 className="text-xl font-black tracking-tight text-white">{sensor.title}</h3>
+          <p className="text-xl font-black leading-none tracking-tighter text-[#00FF9C]">
             {sensor.value}
-            <span className="ml-0.5 text-scale-caption font-bold uppercase">.{sensor.unit}</span>
+            <span className="ml-0.5 text-[0.7rem] font-bold uppercase">.{sensor.unit}</span>
           </p>
         </div>
         <button
           onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-borderColor bg-bgInput transition-all active:scale-95 group"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-lg transition-all active:scale-95 group"
         >
-          <X className="h-4 w-4 text-textSecondary" />
+          <X className="h-5 w-5 text-[#00FF9C]" strokeWidth={3} />
         </button>
       </div>
 
-      <p className="mb-4 text-scale-caption font-bold uppercase tracking-[0.2em] text-textSecondary md:hidden">{selectedRange} Trend</p>
+      <p className="mb-4 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-white/40 md:hidden">{selectedRange} Trend</p>
 
       <div className="mb-8 hidden items-start justify-between md:flex">
         <div>
-          <h3 className="mb-1 text-scale-section font-bold leading-tight tracking-tight text-textHeading">{sensor.title}</h3>
-          <p className="text-scale-caption font-medium uppercase tracking-widest text-textSecondary">{selectedRange} Trend</p>
+          <h3 className="mb-1 text-2xl font-bold leading-tight tracking-tight text-white md:text-[1.75rem]">{sensor.title}</h3>
+          <p className="text-[0.75rem] font-medium uppercase tracking-widest text-white/40 md:text-[0.85rem]">{selectedRange} Trend</p>
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <p className="text-scale-metric font-bold leading-none tracking-tighter text-accentPrimary">
+          <p className="text-2xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-[2.25rem]">
             {sensor.value}
-            <span className="ml-0.5 text-scale-helper font-bold uppercase">.{sensor.unit}</span>
+            <span className="ml-0.5 text-[0.8rem] font-bold uppercase md:text-[0.9rem]">.{sensor.unit}</span>
           </p>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-borderColor bg-bgInput transition-all hover:bg-borderColor active:scale-95 group md:h-10 md:w-10"
+            className="ml-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-lg transition-all hover:bg-white/10 active:scale-95 group md:h-10 md:w-10"
           >
-            <X className="h-4 w-4 text-textSecondary" />
+            <X className="h-4 w-4 text-white/40 group-hover:text-white md:h-5 md:w-5" strokeWidth={3} />
           </button>
         </div>
       </div>
@@ -841,21 +817,21 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
           <select
             value={selectedRange}
             onChange={(e) => setSelectedRange(e.target.value)}
-            className="w-full appearance-none cursor-pointer rounded-lg border border-borderColor bg-bgInput px-4 py-2 text-scale-caption font-bold text-accentPrimary outline-none transition-colors hover:bg-borderColor md:px-5 md:py-2.5"
+            className="w-full appearance-none cursor-pointer rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-[0.75rem] font-black uppercase tracking-wider text-[#00FF9C] outline-none transition-colors hover:bg-white/[0.08] md:px-5"
           >
             {ranges.map((range) => (
-              <option key={range} value={range} className="bg-bgCard text-textPrimary uppercase">
+              <option key={range} value={range} className="bg-[#0A0E14] text-white uppercase">
                 {range}
               </option>
             ))}
           </select>
           <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-            <ChevronDown className="h-4 w-4 text-accentPrimary/60" />
+            <ChevronDown className="h-4 w-4 text-[#00FF9C]/60" />
           </div>
         </div>
       </div>
 
-      <div className="relative flex h-[220px] w-full items-end justify-center rounded-lg border border-borderColor bg-bgInput p-2 md:h-[300px]">
+      <div className="relative flex h-[220px] w-full items-end justify-center rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-0 md:h-[300px]">
         <RealDataChart data={chartData} unit={sensor.unit} selectedRange={selectedRange} metricKey={getMetricKey(sensor.title)} chartType={sensor?.title?.toLowerCase()?.includes('wind') ? 'line' : 'bar'} />
       </div>
     </div>
@@ -895,6 +871,8 @@ function NestSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
   }
 
   const activeSensorData = nestSensors.find((s) => s.id === activeSensor);
+  const activeSensorIndex = nestSensors.findIndex((s) => s.id === activeSensor);
+
   const toggleSensor = (id: string) => {
     setActiveSensor(activeSensor === id ? null : id);
   };
@@ -906,40 +884,39 @@ function NestSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="flex max-h-[90vh] w-[94vw] flex-col overflow-hidden rounded-xl border border-borderColor bg-bgCard shadow-elevated md:max-w-[1280px]"
+        className="flex max-h-[90vh] w-[94vw] flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-bgMain/95 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] backdrop-blur-3xl md:max-w-[1280px] md:rounded-[2.5rem]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-borderColor px-6 py-4 md:px-10 md:py-4">
+        <div className="flex items-center justify-between border-b border-white/5 px-6 py-4 md:px-14 md:py-4">
           <div className="flex items-center gap-4 md:gap-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accentPrimary/10 text-accentPrimary md:h-12 md:w-12">
-              <Activity className="h-5 w-5 text-accentPrimary md:h-6 md:w-6" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-[0.75rem] bg-[#00FF9C]/10 md:h-14 md:w-14 md:rounded-[1rem]">
+              <Activity className="h-5 w-5 text-[#00FF9C] md:h-7 md:w-7" />
             </div>
             <div>
-              <h2 className="text-scale-card font-bold leading-tight tracking-tight text-textHeading">Nest Device Sensors</h2>
+              <h2 className="text-xl font-bold leading-tight tracking-tight text-textHeading md:text-[1.6rem]">Nest Device Sensors</h2>
               <div className="flex items-center gap-2 mt-0.5">
-                <StatusBadge
-                  label={isOnline ? 'Online' : 'Offline'}
-                  variant={isOnline ? 'success' : 'danger'}
-                  size="sm"
-                />
-                <span className="text-borderColor">|</span>
-                <p className="text-scale-caption font-medium text-textSecondary">{nestSensors.length} total sensors</p>
+                <span className={`h-2 w-2 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`} />
+                <p className={`text-[0.75rem] font-bold uppercase tracking-wider ${isOnline ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {isOnline ? 'Online' : 'Offline'}
+                </p>
+                <span className="text-white/20">|</span>
+                <p className="text-[0.75rem] font-medium text-textHint md:text-[0.9rem]">{nestSensors.length} total sensors</p>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 transition hover:text-red-500">
-            <X className="h-5 w-5 text-textSecondary" />
+          <button onClick={onClose} className="p-2 transition-opacity hover:opacity-50">
+            <X className="h-5 w-5 text-red-500 md:h-6 md:w-6" strokeWidth={2.5} />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:px-10 md:py-8">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:px-14 md:py-8">
           {gridGroups.map((group, groupIdx) => (
             <React.Fragment key={groupIdx}>
               <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
@@ -947,35 +924,35 @@ function NestSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
                   <div key={sensor.id} className="w-full">
                     <div
                       onClick={() => toggleSensor(sensor.id)}
-                      className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-lg border px-6 py-5 transition-all md:h-[13rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? 'border-accentPrimary bg-accentPrimary/5 shadow-sm' : 'border-borderColor bg-bgInput shadow-sm hover:border-accentPrimary/30 hover:bg-bgCard active:scale-95'}`}
+                      className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? 'border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]' : 'border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95'}`}
                     >
                       <div>
                         <div
-                          className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg md:mb-6"
+                          className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
                           style={{ backgroundColor: `${sensor.color}1A` }}
                         >
                           <sensor.icon className="h-6 w-6" style={{ color: sensor.color }} />
                         </div>
-                        <p className="mb-1 text-scale-caption font-bold uppercase tracking-wider text-textSecondary">
+                        <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">
                           {sensor.title}
                         </p>
                         <div className="mt-1 flex items-baseline gap-2">
-                          <span className="text-scale-card font-extrabold leading-none tracking-tight text-textHeading">
+                          <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
                             {sensor.value}
                           </span>
-                          <span className="mb-0.5 text-scale-caption font-bold tracking-wider text-textSecondary">
+                          <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">
                             {sensor.unit}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-accentPrimary' : 'bg-textMuted'} md:h-2 md:w-2`} />
-                          <span className={`text-scale-caption font-bold uppercase tracking-widest leading-none ${isOnline ? 'text-accentPrimary' : 'text-textSecondary'}`}>
+                          <div className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-[#00FF9C] shadow-[0_0_10px_#00FF9C]' : 'bg-white/20'} md:h-2 md:w-2`} />
+                          <span className={`text-[0.65rem] font-bold uppercase tracking-widest leading-none ${isOnline ? 'text-[#00FF9C]' : 'text-white/30'} md:text-[0.75rem]`}>
                             {isOnline ? 'Operational' : 'No Signal'}
                           </span>
                         </div>
-                        <ChevronDown className={`h-4 w-4 text-textSecondary transition-transform ${activeSensor === sensor.id ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${activeSensor === sensor.id ? 'rotate-180' : ''}`} />
                       </div>
                     </div>
 
@@ -1011,15 +988,15 @@ function NestSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
           ))}
         </div>
 
-        <div className="mt-auto shrink-0 px-6 pb-6 md:px-10 md:pb-8">
-          <div className="flex flex-col gap-1 rounded-lg border border-borderColor bg-bgInput px-6 py-4 md:px-8">
+        <div className="mt-auto shrink-0 px-6 pb-6 md:px-14 md:pb-8">
+          <div className="flex flex-col gap-1 rounded-[1.25rem] border border-[#00FF9C]/10 bg-[#00FF9C]/5 px-6 py-3 md:rounded-[1.75rem] md:px-8 md:py-4">
             <div className="flex items-center gap-3">
-              <div className={`h-2 w-2 rounded-full ${isOnline ? 'bg-accentPrimary' : 'bg-danger'}`} />
-              <p className={`text-scale-caption font-extrabold uppercase leading-none tracking-wider ${isOnline ? 'text-accentPrimary' : 'text-danger'}`}>
+              <div className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-[#00FF9C] shadow-[0_0_10px_#00FF9C]' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'} md:h-2 md:w-2`} />
+              <p className={`text-[0.75rem] font-extrabold uppercase leading-none tracking-wider ${isOnline ? 'text-[#00FF9C]' : 'text-red-500'} md:text-[0.85rem]`}>
                 {isOnline ? 'All sensors are operational' : 'Device connectivity issues detected'}
               </p>
             </div>
-            <p className="ml-5 text-scale-caption font-medium tracking-tight text-textSecondary">
+            <p className="ml-4.5 text-[0.6rem] font-medium tracking-tight text-textHint md:text-[0.7rem]">
               {data?.isHistorical ? 'Showing last valid readings from: ' : 'Last updated: '}
               {data?.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A'}
             </p>

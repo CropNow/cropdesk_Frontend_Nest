@@ -1,139 +1,108 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   CropDesk Design System — index.css
-   Enterprise SaaS dashboard tokens, typography scale, and utilities.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ── Font imports ── */
-@import './assets/fonts/Satoshi_Complete/Fonts/WEB/css/satoshi.css';
+/* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE, ABOVE THE TAILWIND IMPORTS — DO NOT DELETE THIS COMMENT */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BASE LAYER — Theme Variables
-   ═══════════════════════════════════════════════════════════════════════════ */
 @layer base {
 
-  /* ── Light theme (default) ─────────────────────────────────────────────── */
+  /* Light theme (default) */
   :root {
-    /* Surfaces */
-    --bg-main: #F6F8FA;
+    --bg-main: #F8FAFC;
     --bg-card: #FFFFFF;
-    --bg-card-hover: #F8FAFC;
+    --bg-card-hover: #F1F5F9;
     --bg-sidebar: #FFFFFF;
-    --bg-input: #F3F4F6;
+    --bg-input: #F1F5F9;
 
-    /* Text */
-    --text-primary: #111827;
-    --text-secondary: #4B5563;
-    --text-muted: #6B7280;
-    --text-heading: #111827;
-    --text-body: #374151;
-    --text-label: #4B5563;
-    --text-hint: #9CA3AF;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --text-heading: #0F172A;
+    --text-body: #334155;
+    --text-label: #475569;
+    --text-hint: #94A3B8;
 
-    /* Borders */
-    --border-color: #E5E7EB;
-    --border-subtle: #F3F4F6;
-    --card-border: #E5E7EB;
-    --card-bg: #FFFFFF;
+    --border-color: #E2E8F0;
+    --border-subtle: rgba(0, 0, 0, 0.06);
+    --card-border: rgba(0, 0, 0, 0.08);
+    --card-bg: rgba(0, 0, 0, 0.02);
 
-    /* Accent */
-    --accent-primary: #16C47F;
-    --accent-hover: #12B372;
-    --accent-secondary: #0EA5E9;
-    --accent-glow: rgba(22, 196, 127, 0.06);
+    --accent-primary: #059669;
+    --accent-secondary: #00D4AA;
+    --accent-glow: rgba(5, 150, 105, 0.03);
+    --accent-cyan: #0891B2;
+    --accent-purple: #7C3AED;
+    --accent-amber: #D97706;
+    --accent-rose: #E11D48;
 
-    /* Semantic */
-    --success: #16C47F;
+    --success: #10B981;
     --warning: #F59E0B;
     --danger: #EF4444;
 
-    /* Shadows */
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 20px rgba(0, 0, 0, 0.06);
-    --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.08);
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 0, 0, 0.08);
 
-    /* Glass (simplified) */
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(0, 0, 0, 0.06);
-
-    --sidebar-shadow: 1px 0 0 var(--border-color);
-
-    /* Font scaling */
-    --font-scale: 1;
-
-    /* Dynamically computed type sizes */
-    --fs-caption: calc(0.8125rem * var(--font-scale));  /* 13px */
-    --fs-helper: calc(0.875rem * var(--font-scale));     /* 14px */
-    --fs-body: calc(1rem * var(--font-scale));            /* 16px */
-    --fs-label: calc(1rem * var(--font-scale));           /* 16px */
-    --fs-card-title: calc(1.375rem * var(--font-scale));   /* 22px */
-    --fs-section: calc(1.75rem * var(--font-scale));      /* 28px */
-    --fs-metric-sm: calc(2rem * var(--font-scale));       /* 32px */
-    --fs-metric: calc(2.5rem * var(--font-scale));        /* 40px */
-    --fs-page: calc(2.625rem * var(--font-scale));        /* 42px */
-
-    /* Scale-aware spacing */
-    --sp-card: calc(1.5rem * var(--font-scale));          /* 24px base */
+    --sidebar-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   }
 
-  /* ── Dark theme ────────────────────────────────────────────────────────── */
+  /* Dark theme */
   .dark {
-    --bg-main: #081018;
-    --bg-card: #111827;
-    --bg-card-hover: #151F2E;
-    --bg-sidebar: #0B1320;
-    --bg-input: #151F2E;
+    --bg-main: #0A0E14;
+    --bg-card: #12181F;
+    --bg-card-hover: #1A222D;
+    --bg-sidebar: #0D1218;
+    --bg-input: #0F1319;
 
     --text-primary: #F1F5F9;
-    --text-secondary: #B7C0CC;
+    --text-secondary: #94A3B8;
     --text-muted: #64748B;
     --text-heading: #FFFFFF;
-    --text-body: #CBD5E1;
-    --text-label: #B7C0CC;
-    --text-hint: #64748B;
+    --text-body: rgba(255, 255, 255, 0.80);
+    --text-label: rgba(255, 255, 255, 0.70);
+    --text-hint: rgba(255, 255, 255, 0.40);
 
-    --border-color: rgba(255, 255, 255, 0.06);
-    --border-subtle: rgba(255, 255, 255, 0.04);
-    --card-border: rgba(255, 255, 255, 0.06);
-    --card-bg: #111827;
+    --border-color: #1E293B;
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --card-border: rgba(255, 255, 255, 0.10);
+    --card-bg: rgba(255, 255, 255, 0.03);
 
-    --accent-primary: #16C47F;
-    --accent-hover: #1AD48A;
-    --accent-secondary: #38BDF8;
-    --accent-glow: rgba(22, 196, 127, 0.08);
+    --accent-primary: #00FF9C;
+    --accent-secondary: #00D4AA;
+    --accent-glow: rgba(0, 255, 156, 0.03);
+    --accent-cyan: #22D3EE;
+    --accent-purple: #A855F7;
+    --accent-amber: #F59E0B;
+    --accent-rose: #F43F5E;
 
-    --success: #16C47F;
+    --success: #10B981;
     --warning: #F59E0B;
     --danger: #EF4444;
 
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.15), 0 4px 24px rgba(0, 0, 0, 0.25);
-    --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --glass-bg: rgba(18, 24, 31, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
 
-    --glass-bg: rgba(17, 24, 39, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.06);
-
-    --sidebar-shadow: 1px 0 0 rgba(255, 255, 255, 0.06);
+    --sidebar-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   }
 
-  /* ── Base body ─────────────────────────────────────────────────────────── */
   body {
-    @apply bg-bgMain text-textPrimary transition-colors duration-200;
-    font-family: 'Satoshi-Variable', 'Satoshi-Regular', 'General Sans', system-ui, -apple-system, sans-serif;
+    @apply bg-bgMain text-textPrimary font-sans transition-colors duration-300;
+    font-family: 'Outfit', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    font-size: var(--fs-body);
-    line-height: 1.6;
   }
 
-  /* ── Light-theme rescue layer ──────────────────────────────────────────
-   * Many components use `text-white/X` intended for dark surfaces.
-   * In light mode, remap them to readable text colors. */
+  /* --- Light-theme rescue layer --------------------------------------------
+   * Many components hard-code `text-white/X` and `bg-white/X` for the dark
+   * surface. In light mode those become invisible (white on white). Remap
+   * them via attribute selectors so the existing JSX keeps working while
+   * we migrate components onto theme tokens progressively.
+   * ------------------------------------------------------------------------ */
   :root:not(.dark) {
     color-scheme: light;
   }
+
   :root:not(.dark) [class*="text-white"] {
     color: var(--text-body);
   }
@@ -158,28 +127,28 @@
   :root:not(.dark) .text-white\/10 {
     color: var(--text-hint);
   }
+
+  /* Soft glass surfaces — keep contrast in light mode */
   :root:not(.dark) [class*="bg-white/[0.03]"],
   :root:not(.dark) [class*="bg-white/[0.05]"],
   :root:not(.dark) [class*="bg-white/[0.02]"] {
-    background-color: rgba(0, 0, 0, 0.02);
+    background-color: rgba(15, 23, 42, 0.03);
   }
 
   :root:not(.dark) [class*="border-white/5"],
   :root:not(.dark) [class*="border-white/10"],
   :root:not(.dark) [class*="border-white/20"] {
-    border-color: var(--border-color);
+    border-color: rgba(15, 23, 42, 0.10);
   }
 
   :root:not(.dark) [class*="bg-black/20"],
   :root:not(.dark) [class*="bg-black/80"] {
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: rgba(15, 23, 42, 0.04);
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   UTILITIES
-   ═══════════════════════════════════════════════════════════════════════════ */
 @layer utilities {
+
   /* Typography helpers — clamp + tabular nums for stable numeric UI */
   .num-stable {
     font-variant-numeric: tabular-nums;
@@ -190,64 +159,133 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   COMPONENTS — Reusable design primitives
-   ═══════════════════════════════════════════════════════════════════════════ */
 @layer components {
-
-  /* ── Scale-aware typography ────────────────────────────────────────────── */
-  .text-scale-caption { font-size: var(--fs-caption); }
-  .text-scale-helper  { font-size: var(--fs-helper); }
-  .text-scale-body    { font-size: var(--fs-body); }
-  .text-scale-label   { font-size: var(--fs-label); }
-  .text-scale-card    { font-size: var(--fs-card-title); }
-  .text-scale-section { font-size: var(--fs-section); }
-  .text-scale-metric-sm { font-size: var(--fs-metric-sm); }
-  .text-scale-metric  { font-size: var(--fs-metric); }
-  .text-scale-page    { font-size: var(--fs-page); }
-
-  /* ── Card component ────────────────────────────────────────────────────── */
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    padding: var(--sp-card);
-    box-shadow: var(--shadow-card);
-    transition: border-color 200ms ease, box-shadow 200ms ease;
-  }
-  .card:hover {
-    border-color: var(--accent-primary);
-    box-shadow: var(--shadow-elevated);
-  }
-  .card-flat {
-    background: var(--bg-card);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    padding: var(--sp-card);
-  }
-  .card-inner {
-    background: var(--bg-input);
-    border: 1px solid var(--border-subtle);
-    border-radius: 8px;
-    padding: calc(var(--sp-card) * 0.67);
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
   }
 
-  /* ── Sidebar ───────────────────────────────────────────────────────────── */
+  .glow-border {
+    position: relative;
+  }
+
+  .glow-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--accent-primary), transparent 50%, var(--accent-cyan));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.5;
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-grid-pattern {
+    background-image:
+      linear-gradient(var(--accent-glow) 1px, transparent 1px),
+      linear-gradient(90deg, var(--accent-glow) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .scan-line {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scan-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+    animation: scanline 4s linear infinite;
+  }
+
+  @keyframes scanline {
+    0% {
+      left: -100%;
+    }
+
+    100% {
+      left: 100%;
+    }
+  }
+
+  .pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+
+    0%,
+    100% {
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    50% {
+      box-shadow: 0 0 40px var(--accent-glow), 0 0 60px rgba(0, 255, 156, 0.1);
+    }
+  }
+
   .sidebar-shell {
     box-shadow: var(--sidebar-shadow);
   }
+
   .sidebar-item {
-    transition: all 150ms ease;
+    transition: all 180ms ease;
   }
+
   .sidebar-item:active {
     transform: scale(0.98);
   }
 
-  /* ── Glass panel (simplified) ──────────────────────────────────────────── */
-  .glass-panel {
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
+  .metric-card {
+    background: linear-gradient(145deg, var(--glass-bg), var(--bg-main));
+    border: 1px solid var(--border-subtle);
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .metric-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 30px var(--accent-glow);
+    transform: translateY(-2px);
+  }
+
+  .holographic {
+    background: linear-gradient(135deg,
+        rgba(0, 255, 156, 0.1) 0%,
+        rgba(0, 212, 170, 0.05) 25%,
+        rgba(34, 211, 238, 0.1) 50%,
+        rgba(168, 85, 247, 0.05) 75%,
+        rgba(0, 255, 156, 0.1) 100%);
+    background-size: 400% 400%;
+    animation: holographic-shift 8s ease infinite;
+  }
+
+  @keyframes holographic-shift {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
   }
 }

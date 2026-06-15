@@ -13,11 +13,10 @@ export function CircularGauge({ value, status = 'optimal' }: CircularGaugeProps)
   const offset = circumference - (value / 100) * circumference;
 
   const colors = {
-    optimal: 'var(--accent-primary)',
+    optimal: '#00FF9C',
     warning: '#F59E0B',
     critical: '#EF4444',
   };
-
   const color = colors[status];
 
   return (
