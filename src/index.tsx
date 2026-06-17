@@ -1,12 +1,12 @@
-import React from 'react';
-import './index.css';
-import { render } from 'react-dom';
-import { BrowserRouter } from 'react-router-dom';
-import { App } from './App';
-import { AuthProvider } from './contexts/AuthContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { ToastProvider } from './contexts/ToastContext';
-import { ToastContainer } from './components/common/ToastContainer';
+import React from "react";
+import "@shared/styles/index.css";
+import { render } from "react-dom";
+import { BrowserRouter } from "react-router-dom";
+import { App } from "@app/App";
+import { AuthProvider } from "@app/providers/AuthContext";
+import { ThemeProvider } from "@app/providers/ThemeContext";
+import { ToastProvider } from "@app/providers/ToastContext";
+import { ToastContainer } from "@shared/components/ToastContainer";
 
 render(
   <BrowserRouter>
@@ -19,5 +19,5 @@ render(
       </AuthProvider>
     </ThemeProvider>
   </BrowserRouter>,
-  document.getElementById('root'),
+  document.getElementById("root"),
 );
