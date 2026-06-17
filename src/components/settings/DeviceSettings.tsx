@@ -1,17 +1,18 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Cpu, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { DeviceKind, DeviceSettingsState } from './SettingsLayout';
 import { useDevices } from '../../hooks/devices/useDevices';
-import { useEffect } from 'react';
 import { farmersAPI } from '../../api/farmers.api';
 import { farmsAPI } from '../../api/farms.api';
 import { fieldsAPI } from '../../api/fields.api';
 import { cropsAPI } from '../../api/crops.api';
 import { sensorsAPI } from '../../api/sensors.api';
-import { MapContainer, TileLayer, FeatureGroup } from 'react-leaflet';
+import { MapContainer, TileLayer, FeatureGroup, useMap, Marker, Polygon } from 'react-leaflet';
 import { GeomanControls } from 'react-leaflet-geoman-v2';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 
@@ -51,6 +52,147 @@ const calculateGeodesicArea = (latLngs: any[]): number => {
   return area; // Square meters
 };
 
+const blueDotIcon = L.divIcon({
+  className: 'user-location-marker',
+  html: `
+    <div style="
+      width: 14px;
+      height: 14px;
+      background: #4285F4;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(66, 133, 244, 0.6);
+      position: relative;
+    ">
+      <div style="
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border-radius: 50%;
+        background: rgba(66, 133, 244, 0.4);
+        animation: pulse 2s infinite;
+      "></div>
+    </div>
+    <style>
+      @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(3); opacity: 0; }
+      }
+    </style>
+  `,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+});
+
+const MapUIControls = ({ 
+  isExpanded, 
+  mapType,
+  onToggleExpand, 
+  onToggleMapType,
+  onLocationFound 
+}: { 
+  isExpanded: boolean; 
+  mapType: 'street' | 'satellite';
+  onToggleExpand: (e: React.MouseEvent) => void;
+  onToggleMapType: (e: React.MouseEvent) => void;
+  onLocationFound?: (lat: number, lng: number) => void;
+}) => {
+  const map = useMap();
+  const controlsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (controlsRef.current) {
+      L.DomEvent.disableClickPropagation(controlsRef.current);
+      L.DomEvent.disableScrollPropagation(controlsRef.current);
+    }
+  }, []);
+
+  // Force map to invalidate size when expansion state changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [isExpanded, map]);
+
+  const handleUserLocation = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Visual feedback that we are trying to get location
+    const originalTitle = e.currentTarget.getAttribute('title');
+    e.currentTarget.setAttribute('title', 'Locating...');
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          map.flyTo([latitude, longitude], 17, {
+            animate: true,
+            duration: 1.5,
+          });
+          if (onLocationFound) onLocationFound(latitude, longitude);
+          e.currentTarget.setAttribute('title', originalTitle || 'Use My Location');
+        },
+        (err) => {
+          console.error('Geolocation error:', err);
+          let errorMsg = 'Unable to get location.';
+          if (err.code === 1) errorMsg = 'Location permission denied. Please enable location in your browser settings and refresh.';
+          else if (err.code === 2) errorMsg = 'Location unavailable.';
+          else if (err.code === 3) errorMsg = 'Location request timed out.';
+          alert(errorMsg);
+          e.currentTarget.setAttribute('title', originalTitle || 'Use My Location');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      alert('Geolocation is not supported by your browser.');
+    }
+  };
+
+  return (
+    <div ref={controlsRef} className="absolute inset-0 pointer-events-none z-[1000]">
+      {/* Bottom Left: Location Button (Google Style) */}
+      <div className="absolute bottom-6 left-3 pointer-events-auto flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={handleUserLocation}
+          className={`flex items-center justify-center rounded-xl border border-cardBorder bg-[#1a1c1e] text-textHeading shadow-lg shadow-black/40 hover:bg-[#25282c] transition-all active:scale-95 group ${isExpanded ? 'px-4 py-2 gap-2 h-11' : 'h-10 w-10'}`}
+          title="Use My Location"
+        >
+          <span className={`${isExpanded ? 'text-xl' : 'text-lg'} transition-transform group-active:scale-125`}>📍</span>
+          {isExpanded && <span className="text-sm font-bold whitespace-nowrap">Use My Location</span>}
+        </button>
+      </div>
+
+      {/* Bottom Right: Expand and Satellite Controls (Safe from all toolbars) */}
+      <div className="absolute bottom-6 right-3 flex flex-col gap-2 pointer-events-auto">
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          className={`flex items-center justify-center rounded-lg border border-cardBorder bg-[#1a1c1e] text-textHeading shadow-lg shadow-black/40 hover:bg-[#25282c] transition-all active:scale-95 ${isExpanded ? 'px-3 py-2 gap-2 h-10' : 'h-9 w-9'}`}
+          title={isExpanded ? "Collapse Map" : "Expand Map"}
+        >
+          <span className="text-base">{isExpanded ? "✖" : "⛶"}</span>
+          {isExpanded && <span className="text-xs font-bold whitespace-nowrap">Collapse</span>}
+        </button>
+        
+        <button
+          type="button"
+          onClick={onToggleMapType}
+          className={`flex items-center justify-center rounded-lg border border-cardBorder bg-[#1a1c1e] text-textHeading shadow-lg shadow-black/40 hover:bg-[#25282c] transition-all active:scale-95 ${isExpanded ? 'px-3 py-2 gap-2 h-10' : 'h-9 w-9'}`}
+          title={mapType === 'street' ? "Switch to Satellite" : "Switch to Street View"}
+        >
+          <span className="text-base">{mapType === 'street' ? "🛰️" : "🗺️"}</span>
+          {isExpanded && <span className="text-xs font-bold whitespace-nowrap">{mapType === 'street' ? "Satellite" : "Normal"}</span>}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export function DeviceSettings({
   devices,
   onAdd,
@@ -69,6 +211,9 @@ export function DeviceSettings({
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [editingId, setEditingId] = useState<any>(null);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [mapType, setMapType] = useState<'street' | 'satellite'>('street');
   const { fetchDevices } = useDevices();
 
   const refreshDevices = async (fieldId?: string) => {
@@ -220,9 +365,12 @@ export function DeviceSettings({
           name: wizardData.farmerName,
           phone: wizardData.phoneNumber,
           email: wizardData.emailAddress,
-          village: wizardData.village,
-          district: wizardData.district,
-          state: wizardData.farmerState,
+          address: {
+            village: wizardData.village,
+            district: wizardData.district,
+            state: wizardData.farmerState,
+            country: 'India'
+          }
         });
 
         const createdFarmer = response.data?.data || response.data;
@@ -914,18 +1062,45 @@ export function DeviceSettings({
 
                   <div>
                     <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-textHint">Field Location (Draw Shape) *</p>
-                    <div className="overflow-hidden rounded-2xl border border-cardBorder bg-bgInput relative z-[1]">
-                      <div className="h-64 w-full">
-                        <MapContainer
-                          center={[12.9716, 77.5946]}
-                          zoom={13}
-                          style={{ height: '100%', width: '100%', zIndex: 1 }}
-                        >
-                          <TileLayer
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    <div className="relative z-[1] h-64 w-full overflow-hidden rounded-2xl border border-cardBorder bg-bgInput">
+                      <MapContainer
+                        center={[12.9716, 77.5946]}
+                        zoom={13}
+                        style={{ height: '100%', width: '100%', zIndex: 1 }}
+                      >
+                        <TileLayer
+                          url={mapType === 'street' 
+                            ? "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
+                            : "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                          }
+                          attribution={mapType === 'street' 
+                            ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' 
+                            : 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                          }
+                        />
+                        <MapUIControls 
+                          isExpanded={isMapExpanded} 
+                          mapType={mapType}
+                          onToggleExpand={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsMapExpanded(!isMapExpanded);
+                          }} 
+                          onToggleMapType={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setMapType(prev => prev === 'street' ? 'satellite' : 'street');
+                          }}
+                          onLocationFound={(lat, lng) => setUserLocation([lat, lng])}
+                        />
+                        {userLocation && <Marker position={userLocation} icon={blueDotIcon} />}
+                        {wizardData.boundaryCoordinates && wizardData.boundaryCoordinates.length > 0 && (
+                          <Polygon 
+                            positions={wizardData.boundaryCoordinates.map(coord => [coord[1], coord[0]])} 
+                            pathOptions={{ color: '#00FF9C', fillColor: '#00FF9C', fillOpacity: 0.2 }}
                           />
-                          <FeatureGroup>
+                        )}
+                        <FeatureGroup>
                             <GeomanControls
                               options={{
                                 position: 'topright',
@@ -934,12 +1109,13 @@ export function DeviceSettings({
                                 drawCircleMarker: false,
                                 drawMarker: false,
                                 drawPolyline: false,
-                                drawRectangle: false,
+                                drawRectangle: true,
                                 drawPolygon: true,
                                 editMode: true,
-                                dragMode: true,
+                                dragMode: false,
                                 cutPolygon: false,
                                 removalMode: true,
+                                rotateMode: false,
                               }}
                               globalOptions={{
                                 continueDrawing: false,
@@ -1036,10 +1212,139 @@ export function DeviceSettings({
                           </FeatureGroup>
                         </MapContainer>
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
+                    {/* Centered Modal Expanded Map via Portal */}
+                    {isMapExpanded && createPortal(
+                      <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-300 p-4 sm:p-8">
+                        <div 
+                          className="relative h-[80vh] w-[90vw] max-w-5xl overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#1a1c1e] shadow-2xl animate-in zoom-in-95 duration-300"
+                        >
+                          <MapContainer
+                            center={userLocation || (wizardData.boundaryCoordinates?.[0] ? [wizardData.boundaryCoordinates[0][1], wizardData.boundaryCoordinates[0][0]] : [12.9716, 77.5946])}
+                            zoom={16}
+                            style={{ height: '100%', width: '100%', zIndex: 1 }}
+                          >
+                            <TileLayer
+                              url={mapType === 'street' 
+                                ? "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
+                                : "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                              }
+                              attribution={mapType === 'street' 
+                                ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' 
+                                : 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                              }
+                            />
+                            <MapUIControls 
+                              isExpanded={true} 
+                              mapType={mapType}
+                              onToggleExpand={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsMapExpanded(false);
+                              }} 
+                              onToggleMapType={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setMapType(prev => prev === 'street' ? 'satellite' : 'street');
+                              }}
+                              onLocationFound={(lat, lng) => setUserLocation([lat, lng])}
+                            />
+                            {userLocation && <Marker position={userLocation} icon={blueDotIcon} />}
+                            {wizardData.boundaryCoordinates && wizardData.boundaryCoordinates.length > 0 && (
+                              <Polygon 
+                                positions={wizardData.boundaryCoordinates.map(coord => [coord[1], coord[0]])} 
+                                pathOptions={{ color: '#00FF9C', fillColor: '#00FF9C', fillOpacity: 0.2 }}
+                              />
+                            )}
+                            <FeatureGroup>
+                              <GeomanControls
+                                options={{
+                                  position: 'topright',
+                                  drawText: false,
+                                  drawCircle: false,
+                                  drawCircleMarker: false,
+                                  drawMarker: false,
+                                  drawPolyline: false,
+                                  drawRectangle: true,
+                                  drawPolygon: true,
+                                  editMode: true,
+                                  dragMode: false,
+                                  cutPolygon: false,
+                                  removalMode: true,
+                                  rotateMode: false,
+                                }}
+                                globalOptions={{
+                                  continueDrawing: false,
+                                  editable: true,
+                                  pathOptions: {
+                                    color: '#00FF9C',
+                                    fillColor: '#00FF9C',
+                                    fillOpacity: 0.2,
+                                  },
+                                }}
+                                onCreate={(e: any) => {
+                                  const layer = e.layer;
+                                  if (layer && layer.getLatLngs) {
+                                    let latlngs = layer.getLatLngs();
+                                    if (latlngs && latlngs.length > 0 && Array.isArray(latlngs[0])) {
+                                      latlngs = latlngs[0];
+                                    }
+                                    const coords: [number, number][] = latlngs.map((ll: any) => [ll.lng, ll.lat]);
+
+                                    if (coords.length > 0) {
+                                      const first = coords[0];
+                                      const last = coords[coords.length - 1];
+                                      if (first[0] !== last[0] || first[1] !== last[1]) {
+                                        coords.push([...first]);
+                                      }
+                                    }
+
+                                    const areaSqM = calculateGeodesicArea(latlngs);
+                                    const areaAcres = (areaSqM * 0.000247105).toFixed(2);
+
+                                    setWizardData((prev) => ({
+                                      ...prev,
+                                      area: areaAcres,
+                                      boundaryCoordinates: coords,
+                                    }));
+                                  }
+                                }}
+                                onChange={(e: any) => {
+                                  const layer = e.layer;
+                                  if (layer && layer.getLatLngs) {
+                                    let latlngs = layer.getLatLngs();
+                                    if (latlngs && latlngs.length > 0 && Array.isArray(latlngs[0])) {
+                                      latlngs = latlngs[0];
+                                    }
+                                    const coords: [number, number][] = latlngs.map((ll: any) => [ll.lng, ll.lat]);
+                                    if (coords.length > 0) {
+                                      const first = coords[0];
+                                      const last = coords[coords.length - 1];
+                                      if (first[0] !== last[0] || first[1] !== last[1]) {
+                                        coords.push([...first]);
+                                      }
+                                    }
+
+                                    const areaSqM = calculateGeodesicArea(latlngs);
+                                    const areaAcres = (areaSqM * 0.000247105).toFixed(2);
+
+                                    setWizardData((prev) => ({
+                                      ...prev,
+                                      area: areaAcres,
+                                      boundaryCoordinates: coords,
+                                    }));
+                                  }
+                                }}
+                              />
+                            </FeatureGroup>
+                          </MapContainer>
+                        </div>
+                      </div>,
+                      document.body
+                    )}
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-textHint">Soil Type *</p>
                       <select

@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { SecuritySettingsState } from './SettingsLayout';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SecuritySettingsState, SessionState } from './SettingsLayout';
 import { authAPI } from '../../api/auth.api';
+import { parseUserAgent, formatTimeAgo } from '../../utils/formatUtils';
+import { useToast } from '../../contexts/ToastContext';
 
 interface SecuritySettingsProps {
   values: SecuritySettingsState;
@@ -34,9 +36,33 @@ function ToggleSwitch({ checked, onToggle }: { checked: boolean; onToggle: () =>
 }
 
 export function SecuritySettings({ values, onChange, onLogoutAll, onSave, isSaving }: SecuritySettingsProps) {
+  const { addToast } = useToast();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [sessions, setSessions] = useState<SessionState[]>(values.activeSessions || []);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [sessionToLogout, setSessionToLogout] = useState<SessionState | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        setIsLoadingSessions(true);
+        const response = await authAPI.getSessions();
+        const data = response.data?.data || response.data;
+        if (Array.isArray(data)) {
+          setSessions(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch active sessions:', err);
+      } finally {
+        setIsLoadingSessions(false);
+      }
+    };
+    fetchSessions();
+  }, []);
 
   const handleSave = async () => {
     setError('');
@@ -76,6 +102,44 @@ export function SecuritySettings({ values, onChange, onLogoutAll, onSave, isSavi
     }
 
     onSave();
+  };
+
+  const handleLogoutAll = async () => {
+    try {
+      setError('');
+      setSuccess('');
+      setIsLoadingSessions(true);
+      await authAPI.deleteSessions();
+      setSessions([]);
+      setSuccess('All other sessions terminated successfully.');
+      onLogoutAll();
+    } catch (err: any) {
+      console.error('Failed to logout all devices:', err);
+      setError(err.response?.data?.message || 'Failed to logout from other devices. Please try again.');
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  };
+
+  const handleLogoutSingle = async () => {
+    if (!sessionToLogout) return;
+    const targetSessionId = sessionToLogout.id || (sessionToLogout as any)._id;
+    if (!targetSessionId) return;
+
+    setIsModalOpen(false);
+    setDeletingSessionId(targetSessionId);
+
+    try {
+      await authAPI.deleteSession(targetSessionId);
+      setSessions((prev) => prev.filter((s) => (s.id || (s as any)._id) !== targetSessionId));
+      addToast({ message: 'Device logged out successfully.', type: 'success' });
+    } catch (err: any) {
+      console.error('Failed to log out device:', err);
+      addToast({ message: 'Failed to log out device. Please try again.', type: 'error' });
+    } finally {
+      setDeletingSessionId(null);
+      setSessionToLogout(null);
+    }
   };
 
   return (
@@ -125,26 +189,60 @@ export function SecuritySettings({ values, onChange, onLogoutAll, onSave, isSavi
           <p className="text-sm font-semibold text-textBody">Active Sessions</p>
           <button
             type="button"
-            onClick={onLogoutAll}
-            className="rounded-lg border border-rose-400/40 bg-rose-400/10 px-3 py-1 text-xs font-semibold text-rose-200"
+            onClick={handleLogoutAll}
+            disabled={isLoadingSessions}
+            className="rounded-lg border border-rose-400/40 bg-rose-400/10 px-3 py-1 text-xs font-semibold text-rose-200 disabled:opacity-50"
           >
             Logout all devices
           </button>
         </div>
 
-        {values.activeSessions.length === 0 ? (
+        {isLoadingSessions ? (
+          <p className="text-sm text-textMuted">Loading active sessions...</p>
+        ) : sessions.length === 0 ? (
           <p className="text-sm text-textMuted">No active sessions.</p>
         ) : (
           <div className="space-y-2">
-            {values.activeSessions.map((session) => (
-              <div
-                key={session.id}
-                className="rounded-xl border border-cardBorder bg-cardBg px-3 py-2"
-              >
-                <p className="text-sm font-semibold text-textBody">{session.device}</p>
-                <p className="text-xs text-textMuted">{session.location} • {session.lastActive}</p>
-              </div>
-            ))}
+            {sessions.map((session: any) => {
+              const sessionId = session.id || session._id;
+              const isCurrent = session.isCurrent || session.current || session.lastActive === 'Now';
+              const isDeleting = deletingSessionId === sessionId;
+              return (
+                <div
+                  key={sessionId}
+                  className="rounded-xl border border-cardBorder bg-cardBg px-3 py-2"
+                >
+                  <div className="flex items-center justify-between space-x-3">
+                    <div className="flex-1">
+                      <div className="flex items-center flex-wrap gap-2">
+                        <p className="text-sm font-semibold text-textBody">
+                          {session.device || session.deviceName || 'Unknown Device'}
+                        </p>
+                        {isCurrent && (
+                          <span className="rounded-full bg-[#00FF9C]/10 px-2.5 py-0.5 text-[10px] font-bold text-[#00FF9C] uppercase tracking-wider">
+                            This Device
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-textMuted mt-1">
+                        {session.location || session.ip || 'Unknown Location'} • {formatTimeAgo(session.lastActive || session.createdAt || '')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={isDeleting || deletingSessionId !== null}
+                      onClick={() => {
+                        setSessionToLogout(session);
+                        setIsModalOpen(true);
+                      }}
+                      className="rounded-lg border border-rose-500/30 bg-rose-500/5 px-3 py-1.5 text-xs font-semibold text-rose-400 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isDeleting ? 'Logging out...' : 'Logout'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -162,6 +260,49 @@ export function SecuritySettings({ values, onChange, onLogoutAll, onSave, isSavi
       >
         {isSaving || isChangingPassword ? 'Saving...' : 'Save Changes'}
       </motion.button>
+
+      <AnimatePresence>
+        {isModalOpen && sessionToLogout && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-cardBorder bg-bgSidebar p-6 shadow-2xl z-10"
+            >
+              <h3 className="text-lg font-bold text-white mb-2">Logout Device?</h3>
+              <p className="text-sm text-textSecondary mb-6 leading-relaxed">
+                Are you sure you want to log out this device?
+                <br /><br />
+                This session will be terminated immediately and the user will need to sign in again to access CropDesk.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="rounded-xl border border-cardBorder bg-white/5 px-4 py-2.5 text-sm font-semibold text-textBody transition hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogoutSingle}
+                  className="rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-600"
+                >
+                  Logout
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

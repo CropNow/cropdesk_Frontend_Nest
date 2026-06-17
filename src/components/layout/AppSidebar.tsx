@@ -25,6 +25,7 @@ const deviceLinks: DeviceLink[] = [
   { label: 'NEST', to: '/dashboard?device=nest' },
   { label: 'Seed', to: '/dashboard?device=seed' },
   { label: 'Aero Drone', to: '/dashboard?device=aero' },
+  { label: 'Device Logs', to: '/device-logs' },
 ];
 
 export function AppSidebar() {
@@ -43,7 +44,7 @@ export function AppSidebar() {
   };
 
   const isDevicesSectionActive = useMemo(() => {
-    return location.pathname === '/dashboard' && location.search.includes('device=');
+    return (location.pathname === '/dashboard' && location.search.includes('device=')) || location.pathname === '/device-logs';
   }, [location.pathname, location.search]);
 
   const isExpanded = isMobileOpen || isDockedOpen;
@@ -92,7 +93,7 @@ export function AppSidebar() {
       >
         <div className="relative flex h-full flex-col px-3 py-4 sm:px-4 sm:py-5">
           <div className="mb-5 flex items-center justify-between sm:mb-7">
-<Link
+            <Link
               to="/dashboard"
               className={[
                 'group flex items-center rounded-2xl transition-all duration-200',

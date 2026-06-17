@@ -29,7 +29,7 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
   const [showNestDetails, setShowNestDetails] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
-  
+
   const activeSensorsCount = data?.activeSensorsCount ?? 12;
   const isAnySensorModalOpen = showNestDetails;
   // The deviceId used for nest-device API (serialNumber like "01")
@@ -39,7 +39,7 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
     setShowExportMenu(false);
     try {
       const sensorId = data?.latestData?.sensorId || data?.latestData?.deviceId;
-      
+
       if (!sensorId) {
         addToast({
           message: 'No sensor ID found for export.',
@@ -49,14 +49,14 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
       }
 
       setIsExporting(true);
-      
+
       await sensorsAPI.exportData({
         sensorId,
         format: 'csv',
         range,
         email: true
       });
-      
+
       addToast({
         message: 'Data export request sent. You will receive an email shortly.',
         type: 'success'
@@ -121,20 +121,20 @@ export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, l
                 <div>
                   <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/50">Last Sync</p>
                   <p className="text-2xl font-bold tracking-tight text-white/90">
-                    {data?.timestamp ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </p>
                   <p className="text-[0.75rem] font-medium text-white/50">
-                    {data?.timestamp ? new Date(data.timestamp).toLocaleDateString() : 'N/A'}
+                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/50">Last Fetch</p>
                   <p className="text-2xl font-bold tracking-tight text-white/90">
-                    {lastFetchTime ? lastFetchTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </p>
                   <p className="text-[0.75rem] font-medium text-white/50">
-                    {lastFetchTime ? lastFetchTime.toLocaleDateString() : 'N/A'}
+                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
               </div>
@@ -290,7 +290,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
   const isWeek = selectedRange === '7 Days';
   const pointsCount = isDay ? 24 : (isWeek ? 7 : 30);
   const intervalMs = isDay ? 3600000 : 86400000;
-  
+
   const timeline = Array.from({ length: pointsCount }, (_, i) => {
     const time = new Date(now.getTime() - (pointsCount - 1 - i) * intervalMs);
     if (isDay) time.setMinutes(0, 0, 0);
@@ -309,7 +309,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
       const realTime = new Date(realPoint.timestamp || realPoint._id || realPoint.time).getTime();
       let closestIdx = -1;
       let minDiff = Infinity;
-      
+
       timeline.forEach((slot, idx) => {
         const diff = Math.abs(new Date(slot.timestamp).getTime() - realTime);
         if (diff < minDiff) {
@@ -319,9 +319,9 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
       });
 
       if (closestIdx !== -1 && minDiff < intervalMs) {
-        timeline[closestIdx] = { 
-          ...timeline[closestIdx], 
-          ...realPoint, 
+        timeline[closestIdx] = {
+          ...timeline[closestIdx],
+          ...realPoint,
           isPlaceholder: false,
           [metricKey]: realPoint[metricKey] ?? realPoint.average ?? 0
         };
@@ -333,7 +333,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
 
   const points = chartData.map((d: any) => {
     let val: number | undefined;
-    
+
     if (metricKey && d[metricKey] !== undefined && d[metricKey] !== null) {
       const num = Number(d[metricKey]);
       if (!isNaN(num)) val = num;
@@ -365,7 +365,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
         }
       }
     }
-    
+
     return val !== undefined ? val : 0;
   });
 
@@ -399,7 +399,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
   const currentBarWidth = barCount > 1 ? Math.max(step * 0.7, 4) : 40;
 
   const bars = points.map((val, i) => {
-    const x = barCount > 1 
+    const x = barCount > 1
       ? paddingLeft + i * step + (step - currentBarWidth) / 2
       : paddingLeft + (width - paddingLeft - paddingRight) / 2 - currentBarWidth / 2;
     const barHeight = ((val - displayMin) / (displayRange || 1)) * (height - paddingTop - paddingBottom);
@@ -428,11 +428,11 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
     if (!d) return '';
     const timeKey = ['timestamp', 'createdAt', 'time', 'date', 'updatedAt', 'created_at', 'updated_at', 'ts'].find(k => d[k]);
     if (!timeKey) return '';
-    
+
     try {
       const date = new Date(d[timeKey]);
       if (isNaN(date.getTime())) return '';
-      
+
       if (selectedRange === '24 Hours') {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
       } else if (selectedRange === '7 Days') {
@@ -447,12 +447,12 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
     }
   };
 
-  const labelsWithIndices = chartData.map((d: any, i: number) => ({ 
-    label: getFormattedLabel(d), 
-    index: i 
+  const labelsWithIndices = chartData.map((d: any, i: number) => ({
+    label: getFormattedLabel(d),
+    index: i
   })).filter(l => l.label !== '');
 
-  const uniqueLabels = labelsWithIndices.filter((item, pos, self) => 
+  const uniqueLabels = labelsWithIndices.filter((item, pos, self) =>
     self.findIndex(v => v.label === item.label) === pos
   );
 
@@ -472,21 +472,21 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
         const y = getY(val);
         return (
           <g key={`y-${idx}`}>
-            <line 
-              x1={paddingLeft} 
-              y1={y} 
-              x2={width - paddingRight} 
-              y2={y} 
-              stroke="white" 
-              strokeOpacity={idx === 0 ? "0.2" : "0.05"} 
-              strokeWidth={idx === 0 ? 2 : 1} 
+            <line
+              x1={paddingLeft}
+              y1={y}
+              x2={width - paddingRight}
+              y2={y}
+              stroke="white"
+              strokeOpacity={idx === 0 ? "0.2" : "0.05"}
+              strokeWidth={idx === 0 ? 2 : 1}
             />
-            <text 
-              x={paddingLeft - 12} 
-              y={y + 4} 
-              fill="white" 
-              fillOpacity="0.7" 
-              fontSize="12" 
+            <text
+              x={paddingLeft - 12}
+              y={y + 4}
+              fill="white"
+              fillOpacity="0.7"
+              fontSize="12"
               fontWeight="900"
               textAnchor="end"
               className="select-none tabular-nums"
@@ -503,8 +503,8 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
           x={getX(l.index)}
           y={height - 10}
           fill="white"
-          fillOpacity="0.7" 
-          fontSize="12" 
+          fillOpacity="0.7"
+          fontSize="12"
           fontWeight="900"
           textAnchor="middle"
           className="select-none"
@@ -512,7 +512,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
           {l.label}
         </text>
       ))}
-      
+
       {chartType === 'line' ? (
         <g>
           {points.length > 1 ? (
@@ -537,7 +537,7 @@ function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24
           ))}
         </g>
       ) : (
-        <g 
+        <g
           onClick={() => setSelectedPoint(null)}
           className="h-full w-full"
         >
@@ -613,7 +613,13 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
       'Air Pressure': 'pressure',
       'SO2': 'so2',
       'NO2': 'no2',
-      'O3': 'o3'
+      'O3': 'o3',
+      'Soil Moisture 1': 'soil_moisture_1',
+      'Soil Moisture 2': 'soil_moisture_2',
+      'Soil Temp 1': 'soil_temperature',
+      'Soil Temp 2': 'soil_temperature_2',
+      'Air Humidity': 'humidity',
+      'Pressure': 'pressure'
     };
     return map[title] || null;
   };
@@ -633,7 +639,7 @@ function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId
         console.error('Failed to fetch chart data:', err);
       }
     };
-    
+
     fetchHistory();
     const interval = setInterval(fetchHistory, 30 * 60 * 1000);
     return () => clearInterval(interval);
@@ -734,7 +740,13 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
       'Air Pressure': 'pressure',
       'SO2': 'so2',
       'NO2': 'no2',
-      'O3': 'o3'
+      'O3': 'o3',
+      'Soil Moisture 1': 'soil_moisture_1',
+      'Soil Moisture 2': 'soil_moisture_2',
+      'Soil Temp 1': 'soil_temperature',
+      'Soil Temp 2': 'soil_temperature_2',
+      'Air Humidity': 'humidity',
+      'Pressure': 'pressure'
     };
     return map[title] || null;
   };
@@ -754,7 +766,7 @@ function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?
         console.error('Failed to fetch chart data:', err);
       }
     };
-    
+
     fetchHistory();
     const interval = setInterval(fetchHistory, 30 * 60 * 1000);
     return () => clearInterval(interval);
@@ -839,16 +851,18 @@ function NestSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose:
     { id: 'co', title: 'CO', value: data?.values?.co ?? '0', unit: 'ppm', icon: Activity, color: '#F59E0B' },
     { id: 'no2', title: 'NO2', value: data?.values?.no2 ?? '0', unit: 'ppm', icon: Activity, color: '#F97316' },
     { id: 'o3', title: 'O3', value: data?.values?.o3 ?? '0', unit: 'ppm', icon: Activity, color: '#22C55E' },
-    { id: 'temp1', title: 'Temperature 1', value: data?.values?.temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
-    { id: 'temp2', title: 'Temperature 2', value: data?.values?.temperature2 ?? '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
-    { id: 'hum1', title: 'Humidity 1', value: data?.values?.humidity ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
-    { id: 'hum2', title: 'Humidity 2', value: data?.values?.humidity2 ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
+    { id: 'temperature', title: 'Air Temperature', value: data?.values?.temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
+    { id: 'humidity', title: 'Air Humidity', value: data?.values?.humidity ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
+    { id: 'soil_temp1', title: 'Soil Temp 1', value: data?.values?.soil_temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F97316' },
+    { id: 'soil_temp2', title: 'Soil Temp 2', value: data?.values?.soil_temperature_2 ?? '0', unit: '°C', icon: Thermometer, color: '#F97316' },
+    { id: 'soil_mois1', title: 'Soil Moisture 1', value: data?.values?.soil_moisture_1 !== undefined ? (Number(data.values.soil_moisture_1) / 100).toFixed(2) : '0', unit: 'v/v', icon: Droplets, color: '#06B6D4' },
+    { id: 'soil_mois2', title: 'Soil Moisture 2', value: data?.values?.soil_moisture_2 !== undefined ? (Number(data.values.soil_moisture_2) / 100).toFixed(2) : '0', unit: 'v/v', icon: Droplets, color: '#06B6D4' },
     { id: 'leaf', title: 'Leaf Wetness', value: data?.values?.leaf ?? '0', unit: '%', icon: Leaf, color: '#22C55E' },
     { id: 'wind_speed', title: 'Wind Speed', value: data?.values?.wind_speed ?? '0', unit: 'm/s', icon: Wind, color: '#60A5FA' },
     { id: 'wind_dir', title: 'Wind Direction', value: data?.values?.wind_dir ?? '0', unit: '°', icon: Wind, color: '#60A5FA' },
     { id: 'pressure', title: 'Pressure', value: data?.values?.pressure ?? '0', unit: 'hPa', icon: Gauge, color: '#8B5CF6' },
     { id: 'solar_radiation', title: 'Solar Radiation', value: data?.values?.solar_radiation ?? '0', unit: 'W/m²', icon: Sun, color: '#FBBF24' },
-    { id: 'rainfall', title: 'Rainfall', value: data?.values?.rainfall ?? '0', unit: 'mm', icon: CloudRain, color: '#06B6D4' },
+    { id: 'rainfall', title: 'Rainfall', value: data?.values?.rainfall ?? '0', unit: 'mm', icon: CloudRain, color: '#3B82F6' },
   ];
 
   const gridGroups = [];

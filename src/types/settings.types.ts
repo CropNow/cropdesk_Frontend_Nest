@@ -10,6 +10,26 @@ export interface UserSettings {
   integrations: IntegrationSettings;
 }
 
+export interface NotificationAlertTypes {
+  pest: boolean;
+  fungal: boolean;
+  irrigation: boolean;
+  weather: boolean;
+}
+
+export interface NotificationChannels {
+  sms: boolean;
+  email: boolean;
+  push: boolean;
+}
+
+export interface NotificationPreferences {
+  alertTypes: NotificationAlertTypes;
+  channels: NotificationChannels;
+  pushTokens: string[];
+}
+
+/** @deprecated Use NotificationPreferences instead */
 export interface NotificationSettings {
   emailNotifications: boolean;
   pushNotifications: boolean;

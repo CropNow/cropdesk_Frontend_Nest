@@ -50,5 +50,20 @@ export const authAPI = {
    */
   changePassword: (data: ChangePasswordRequest) =>
     apiClient.post('/auth/change-password', data),
+
+  /**
+   * Get all active sessions
+   */
+  getSessions: () => apiClient.get('/auth/sessions'),
+
+  /**
+   * Delete all sessions (logout all devices)
+   */
+  deleteSessions: () => apiClient.delete('/auth/sessions'),
+
+  /**
+   * Delete a specific active session
+   */
+  deleteSession: (id: string) => apiClient.delete(`/auth/sessions/${id}`),
 };
 

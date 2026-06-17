@@ -6,6 +6,7 @@ import { WelcomeHeader } from '../../components/sections/WelcomeHeader';
 import { DeviceSection } from '../../components/sections/DeviceSection';
 import { FarmHealthSection } from '../../components/sections/FarmHealthSection';
 import { EmptyDashboard } from '../../components/sections/EmptyDashboard';
+import { CachedDataBadge } from '../../components/common/CachedDataBadge';
 
 // Defer below-the-fold sections so above-the-fold (Welcome + Device + FarmHealth)
 // can paint without waiting for these chunks.
@@ -29,10 +30,10 @@ export function DashboardPage() {
     cycleDevice,
     error,
     dashboardData,
-    weatherSummary,
     farms,
     backendDevices,
     lastFetchTime,
+    isCached,
   } = useDashboardState();
 
 
@@ -46,7 +47,6 @@ export function DashboardPage() {
     return (
       <EmptyDashboard 
         currentTime={currentTime}
-        weatherSummary={weatherSummary}
       />
     );
   }
@@ -67,33 +67,25 @@ export function DashboardPage() {
     );
   }
 
-  // Use weather from dashboardData if available, otherwise use from hook
-  const displayWeather = dashboardData?.weather ? {
-    temp: `${dashboardData.weather.temperature} C`,
-    condition: dashboardData.weather.condition,
-    city: `${dashboardData.weather.city}, ${dashboardData.weather.country}`
-  } : {
-    ...weatherSummary,
-    city: dashboardData?.farm?.name ? `${dashboardData.farm.name}, ${dashboardData.farm.location?.city || ''}` : weatherSummary.city
-  };
-
   return (
     <DashboardLayout>
       <WelcomeHeader 
         currentTime={currentTime} 
-        weather={displayWeather} 
         userName={user ? `${user.firstName} ${user.lastName}` : 'Farmer'}
       />
 
+      {isCached && <CachedDataBadge lastSyncTime={lastFetchTime} />}
+
       <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
         <DeviceSection
-          device={currentDevice}
+          device={currentDevice!}
           selectedDeviceType={selectedDeviceType}
           currentDeviceIndex={currentDeviceIndex}
           cycleDevice={cycleDevice}
         />
         <FarmHealthSection data={dashboardData?.health} />
       </div>
+
 
       <section className="grid gap-6 xl:grid-cols-5">
         <Suspense fallback={<SectionFallback />}>

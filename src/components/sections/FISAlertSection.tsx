@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { FIS_CARDS } from '../../constants/deviceConstants';
 import { alertsAPI } from '../../api/alerts.api';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * FISAlertSection - Field Intelligence System alerts (V2 design with linear progress bars)
@@ -21,6 +22,7 @@ export function FISAlertSection({ data }: { data?: any }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCard, setSelectedCard] = useState<any | null>(null);
   const { theme } = useTheme();
+  const { addToast } = useToast();
 
   useEffect(() => {
     const checkAcknowledgment = () => {
@@ -64,6 +66,7 @@ export function FISAlertSection({ data }: { data?: any }) {
       const now = Date.now();
       localStorage.setItem('fis_alert_acknowledged_at', now.toString());
       setIsAcknowledged(true);
+      addToast({ message: 'Prescription Acknowledged Successfully', type: 'success' });
 
       // Reset after 30 minutes
       setTimeout(() => {
@@ -108,7 +111,7 @@ export function FISAlertSection({ data }: { data?: any }) {
           const IconComponent = isComponent
             ? rawIcon
             : (FIS_CARDS.find((c: any) => c.title === card.title)?.icon || Activity);
-          
+
           const statusColors = {
             Optimal: 'from-emerald-500/20 to-emerald-500/5 text-emerald-400 border-emerald-500/20',
             Warning: 'from-amber-500/20 to-amber-500/5 text-amber-400 border-amber-500/20',
@@ -143,7 +146,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                 </div>
 
                 <p className="mb-4 text-[0.85rem] font-medium leading-[1.5] text-white/50 line-clamp-2 transition-all duration-300 group-hover:line-clamp-none">
-                  {card.body}
+                  {typeof card.body === 'object' && card.body !== null ? JSON.stringify(card.body) : card.body}
                 </p>
               </div>
 
@@ -160,7 +163,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                     className={`h-full rounded-full bg-gradient-to-r shadow-lg ${barColors[card.status as keyof typeof barColors]}`}
                   />
                 </div>
-                
+
                 {isViewableCard && (
                   <button
                     onClick={() => setSelectedCard(card)}
@@ -285,15 +288,14 @@ export function FISAlertSection({ data }: { data?: any }) {
                 <p className="text-[0.6rem] font-bold uppercase tracking-[0.25em] text-[#00FF9C]/60">Expert Recommendation</p>
               </div>
             </div>
-            
+
             <button
               onClick={handleAcknowledge}
               disabled={isAcknowledged || isSubmitting}
-              className={`hidden sm:flex items-center gap-2 rounded-xl px-7 py-2.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 ${
-                isAcknowledged 
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+              className={`hidden sm:flex items-center gap-2 rounded-xl px-7 py-2.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 ${isAcknowledged
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                   : 'bg-[#00FF9C] text-black hover:shadow-[0_0_20px_rgba(0,255,156,0.4)]'
-              }`}
+                }`}
             >
               {isAcknowledged ? (
                 <>
@@ -305,32 +307,18 @@ export function FISAlertSection({ data }: { data?: any }) {
           </div>
 
           <p className="text-[0.95rem] font-medium leading-[1.7] text-white/80">
-            {suggestion.body}
+            {typeof suggestion.body === 'object' && suggestion.body !== null ? JSON.stringify(suggestion.body) : suggestion.body}
           </p>
 
-          <div className="flex flex-col gap-2.5">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">System Confidence</span>
-              <span className="text-sm font-bold text-[#00FF9C] tabular-nums">{suggestion.confidence}</span>
-            </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/20 border border-white/5">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: suggestion.confidence }}
-                transition={{ duration: 1.2, delay: 0.3 }}
-                className="h-full rounded-full bg-gradient-to-r from-[#00FF9C] to-emerald-400 shadow-[0_0_15px_rgba(0,255,156,0.2)]"
-              />
-            </div>
-          </div>
+
 
           <button
             onClick={handleAcknowledge}
             disabled={isAcknowledged || isSubmitting}
-            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 sm:hidden ${
-              isAcknowledged 
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 sm:hidden ${isAcknowledged
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                 : 'bg-[#00FF9C] text-black'
-            }`}
+              }`}
           >
             {isAcknowledged ? 'Acknowledged' : (isSubmitting ? 'Acknowledge' : 'Acknowledge')}
           </button>

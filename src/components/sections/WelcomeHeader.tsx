@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Sun, Moon } from 'lucide-react';
+import { Bell, Sun, Moon, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * WelcomeHeader - Top welcome section with time and weather
@@ -9,17 +12,22 @@ import { useTheme } from '../../contexts/ThemeContext';
 interface WelcomeHeaderProps {
   currentTime: Date;
   userName?: string;
-  weather?: {
-    temp: string;
-    condition: string;
-    city?: string;
-  };
 }
 
-export function WelcomeHeader({ currentTime, userName = 'User', weather }: WelcomeHeaderProps) {
+export function WelcomeHeader({ currentTime, userName = 'User' }: WelcomeHeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const [isTrayOpen, setIsTrayOpen] = useState(false);
   const trayRef = useRef<HTMLDivElement | null>(null);
+
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { addToast } = useToast();
+
+  const handleLogout = () => {
+    logout();
+    addToast({ message: 'Logged out successfully', type: 'success' });
+    navigate('/login');
+  };
 
   const notifications = useMemo(
     () => [],
@@ -45,15 +53,6 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
     };
   }, [isTrayOpen]);
 
-  const displayWeather = useMemo(() => {
-    if (weather) return weather;
-    return {
-      temp: '-- C',
-      condition: 'Unknown',
-      city: 'N/A',
-    };
-  }, [weather]);
-
   return (
     <motion.section
       initial={{ y: 16, opacity: 0 }}
@@ -72,10 +71,6 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
             <span className="hidden sm:inline text-textHint"> • </span>
             <span className="block sm:inline">
               {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-            <span className="hidden md:inline text-textHint"> • </span>
-            <span className="block md:inline mt-1 md:mt-0 text-textSecondary">
-              {displayWeather.city || 'N/A'}
             </span>
           </p>
         </div>
@@ -103,6 +98,15 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
                     {unreadCount}
                   </span>
                 ) : null}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cardBorder bg-cardBg text-red-500 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
+                aria-label="Log out"
+              >
+                <LogOut className="h-4 w-4" />
               </button>
 
               {isTrayOpen ? (
@@ -142,14 +146,6 @@ export function WelcomeHeader({ currentTime, userName = 'User', weather }: Welco
                 </div>
               ) : null}
             </div>
-          </div>
-
-          <div className="mt-1 flex items-baseline gap-2 sm:gap-3">
-            <p className="text-2xl font-extrabold tracking-tighter text-textHeading sm:text-3xl lg:text-4xl">
-              {displayWeather.temp.split(' ')[0]}
-              <span className="text-lg text-textMuted sm:text-xl lg:text-3xl">°C</span>
-            </p>
-            <p className="text-xs font-medium text-textSecondary sm:text-lg">{displayWeather.condition}</p>
           </div>
         </div>
       </div>
