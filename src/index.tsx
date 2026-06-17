@@ -1,14 +1,16 @@
-import './index.css';
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { App } from './App';
-import { AuthProvider } from './contexts/AuthContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { ToastProvider } from './contexts/ToastContext';
-import { ToastContainer } from './components/common/ToastContainer';
-import { OnlineStatusProvider } from './contexts/OnlineStatusContext';
+import "@shared/styles/index.css";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import { App } from "@app/App";
+import { AuthProvider } from "@app/providers/AuthContext";
+import { ThemeProvider } from "@app/providers/ThemeContext";
+import { ToastProvider } from "@app/providers/ToastContext";
+import { ToastContainer } from "@shared/components/ToastContainer";
+import { OnlineStatusProvider } from "@app/providers/OnlineStatusContext";
 
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+const root = ReactDOM.createRoot(
+  document.getElementById("root") as HTMLElement,
+);
 root.render(
   <BrowserRouter>
     <ThemeProvider>
@@ -23,4 +25,3 @@ root.render(
     </ThemeProvider>
   </BrowserRouter>,
 );
-
