@@ -365,9 +365,12 @@ export function DeviceSettings({
           name: wizardData.farmerName,
           phone: wizardData.phoneNumber,
           email: wizardData.emailAddress,
-          village: wizardData.village,
-          district: wizardData.district,
-          state: wizardData.farmerState,
+          address: {
+            village: wizardData.village,
+            district: wizardData.district,
+            state: wizardData.farmerState,
+            country: 'India'
+          }
         });
 
         const createdFarmer = response.data?.data || response.data;

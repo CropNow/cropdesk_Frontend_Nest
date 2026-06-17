@@ -12,10 +12,14 @@ import {
   ExternalLink,
   BookOpen,
   Wifi,
+  WifiOff,
   Clock,
   Send
 } from 'lucide-react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
+import { useOnlineStatus } from '../contexts/OnlineStatusContext';
+import { useToast } from '../contexts/ToastContext';
+import { supportAPI } from '../api/support.api';
 
 const FAQ_DATA = [
   {
@@ -71,6 +75,8 @@ const TROUBLESHOOTING_GUIDES = [
 ];
 
 export function SupportPage() {
+  const { isOnline } = useOnlineStatus();
+  const { addToast } = useToast();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [activeGuide, setActiveGuide] = useState<number | null>(null);
   const [formState, setFormState] = useState({
@@ -81,15 +87,25 @@ export function SupportPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isOnline) {
+      addToast({ message: 'You are offline. Please check your connection.', type: 'error' });
+      return;
+    }
     setIsSubmitting(true);
-    // Mock API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await supportAPI.raiseTicket(formState);
+      addToast({ message: 'Ticket submitted successfully!', type: 'success' });
       setSubmitted(true);
       setFormState({ subject: '', category: 'Technical', message: '' });
-    }, 1500);
+    } catch (error: any) {
+      console.error('Failed to submit ticket:', error);
+      const errorMsg = error.response?.data?.message || 'Failed to submit support ticket. Please try again.';
+      addToast({ message: errorMsg, type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -234,10 +250,17 @@ export function SupportPage() {
                   </motion.div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-5">
+                    {!isOnline && (
+                      <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs font-semibold text-red-400">
+                        <WifiOff className="h-4 w-4" />
+                        <span>You are currently offline. Ticket submission is unavailable.</span>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase tracking-widest text-textMuted">Category</label>
                       <select 
-                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white focus:border-[#00FF9C]/50 focus:outline-none"
+                        disabled={!isOnline}
+                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white focus:border-[#00FF9C]/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         value={formState.category}
                         onChange={(e) => setFormState({...formState, category: e.target.value})}
                       >
@@ -252,8 +275,9 @@ export function SupportPage() {
                       <input 
                         type="text"
                         required
-                        placeholder="E.g. NEST Sensor offline"
-                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-textHint focus:border-[#00FF9C]/50 focus:outline-none"
+                        disabled={!isOnline}
+                        placeholder={isOnline ? "E.g. NEST Sensor offline" : "Offline - please reconnect"}
+                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-textHint focus:border-[#00FF9C]/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         value={formState.subject}
                         onChange={(e) => setFormState({...formState, subject: e.target.value})}
                       />
@@ -263,16 +287,17 @@ export function SupportPage() {
                       <textarea 
                         required
                         rows={4}
-                        placeholder="Describe the issue in detail..."
-                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-textHint focus:border-[#00FF9C]/50 focus:outline-none"
+                        disabled={!isOnline}
+                        placeholder={isOnline ? "Describe the issue in detail..." : "Offline - please reconnect"}
+                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-textHint focus:border-[#00FF9C]/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         value={formState.message}
                         onChange={(e) => setFormState({...formState, message: e.target.value})}
                       />
                     </div>
                     <button
                       type="submit"
-                      disabled={isSubmitting}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00FF9C] py-4 font-bold text-black transition-transform active:scale-95 disabled:opacity-50"
+                      disabled={isSubmitting || !isOnline}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00FF9C] py-4 font-bold text-black transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? 'Sending...' : (
                         <>
@@ -289,7 +314,7 @@ export function SupportPage() {
                 <div className="rounded-2xl border border-white/5 bg-white/5 p-6">
                   <Mail className="mb-3 h-5 w-5 text-cyan-400" />
                   <h4 className="text-sm font-bold text-white">Email Us</h4>
-                  <p className="text-xs text-textSecondary">support@cropnow.com</p>
+                  <p className="text-xs text-textSecondary">support@cropnow.in</p>
                 </div>
                 <div className="rounded-2xl border border-white/5 bg-white/5 p-6">
                   <Phone className="mb-3 h-5 w-5 text-[#00FF9C]" />

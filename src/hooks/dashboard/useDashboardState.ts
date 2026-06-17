@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { DEVICE_LIBRARY, DeviceType, FARM_STATUS_METRICS } from '../../constants/deviceConstants';
+import { DeviceType, FARM_STATUS_METRICS } from '../../constants/deviceConstants';
 import { isDeviceType } from '../../utils/deviceUtils';
 import { dashboardAPI } from '../../api/dashboard.api';
 import { sensorsAPI } from '../../api/sensors.api';
+import { useOnlineStatus } from '../../contexts/OnlineStatusContext';
+import {
+  saveDashboardCache,
+  loadDashboardCache,
+  saveFarmsCache,
+  loadFarmsCache,
+  getLastSyncTimestamp
+} from '../../utils/dashboardCache';
 
 export function useDashboardState() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -13,6 +21,7 @@ export function useDashboardState() {
   const [selectedDeviceType, setSelectedDeviceType] = useState<DeviceType>(initialType);
   const [currentDeviceIndex, setCurrentDeviceIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { isOnline } = useOnlineStatus();
 
   // ─── API Data Fetching ───
   const [farms, setFarms] = useState<any[]>([]);
@@ -24,16 +33,29 @@ export function useDashboardState() {
   const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [locationName, setLocationName] = useState<string>('');
-
-  // Consolidated Fetcher logic inside useEffect below
+  const [isCached, setIsCached] = useState(false);
 
   // 1. Initial Load: Get Farms
   useEffect(() => {
     const initFarms = async () => {
+      if (!isOnline || !navigator.onLine) {
+        console.log('[Offline Mode Active] Initial load: getting farms from cache');
+        const { farms: cachedFarms, selectedFarmId: cachedFarmId } = loadFarmsCache();
+        if (cachedFarms.length > 0) {
+          console.log('[Cache Loaded] Loaded cached farms. Setting selectedFarmId to:', cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id);
+          setFarms(cachedFarms);
+          setSelectedFarmId(cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id);
+          setIsCached(true);
+        } else {
+          console.log('[Offline Mode Active] No cached farms found.');
+          setIsLoading(false);
+        }
+        return;
+      }
+
       try {
         setIsLoading(true);
         const res = await dashboardAPI.getFarms();
-        // Backend returns { status: 'success', data: { farms: [...] } }
         const data = res.data?.data;
         const farmsList = data?.farms || (Array.isArray(data) ? data : (Array.isArray(res.data) ? res.data : []));
         
@@ -41,55 +63,71 @@ export function useDashboardState() {
         
         if (farmsList.length > 0) {
           const firstFarm = farmsList[0];
-          setSelectedFarmId(firstFarm.id || firstFarm._id);
+          const firstFarmId = firstFarm.id || firstFarm._id;
+          setSelectedFarmId(firstFarmId);
+          saveFarmsCache(farmsList, firstFarmId);
+          console.log('[Cache Saved] Saved farms list to cache.');
         } else {
           setIsLoading(false);
         }
       } catch (err: any) {
-        console.error('Farms Fetch Error:', err);
-        setError(err.message || 'Failed to fetch farms');
-        setIsLoading(false);
+        console.error('Farms Fetch Error, attempting cache fallback:', err);
+        console.log('[Offline Mode Active] Farms Fetch Error. Using cache fallback...');
+        const { farms: cachedFarms, selectedFarmId: cachedFarmId } = loadFarmsCache();
+        if (cachedFarms.length > 0) {
+          console.log('[Cache Loaded] Loaded cached farms. Setting selectedFarmId to:', cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id);
+          setFarms(cachedFarms);
+          setSelectedFarmId(cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id);
+          setIsCached(true);
+          setError(null);
+        } else {
+          setError(err.message || 'Failed to fetch farms');
+          setIsLoading(false);
+        }
       }
     };
     initFarms();
-  }, []);
+  }, [isOnline]);
 
-  // 2. Fetch Farm Data: When farmId changes
+  // 2. Fetch Farm Data: When farmId, selectedDeviceType, or currentDeviceIndex changes, or when isOnline changes
   useEffect(() => {
     if (!selectedFarmId) return;
 
     const fetchFarmData = async () => {
-      try {
-        setIsLoading(true);
-        
-        const cacheKey = `dashboard_data_${selectedFarmId}_${selectedDeviceType}_${currentDeviceIndex}`;
-        const cachedStr = localStorage.getItem(cacheKey);
-        
-        if (cachedStr && false) { // Temporarily bypassed to clear old Visibility cache
-          try {
-            const cached = JSON.parse(cachedStr as string);
-            const now = Date.now();
-            if (now - cached.timestamp < 30 * 60 * 1000) {
-              // Use cached data if within 30 minutes
-              setDashboardData(cached.data);
-              setBackendDevices(cached.devices);
-              setLastFetchTime(new Date(cached.timestamp));
-              setIsLoading(false);
-              return;
-            }
-          } catch (e) {
-            console.error('Cache parse error', e);
-          }
-        }
+      setIsLoading(true);
 
-        setLastFetchTime(new Date());
-        
-        // Fetch devices and latest readings in parallel where possible
-        // 1. Fetch devices first to establish if we have any sensors
+      if (!isOnline || !navigator.onLine) {
+        console.log(`[Offline Mode Active] Fetching farm data from cache for farm: ${selectedFarmId}, deviceType: ${selectedDeviceType}, index: ${currentDeviceIndex}`);
+        const cached = loadDashboardCache(selectedFarmId, selectedDeviceType, currentDeviceIndex);
+        if (cached) {
+          console.log('[Cache Loaded] Using cached dashboard data.');
+          console.log('[Using cached dashboard data] Successfully loaded dashboard state.');
+          setDashboardData(cached.dashboardData);
+          setBackendDevices(cached.backendDevices);
+          const syncTimestamp = getLastSyncTimestamp();
+          setLastFetchTime(syncTimestamp ? new Date(syncTimestamp) : new Date(cached.timestamp));
+          setIsCached(true);
+          setError(null);
+        } else {
+          console.log('[Offline Mode Active] No cached dashboard data found. Falling back to Empty Dashboard.');
+          setDashboardData(null);
+          setBackendDevices([]);
+          setLastFetchTime(null);
+          setIsCached(false);
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      try {
         const [devicesRes, sensorsRes] = await Promise.all([
           dashboardAPI.getFarmDevices(selectedFarmId).catch(() => ({ data: null })),
           sensorsAPI.getSensors({ type: selectedDeviceType.toUpperCase() }).catch(() => ({ data: null })),
         ]);
+
+        if (!devicesRes || devicesRes.data === null) {
+          throw new Error('Network error: failed to fetch devices');
+        }
 
         let devices: any[] = [];
         const addDevices = (res: any) => {
@@ -105,15 +143,13 @@ export function useDashboardState() {
         };
         addDevices(devicesRes);
         addDevices(sensorsRes);
-        setBackendDevices(devices); // Sync state for deviceList memo
+        setBackendDevices(devices);
 
-        // 2. Decide which APIs to call based on device presence
         const hasDevices = devices.length > 0;
         const primaryDevice = devices[currentDeviceIndex % (devices.length || 1)] || devices[0];
         const deviceId = primaryDevice?.id || primaryDevice?._id;
         const serialNumber = primaryDevice?.serialNumber || primaryDevice?.deviceId;
 
-        // Format today's date as YYYY/MM/DD for nest-device API
         const now = new Date();
         const todayDate = [
           now.getFullYear(),
@@ -142,7 +178,6 @@ export function useDashboardState() {
         const stats = statsRes?.data?.data || statsRes?.data;
         const alertsData = alertsRes?.data?.data || alertsRes?.data || [];
 
-        // Fetch sensor ID for aggregates
         let actualSensorId = null;
         try {
           const allSensorsRes = await sensorsAPI.getSensors();
@@ -154,13 +189,10 @@ export function useDashboardState() {
           console.error('Failed to fetch sensors', err);
         }
 
-        // Parse nest-device/data response
-        // Response: { success, status: 'online'|'offline', data: { deviceId, time, timestamp, values: {...} } }
         let sensorLatestData = null;
         const nestResponse = latestRes?.data;
         const isDeviceOnline = nestResponse?.status === 'online';
         
-        // Robust timestamp extraction
         const apiTimestamp = nestResponse?.data?.timestamp || nestResponse?.data?.time || nestResponse?.timestamp || stats?.latestData?.timestamp || overview?.lastUpdate;
 
         if (nestResponse?.success && nestResponse?.data) {
@@ -169,7 +201,7 @@ export function useDashboardState() {
             deviceId: serialNumber || deviceId,
             sensorId: actualSensorId,
             isOnline: isDeviceOnline,
-            timestamp: apiTimestamp // Ensure it's explicitly set here
+            timestamp: apiTimestamp
           };
         }
         
@@ -182,8 +214,8 @@ export function useDashboardState() {
           sensorLatestData = {
             deviceId: serialNumber || primaryDevice?.id || primaryDevice?._id || actualSensorId || 'none',
             sensorId: actualSensorId || 'none',
-            isOnline: isDeviceOnline, // Use the status from the top level response
-            timestamp: apiTimestamp, // Use extracted timestamp
+            isOnline: isDeviceOnline,
+            timestamp: apiTimestamp,
             values: {
               pm1_0: 0, pm2_5: 0, pm10: 0, co2: 0, voc: 0,
               temperature: 0, humidity: 0, temperature2: 0, humidity2: 0,
@@ -192,14 +224,12 @@ export function useDashboardState() {
           };
         }
 
-        // Map metrics from statistics or fallback
-        // nest-device values: temperature, humidity, wind_speed, wind_dir, pm2_5, pm10, co2, o3, no2, leaf
         const mappedMetrics = FARM_STATUS_METRICS.map(m => {
           const liveSolarRadiation = sensorLatestData?.values?.solar_radiation ?? 0;
           const liveTemp = sensorLatestData?.values?.temperature || sensorLatestData?.values?.temperature2 || 0;
           const liveHumidity = sensorLatestData?.values?.humidity || sensorLatestData?.values?.humidity2 || 0;
           const liveWindSpeed = sensorLatestData?.values?.wind_speed;
-          const liveLeafWetness = sensorLatestData?.values?.leaf ?? aiRes.data?.raw?.pest?.leaf_wetness_pct ?? 0;
+          const liveLeafWetness = sensorLatestData?.values?.leaf ?? aiRes?.data?.raw?.pest?.leaf_wetness_pct ?? 0;
           const liveO3 = sensorLatestData?.values?.o3 ?? 0;
 
           if (m.id === 'solar-radiation') {
@@ -230,15 +260,15 @@ export function useDashboardState() {
         });
 
         const finalDashboardData = {
-          onboarding: overviewRes.data?.onboarding || {
-            isComplete: overviewRes.data?.isComplete ?? true,
-            hasSensor: overviewRes.data?.hasSensor ?? (devices.length > 0 || backendDevices.length > 0)
+          onboarding: overviewRes?.data?.onboarding || {
+            isComplete: overviewRes?.data?.isComplete ?? true,
+            hasSensor: overviewRes?.data?.hasSensor ?? (devices.length > 0 || backendDevices.length > 0)
           },
           farm: farms.find(f => (f.id || f._id) === selectedFarmId) || primaryDevice?.farm || (overview?.farmName ? { name: overview.farmName } : null),
           health: {
-            overallHealth: hasNoIncomingData ? 0 : (aiRes.data?.raw?.farm_status?.farm_health_percentage || overview?.performance?.healthScore || stats?.overallStatus || 85),
-            condition: hasNoIncomingData ? 'UNKNOWN' : (aiRes.data?.raw?.farm_status?.farm_condition || 'NORMAL'),
-            stressBreakdown: hasNoIncomingData ? null : aiRes.data?.raw?.farm_status?.stress_breakdown,
+            overallHealth: hasNoIncomingData ? 0 : (aiRes?.data?.raw?.farm_status?.farm_health_percentage || overview?.performance?.healthScore || stats?.overallStatus || 85),
+            condition: hasNoIncomingData ? 'UNKNOWN' : (aiRes?.data?.raw?.farm_status?.farm_condition || 'NORMAL'),
+            stressBreakdown: hasNoIncomingData ? null : aiRes?.data?.raw?.farm_status?.stress_breakdown,
             metrics: mappedMetrics,
           },
           sensors: {
@@ -253,7 +283,7 @@ export function useDashboardState() {
             timestamp: apiTimestamp,
           },
           alerts: { 
-            cards: hasNoIncomingData ? [] : (aiRes.data?.raw ? [
+            cards: hasNoIncomingData ? [] : (aiRes?.data?.raw ? [
               ...(aiRes.data.raw.pest ? [{
                 title: 'Pest Analysis',
                 value: Math.round(aiRes.data.raw.pest.pest_risk_score || 0),
@@ -275,28 +305,27 @@ export function useDashboardState() {
                 body: aiRes.data.raw.irrigation.advisory || (aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'Soil moisture is optimal. No irrigation needed.' : `Irrigation recommended: ${aiRes.data.raw.irrigation.water_requirement_mm}mm required.`),
                 icon: 'Droplets'
               }] : [])
-            ] : (aiRes.data?.cards ? aiRes.data.cards.map((c: any) => ({
+            ] : (aiRes?.data?.cards ? aiRes.data.cards.map((c: any) => ({
               ...c,
               status: (c.status?.toUpperCase() === 'LOW' || c.status?.toLowerCase() === 'low stress' || c.status?.toLowerCase() === 'optimal') ? 'Optimal' : (c.status?.toUpperCase() === 'MODERATE' || c.status?.toLowerCase() === 'moderate') ? 'Warning' : 'Critical'
             })) : alertsData)),
-            activeCount: hasNoIncomingData ? 0 : (aiRes.data?.raw ? (
+            activeCount: hasNoIncomingData ? 0 : (aiRes?.data?.raw ? (
               (aiRes.data.raw.pest ? 1 : 0) + (aiRes.data.raw.fungal_disease ? 1 : 0) + (aiRes.data.raw.irrigation ? 1 : 0)
-            ) : (aiRes.data?.cards?.length || overview?.activeAlerts || alertsData.length || 0)),
+            ) : (aiRes?.data?.cards?.length || overview?.activeAlerts || alertsData.length || 0)),
             suggestion: hasNoIncomingData ? {
               title: 'No Data',
               body: 'No alerts for this device.',
               confidence: '0%',
-            } : (aiRes.data?.raw?.prescription ? {
+            } : (aiRes?.data?.raw?.prescription ? {
               title: `Prescription (${aiRes.data.raw.prescription.priority || 'Normal'})`,
               body: aiRes.data.raw.prescription.actions?.join(' ') || 'No critical prescription actions.',
               confidence: aiRes.data.raw.irrigation?.confidence ? `${Math.round(aiRes.data.raw.irrigation.confidence * 100)}%` : '95%',
             } : undefined)
           },
           waterSavings: overview?.waterSavings || (() => {
-            const irrigation = aiRes.data?.raw?.irrigation;
+            const irrigation = aiRes?.data?.raw?.irrigation;
             if (!irrigation || hasNoIncomingData) return { percent: '0.0%', total: '0 L', daily: '0 L' };
             const req = irrigation.water_requirement_mm || 0;
-            // Convert mm to approx litres (assume 1 acre = ~4047 m², 1mm = 4047 L/acre)
             const areaAcres = parseFloat(primaryDevice?.field?.area || '1') || 1;
             const litres = Math.round(req * 4.047 * areaAcres);
             const dailyLitres = Math.round(litres / 1);
@@ -312,7 +341,7 @@ export function useDashboardState() {
             { title: 'Fungal', description: 'Nil prediction - no sensor data.', level: 'warn' },
             { title: 'Pest', description: 'Nil prediction - no sensor data.', level: 'warn' },
             { title: 'Air Quality', description: 'Nil prediction - no sensor data.', level: 'warn' }
-          ] : (aiRes.data?.raw ? [
+          ] : (aiRes?.data?.raw ? [
             ...(aiRes.data.raw.irrigation ? [{
               title: 'Irrigation',
               description: aiRes.data.raw.irrigation.advisory || (aiRes.data.raw.irrigation.decision === 'no_irrigation' ? 'No irrigation needed.' : `Requires ${aiRes.data.raw.irrigation.water_requirement_mm}mm of water.`),
@@ -335,7 +364,7 @@ export function useDashboardState() {
               farmer_advisory: aiRes.data.raw.aqi.farmer_advisory,
               plant_impact: aiRes.data.raw.aqi.plant_impact
             }] : [])
-          ] : (aiRes.data?.cards && Array.isArray(aiRes.data.cards) ? aiRes.data.cards.filter((c: any) => !c.title?.toLowerCase().includes('farm status')).map((c: any) => ({
+          ] : (aiRes?.data?.cards && Array.isArray(aiRes.data.cards) ? aiRes.data.cards.filter((c: any) => !c.title?.toLowerCase().includes('farm status')).map((c: any) => ({
             title: c.title,
             description: c.body,
             level: (c.status?.toUpperCase() === 'LOW' || c.status?.toLowerCase() === 'low stress' || c.status?.toLowerCase() === 'optimal' || c.status === 'Optimal') ? 'good' : 'warn',
@@ -358,21 +387,27 @@ export function useDashboardState() {
         };
 
         setDashboardData(finalDashboardData);
-        
-        // Save to cache to ensure we strictly fetch every 30 mins
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify({
-            timestamp: Date.now(),
-            data: finalDashboardData,
-            devices: devices
-          }));
-        } catch (e) {
-          console.error('Failed to cache dashboard data', e);
-        }
-        
+        saveDashboardCache(selectedFarmId, selectedDeviceType, currentDeviceIndex, finalDashboardData, devices);
+        console.log(`[Cache Saved] Saved dashboard data to cache for farm: ${selectedFarmId}, deviceType: ${selectedDeviceType}, index: ${currentDeviceIndex}`);
+        setLastFetchTime(new Date());
+        setIsCached(false);
         setError(null);
       } catch (err: any) {
-        console.error('Dashboard Data Fetch Error:', err);
+        console.error('Dashboard Data Fetch Error, attempting cache fallback:', err);
+        console.log('[Offline Mode Active] Dashboard Data Fetch Error. Using cache fallback...');
+        const cached = loadDashboardCache(selectedFarmId, selectedDeviceType, currentDeviceIndex);
+        if (cached) {
+          console.log('[Cache Loaded] Using cached dashboard data.');
+          console.log('[Using cached dashboard data] Successfully loaded dashboard state.');
+          setDashboardData(cached.dashboardData);
+          setBackendDevices(cached.backendDevices);
+          const syncTimestamp = getLastSyncTimestamp();
+          setLastFetchTime(syncTimestamp ? new Date(syncTimestamp) : new Date(cached.timestamp));
+          setIsCached(true);
+          setError(null);
+        } else {
+          setError(err.message || 'Failed to fetch dashboard data');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -380,19 +415,27 @@ export function useDashboardState() {
 
     fetchFarmData();
     
-    const intervalId = setInterval(fetchFarmData, 30 * 60 * 1000); // Poll every 30 minutes
-    return () => clearInterval(intervalId);
-  }, [selectedFarmId, selectedDeviceType, currentDeviceIndex]);
+    let intervalId: any = null;
+    if (isOnline && navigator.onLine) {
+      intervalId = setInterval(fetchFarmData, 30 * 60 * 1000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [selectedFarmId, selectedDeviceType, currentDeviceIndex, isOnline]);
 
   // ─── Weather Data Fetching ───
   useEffect(() => {
     const fetchWeather = async () => {
+      if (!isOnline || !navigator.onLine || isCached) {
+        console.log('[Offline Mode Active] Skipping weather fetch while offline/using cache.');
+        return;
+      }
       try {
-        let lat = 28.61; // Default: New Delhi
+        let lat = 28.61;
         let lon = 77.2;
         let name = 'New Delhi, IN';
 
-        // 1. Try to get location from selected farm
         const selectedFarm = farms.find((f) => (f.id || f._id) === selectedFarmId);
         if (selectedFarm?.location?.latitude && selectedFarm?.location?.longitude) {
           lat = parseFloat(selectedFarm.location.latitude);
@@ -401,7 +444,6 @@ export function useDashboardState() {
             ? `${selectedFarm.location.city}, ${selectedFarm.location.country || 'IN'}`
             : selectedFarm.name;
         } else if (navigator.geolocation) {
-          // 2. Fallback to browser geolocation
           try {
             const position: any = await new Promise((resolve, reject) => {
               navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
@@ -409,7 +451,6 @@ export function useDashboardState() {
             lat = position.coords.latitude;
             lon = position.coords.longitude;
 
-            // Reverse geocode to get city name
             const geoRes = await fetch(
               `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`,
             );
@@ -432,10 +473,10 @@ export function useDashboardState() {
       }
     };
 
-    if (farms.length > 0 || !isLoading) {
+    if (isOnline && navigator.onLine && !isCached && farms.length > 0) {
       fetchWeather();
     }
-  }, [selectedFarmId, farms, isLoading]);
+  }, [selectedFarmId, farms, isOnline, isCached]);
 
   const getWeatherDescription = (code: number) => {
     if (code === 0) return 'Clear Sky';
@@ -446,27 +487,21 @@ export function useDashboardState() {
     return 'Cloudy';
   };
 
-  // ─── UI Logic ───
-  // Update time every minute
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 60000);
     return () => window.clearInterval(timer);
   }, []);
 
-  // Sync device type from URL query params
   useEffect(() => {
     const value = searchParams.get('device');
     if (isDeviceType(value) && value !== selectedDeviceType) {
       setSelectedDeviceType(value);
       setCurrentDeviceIndex(0);
+      setSearchParams({ device: value });
     }
   }, [searchParams, selectedDeviceType]);
 
-  // Devices are now fetched within fetchFarmData to ensure consistent state
-
   const deviceList = useMemo(() => {
-    const mockList = DEVICE_LIBRARY[selectedDeviceType] || [];
-    
     if (backendDevices.length > 0) {
       return backendDevices.map((d, idx) => ({
         id: d.id || d._id || `backend-${idx}`,
@@ -495,8 +530,6 @@ export function useDashboardState() {
   }, [deviceList, currentDeviceIndex, dashboardData]);
 
   const cycleDevice = async (direction: 1 | -1) => {
-    // Trigger API on click (handled by useEffect via currentDeviceIndex change)
-    
     setCurrentDeviceIndex((prev) => {
       const listLen = deviceList.length;
       if (listLen === 0) return 0;
@@ -549,5 +582,6 @@ export function useDashboardState() {
     selectedFarmId,
     setSelectedFarmId,
     lastFetchTime,
+    isCached,
   };
 }

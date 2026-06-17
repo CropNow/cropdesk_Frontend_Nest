@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Sun, Moon } from 'lucide-react';
+import { Bell, Sun, Moon, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * WelcomeHeader - Top welcome section with time and weather
@@ -15,6 +18,16 @@ export function WelcomeHeader({ currentTime, userName = 'User' }: WelcomeHeaderP
   const { theme, toggleTheme } = useTheme();
   const [isTrayOpen, setIsTrayOpen] = useState(false);
   const trayRef = useRef<HTMLDivElement | null>(null);
+
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { addToast } = useToast();
+
+  const handleLogout = () => {
+    logout();
+    addToast({ message: 'Logged out successfully', type: 'success' });
+    navigate('/login');
+  };
 
   const notifications = useMemo(
     () => [],
@@ -85,6 +98,15 @@ export function WelcomeHeader({ currentTime, userName = 'User' }: WelcomeHeaderP
                     {unreadCount}
                   </span>
                 ) : null}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cardBorder bg-cardBg text-red-500 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
+                aria-label="Log out"
+              >
+                <LogOut className="h-4 w-4" />
               </button>
 
               {isTrayOpen ? (

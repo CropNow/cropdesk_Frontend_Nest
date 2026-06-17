@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Radio, WifiOff, Clock, Search, Server, Power, AlertCircle } from 'lucide-react';
 import { sensorsAPI } from '../api/sensors.api';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
+import { useOnlineStatus } from '../contexts/OnlineStatusContext';
+import { OfflineFallback } from '../components/common/OfflineFallback';
 
 type DeviceLog = {
   id: string;
@@ -20,6 +22,7 @@ type DeviceLog = {
 };
 
 export function DeviceLogsPage() {
+  const { isOnline } = useOnlineStatus();
   const [logs, setLogs] = useState<DeviceLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -141,7 +144,14 @@ export function DeviceLogsPage() {
 
   return (
     <DashboardLayout>
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {!isOnline ? (
+        <OfflineFallback
+          title="Device Logs Offline"
+          description="Real-time connectivity data and logs are not available without an active internet connection."
+        />
+      ) : (
+        <>
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-textHeading">Device Logs</h1>
           <p className="mt-1 text-sm text-textSecondary">Real-time connectivity and operational history for all deployed devices.</p>
@@ -289,6 +299,8 @@ export function DeviceLogsPage() {
           )}
         </div>
       </div>
+      </>
+      )}
     </DashboardLayout>
   );
 }

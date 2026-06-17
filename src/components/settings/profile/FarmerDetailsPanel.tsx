@@ -37,9 +37,9 @@ export function FarmerDetailsPanel() {
                 name: farmerData.name || '',
                 phone: farmerData.phone || '',
                 email: farmerData.email || '',
-                village: farmerData.village || '',
-                district: farmerData.district || '',
-                state: farmerData.state || '',
+                village: farmerData.address?.village || farmerData.village || '',
+                district: farmerData.address?.district || farmerData.district || '',
+                state: farmerData.address?.state || farmerData.state || '',
               });
             }
           }
@@ -63,11 +63,23 @@ export function FarmerDetailsPanel() {
       setIsSaving(true);
       setError('');
       setSuccessMsg('');
+      const payload = {
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        address: {
+          village: formData.village,
+          district: formData.district,
+          state: formData.state,
+          country: 'India'
+        }
+      };
+
       if (farmerId) {
-        await farmersAPI.updateFarmer(farmerId, formData);
+        await farmersAPI.updateFarmer(farmerId, payload);
         setSuccessMsg('Farmer details updated successfully.');
       } else {
-        const res = await farmersAPI.createFarmer(formData);
+        const res = await farmersAPI.createFarmer(payload);
         const newFarmer = res.data?.data || res.data;
         if (newFarmer && (newFarmer._id || newFarmer.id)) {
           setFarmerId(newFarmer._id || newFarmer.id);

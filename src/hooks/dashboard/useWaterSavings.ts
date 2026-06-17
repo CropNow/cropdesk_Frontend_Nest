@@ -20,7 +20,7 @@ export const useWaterSavings = (farmId?: string, period: 'day' | 'week' | 'month
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await dashboardAPI.getWaterSavings(farmId, period);
+        const response = await (dashboardAPI as any).getWaterSavings(farmId, period);
         setData(response.data);
         setError(null);
       } catch (err) {

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquare, Send, User, Bot, Sparkles } from 'lucide-react';
+import { MessageSquare, Send, User, Bot, Sparkles, WifiOff } from 'lucide-react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
+import { useOnlineStatus } from '../contexts/OnlineStatusContext';
 
 interface Message {
   id: number;
@@ -11,6 +12,7 @@ interface Message {
 }
 
 export function ChatbotPage() {
+  const { isOnline } = useOnlineStatus();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -96,23 +98,31 @@ export function ChatbotPage() {
 
           {/* Input Area */}
           <div className="border-t border-cardBorder bg-cardBg/30 p-4 sm:p-6">
+            {!isOnline && (
+              <div className="mb-3 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs font-semibold text-red-400">
+                <WifiOff className="h-4 w-4" />
+                <span>You are currently offline. Chatbot features are disabled.</span>
+              </div>
+            )}
             <form onSubmit={handleSend} className="relative flex gap-2">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask me about your farm..."
-                className="flex-1 rounded-xl border border-cardBorder bg-bgSidebar/50 px-4 py-3 text-sm text-textPrimary outline-none transition focus:border-accentPrimary/50 focus:ring-1 focus:ring-accentPrimary/50"
+                disabled={!isOnline}
+                placeholder={isOnline ? "Ask me about your farm..." : "Offline - please reconnect to chat"}
+                className="flex-1 rounded-xl border border-cardBorder bg-bgSidebar/50 px-4 py-3 text-sm text-textPrimary outline-none transition focus:border-accentPrimary/50 focus:ring-1 focus:ring-accentPrimary/50 disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
                 type="submit"
-                disabled={!input.trim()}
+                disabled={!input.trim() || !isOnline}
                 className="inline-flex h-[46px] w-[46px] items-center justify-center rounded-xl bg-accentPrimary text-black transition hover:bg-accentPrimary/80 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="h-5 w-5" />
               </button>
             </form>
           </div>
+
         </div>
       </div>
     </DashboardLayout>

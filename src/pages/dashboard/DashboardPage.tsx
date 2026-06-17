@@ -6,6 +6,7 @@ import { WelcomeHeader } from '../../components/sections/WelcomeHeader';
 import { DeviceSection } from '../../components/sections/DeviceSection';
 import { FarmHealthSection } from '../../components/sections/FarmHealthSection';
 import { EmptyDashboard } from '../../components/sections/EmptyDashboard';
+import { CachedDataBadge } from '../../components/common/CachedDataBadge';
 
 // Defer below-the-fold sections so above-the-fold (Welcome + Device + FarmHealth)
 // can paint without waiting for these chunks.
@@ -32,6 +33,7 @@ export function DashboardPage() {
     farms,
     backendDevices,
     lastFetchTime,
+    isCached,
   } = useDashboardState();
 
 
@@ -72,15 +74,18 @@ export function DashboardPage() {
         userName={user ? `${user.firstName} ${user.lastName}` : 'Farmer'}
       />
 
+      {isCached && <CachedDataBadge lastSyncTime={lastFetchTime} />}
+
       <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
         <DeviceSection
-          device={currentDevice}
+          device={currentDevice!}
           selectedDeviceType={selectedDeviceType}
           currentDeviceIndex={currentDeviceIndex}
           cycleDevice={cycleDevice}
         />
         <FarmHealthSection data={dashboardData?.health} />
       </div>
+
 
       <section className="grid gap-6 xl:grid-cols-5">
         <Suspense fallback={<SectionFallback />}>
