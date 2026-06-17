@@ -1,12 +1,13 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { ProfileSettings } from './ProfileSettings';
+import { AnimatePresence, motion } from "framer-motion";
+import { Card } from "../../shared/components/ui/card";
+import { ProfileSettings } from "./ProfileSettings";
 
-import { DeviceSettings } from './DeviceSettings';
-import { NotificationSettings } from './NotificationSettings';
-import { AppearanceSettings } from './AppearanceSettings';
-import { SecuritySettings } from './SecuritySettings';
-import { SystemSettings } from './SystemSettings';
-import { SettingsState, SettingsTab } from './SettingsLayout';
+import { DeviceSettings } from "./DeviceSettings";
+import { NotificationSettings } from "./NotificationSettings";
+import { AppearanceSettings } from "./AppearanceSettings";
+import { SecuritySettings } from "./SecuritySettings";
+import { SystemSettings } from "./SystemSettings";
+import { SettingsState, SettingsTab } from "./SettingsLayout";
 
 interface SettingsContentProps {
   activeTab: SettingsTab;
@@ -28,9 +29,11 @@ export function SettingsContent({
   isSaving,
 }: SettingsContentProps) {
   return (
-    <section className="rounded-2xl border border-cardBorder bg-cardBg p-4 backdrop-blur-xl sm:p-6">
+    <Card variant="glass" className="p-4 sm:p-6">
       <div className="mb-4 flex items-center justify-between border-b border-cardBorder pb-3">
-        <h2 className="text-lg font-semibold text-textHeading sm:text-xl">{activeTabLabel}</h2>
+        <h2 className="text-lg font-semibold text-textHeading sm:text-xl">
+          {activeTabLabel}
+        </h2>
       </div>
 
       <AnimatePresence mode="wait">
@@ -41,20 +44,21 @@ export function SettingsContent({
           exit={{ opacity: 0, x: -16 }}
           transition={{ duration: 0.2 }}
         >
-          {activeTab === 'profile' ? (
+          {activeTab === "profile" ? (
             <ProfileSettings
               values={settings.profile}
               onChange={(patch) =>
-                setSettings((prev) => ({ ...prev, profile: { ...prev.profile, ...patch } }))
+                setSettings((prev) => ({
+                  ...prev,
+                  profile: { ...prev.profile, ...patch },
+                }))
               }
-              onSave={() => onSave('profile')}
+              onSave={() => onSave("profile")}
               isSaving={isSaving}
             />
           ) : null}
 
-
-
-          {activeTab === 'devices' ? (
+          {activeTab === "devices" ? (
             <DeviceSettings
               devices={settings.devices}
               onAdd={(payload) =>
@@ -66,13 +70,13 @@ export function SettingsContent({
                       id: Date.now(),
                       type: payload.type,
                       name: payload.name,
-                      status: 'Connected' as const,
+                      status: "Connected" as const,
                       serialNumber: payload.serialNumber,
-                      model: 'N/A',
+                      model: "N/A",
                       manufacturer: payload.manufacturer,
                       fieldId: payload.fieldId,
-                      firmware: 'N/A',
-                      connectedOn: new Date().toLocaleDateString('en-US'),
+                      firmware: "N/A",
+                      connectedOn: new Date().toLocaleDateString("en-US"),
                     },
                   ],
                 }))
@@ -81,7 +85,7 @@ export function SettingsContent({
                 setSettings((prev) => ({
                   ...prev,
                   devices: prev.devices.map((device) =>
-                    device.id === id ? { ...device, name } : device
+                    device.id === id ? { ...device, name } : device,
                   ),
                 }))
               }
@@ -98,9 +102,12 @@ export function SettingsContent({
                     device.id === id
                       ? {
                           ...device,
-                          status: device.status === 'Connected' ? 'Offline' : 'Connected',
+                          status:
+                            device.status === "Connected"
+                              ? "Offline"
+                              : "Connected",
                         }
-                      : device
+                      : device,
                   ),
                 }))
               }
@@ -108,19 +115,19 @@ export function SettingsContent({
                 setSettings((prev) => ({
                   ...prev,
                   devices: prev.devices.map((device) =>
-                    device.id === id ? { ...device, ...patch } : device
+                    device.id === id ? { ...device, ...patch } : device,
                   ),
                 }))
               }
               onDevicesLoad={(devices) =>
                 setSettings((prev) => ({ ...prev, devices }))
               }
-              onSave={() => onSave('devices')}
+              onSave={() => onSave("devices")}
               isSaving={isSaving}
             />
           ) : null}
 
-          {activeTab === 'notifications' ? (
+          {activeTab === "notifications" ? (
             <NotificationSettings
               values={settings.notifications}
               onChange={(patch) =>
@@ -129,12 +136,12 @@ export function SettingsContent({
                   notifications: { ...prev.notifications, ...patch },
                 }))
               }
-              onSave={() => onSave('notifications')}
+              onSave={() => onSave("notifications")}
               isSaving={isSaving}
             />
           ) : null}
 
-          {activeTab === 'appearance' ? (
+          {activeTab === "appearance" ? (
             <AppearanceSettings
               values={settings.appearance}
               onChange={(patch) =>
@@ -143,12 +150,12 @@ export function SettingsContent({
                   appearance: { ...prev.appearance, ...patch },
                 }))
               }
-              onSave={() => onSave('appearance')}
+              onSave={() => onSave("appearance")}
               isSaving={isSaving}
             />
           ) : null}
 
-          {activeTab === 'security' ? (
+          {activeTab === "security" ? (
             <SecuritySettings
               values={settings.security}
               onChange={(patch) =>
@@ -163,12 +170,12 @@ export function SettingsContent({
                   security: { ...prev.security, activeSessions: [] },
                 }))
               }
-              onSave={() => onSave('security')}
+              onSave={() => onSave("security")}
               isSaving={isSaving}
             />
           ) : null}
 
-          {activeTab === 'system' ? (
+          {activeTab === "system" ? (
             <SystemSettings
               values={settings.system}
               onChange={(patch) =>
@@ -178,12 +185,12 @@ export function SettingsContent({
                 }))
               }
               onReset={onSystemReset}
-              onSave={() => onSave('system')}
+              onSave={() => onSave("system")}
               isSaving={isSaving}
             />
           ) : null}
         </motion.div>
       </AnimatePresence>
-    </section>
+    </Card>
   );
 }
