@@ -91,23 +91,23 @@ export function FISAlertSection({ data }: { data?: any }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
-      className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-white/[0.05] via-white/[0.02] to-transparent p-6 backdrop-blur-2xl xl:col-span-4"
+      className="relative overflow-hidden rounded-[2.5rem] border border-borderColor bg-bgCard p-6 backdrop-blur-2xl xl:col-span-4"
     >
       {/* Decorative Background Element */}
-      <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#00FF9C]/5 blur-[100px]" />
+      <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accentPrimary/5 blur-[100px]" />
 
       <div className="mb-6 flex items-center justify-between px-2">
         <div className="flex flex-col gap-0.5">
-          <h3 className="text-3xl font-extrabold tracking-tight text-white/90">
+          <h3 className="text-3xl font-extrabold tracking-tight text-textPrimary">
             FIS Alert Engine
           </h3>
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/40">
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-textMuted">
             Intelligence Core Active
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-[#00FF9C]/20 bg-[#00FF9C]/10 px-4 py-2 shadow-[0_0_20px_rgba(0,255,156,0.1)]">
-          <div className="h-2 w-2 animate-pulse rounded-full bg-[#00FF9C]" />
-          <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#00FF9C]">
+        <div className="flex items-center gap-2 rounded-full border border-accentPrimary/20 bg-accentPrimary/10 px-4 py-2 shadow-sm">
+          <div className="h-2 w-2 animate-pulse rounded-full bg-accentPrimary" />
+          <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-accentPrimary">
             Live Monitor
           </span>
         </div>
@@ -149,20 +149,20 @@ export function FISAlertSection({ data }: { data?: any }) {
           return (
             <motion.div
               key={card.title}
-              className="relative flex flex-col justify-between overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.03] p-4 transition-all hover:bg-white/[0.05] hover:border-white/10"
+              className="relative flex flex-col justify-between overflow-hidden rounded-[2rem] border border-borderColor/45 bg-bgCardHover/20 p-4 transition-all hover:bg-bgCardHover/40 hover:border-borderColor"
             >
               <div className="relative z-10">
                 {/* Icon and Title - Horizontal Layout */}
                 <div className="mb-4 flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-white/10 to-transparent border border-white/5">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-bgCardHover border border-borderColor">
                       {isElement
                         ? rawIcon
                         : IconComponent && (
-                            <IconComponent className="h-4 w-4 text-[#00FF9C]" />
+                            <IconComponent className="h-4 w-4 text-accentPrimary" />
                           )}
                     </div>
-                    <h4 className="text-lg font-bold tracking-tight text-white/90 leading-tight pt-0.5">
+                    <h4 className="text-lg font-bold tracking-tight text-textPrimary leading-tight pt-0.5">
                       {card.title}
                     </h4>
                   </div>
@@ -173,7 +173,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                   </span>
                 </div>
 
-                <p className="mb-4 text-[0.85rem] font-medium leading-[1.5] text-white/50 line-clamp-2 transition-all duration-300 group-hover:line-clamp-none">
+                <p className="mb-4 text-[0.85rem] font-medium leading-[1.5] text-textSecondary line-clamp-2 transition-all duration-300 group-hover:line-clamp-none">
                   {typeof card.body === "object" && card.body !== null
                     ? JSON.stringify(card.body)
                     : card.body}
@@ -182,14 +182,14 @@ export function FISAlertSection({ data }: { data?: any }) {
 
               <div className="relative z-10">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">
+                  <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-textMuted">
                     Metrics
                   </span>
-                  <span className="text-sm font-bold tabular-nums text-white/70">
+                  <span className="text-sm font-bold tabular-nums text-textSecondary">
                     {card.value}%
                   </span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white/5 border border-white/5 mb-3">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-bgInput border border-borderColor mb-3">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${card.value}%` }}
@@ -201,7 +201,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                 {isViewableCard && (
                   <button
                     onClick={() => setSelectedCard(card)}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-white/60 transition-all hover:bg-white/10 hover:text-white/80 hover:border-white/20"
+                    className="w-full rounded-lg border border-borderColor bg-bgCardHover/60 px-3 py-2 text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-textSecondary transition-all hover:bg-bgCardHover hover:text-textPrimary hover:border-borderColor"
                   >
                     View More
                   </button>
@@ -230,39 +230,32 @@ export function FISAlertSection({ data }: { data?: any }) {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
               transition={{ duration: 0.18 }}
-              className={`relative z-10 mx-4 w-full max-w-3xl overflow-hidden rounded-2xl shadow-xl ${theme === "dark" ? "bg-bgMain/100 text-white" : "bg-white text-black"}`}
+              className="relative z-10 mx-4 w-full max-w-3xl overflow-hidden rounded-2xl shadow-xl bg-bgCard text-textPrimary border border-borderColor"
               style={{ maxHeight: "90vh" }}
             >
-              <div className="flex items-start justify-between border-b border-white/6 px-5 py-4">
+              <div className="flex items-start justify-between border-b border-borderColor/45 px-5 py-4">
                 <div className="max-w-[80%]">
                   <h3 className="text-2xl md:text-3xl font-bold leading-tight">
                     {selectedCard.title}
                   </h3>
-                  <p
-                    className="text-base md:text-lg mt-2 text-white/80"
-                    style={{
-                      color: theme === "dark" ? undefined : "rgba(0,0,0,0.7)",
-                    }}
-                  >
+                  <p className="text-base md:text-lg mt-2 text-textSecondary">
                     {selectedCard.body}
                   </p>
                 </div>
                 <button
                   onClick={() => setSelectedCard(null)}
-                  className="ml-4 p-2 text-white/60 hover:opacity-80"
+                  className="ml-4 p-2 text-textSecondary hover:opacity-80"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <div
-                className={`p-5 ${theme === "dark" ? "text-white" : "text-black"}`}
-              >
+              <div className="p-5 text-textPrimary">
                 {/* Card-specific fields (advisory displayed once above) */}
                 {selectedCard.title === "Pest Analysis" && (
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Pest Risk Score
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
@@ -270,7 +263,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                       </p>
                     </div>
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Rainfall (mm)
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
@@ -280,17 +273,17 @@ export function FISAlertSection({ data }: { data?: any }) {
                       </p>
                     </div>
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Recommendation
                       </h4>
-                      <p className="mt-1 text-base md:text-lg text-white/60">
+                      <p className="mt-1 text-base md:text-lg text-textMuted">
                         {selectedCard.recommendation ??
                           selectedCard.body ??
                           "N/A"}
                       </p>
                     </div>
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Temperature
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
@@ -303,7 +296,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                 {selectedCard.title === "Irrigation Analysis" && (
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Confidence
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
@@ -313,7 +306,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                       </p>
                     </div>
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Decision
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
@@ -321,7 +314,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                       </p>
                     </div>
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Water Requirement
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
@@ -336,7 +329,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                 {selectedCard.title === "Fungal Activity" && (
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Activity Level
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
@@ -346,7 +339,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                       </p>
                     </div>
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Dew Point
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
@@ -354,7 +347,7 @@ export function FISAlertSection({ data }: { data?: any }) {
                       </p>
                     </div>
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Leaf Wetness
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
@@ -364,18 +357,18 @@ export function FISAlertSection({ data }: { data?: any }) {
                       </p>
                     </div>
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Likely Disease
                       </h4>
-                      <p className="mt-1 text-base md:text-lg text-white/60">
+                      <p className="mt-1 text-base md:text-lg text-textMuted">
                         {selectedCard.likely_disease ?? "N/A"}
                       </p>
                     </div>
                     <div>
-                      <h4 className="text-base md:text-lg font-semibold text-white/80">
+                      <h4 className="text-base md:text-lg font-semibold text-textSecondary">
                         Recommendation
                       </h4>
-                      <p className="mt-1 text-base md:text-lg text-white/60">
+                      <p className="mt-1 text-base md:text-lg text-textMuted">
                         {selectedCard.recommendation ??
                           selectedCard.body ??
                           "N/A"}
@@ -389,18 +382,18 @@ export function FISAlertSection({ data }: { data?: any }) {
         )}
       </AnimatePresence>
 
-      <div className="mt-6 overflow-hidden rounded-[2rem] border border-[#00FF9C]/20 bg-gradient-to-br from-[#00FF9C]/10 via-transparent to-transparent p-6 backdrop-blur-xl">
+      <div className="mt-6 overflow-hidden rounded-[2rem] border border-borderColor bg-bgCardHover/30 p-6 backdrop-blur-xl">
         <div className="flex flex-col gap-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00FF9C]/20 border border-[#00FF9C]/30 shadow-[0_0_15px_rgba(0,255,156,0.1)]">
-                <Activity className="h-5 w-5 text-[#00FF9C]" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accentPrimary/10 border border-accentPrimary/25 shadow-sm">
+                <Activity className="h-5 w-5 text-accentPrimary" />
               </div>
               <div className="flex flex-col">
-                <p className="text-lg font-bold tracking-tight text-white/90">
+                <p className="text-lg font-bold tracking-tight text-textPrimary">
                   {suggestion.title || "AI Prescription"}
                 </p>
-                <p className="text-[0.6rem] font-bold uppercase tracking-[0.25em] text-[#00FF9C]/60">
+                <p className="text-[0.6rem] font-bold uppercase tracking-[0.25em] text-accentPrimary/80">
                   Expert Recommendation
                 </p>
               </div>
@@ -411,13 +404,13 @@ export function FISAlertSection({ data }: { data?: any }) {
               disabled={isAcknowledged || isSubmitting}
               className={`hidden sm:flex items-center gap-2 rounded-xl px-7 py-2.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 ${
                 isAcknowledged
-                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                  : "bg-[#00FF9C] text-black hover:shadow-[0_0_20px_rgba(0,255,156,0.4)]"
+                  ? "bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30"
+                  : "bg-accentPrimary text-black dark:text-black hover:bg-accentSecondary"
               }`}
             >
               {isAcknowledged ? (
                 <>
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
                   Acknowledged
                 </>
               ) : isSubmitting ? (
@@ -428,7 +421,7 @@ export function FISAlertSection({ data }: { data?: any }) {
             </button>
           </div>
 
-          <p className="text-[0.95rem] font-medium leading-[1.7] text-white/80">
+          <p className="text-[0.95rem] font-medium leading-[1.7] text-textSecondary">
             {typeof suggestion.body === "object" && suggestion.body !== null
               ? JSON.stringify(suggestion.body)
               : suggestion.body}
@@ -436,19 +429,19 @@ export function FISAlertSection({ data }: { data?: any }) {
 
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between px-1">
-              <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">
+              <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-textMuted">
                 System Confidence
               </span>
-              <span className="text-sm font-bold text-[#00FF9C] tabular-nums">
+              <span className="text-sm font-bold text-accentPrimary tabular-nums">
                 {suggestion.confidence}
               </span>
             </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/20 border border-white/5">
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-bgInput border border-borderColor">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: suggestion.confidence }}
                 transition={{ duration: 1.2, delay: 0.3 }}
-                className="h-full rounded-full bg-gradient-to-r from-[#00FF9C] to-emerald-400 shadow-[0_0_15px_rgba(0,255,156,0.2)]"
+                className="h-full rounded-full bg-gradient-to-r from-accentPrimary to-accentSecondary shadow-md"
               />
             </div>
           </div>
@@ -458,8 +451,8 @@ export function FISAlertSection({ data }: { data?: any }) {
             disabled={isAcknowledged || isSubmitting}
             className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 sm:hidden ${
               isAcknowledged
-                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                : "bg-[#00FF9C] text-black"
+                ? "bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30"
+                : "bg-accentPrimary text-black dark:text-black hover:bg-accentSecondary"
             }`}
           >
             {isAcknowledged

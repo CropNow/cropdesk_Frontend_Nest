@@ -56,20 +56,6 @@ export function AppearanceSettings({
         </label>
       </div>
 
-      <label className="space-y-2">
-        <span className="text-sm text-textLabel">Accent Color</span>
-        <div className="flex items-center gap-3 rounded-xl border border-cardBorder bg-bgInput px-3 py-2">
-          <input
-            type="color"
-            value={values.accentColor}
-            onChange={(event) => onChange({ accentColor: event.target.value })}
-            className="h-8 w-12 cursor-pointer rounded border border-cardBorder bg-transparent"
-          />
-          <span className="text-sm text-textPrimary/75">
-            {values.accentColor}
-          </span>
-        </div>
-      </label>
 
       <motion.button
         type="button"
@@ -77,7 +63,7 @@ export function AppearanceSettings({
         whileTap={{ scale: 0.98 }}
         onClick={onSave}
         disabled={isSaving}
-        className="rounded-xl border border-[#00FF9C]/40 bg-[#00FF9C]/15 px-4 py-2 text-sm font-semibold text-[#9BFFD7] transition disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSaving ? "Saving..." : "Save Changes"}
       </motion.button>

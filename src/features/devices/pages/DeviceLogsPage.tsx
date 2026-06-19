@@ -260,7 +260,7 @@ export function DeviceLogsPage() {
           <div className="rounded-3xl border border-cardBorder bg-cardBg/50 backdrop-blur-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-cardBorder bg-black/20">
+                <thead className="border-b border-cardBorder bg-bgCardHover/50">
                   <tr>
                     <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">
                       Device Name
@@ -290,7 +290,7 @@ export function DeviceLogsPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="transition-colors hover:bg-white/[0.02]"
+                        className="transition-colors hover:bg-bgCardHover/30"
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">

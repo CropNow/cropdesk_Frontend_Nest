@@ -182,7 +182,7 @@ const MapUIControls = ({
         <button
           type="button"
           onClick={handleUserLocation}
-          className={`flex items-center justify-center rounded-xl border border-cardBorder bg-[#1a1c1e] text-textHeading shadow-lg shadow-black/40 hover:bg-[#25282c] transition-all active:scale-95 group ${isExpanded ? "px-4 py-2 gap-2 h-11" : "h-10 w-10"}`}
+          className={`flex items-center justify-center rounded-xl border border-cardBorder bg-bgCard text-textHeading shadow-lg hover:bg-bgCardHover transition-all active:scale-95 group ${isExpanded ? "px-4 py-2 gap-2 h-11" : "h-10 w-10"}`}
           title="Use My Location"
         >
           <span
@@ -203,7 +203,7 @@ const MapUIControls = ({
         <button
           type="button"
           onClick={onToggleExpand}
-          className={`flex items-center justify-center rounded-lg border border-cardBorder bg-[#1a1c1e] text-textHeading shadow-lg shadow-black/40 hover:bg-[#25282c] transition-all active:scale-95 ${isExpanded ? "px-3 py-2 gap-2 h-10" : "h-9 w-9"}`}
+          className={`flex items-center justify-center rounded-lg border border-cardBorder bg-bgCard text-textHeading shadow-lg hover:bg-bgCardHover transition-all active:scale-95 ${isExpanded ? "px-3 py-2 gap-2 h-10" : "h-9 w-9"}`}
           title={isExpanded ? "Collapse Map" : "Expand Map"}
         >
           <span className="text-base">{isExpanded ? "✖" : "⛶"}</span>
@@ -217,7 +217,7 @@ const MapUIControls = ({
         <button
           type="button"
           onClick={onToggleMapType}
-          className={`flex items-center justify-center rounded-lg border border-cardBorder bg-[#1a1c1e] text-textHeading shadow-lg shadow-black/40 hover:bg-[#25282c] transition-all active:scale-95 ${isExpanded ? "px-3 py-2 gap-2 h-10" : "h-9 w-9"}`}
+          className={`flex items-center justify-center rounded-lg border border-cardBorder bg-bgCard text-textHeading shadow-lg hover:bg-bgCardHover transition-all active:scale-95 ${isExpanded ? "px-3 py-2 gap-2 h-10" : "h-9 w-9"}`}
           title={
             mapType === "street"
               ? "Switch to Satellite"
@@ -1539,7 +1539,7 @@ export function DeviceSettings({
                     {isMapExpanded &&
                       createPortal(
                         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-300 p-4 sm:p-8">
-                          <div className="relative h-[80vh] w-[90vw] max-w-5xl overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#1a1c1e] shadow-2xl animate-in zoom-in-95 duration-300">
+                          <div className="relative h-[80vh] w-[90vw] max-w-5xl overflow-hidden rounded-[2.5rem] border border-borderColor bg-bgCard shadow-2xl animate-in zoom-in-95 duration-300">
                             <MapContainer
                               center={
                                 userLocation ||

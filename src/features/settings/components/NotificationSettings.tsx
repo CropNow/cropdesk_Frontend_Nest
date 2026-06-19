@@ -48,7 +48,7 @@ function ToggleSwitch({
         animate={{ x: checked ? 20 : 2 }}
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
         className={[
-          "absolute top-[3px] h-4 w-4 rounded-full transition-colors duration-300",
+          "absolute left-0 top-[3px] h-4 w-4 rounded-full transition-colors duration-300",
           checked
             ? "bg-accentPrimary shadow-[0_0_6px_rgba(0,255,156,0.5)]"
             : "bg-textMuted",
@@ -249,7 +249,7 @@ export function NotificationSettings() {
           {ALERT_TYPE_CONFIGS.map((cfg) => (
             <div
               key={cfg.key}
-              className="flex items-center gap-4 rounded-xl border border-cardBorder bg-cardBg px-4 py-3 transition-colors hover:border-white/10"
+              className="flex items-center gap-4 rounded-xl border border-cardBorder bg-cardBg px-4 py-3 transition-colors hover:border-borderColor"
             >
               <div
                 className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border ${cfg.bgColor} ${cfg.color}`}
@@ -284,7 +284,7 @@ export function NotificationSettings() {
           {CHANNEL_CONFIGS.map((cfg) => (
             <div
               key={cfg.key}
-              className="flex items-center gap-4 rounded-xl border border-cardBorder bg-cardBg px-4 py-3 transition-colors hover:border-white/10"
+              className="flex items-center gap-4 rounded-xl border border-cardBorder bg-cardBg px-4 py-3 transition-colors hover:border-borderColor"
             >
               <div
                 className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border ${cfg.bgColor} ${cfg.color}`}

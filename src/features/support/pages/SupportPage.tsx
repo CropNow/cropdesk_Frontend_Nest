@@ -133,8 +133,8 @@ export function SupportPage() {
               animate={{ y: 0, opacity: 1 }}
               className="space-y-2"
             >
-              <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
-                Support <span className="text-[#00FF9C]">Center</span>
+              <h1 className="text-3xl font-extrabold tracking-tight text-textPrimary sm:text-5xl">
+                Support <span className="text-[#00FF9C] dark:text-accentPrimary">Center</span>
               </h1>
               <p className="max-w-2xl text-lg text-textSecondary">
                 Find answers, troubleshoot your devices, or get in touch with
@@ -147,32 +147,32 @@ export function SupportPage() {
             <div className="space-y-10">
               {/* Quick Help Section */}
               <section className="space-y-4">
-                <h2 className="flex items-center gap-2 text-xl font-bold text-white">
-                  <BookOpen className="h-5 w-5 text-[#00FF9C]" /> Quick Help
+                <h2 className="flex items-center gap-2 text-xl font-bold text-textPrimary">
+                  <BookOpen className="h-5 w-5 text-accentPrimary" /> Quick Help
                   Guides
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-3">
                   {TROUBLESHOOTING_GUIDES.map((guide, idx) => (
                     <motion.div
-                      key={guide.title}
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: idx * 0.1 }}
-                      onClick={() =>
-                        setActiveGuide(activeGuide === idx ? null : idx)
-                      }
-                      className="group cursor-pointer rounded-2xl border border-white/5 bg-white/5 overflow-hidden transition-all hover:border-[#00FF9C]/30 hover:bg-white/[0.08]"
+                       key={guide.title}
+                       initial={{ y: 20, opacity: 0 }}
+                       animate={{ y: 0, opacity: 1 }}
+                       transition={{ delay: idx * 0.1 }}
+                       onClick={() =>
+                         setActiveGuide(activeGuide === idx ? null : idx)
+                       }
+                       className="group cursor-pointer rounded-2xl border border-borderColor bg-bgCard overflow-hidden transition-all hover:border-accentPrimary/50 hover:bg-bgCardHover"
                     >
                       <div className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                          <div className="rounded-xl bg-white/5 p-3 w-fit group-hover:scale-110 transition-transform">
+                          <div className="rounded-xl bg-borderColor/50 p-3 w-fit group-hover:scale-110 transition-transform">
                             {guide.icon}
                           </div>
                           <ChevronDown
                             className={`h-5 w-5 text-textMuted transition-transform ${activeGuide === idx ? "rotate-180" : ""}`}
                           />
                         </div>
-                        <h3 className="mb-1 font-bold text-white">
+                        <h3 className="mb-1 font-bold text-textPrimary">
                           {guide.title}
                         </h3>
                         <p className="text-sm text-textSecondary">
@@ -185,7 +185,7 @@ export function SupportPage() {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="border-t border-white/5 bg-white/[0.01] px-6 pb-6 pt-4"
+                            className="border-t border-borderColor bg-bgCard/30 px-6 pb-6 pt-4"
                           >
                             <ul className="list-disc pl-5 space-y-2 text-sm text-textSecondary">
                               {guide.steps.map((step, stepIdx) => (
@@ -202,23 +202,23 @@ export function SupportPage() {
 
               {/* FAQ Section */}
               <section className="space-y-4">
-                <h2 className="flex items-center gap-2 text-xl font-bold text-white">
-                  <MessageSquare className="h-5 w-5 text-cyan-400" /> Frequently
+                <h2 className="flex items-center gap-2 text-xl font-bold text-textPrimary">
+                  <MessageSquare className="h-5 w-5 text-cyan-500" /> Frequently
                   Asked Questions
                 </h2>
                 <div className="space-y-3">
                   {FAQ_DATA.map((faq, idx) => (
                     <div
                       key={idx}
-                      className="overflow-hidden rounded-2xl border border-white/5 bg-white/5"
+                      className="overflow-hidden rounded-2xl border border-borderColor bg-bgCard"
                     >
                       <button
                         onClick={() =>
                           setActiveFaq(activeFaq === idx ? null : idx)
                         }
-                        className="flex w-full items-center justify-between p-5 text-left transition-colors hover:bg-white/[0.02]"
+                        className="flex w-full items-center justify-between p-5 text-left transition-colors hover:bg-bgCardHover"
                       >
-                        <span className="font-semibold text-white">
+                        <span className="font-semibold text-textPrimary">
                           {faq.question}
                         </span>
                         <ChevronDown
@@ -231,7 +231,7 @@ export function SupportPage() {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="border-t border-white/5 bg-white/[0.01] p-5 text-sm leading-relaxed text-textSecondary"
+                            className="border-t border-borderColor bg-bgCard/30 p-5 text-sm leading-relaxed text-textSecondary"
                           >
                             {faq.answer}
                           </motion.div>
@@ -248,10 +248,10 @@ export function SupportPage() {
               <motion.section
                 initial={{ x: 20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
+                className="rounded-3xl border border-borderColor bg-bgCard p-8 backdrop-blur-xl"
               >
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-white">
+                  <h2 className="text-2xl font-bold text-textPrimary">
                     Report an Issue
                   </h2>
                   <p className="text-sm text-textSecondary">
@@ -268,7 +268,7 @@ export function SupportPage() {
                     <div className="mb-4 rounded-full bg-[#00FF9C]/20 p-4">
                       <CheckCircle2 className="h-10 w-10 text-[#00FF9C]" />
                     </div>
-                    <h3 className="text-xl font-bold text-white">
+                    <h3 className="text-xl font-bold text-textPrimary">
                       Ticket Submitted!
                     </h3>
                     <p className="mt-2 text-sm text-textSecondary">
@@ -277,7 +277,7 @@ export function SupportPage() {
                     </p>
                     <button
                       onClick={() => setSubmitted(false)}
-                      className="mt-6 text-sm font-bold text-[#00FF9C] hover:underline"
+                      className="mt-6 text-sm font-bold text-accentPrimary hover:underline"
                     >
                       Submit another issue
                     </button>
@@ -299,7 +299,7 @@ export function SupportPage() {
                       </label>
                       <select
                         disabled={!isOnline}
-                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white focus:border-[#00FF9C]/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full rounded-xl border border-borderColor bg-bgInput p-3 text-sm text-textPrimary focus:border-accentPrimary/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         value={formState.category}
                         onChange={(e) =>
                           setFormState({
@@ -308,10 +308,10 @@ export function SupportPage() {
                           })
                         }
                       >
-                        <option>Technical</option>
-                        <option>Account</option>
-                        <option>Billing</option>
-                        <option>Hardware</option>
+                        <option className="bg-bgCard text-textPrimary">Technical</option>
+                        <option className="bg-bgCard text-textPrimary">Account</option>
+                        <option className="bg-bgCard text-textPrimary">Billing</option>
+                        <option className="bg-bgCard text-textPrimary">Hardware</option>
                       </select>
                     </div>
                     <div className="space-y-2">
@@ -324,10 +324,10 @@ export function SupportPage() {
                         disabled={!isOnline}
                         placeholder={
                           isOnline
-                            ? "E.g. NEST Sensor offline"
-                            : "Offline - please reconnect"
+                             ? "E.g. NEST Sensor offline"
+                             : "Offline - please reconnect"
                         }
-                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-textHint focus:border-[#00FF9C]/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full rounded-xl border border-borderColor bg-bgInput p-3 text-sm text-textPrimary placeholder:text-textHint focus:border-accentPrimary/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         value={formState.subject}
                         onChange={(e) =>
                           setFormState({
@@ -350,7 +350,7 @@ export function SupportPage() {
                             ? "Describe the issue in detail..."
                             : "Offline - please reconnect"
                         }
-                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-textHint focus:border-[#00FF9C]/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full rounded-xl border border-borderColor bg-bgInput p-3 text-sm text-textPrimary placeholder:text-textHint focus:border-accentPrimary/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         value={formState.message}
                         onChange={(e) =>
                           setFormState({
@@ -363,7 +363,7 @@ export function SupportPage() {
                     <button
                       type="submit"
                       disabled={isSubmitting || !isOnline}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00FF9C] py-4 font-bold text-black transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-accentPrimary py-4 font-bold text-black dark:text-black transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
                         "Sending..."
@@ -379,16 +379,16 @@ export function SupportPage() {
 
               {/* Contact Grid */}
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/5 bg-white/5 p-6">
-                  <Mail className="mb-3 h-5 w-5 text-cyan-400" />
-                  <h4 className="text-sm font-bold text-white">Email Us</h4>
+                <div className="rounded-2xl border border-borderColor bg-bgCard p-6">
+                  <Mail className="mb-3 h-5 w-5 text-cyan-500" />
+                  <h4 className="text-sm font-bold text-textPrimary">Email Us</h4>
                   <p className="text-xs text-textSecondary">
                     support@cropnow.in
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/5 p-6">
-                  <Phone className="mb-3 h-5 w-5 text-[#00FF9C]" />
-                  <h4 className="text-sm font-bold text-white">Call Us</h4>
+                <div className="rounded-2xl border border-borderColor bg-bgCard p-6">
+                  <Phone className="mb-3 h-5 w-5 text-accentPrimary" />
+                  <h4 className="text-sm font-bold text-textPrimary">Call Us</h4>
                   <p className="text-xs text-textSecondary">
                     +1 (800) 123-4567
                   </p>

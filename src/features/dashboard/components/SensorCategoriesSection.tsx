@@ -19,6 +19,17 @@ import { useToast } from "@app/providers/ToastContext";
 import { SENSOR_CARDS } from "@shared/constants/sensorConstants";
 import { useLockBodyScroll } from "@shared/hooks/useLockBodyScroll";
 import { sensorsAPI } from "@features/sensors/api/sensors.api";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+} from "recharts";
 
 /**
  * SensorCategoriesSection - DashboardV2Page-equivalent interactive sensor insights
@@ -89,16 +100,16 @@ export function SensorCategoriesSection({
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-3xl border border-white/10 bg-cardBg p-5 backdrop-blur-xl xl:col-span-1"
+        className="rounded-3xl border border-borderColor bg-bgCard p-5 backdrop-blur-xl xl:col-span-1"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-3xl font-bold">Sensor Insights</h3>
+          <h3 className="text-3xl font-bold text-textPrimary">Sensor Insights</h3>
         </div>
 
         {/* Smoother Compact Stacked Layout */}
         <div className="flex flex-col gap-4">
           {/* Connectivity Hub Card */}
-          <motion.div className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/[0.02] to-transparent p-3 sm:p-4 backdrop-blur-xl transition-all max-w-[420px]">
+          <motion.div className="group relative overflow-hidden rounded-[2rem] border border-borderColor bg-bgCardHover/30 p-3 sm:p-4 backdrop-blur-xl transition-all max-w-[420px]">
             {/* Soft Status Glow */}
             <div
               className={`absolute -right-8 -top-8 h-32 w-32 rounded-full blur-[50px] transition-colors duration-700 ${data?.isOnline ? "bg-emerald-500/12" : "bg-red-500/12"}`}
@@ -111,28 +122,28 @@ export function SensorCategoriesSection({
                   className={`h-2 w-2 rounded-full ${data?.isOnline ? "animate-pulse bg-emerald-500" : "bg-red-500"}`}
                 />
                 <span
-                  className={`text-[0.65rem] font-bold uppercase tracking-[0.15em] ${data?.isOnline ? "text-emerald-400/80" : "text-red-400/80"}`}
+                  className={`text-[0.65rem] font-bold uppercase tracking-[0.15em] ${data?.isOnline ? "text-emerald-500/80 dark:text-emerald-400/80" : "text-red-500/80 dark:text-red-400/80"}`}
                 >
                   {data?.isOnline ? "System Online" : "System Offline"}
                 </span>
               </div>
 
               {/* Title */}
-              <h4 className="text-lg font-bold tracking-tight text-white/90">
+              <h4 className="text-lg font-bold tracking-tight text-textPrimary">
                 Connectivity Hub
               </h4>
 
               {/* Active Sensors */}
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-white">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-textPrimary">
                     {activeSensorsCount}
                   </span>
-                  <span className="text-sm font-bold text-white/50">
+                  <span className="text-sm font-bold text-textSecondary">
                     / {data?.totalSensorsCount || 16}
                   </span>
                 </div>
-                <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/60">
+                <p className="text-[0.7rem] font-bold uppercase tracking-widest text-textMuted">
                   ACTIVE SENSORS
                 </p>
               </div>
@@ -140,25 +151,25 @@ export function SensorCategoriesSection({
               {/* Last Sync and Last Fetch - Vertical */}
               <div className="space-y-2.5">
                 <div>
-                  <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/50">
+                  <p className="text-[0.7rem] font-bold uppercase tracking-widest text-textMuted">
                     Last Sync
                   </p>
-                  <p className="text-2xl font-bold tracking-tight text-white/90">
+                  <p className="text-2xl font-bold tracking-tight text-textPrimary">
                     {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--:--"}
                   </p>
-                  <p className="text-[0.75rem] font-medium text-white/50">
+                  <p className="text-[0.75rem] font-medium text-textSecondary">
                     {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleDateString() : "N/A"}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-[0.7rem] font-bold uppercase tracking-widest text-white/50">
+                  <p className="text-[0.7rem] font-bold uppercase tracking-widest text-textMuted">
                     Last Fetch
                   </p>
-                  <p className="text-2xl font-bold tracking-tight text-white/90">
+                  <p className="text-2xl font-bold tracking-tight text-textPrimary">
                     {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--:--"}
                   </p>
-                  <p className="text-[0.75rem] font-medium text-white/50">
+                  <p className="text-[0.75rem] font-medium text-textSecondary">
                     {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleDateString() : "N/A"}
                   </p>
                 </div>
@@ -179,11 +190,11 @@ export function SensorCategoriesSection({
                 >
                   <div className="relative z-10 flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xl font-bold tracking-tight text-white">
+                      <h4 className="text-xl font-bold tracking-tight text-textPrimary">
                         {card.title}
                       </h4>
                       <div className="ml-3">
-                        <ChevronDown className="h-5 w-5 -rotate-90 text-[#00FF9C]" />
+                        <ChevronDown className="h-5 w-5 -rotate-90 text-accentPrimary" />
                       </div>
                     </div>
 
@@ -220,26 +231,26 @@ export function SensorCategoriesSection({
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute right-0 bottom-full mb-2 w-56 rounded-lg border border-white/30 bg-white/95 dark:bg-bgMain/100 p-2 shadow-lg z-60 backdrop-blur-0"
+                            className="absolute right-0 bottom-full mb-2 w-56 rounded-lg border border-borderColor bg-bgCard p-2 shadow-lg z-60 backdrop-blur-0"
                           >
-                            <div className="text-xs font-semibold text-black/80 dark:text-white/70 mb-2 px-2 pt-1">
+                            <div className="text-xs font-semibold text-textSecondary mb-2 px-2 pt-1">
                               Select Range
                             </div>
                             <button
                               onClick={() => handleExport("7d")}
-                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/6 text-black dark:text-white"
+                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-bgCardHover text-textPrimary"
                             >
                               Last 7 Days
                             </button>
                             <button
                               onClick={() => handleExport("15d")}
-                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/6 text-black dark:text-white"
+                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-bgCardHover text-textPrimary"
                             >
                               Last 15 Days
                             </button>
                             <button
                               onClick={() => handleExport("30d")}
-                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/6 text-black dark:text-white"
+                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-bgCardHover text-textPrimary"
                             >
                               Last 30 Days
                             </button>
@@ -333,7 +344,6 @@ function RealDataChart({
   selectedRange?: string;
   metricKey?: string;
 }) {
-  const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
   console.log("RealDataChart received data:", data);
 
   // Pad data to ensure a full timeline is always shown across the X-axis
@@ -385,139 +395,9 @@ function RealDataChart({
 
   const chartData = timeline;
 
-  const points = chartData.map((d: any) => {
-    let val: number | undefined;
-
-    if (metricKey && d[metricKey] !== undefined && d[metricKey] !== null) {
-      const num = Number(d[metricKey]);
-      if (!isNaN(num)) val = num;
-    }
-
-    if (val === undefined) {
-      const possibleKeys = ["value", "avg", "average", "reading", "val"];
-      for (const key of possibleKeys) {
-        if (d[key] !== undefined && d[key] !== null) {
-          const num = Number(d[key]);
-          if (!isNaN(num)) {
-            val = num;
-            break;
-          }
-        }
-      }
-    }
-
-    if (val === undefined) {
-      for (const key in d) {
-        const keyLower = key.toLowerCase();
-        if (
-          keyLower.includes("id") ||
-          keyLower.includes("time") ||
-          keyLower.includes("date") ||
-          keyLower.includes("created") ||
-          keyLower.includes("updated")
-        ) {
-          continue;
-        }
-        const num = Number(d[key]);
-        if (
-          d[key] !== null &&
-          d[key] !== "" &&
-          typeof d[key] !== "boolean" &&
-          !isNaN(num)
-        ) {
-          val = num;
-          break;
-        }
-      }
-    }
-
-    return val !== undefined ? val : 0;
-  });
-
-  const maxVal = Math.max(...points, 1);
-  const minVal = Math.min(...points, 0);
-  const range = maxVal - minVal;
-
-  const displayMin = range === 0 ? minVal - 1 : minVal;
-  const displayMax = range === 0 ? maxVal + 1 : maxVal;
-  const displayRange = displayMax - displayMin;
-
-  const width = 800;
-  const height = 200; // Reduced to fit standard containers better
-  const paddingLeft = 70;
-  const paddingRight = 30;
-  const paddingTop = 15;
-  const paddingBottom = 35; // Adjusted to ensure labels fit within 200 units
-
-  const getX = (index: number) => {
-    return (
-      paddingLeft +
-      (index / (points.length - 1 || 1)) * (width - paddingLeft - paddingRight)
-    );
-  };
-
-  const getY = (val: number) => {
-    return (
-      height -
-      paddingBottom -
-      ((val - displayMin) / (displayRange || 1)) *
-        (height - paddingTop - paddingBottom)
-    );
-  };
-
-  const svgPoints = points.map((val, i) => `${getX(i)},${getY(val)}`).join(" ");
-
-  const barCount = points.length;
-  const step = (width - paddingLeft - paddingRight) / (barCount || 1);
-  const currentBarWidth = barCount > 1 ? Math.max(step * 0.7, 4) : 40;
-
-  const bars = points.map((val, i) => {
-    const x =
-      barCount > 1
-        ? paddingLeft + i * step + (step - currentBarWidth) / 2
-        : paddingLeft +
-          (width - paddingLeft - paddingRight) / 2 -
-          currentBarWidth / 2;
-    const barHeight =
-      ((val - displayMin) / (displayRange || 1)) *
-      (height - paddingTop - paddingBottom);
-    const y = height - paddingBottom - Math.max(barHeight, 4);
-
-    return (
-      <rect
-        key={i}
-        x={x}
-        y={y}
-        width={currentBarWidth}
-        height={Math.max(barHeight, 4)}
-        fill="#00FF9C"
-        fillOpacity={selectedPoint === i ? 1 : 0.8}
-        rx={Math.min(currentBarWidth / 4, 8)}
-        className="cursor-pointer transition-all drop-shadow-[0_0_10px_rgba(0,255,156,0.3)] hover:fillOpacity-100"
-        onClick={(e) => {
-          e.stopPropagation();
-          setSelectedPoint(selectedPoint === i ? null : i);
-        }}
-      />
-    );
-  });
-
-  const getFormattedLabel = (d: any) => {
-    if (!d) return "";
-    const timeKey = [
-      "timestamp",
-      "createdAt",
-      "time",
-      "date",
-      "updatedAt",
-      "created_at",
-      "updated_at",
-      "ts",
-    ].find((k) => d[k]);
-    if (!timeKey) return "";
-
+  const formatXAxis = (tickItem: string) => {
     try {
-      const date = new Date(d[timeKey]);
+      const date = new Date(tickItem);
       if (isNaN(date.getTime())) return "";
 
       if (selectedRange === "24 Hours") {
@@ -538,147 +418,123 @@ function RealDataChart({
     }
   };
 
-  const labelsWithIndices = chartData
-    .map((d: any, i: number) => ({
-      label: getFormattedLabel(d),
-      index: i,
-    }))
-    .filter((l) => l.label !== "");
-
-  const uniqueLabels = labelsWithIndices.filter(
-    (item, pos, self) => self.findIndex((v) => v.label === item.label) === pos,
-  );
-
-  const finalLabelCount = Math.min(6, uniqueLabels.length);
-  const finalLabels = [];
-  if (uniqueLabels.length > 0) {
-    for (let i = 0; i < finalLabelCount; i++) {
-      const idx = Math.floor(
-        (i * (uniqueLabels.length - 1)) / (finalLabelCount - 1 || 1),
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const val = Number(payload[0].value);
+      return (
+        <div className="relative rounded-lg bg-[#00FF9C] px-3 py-1.5 shadow-[0_0_15px_rgba(0,255,156,0.5)]">
+          <p className="text-xs font-black text-[#0A0E14] select-none tabular-nums">
+            {val.toFixed(1)}
+            {unit}
+          </p>
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-x-4 border-x-transparent border-t-4 border-t-[#00FF9C]" />
+        </div>
       );
-      finalLabels.push(uniqueLabels[idx]);
     }
+    return null;
+  };
+
+  const isWindDirection = metricKey === "wind_direction" || metricKey === "wind_dir" || unit === "°";
+
+  if (chartType === "line") {
+    return (
+      <div className="h-full w-full p-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={chartData}
+            margin={{ top: 15, right: 30, left: 10, bottom: 10 }}
+          >
+            <CartesianGrid
+              vertical={false}
+              stroke="var(--border-color)"
+              strokeOpacity={0.4}
+            />
+            <XAxis
+              dataKey="timestamp"
+              tickFormatter={formatXAxis}
+              stroke="var(--text-muted)"
+              strokeOpacity={0.8}
+              fontSize={11}
+              fontWeight={900}
+              tickLine={false}
+              axisLine={false}
+              dy={10}
+            />
+            <YAxis
+              stroke="var(--text-muted)"
+              strokeOpacity={0.8}
+              fontSize={11}
+              fontWeight={900}
+              tickLine={false}
+              axisLine={false}
+              domain={isWindDirection ? [0, 360] : ["auto", "auto"]}
+              tickFormatter={(v) => `${v.toFixed(v > 10 ? 0 : 1)}${unit}`}
+              dx={-5}
+            />
+            <RechartsTooltip
+              content={<CustomTooltip />}
+              cursor={{ stroke: "var(--border-color)", strokeWidth: 1 }}
+            />
+            <Line
+              type="monotone"
+              dataKey={metricKey}
+              stroke="var(--accent-primary)"
+              strokeWidth={3}
+              dot={{ fill: "var(--accent-primary)", r: 4, stroke: "var(--accent-primary)", strokeWidth: 0 }}
+              activeDot={{ r: 6, stroke: "var(--accent-primary)", strokeWidth: 2, fill: "var(--bg-card)" }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
   }
 
   return (
-    <svg
-      className="h-full w-full overflow-visible"
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="xMidYMid meet"
-    >
-      {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
-        const val = displayMin + ratio * displayRange;
-        const y = getY(val);
-        return (
-          <g key={`y-${idx}`}>
-            <line
-              x1={paddingLeft}
-              y1={y}
-              x2={width - paddingRight}
-              y2={y}
-              stroke="white"
-              strokeOpacity={idx === 0 ? "0.2" : "0.05"}
-              strokeWidth={idx === 0 ? 2 : 1}
-            />
-            <text
-              x={paddingLeft - 12}
-              y={y + 4}
-              fill="white"
-              fillOpacity="0.7"
-              fontSize="12"
-              fontWeight="900"
-              textAnchor="end"
-              className="select-none tabular-nums"
-            >
-              {val.toFixed(val > 10 ? 0 : 1)}
-              {unit}
-            </text>
-          </g>
-        );
-      })}
-
-      {finalLabels.map((l, i) => (
-        <text
-          key={`x-${i}`}
-          x={getX(l.index)}
-          y={height - 10}
-          fill="white"
-          fillOpacity="0.7"
-          fontSize="12"
-          fontWeight="900"
-          textAnchor="middle"
-          className="select-none"
+    <div className="h-full w-full p-2">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={chartData}
+          margin={{ top: 15, right: 30, left: 10, bottom: 10 }}
         >
-          {l.label}
-        </text>
-      ))}
-
-      {chartType === "line" ? (
-        <g>
-          {points.length > 1 ? (
-            <polyline
-              fill="none"
-              stroke="#00FF9C"
-              strokeWidth="4"
-              points={svgPoints}
-              className="drop-shadow-[0_0_15px_rgba(0,255,156,0.5)]"
-            />
-          ) : null}
-          {points.map((val, i) => (
-            <circle
-              key={`dot-${i}`}
-              cx={getX(i)}
-              cy={getY(val)}
-              r={selectedPoint === i ? 8 : 6}
-              fill="#00FF9C"
-              fillOpacity={selectedPoint === i ? 1 : 0.4}
-              stroke="#00FF9C"
-              strokeWidth={selectedPoint === i ? 2 : 0}
-              className="cursor-pointer transition-all hover:fillOpacity-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedPoint(selectedPoint === i ? null : i);
-              }}
-            />
-          ))}
-        </g>
-      ) : (
-        <g onClick={() => setSelectedPoint(null)} className="h-full w-full">
-          {bars}
-        </g>
-      )}
-
-      {/* Value Label Overlay */}
-      {selectedPoint !== null && points[selectedPoint] !== undefined && (
-        <g>
-          <rect
-            x={getX(selectedPoint) - 35}
-            y={getY(points[selectedPoint]) - 40}
-            width="70"
-            height="30"
-            rx="8"
-            fill="#00FF9C"
-            className="drop-shadow-[0_0_10px_rgba(0,255,156,0.5)]"
+          <CartesianGrid
+            vertical={false}
+            stroke="var(--border-color)"
+            strokeOpacity={0.4}
           />
-          <path
-            d={`M ${getX(selectedPoint) - 6} ${getY(points[selectedPoint]) - 10} L ${getX(selectedPoint)} ${getY(points[selectedPoint]) - 2} L ${getX(selectedPoint) + 6} ${getY(points[selectedPoint]) - 10} Z`}
-            fill="#00FF9C"
+          <XAxis
+            dataKey="timestamp"
+            tickFormatter={formatXAxis}
+            stroke="var(--text-muted)"
+            strokeOpacity={0.8}
+            fontSize={11}
+            fontWeight={900}
+            tickLine={false}
+            axisLine={false}
+            dy={10}
           />
-          <text
-            x={getX(selectedPoint)}
-            y={getY(points[selectedPoint]) - 20}
-            fill="#0A0E14"
-            fontSize="12"
-            fontWeight="900"
-            textAnchor="middle"
-            className="select-none tabular-nums"
-          >
-            {points[selectedPoint].toFixed(1)}
-            {unit}
-          </text>
-        </g>
-      )}
-    </svg>
+          <YAxis
+            stroke="var(--text-muted)"
+            strokeOpacity={0.8}
+            fontSize={11}
+            fontWeight={900}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v) => `${v.toFixed(v > 10 ? 0 : 1)}${unit}`}
+            dx={-5}
+          />
+          <RechartsTooltip
+            content={<CustomTooltip />}
+            cursor={{ fill: "var(--border-subtle)" }}
+          />
+          <Bar
+            dataKey={metricKey}
+            fill="var(--accent-primary)"
+            radius={[4, 4, 0, 0]}
+            maxBarSize={40}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -756,7 +612,7 @@ function SoilSensorDetail({
   }, [sensorId, selectedRange, sensor.title]);
 
   return (
-    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/40 p-5 md:rounded-[2rem] md:p-6">
+    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-borderColor bg-bgCard p-5 md:rounded-[2rem] md:p-6">
       <div className="mb-4 flex w-full items-start justify-between md:mb-5">
         <div className="z-20 flex flex-col items-start gap-3 md:gap-5">
           <div className="text-left">
@@ -773,7 +629,7 @@ function SoilSensorDetail({
               <button
                 key={range}
                 onClick={() => setSelectedRange(range)}
-                className={`rounded-full px-5 py-1.5 text-xs font-bold transition-all ${selectedRange === range ? "bg-[#00FF9C]/10 text-[#00FF9C] border border-[#00FF9C]/30 shadow-[0_0_15px_rgba(0,255,156,0.15)]" : "text-textHint border border-white/5 hover:border-white/20"}`}
+                className={`rounded-full px-5 py-1.5 text-xs font-bold transition-all ${selectedRange === range ? "bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/30 shadow-lg" : "text-textHint border border-borderColor/40 hover:border-borderColor"}`}
               >
                 {range}
               </button>
@@ -784,7 +640,7 @@ function SoilSensorDetail({
             <select
               value={selectedRange}
               onChange={(e) => setSelectedRange(e.target.value)}
-              className="w-full appearance-none cursor-pointer rounded-full border border-white/10 bg-cardBg px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider text-[#00FF9C] outline-none"
+              className="w-full appearance-none cursor-pointer rounded-full border border-borderColor bg-bgInput px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider text-accentPrimary outline-none"
             >
               {ranges.map((range) => (
                 <option
@@ -915,13 +771,13 @@ function AirSensorDetail({
   }, [sensorId, selectedRange, sensor.title]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#0A0E14]/90 p-6 backdrop-blur-2xl md:p-8">
+    <div className="relative w-full overflow-hidden rounded-[2rem] border border-borderColor bg-bgCard p-6 backdrop-blur-2xl md:p-8">
       <div className="mb-4 flex items-center justify-between md:hidden">
         <div className="flex items-center gap-4">
-          <h3 className="text-xl font-black tracking-tight text-white">
+          <h3 className="text-xl font-black tracking-tight text-textPrimary">
             {sensor.title}
           </h3>
-          <p className="text-xl font-black leading-none tracking-tighter text-[#00FF9C]">
+          <p className="text-xl font-black leading-none tracking-tighter text-accentPrimary">
             {sensor.value}
             <span className="ml-0.5 text-[0.7rem] font-bold uppercase">
               .{sensor.unit}
@@ -930,28 +786,28 @@ function AirSensorDetail({
         </div>
         <button
           onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-lg transition-all active:scale-95 group"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-borderColor bg-bgCardHover shadow-lg transition-all active:scale-95 group"
         >
-          <X className="h-5 w-5 text-[#00FF9C]" strokeWidth={3} />
+          <X className="h-5 w-5 text-accentPrimary" strokeWidth={3} />
         </button>
       </div>
 
-      <p className="mb-4 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-white/40 md:hidden">
+      <p className="mb-4 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-textMuted md:hidden">
         {selectedRange} Trend
       </p>
 
       <div className="mb-8 hidden items-start justify-between md:flex">
         <div>
-          <h3 className="mb-1 text-2xl font-bold leading-tight tracking-tight text-white md:text-[1.75rem]">
+          <h3 className="mb-1 text-2xl font-bold leading-tight tracking-tight text-textPrimary md:text-[1.75rem]">
             {sensor.title}
           </h3>
-          <p className="text-[0.75rem] font-medium uppercase tracking-widest text-white/40 md:text-[0.85rem]">
+          <p className="text-[0.75rem] font-medium uppercase tracking-widest text-textMuted md:text-[0.85rem]">
             {selectedRange} Trend
           </p>
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <p className="text-2xl font-black leading-none tracking-tighter text-[#00FF9C] md:text-[2.25rem]">
+          <p className="text-2xl font-black leading-none tracking-tighter text-accentPrimary md:text-[2.25rem]">
             {sensor.value}
             <span className="ml-0.5 text-[0.8rem] font-bold uppercase md:text-[0.9rem]">
               .{sensor.unit}
@@ -959,10 +815,10 @@ function AirSensorDetail({
           </p>
           <button
             onClick={onClose}
-            className="ml-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-lg transition-all hover:bg-white/10 active:scale-95 group md:h-10 md:w-10"
+            className="ml-1 flex h-8 w-8 items-center justify-center rounded-full border border-borderColor bg-bgCardHover shadow-lg transition-all hover:bg-bgCardHover/80 active:scale-95 group md:h-10 md:w-10"
           >
             <X
-              className="h-4 w-4 text-white/40 group-hover:text-white md:h-5 md:w-5"
+              className="h-4 w-4 text-textSecondary group-hover:text-textPrimary"
               strokeWidth={3}
             />
           </button>
@@ -974,25 +830,25 @@ function AirSensorDetail({
           <select
             value={selectedRange}
             onChange={(e) => setSelectedRange(e.target.value)}
-            className="w-full appearance-none cursor-pointer rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-[0.75rem] font-black uppercase tracking-wider text-[#00FF9C] outline-none transition-colors hover:bg-white/[0.08] md:px-5"
+            className="w-full appearance-none cursor-pointer rounded-xl border border-borderColor bg-bgInput px-4 py-3 text-[0.75rem] font-black uppercase tracking-wider text-accentPrimary outline-none transition-colors hover:bg-bgCardHover md:px-5"
           >
             {ranges.map((range) => (
               <option
                 key={range}
                 value={range}
-                className="bg-[#0A0E14] text-white uppercase"
+                className="bg-bgCard text-textPrimary uppercase"
               >
                 {range}
               </option>
             ))}
           </select>
           <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-            <ChevronDown className="h-4 w-4 text-[#00FF9C]/60" />
+            <ChevronDown className="h-4 w-4 text-accentPrimary/60" />
           </div>
         </div>
       </div>
 
-      <div className="relative flex h-[220px] w-full items-end justify-center rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-0 md:h-[300px]">
+      <div className="relative flex h-[220px] w-full items-end justify-center rounded-[1.5rem] border border-borderColor/40 bg-bgCardHover/20 p-0 md:h-[300px]">
         <RealDataChart
           data={chartData}
           unit={sensor.unit}
@@ -1199,13 +1055,13 @@ function NestSensorsModal({
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="flex max-h-[90vh] w-[94vw] flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-bgMain/95 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] backdrop-blur-3xl md:max-w-[1280px] md:rounded-[2.5rem]"
+        className="flex max-h-[90vh] w-[94vw] flex-col overflow-hidden rounded-[2rem] border border-borderColor bg-bgCard shadow-2xl backdrop-blur-3xl md:max-w-[1280px] md:rounded-[2.5rem]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-white/5 px-6 py-4 md:px-14 md:py-4">
+        <div className="flex items-center justify-between border-b border-borderColor/30 px-6 py-4 md:px-14 md:py-4">
           <div className="flex items-center gap-4 md:gap-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[0.75rem] bg-[#00FF9C]/10 md:h-14 md:w-14 md:rounded-[1rem]">
-              <Activity className="h-5 w-5 text-[#00FF9C] md:h-7 md:w-7" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-[0.75rem] bg-accentPrimary/10 md:h-14 md:w-14 md:rounded-[1rem]">
+              <Activity className="h-5 w-5 text-accentPrimary md:h-7 md:w-7" />
             </div>
             <div>
               <h2 className="text-xl font-bold leading-tight tracking-tight text-textHeading md:text-[1.6rem]">
@@ -1220,7 +1076,7 @@ function NestSensorsModal({
                 >
                   {isOnline ? "Online" : "Offline"}
                 </p>
-                <span className="text-white/20">|</span>
+                <span className="text-textMuted">|</span>
                 <p className="text-[0.75rem] font-medium text-textHint md:text-[0.9rem]">
                   {nestSensors.length} total sensors
                 </p>
@@ -1246,7 +1102,7 @@ function NestSensorsModal({
                   <div key={sensor.id} className="w-full">
                     <div
                       onClick={() => toggleSensor(sensor.id)}
-                      className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? "border-[#00FF9C] bg-[#00FF9C]/5 shadow-[0_0_20px_rgba(0,255,156,0.2)]" : "border-white/10 bg-white/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#00FF9C]/30 hover:bg-white/[0.05] active:scale-95"}`}
+                      className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? "border-accentPrimary bg-accentPrimary/5 shadow-lg" : "border-borderColor bg-bgCardHover/30 hover:border-accentPrimary/30 hover:bg-bgCardHover active:scale-95"}`}
                     >
                       <div>
                         <div
@@ -1258,14 +1114,14 @@ function NestSensorsModal({
                             style={{ color: sensor.color }}
                           />
                         </div>
-                        <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-white/90 md:text-[0.7rem]">
+                        <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-textSecondary md:text-[0.7rem]">
                           {sensor.title}
                         </p>
                         <div className="mt-1 flex items-baseline gap-2">
-                          <span className="text-[1.2rem] font-black leading-none tracking-tight text-white md:text-[1.4rem]">
+                          <span className="text-[1.2rem] font-black leading-none tracking-tight text-textPrimary md:text-[1.4rem]">
                             {sensor.value}
                           </span>
-                          <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-white/50 md:text-[0.8rem]">
+                          <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-textMuted md:text-[0.8rem]">
                             {sensor.unit}
                           </span>
                         </div>
@@ -1273,16 +1129,16 @@ function NestSensorsModal({
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div
-                            className={`h-1.5 w-1.5 rounded-full ${isOnline ? "bg-[#00FF9C] shadow-[0_0_10px_#00FF9C]" : "bg-white/20"} md:h-2 md:w-2`}
+                            className={`h-1.5 w-1.5 rounded-full ${isOnline ? "bg-accentPrimary shadow-[0_0_10px_rgba(0,255,156,0.5)]" : "bg-textMuted/45"} md:h-2 md:w-2`}
                           />
                           <span
-                            className={`text-[0.65rem] font-bold uppercase tracking-widest leading-none ${isOnline ? "text-[#00FF9C]" : "text-white/30"} md:text-[0.75rem]`}
+                            className={`text-[0.65rem] font-bold uppercase tracking-widest leading-none ${isOnline ? "text-accentPrimary" : "text-textMuted/60"} md:text-[0.75rem]`}
                           >
                             {isOnline ? "Operational" : "No Signal"}
                           </span>
                         </div>
                         <ChevronDown
-                          className={`h-4 w-4 text-white/40 transition-transform ${activeSensor === sensor.id ? "rotate-180" : ""}`}
+                          className={`h-4 w-4 text-textMuted transition-transform ${activeSensor === sensor.id ? "rotate-180" : ""}`}
                         />
                       </div>
                     </div>

@@ -8,23 +8,38 @@ interface AISettingsProps {
   isSaving: boolean;
 }
 
-function ToggleSwitch({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
+function ToggleSwitch({
+  checked,
+  onToggle,
+  disabled = false,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
       aria-pressed={checked}
       onClick={onToggle}
+      disabled={disabled}
       className={[
-        'relative h-6 w-11 rounded-full border transition',
+        "relative h-6 w-11 flex-shrink-0 rounded-full border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-accentPrimary/40 focus:ring-offset-1 focus:ring-offset-transparent",
         checked
-          ? 'border-accentPrimary/50 bg-accentPrimary/20'
-          : 'border-cardBorder bg-cardBg',
-      ].join(' ')}
+          ? "border-accentPrimary/60 bg-accentPrimary/25 shadow-[0_0_10px_rgba(0,255,156,0.2)]"
+          : "border-cardBorder bg-cardBg",
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+      ].join(" ")}
     >
       <motion.span
         animate={{ x: checked ? 20 : 2 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-        className="absolute top-[2px] h-4.5 w-4.5 rounded-full bg-white"
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        className={[
+          "absolute left-0 top-[3px] h-4 w-4 rounded-full transition-colors duration-300",
+          checked
+            ? "bg-accentPrimary shadow-[0_0_6px_rgba(0,255,156,0.5)]"
+            : "bg-textMuted",
+        ].join(" ")}
       />
     </button>
   );

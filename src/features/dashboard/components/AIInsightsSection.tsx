@@ -21,17 +21,17 @@ export function AIInsightsSection({ data }: { data?: any }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.18 }}
-      className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-white/[0.05] via-white/[0.02] to-transparent p-6 backdrop-blur-2xl lg:col-span-2"
+      className="relative overflow-hidden rounded-[2.5rem] border border-borderColor bg-bgCard p-6 backdrop-blur-2xl lg:col-span-2"
     >
       {/* Decorative Glow */}
-      <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-[#00FF9C]/5 blur-[100px]" />
+      <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-accentPrimary/5 blur-[100px]" />
 
       <div className="mb-6 flex items-center justify-between px-2">
         <div className="flex flex-col gap-0.5">
-          <h3 className="text-3xl font-extrabold tracking-tight text-white/90">
+          <h3 className="text-3xl font-extrabold tracking-tight text-textPrimary">
             AI Insights
           </h3>
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/40">
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-textMuted">
             Real-time Farm Analysis
           </p>
         </div>
@@ -50,7 +50,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
               key={item.title + idx}
               layout
               whileHover={{ x: 4, scale: 1.005 }}
-              className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-white/5 bg-white/[0.03] p-4 transition-all hover:bg-white/[0.05] hover:border-white/10"
+              className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-borderColor bg-bgCardHover/20 p-4 transition-all hover:bg-bgCardHover/40 hover:border-borderColor"
             >
               <div className="flex items-center gap-4">
                 <div className="relative">
@@ -63,26 +63,26 @@ export function AIInsightsSection({ data }: { data?: any }) {
                 </div>
 
                 <div className="flex flex-col">
-                  <p className="text-[1.05rem] font-bold tracking-tight text-white/90">
+                  <p className="text-[1.05rem] font-bold tracking-tight text-textPrimary">
                     {item.title}
                   </p>
                   <motion.div
                     layout="position"
                     className="flex flex-col transition-all duration-300"
                   >
-                    <p className="text-[0.85rem] font-medium leading-relaxed text-white/50 line-clamp-1 group-hover:line-clamp-none">
+                    <p className="text-[0.85rem] font-medium leading-relaxed text-textSecondary line-clamp-1 group-hover:line-clamp-none">
                       {typeof item.description === "object" &&
                       item.description !== null
                         ? JSON.stringify(item.description)
                         : item.description}
                     </p>
                     {item.farmer_advisory && (
-                      <p className="mt-1 text-[0.85rem] font-medium leading-relaxed text-white/50">
+                      <p className="mt-1 text-[0.85rem] font-medium leading-relaxed text-textSecondary">
                         {item.farmer_advisory}
                       </p>
                     )}
                     {item.plant_impact && (
-                      <p className="mt-1 text-[0.85rem] font-medium leading-relaxed text-white/50">
+                      <p className="mt-1 text-[0.85rem] font-medium leading-relaxed text-textSecondary">
                         {item.plant_impact}
                       </p>
                     )}
@@ -92,7 +92,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
 
               {item.advice && (
                 <div className="hidden sm:block">
-                  <span className="rounded-lg border border-white/5 bg-white/5 px-3 py-1.5 text-[0.65rem] font-bold uppercase tracking-wider text-white/40 opacity-0 transition-opacity group-hover:opacity-100">
+                  <span className="rounded-lg border border-borderColor bg-bgCardHover px-3 py-1.5 text-[0.65rem] font-bold uppercase tracking-wider text-textMuted opacity-0 transition-opacity group-hover:opacity-100">
                     ADVICE READY
                   </span>
                 </div>
@@ -103,8 +103,8 @@ export function AIInsightsSection({ data }: { data?: any }) {
       </div>
 
       {insights.length === 0 && (
-        <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-white/10">
-          <p className="text-sm font-medium text-white/20">
+        <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-borderColor">
+          <p className="text-sm font-medium text-textMuted">
             Analyzing data for insights...
           </p>
         </div>

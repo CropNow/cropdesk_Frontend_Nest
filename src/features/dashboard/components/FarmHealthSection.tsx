@@ -43,7 +43,7 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
   };
 
   const getConditionColor = (cond?: string) => {
-    if (!cond) return "bg-white/10 text-white border-white/20";
+    if (!cond) return "bg-bgCardHover text-textPrimary border-borderColor";
     const c = cond.toLowerCase();
     if (
       c.includes("healthy") ||
@@ -51,17 +51,17 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
       c.includes("good") ||
       c.includes("normal")
     )
-      return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+      return "bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border-emerald-500/30";
     if (c.includes("moderate") || c.includes("warning"))
-      return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+      return "bg-amber-500/20 text-amber-500 dark:text-amber-400 border-amber-500/30";
     if (
       c.includes("high") ||
       c.includes("severe") ||
       c.includes("critical") ||
       c.includes("danger")
     )
-      return "bg-red-500/20 text-red-400 border-red-500/30";
-    return "bg-white/10 text-white border-white/20";
+      return "bg-red-500/20 text-red-500 dark:text-red-400 border-red-500/30";
+    return "bg-bgCardHover text-textPrimary border-borderColor";
   };
 
   const renderMetricCard = (metric: FarmStatusMetric, compact = false) => {
@@ -96,30 +96,30 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
         key={metric.id}
         role="group"
         aria-label={`${metric.label} ${displayValue}${metric.unit ? " " + metric.unit : ""}`}
-        className={`rounded-2xl border border-white/10 bg-black/20 text-center shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${compact ? "p-3" : "p-4"}`}
+        className={`rounded-2xl border border-borderColor bg-bgCardHover/30 text-center ${compact ? "p-3" : "p-4"}`}
       >
         <div
-          className={`mb-2 flex justify-center text-white/80 ${compact ? "text-lg" : "text-xl"}`}
+          className={`mb-2 flex justify-center text-textPrimary ${compact ? "text-lg" : "text-xl"}`}
           aria-hidden="true"
         >
           {icon}
         </div>
         <div className="flex items-baseline justify-center gap-0.5">
           <span
-            className={`${compact ? "text-2xl" : "text-3xl"} font-semibold tracking-tight text-white`}
+            className={`${compact ? "text-2xl" : "text-3xl"} font-semibold tracking-tight text-textPrimary`}
           >
             {displayValue}
           </span>
           {metric.unit && (
             <span
-              className={`${compact ? "text-sm" : "text-base"} font-medium text-white/70`}
+              className={`${compact ? "text-sm" : "text-base"} font-medium text-textSecondary`}
             >
               {metric.unit}
             </span>
           )}
         </div>
         <p
-          className={`mt-1 font-medium text-white/70 ${compact ? "text-[10px]" : "text-xs"}`}
+          className={`mt-1 font-medium text-textSecondary ${compact ? "text-[10px]" : "text-xs"}`}
         >
           {metric.label}
         </p>
@@ -168,17 +168,17 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
               return (
                 <div
                   key={key}
-                  className="rounded-2xl border border-white/5 bg-black/20 p-3"
+                  className="rounded-2xl border border-borderColor bg-bgCardHover/30 p-3"
                 >
                   <div className="mb-1.5 flex items-center justify-between">
-                    <span className="text-[10px] font-bold tracking-wider text-white/60">
+                    <span className="text-[10px] font-bold tracking-wider text-textMuted">
                       {label}
                     </span>
-                    <span className="text-[10px] font-black text-white/90">
+                    <span className="text-[10px] font-black text-textPrimary">
                       {Math.round(numValue)}%
                     </span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-bgInput">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(numValue, 100)}%` }}
@@ -233,17 +233,17 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
               return (
                 <div
                   key={key}
-                  className="rounded-xl border border-white/5 bg-black/20 p-2.5"
+                  className="rounded-xl border border-borderColor bg-bgCardHover/30 p-2.5"
                 >
                   <div className="mb-1.5 flex items-center justify-between">
-                    <span className="text-[9px] font-bold tracking-wider text-white/60">
+                    <span className="text-[9px] font-bold tracking-wider text-textMuted">
                       {label}
                     </span>
-                    <span className="text-[9px] font-black text-white/90">
+                    <span className="text-[9px] font-black text-textPrimary">
                       {Math.round(numValue)}%
                     </span>
                   </div>
-                  <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
+                  <div className="h-1 w-full overflow-hidden rounded-full bg-bgInput">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(numValue, 100)}%` }}

@@ -52,26 +52,26 @@ export function PWAInstallButton() {
         exit={{ opacity: 0, y: 50 }}
         className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0"
       >
-        <div className="flex items-center gap-4 rounded-2xl border border-[#00FF9C]/30 bg-[#0A0E14]/90 p-4 shadow-[0_0_30px_rgba(0,255,156,0.15)] backdrop-blur-xl">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#00FF9C]/20 text-[#00FF9C]">
+        <div className="flex items-center gap-4 rounded-2xl border border-borderColor/50 bg-bgCard/90 p-4 shadow-lg backdrop-blur-xl">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accentPrimary/20 text-accentPrimary">
             <Download className="h-5 w-5" />
           </div>
           
           <div className="flex flex-col">
-            <p className="text-sm font-bold text-white">Install CropDesk</p>
-            <p className="text-[0.65rem] font-medium text-white/50">Add to home screen for quick access</p>
+            <p className="text-sm font-bold text-textPrimary">Install CropDesk</p>
+            <p className="text-[0.65rem] font-medium text-textSecondary">Add to home screen for quick access</p>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={handleInstallClick}
-              className="rounded-lg bg-[#00FF9C] px-4 py-1.5 text-xs font-bold text-black transition hover:bg-[#00e68d] active:scale-95"
+              className="rounded-lg bg-accentPrimary px-4 py-1.5 text-xs font-bold text-black dark:text-black transition hover:bg-accentSecondary active:scale-95"
             >
               Install
             </button>
             <button
               onClick={() => setIsVisible(false)}
-              className="rounded-lg p-1.5 text-white/30 transition hover:bg-white/5 hover:text-white"
+              className="rounded-lg p-1.5 text-textSecondary transition hover:bg-black/5 dark:hover:bg-white/5 hover:text-textPrimary"
             >
               <X className="h-4 w-4" />
             </button>

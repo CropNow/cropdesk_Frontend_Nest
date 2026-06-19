@@ -63,7 +63,7 @@ export function SystemSettings({ values, onChange, onReset, onSave, isSaving }: 
         <button
           type="button"
           onClick={onReset}
-          className="rounded-xl border border-amber-300/40 bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-200"
+          className="rounded-xl border border-amber-500/40 dark:border-amber-300/40 bg-amber-500/10 dark:bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-600 dark:text-amber-200 transition hover:bg-amber-500/20 dark:hover:bg-amber-300/20"
         >
           Reset system settings
         </button>

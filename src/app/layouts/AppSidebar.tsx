@@ -150,7 +150,7 @@ export function AppSidebar() {
               className={[
                 "rounded-2xl",
                 isDevicesSectionActive
-                  ? "bg-black/[0.03] dark:bg-white/[0.06]"
+                  ? "bg-bgCardHover"
                   : "",
               ].join(" ")}
             >
@@ -185,8 +185,8 @@ export function AppSidebar() {
                         [
                           "my-1 block rounded-xl px-3 py-2 text-sm font-medium transition-colors",
                           isActive
-                            ? "bg-black text-white dark:bg-white dark:text-black"
-                            : "text-textSecondary hover:bg-black/5 hover:text-textPrimary dark:hover:bg-white/10 dark:hover:text-textPrimary",
+                            ? "bg-textPrimary text-bgSidebar dark:bg-textPrimary dark:text-bgSidebar"
+                            : "text-textSecondary hover:bg-bgCardHover hover:text-textPrimary",
                         ].join(" ")
                       }
                     >
@@ -241,7 +241,7 @@ export function AppSidebar() {
                   "sidebar-item mb-2 flex w-full items-center rounded-2xl px-3 py-2.5 text-sm font-semibold transition-colors",
                   isActive
                     ? "bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20"
-                    : "text-textPrimary hover:bg-black/5 dark:hover:bg-white/10",
+                    : "text-textPrimary hover:bg-bgCardHover",
                   isExpanded ? "justify-start gap-3" : "justify-center",
                 ].join(" ")
               }
@@ -258,7 +258,7 @@ export function AppSidebar() {
                   "sidebar-item mb-2 flex w-full items-center rounded-2xl px-3 py-2.5 text-sm font-semibold transition-colors",
                   isActive
                     ? "bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/20"
-                    : "text-textPrimary hover:bg-black/5 dark:hover:bg-white/10",
+                    : "text-textPrimary hover:bg-bgCardHover",
                   isExpanded ? "justify-start gap-3" : "justify-center",
                 ].join(" ")
               }
@@ -282,7 +282,7 @@ export function AppSidebar() {
                     exit={{ opacity: 0, y: 8 }}
                     transition={{ duration: 0.2 }}
                     className={[
-                      "absolute z-10 rounded-xl border border-cardBorder bg-bgCard p-1.5 shadow-xl shadow-black/20 dark:shadow-black/40",
+                      "absolute z-10 rounded-xl border border-cardBorder bg-bgCard p-1.5 shadow-xl shadow-black/10 dark:shadow-black/20",
                       isExpanded
                         ? "bottom-full left-0 right-0 mb-2"
                         : "bottom-0 left-full mb-0 ml-3",
@@ -304,7 +304,7 @@ export function AppSidebar() {
                 type="button"
                 onClick={() => setShowLogout((p) => !p)}
                 className={[
-                  "sidebar-item flex w-full items-center rounded-2xl px-2 py-2 transition-colors hover:bg-black/5 dark:hover:bg-white/10",
+                  "sidebar-item flex w-full items-center rounded-2xl px-2 py-2 transition-colors hover:bg-bgCardHover",
                   isExpanded ? "justify-start gap-3" : "justify-center",
                 ].join(" ")}
               >

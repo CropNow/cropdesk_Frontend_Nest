@@ -16,26 +16,35 @@ interface SecuritySettingsProps {
 function ToggleSwitch({
   checked,
   onToggle,
+  disabled = false,
 }: {
   checked: boolean;
   onToggle: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-pressed={checked}
       onClick={onToggle}
+      disabled={disabled}
       className={[
-        "relative h-6 w-11 rounded-full border transition",
+        "relative h-6 w-11 flex-shrink-0 rounded-full border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-accentPrimary/40 focus:ring-offset-1 focus:ring-offset-transparent",
         checked
-          ? "border-accentPrimary/50 bg-accentPrimary/20"
+          ? "border-accentPrimary/60 bg-accentPrimary/25 shadow-[0_0_10px_rgba(0,255,156,0.2)]"
           : "border-cardBorder bg-cardBg",
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
       ].join(" ")}
     >
       <motion.span
         animate={{ x: checked ? 20 : 2 }}
-        transition={{ type: "spring", stiffness: 500, damping: 28 }}
-        className="absolute top-[2px] h-4.5 w-4.5 rounded-full bg-white"
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        className={[
+          "absolute left-0 top-[3px] h-4 w-4 rounded-full transition-colors duration-300",
+          checked
+            ? "bg-accentPrimary shadow-[0_0_6px_rgba(0,255,156,0.5)]"
+            : "bg-textMuted",
+        ].join(" ")}
       />
     </button>
   );
@@ -230,7 +239,7 @@ export function SecuritySettings({
             type="button"
             onClick={handleLogoutAll}
             disabled={isLoadingSessions}
-            className="rounded-lg border border-rose-400/40 bg-rose-400/10 px-3 py-1 text-xs font-semibold text-rose-200 disabled:opacity-50"
+            className="rounded-lg border border-rose-500/40 dark:border-rose-400/40 bg-rose-500/10 dark:bg-rose-400/10 px-3 py-1 text-xs font-semibold text-rose-600 dark:text-rose-200 disabled:opacity-50 transition hover:bg-rose-500/20 dark:hover:bg-rose-400/20"
           >
             Logout all devices
           </button>
@@ -263,7 +272,7 @@ export function SecuritySettings({
                             "Unknown Device"}
                         </p>
                         {isCurrent && (
-                          <span className="rounded-full bg-[#00FF9C]/10 px-2.5 py-0.5 text-[10px] font-bold text-[#00FF9C] uppercase tracking-wider">
+                          <span className="rounded-full bg-accentPrimary/15 px-2.5 py-0.5 text-[10px] font-bold text-accentPrimary uppercase tracking-wider">
                             This Device
                           </span>
                         )}
@@ -282,7 +291,7 @@ export function SecuritySettings({
                         setSessionToLogout(session);
                         setIsModalOpen(true);
                       }}
-                      className="rounded-lg border border-rose-500/30 bg-rose-500/5 px-3 py-1.5 text-xs font-semibold text-rose-400 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-lg border border-rose-500/30 bg-rose-500/5 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isDeleting ? "Logging out..." : "Logout"}
                     </button>
@@ -324,7 +333,7 @@ export function SecuritySettings({
               exit={{ scale: 0.95, opacity: 0 }}
               className="relative w-full max-w-md overflow-hidden rounded-2xl border border-cardBorder bg-bgSidebar p-6 shadow-2xl z-10"
             >
-              <h3 className="text-lg font-bold text-white mb-2">
+              <h3 className="text-lg font-bold text-textPrimary mb-2">
                 Logout Device?
               </h3>
               <p className="text-sm text-textSecondary mb-6 leading-relaxed">
@@ -338,7 +347,7 @@ export function SecuritySettings({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-xl border border-cardBorder bg-white/5 px-4 py-2.5 text-sm font-semibold text-textBody transition hover:bg-white/10"
+                  className="rounded-xl border border-cardBorder bg-bgInput px-4 py-2.5 text-sm font-semibold text-textBody transition hover:bg-bgCardHover"
                 >
                   Cancel
                 </button>
