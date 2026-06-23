@@ -58,6 +58,6 @@ export const userAPI = {
   /**
    * Delete account
    */
-  deleteAccount: (password: string) =>
-    apiClient.delete("/users/account", { data: { password } }),
+  deleteAccount: () =>
+    apiClient.delete("/users/me/account"),
 };

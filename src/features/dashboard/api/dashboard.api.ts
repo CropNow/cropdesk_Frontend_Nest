@@ -12,6 +12,12 @@ export const dashboardAPI = {
   getDashboardOverview: () => apiClient.get("/dashboard/overview"),
 
   /**
+   * Fetch dashboard analytics
+   */
+  getDashboardAnalytics: (params?: { farmId?: string; deviceId?: string; range?: string }) =>
+    apiClient.get("/dashboard/analytics", { params }),
+
+  /**
    * Fetch all farms for the user
    */
   getFarms: () => apiClient.get("/farms"),

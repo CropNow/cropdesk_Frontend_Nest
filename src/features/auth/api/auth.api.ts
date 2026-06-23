@@ -70,4 +70,20 @@ export const authAPI = {
    * Delete a specific active session
    */
   deleteSession: (id: string) => apiClient.delete(`/auth/sessions/${id}`),
+
+  /**
+   * Generate 2FA secret and QR code setup
+   */
+  generate2FA: () => apiClient.post("/auth/2fa/generate"),
+
+  /**
+   * Verify TOTP token and enable 2FA
+   */
+  enable2FA: (token: string) => apiClient.post("/auth/2fa/enable", { token }),
+
+  /**
+   * Verify TOTP login token
+   */
+  verify2FALogin: (tempToken: string, token: string) =>
+    apiClient.post("/auth/2fa/verify-login", { tempToken, token }),
 };

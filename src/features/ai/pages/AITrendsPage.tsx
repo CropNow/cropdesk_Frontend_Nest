@@ -14,6 +14,21 @@ import { useOnlineStatus } from "@app/providers/OnlineStatusContext";
 import { OfflineFallback } from "@shared/components/OfflineFallback";
 import { dashboardAPI } from "@features/dashboard/api/dashboard.api";
 import { newsAPI, NewsArticle } from "@services/api/news.api";
+import { useNavigate } from "react-router-dom";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+} from "recharts";
 
 // Category badge color mapper
 const getBadgeStyles = (category: string) => {
@@ -64,6 +79,7 @@ const SkeletonLoader = () => (
 
 export function AITrendsPage() {
   const { isOnline } = useOnlineStatus();
+  const navigate = useNavigate();
   const [location, setLocation] = useState<{
     district?: string;
     state?: string;
@@ -71,6 +87,100 @@ export function AITrendsPage() {
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [isLoadingNews, setIsLoadingNews] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+
+  const hasChartData = !!(
+    analyticsData &&
+    (analyticsData.chartData?.length ||
+      analyticsData.history?.length ||
+      analyticsData.trendData?.length)
+  );
+
+  const formatTrend = (trend: any) => {
+    if (trend === undefined || trend === null) return "";
+    if (typeof trend === "number") {
+      return trend > 0 ? `+${trend}%` : `${trend}%`;
+    }
+    return String(trend);
+  };
+
+  const getYieldVal = () => {
+    const val = analyticsData?.yieldPrediction || analyticsData?.yield;
+    if (val === undefined || val === null) return "--";
+    if (typeof val === "object") {
+      return `${val.value ?? ""} ${val.unit ?? ""}`.trim() || "--";
+    }
+    return String(val);
+  };
+
+  const getYieldChange = () => {
+    const val = analyticsData?.yieldPrediction || analyticsData?.yield;
+    if (val && typeof val === "object" && val.trend !== undefined && val.trend !== null) {
+      return formatTrend(val.trend);
+    }
+    return formatTrend(analyticsData?.yieldChange);
+  };
+
+  const getWaterVal = () => {
+    const val = analyticsData?.waterEfficiency || analyticsData?.water;
+    if (val === undefined || val === null) return "--";
+    if (typeof val === "object") {
+      const score = val.score !== undefined ? val.score : "";
+      const max = val.max !== undefined ? val.max : 100;
+      return score !== "" ? `${score}/${max}` : "--";
+    }
+    return String(val);
+  };
+
+  const getWaterChange = () => {
+    const val = analyticsData?.waterEfficiency || analyticsData?.water;
+    if (val && typeof val === "object" && val.trend !== undefined && val.trend !== null) {
+      return formatTrend(val.trend);
+    }
+    return formatTrend(analyticsData?.waterChange);
+  };
+
+  const getSoilVal = () => {
+    const val = analyticsData?.soilHealthIndex || analyticsData?.soilHealth;
+    if (val === undefined || val === null) return "--";
+    if (typeof val === "object") {
+      return val.score !== undefined ? `${val.score}%` : "--";
+    }
+    return String(val);
+  };
+
+  const getSoilStatus = () => {
+    const val = analyticsData?.soilHealthIndex || analyticsData?.soilHealth;
+    if (val && typeof val === "object" && val.trend !== undefined && val.trend !== null) {
+      return formatTrend(val.trend);
+    }
+    return formatTrend(analyticsData?.soilStatus);
+  };
+
+  // Fetch dashboard analytics
+  useEffect(() => {
+    if (!isOnline) {
+      setIsLoadingAnalytics(false);
+      return;
+    }
+    const fetchAnalytics = async () => {
+      try {
+        setIsLoadingAnalytics(true);
+        const res = await dashboardAPI.getDashboardAnalytics();
+        setAnalyticsData(res.data?.data || res.data);
+        setAnalyticsError(null);
+      } catch (err: any) {
+        console.error("Failed to fetch dashboard analytics", err);
+        setAnalyticsError(err.message || "Failed to load analytics");
+      } finally {
+        setIsLoadingAnalytics(false);
+      }
+    };
+    fetchAnalytics();
+  }, [isOnline]);
 
   // Fetch location information
   useEffect(() => {
@@ -190,99 +300,203 @@ export function AITrendsPage() {
             </div>
 
             {/* Main Content Grid */}
-            <div className="grid gap-6 lg:grid-cols-3">
-              {/* Summary Cards */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-[2.5rem] border border-cardBorder bg-cardBg p-6 backdrop-blur-xl"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="rounded-2xl bg-accentPrimary/10 p-3">
-                    <BrainCircuit className="h-6 w-6 text-accentPrimary" />
-                  </div>
-                  <span className="text-sm font-bold text-accentPrimary">
-                    +12.4%
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-textHeading">
-                  Yield Prediction
-                </h3>
-                <p className="mt-1 text-sm text-textSecondary">
-                  Estimated harvest volume based on current growth trends.
-                </p>
-                <div className="mt-4 text-3xl font-bold text-textHeading">
-                  4.2 Tons
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="rounded-[2.5rem] border border-cardBorder bg-cardBg p-6 backdrop-blur-xl"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="rounded-2xl bg-blue-500/10 p-3">
-                    <TrendingUp className="h-6 w-6 text-blue-400" />
-                  </div>
-                  <span className="text-sm font-bold text-blue-400">-8.2%</span>
-                </div>
-                <h3 className="text-lg font-bold text-textHeading">
-                  Water Efficiency
-                </h3>
-                <p className="mt-1 text-sm text-textSecondary">
-                  Usage optimization score compared to previous season.
-                </p>
-                <div className="mt-4 text-3xl font-bold text-textHeading">
-                  94/100
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="rounded-[2.5rem] border border-cardBorder bg-cardBg p-6 backdrop-blur-xl"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="rounded-2xl bg-orange-500/10 p-3">
-                    <Calendar className="h-6 w-6 text-orange-400" />
-                  </div>
-                  <span className="text-sm font-bold text-orange-400">
-                    Stable
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-textHeading">
-                  Soil Health Index
-                </h3>
-                <p className="mt-1 text-sm text-textSecondary">
-                  Consolidated nutrient and moisture consistency score.
-                </p>
-                <div className="mt-4 text-3xl font-bold text-textHeading">
-                  82%
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Placeholder for Charts */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="flex min-h-[400px] flex-col items-center justify-center rounded-[3rem] border border-dashed border-cardBorder bg-cardBg/20 p-8 text-center backdrop-blur-md"
-            >
-              <div className="rounded-full bg-accentPrimary/5 p-8">
-                <TrendingUp className="h-16 w-16 text-accentPrimary/40" />
+            {isLoadingAnalytics ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map((n) => (
+                  <div
+                    key={n}
+                    className="animate-pulse rounded-[2.5rem] border border-cardBorder bg-cardBg/50 p-6 h-48 space-y-4"
+                  />
+                ))}
               </div>
-              <h3 className="mt-6 text-2xl font-bold text-textHeading">
-                Trend Analytics Coming Soon
-              </h3>
-              <p className="mt-2 max-w-[400px] text-textSecondary">
-                We are processing your historical data to generate deep learning
-                trends and predictive harvest models.
-              </p>
-            </motion.div>
+            ) : (
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* Summary Cards */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-[2.5rem] border border-cardBorder bg-cardBg p-6 backdrop-blur-xl"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="rounded-2xl bg-accentPrimary/10 p-3">
+                      <BrainCircuit className="h-6 w-6 text-accentPrimary" />
+                    </div>
+                    <span className="text-sm font-bold text-accentPrimary">
+                      {getYieldChange()}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-textHeading">
+                    Yield Prediction
+                  </h3>
+                  <p className="mt-1 text-sm text-textSecondary">
+                    Estimated harvest volume based on current growth trends.
+                  </p>
+                  <div className="mt-4 text-3xl font-bold text-textHeading">
+                    {getYieldVal()}
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="rounded-[2.5rem] border border-cardBorder bg-cardBg p-6 backdrop-blur-xl"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="rounded-2xl bg-blue-500/10 p-3">
+                      <TrendingUp className="h-6 w-6 text-blue-400" />
+                    </div>
+                    <span className="text-sm font-bold text-blue-400">
+                      {getWaterChange()}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-textHeading">
+                    Water Efficiency
+                  </h3>
+                  <p className="mt-1 text-sm text-textSecondary">
+                    Usage optimization score compared to previous season.
+                  </p>
+                  <div className="mt-4 text-3xl font-bold text-textHeading">
+                    {getWaterVal()}
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="rounded-[2.5rem] border border-cardBorder bg-cardBg p-6 backdrop-blur-xl"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="rounded-2xl bg-orange-500/10 p-3">
+                      <Calendar className="h-6 w-6 text-orange-400" />
+                    </div>
+                    <span className="text-sm font-bold text-orange-400">
+                      {getSoilStatus()}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-textHeading">
+                    Soil Health Index
+                  </h3>
+                  <p className="mt-1 text-sm text-textSecondary">
+                    Consolidated nutrient and moisture consistency score.
+                  </p>
+                  <div className="mt-4 text-3xl font-bold text-textHeading">
+                    {getSoilVal()}
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
+            {/* Real Charts from /dashboard/analytics */}
+            {isLoadingAnalytics ? (
+              <div className="animate-pulse rounded-[3rem] border border-cardBorder bg-cardBg/50 h-96" />
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="rounded-[3rem] border border-cardBorder bg-cardBg p-6 sm:p-8 backdrop-blur-xl space-y-6"
+              >
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-textHeading">
+                      Environmental & Yield Trends
+                    </h3>
+                    <p className="text-xs text-textSecondary">
+                      Real-time and predictive sensor telemetry metrics.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {hasChartData ? (
+                      <span className="flex items-center gap-1.5 text-xs text-accentPrimary font-semibold bg-accentPrimary/10 border border-accentPrimary/20 px-3 py-1.5 rounded-xl">
+                        <span className="h-2 w-2 rounded-full bg-accentPrimary animate-pulse" />
+                        Live Analytics Active
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-xs text-red-400 font-semibold bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl">
+                        <span className="h-2 w-2 rounded-full bg-red-400" />
+                        No Telemetry Connected
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {!hasChartData ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="relative mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 text-red-400">
+                      <TrendingUp className="h-8 w-8 opacity-60" />
+                      <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">!</span>
+                    </div>
+                    <h4 className="text-lg font-bold text-textHeading">No Active Telemetry Data</h4>
+                    <p className="mt-2 max-w-sm text-sm text-textSecondary leading-relaxed">
+                      Connect a telemetry device (NEST, Seed, or Drone) to begin tracking real-time environmental metrics and harvest predictions.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/settings?tab=devices")}
+                      className="mt-6 rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-5 py-2.5 text-sm font-semibold text-accentPrimary transition hover:bg-accentPrimary/25 active:scale-98"
+                    >
+                      Go to Device Settings
+                    </button>
+                  </div>
+                ) : (
+                  <div className="h-96 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={
+                          analyticsData?.chartData ||
+                          analyticsData?.history ||
+                          analyticsData?.trendData
+                        }
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="colorYield" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#00FF9C" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#00FF9C" stopOpacity={0} />
+                          </linearGradient>
+                          <linearGradient id="colorMoisture" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" opacity={0.3} />
+                        <XAxis dataKey="name" stroke="#A0AEC0" fontSize={11} tickLine={false} />
+                        <YAxis stroke="#A0AEC0" fontSize={11} tickLine={false} />
+                        <RechartsTooltip
+                          contentStyle={{
+                            backgroundColor: "#1A202C",
+                            border: "1px solid #2D3748",
+                            borderRadius: "1rem",
+                            color: "#EDF2F7",
+                          }}
+                        />
+                        <Legend />
+                        <Area
+                          name="Yield Estimate (Tons)"
+                          type="monotone"
+                          dataKey="yield"
+                          stroke="#00FF9C"
+                          fillOpacity={1}
+                          fill="url(#colorYield)"
+                          strokeWidth={3}
+                        />
+                        <Area
+                          name="Soil Moisture (%)"
+                          type="monotone"
+                          dataKey="soilMoisture"
+                          stroke="#3b82f6"
+                          fillOpacity={1}
+                          fill="url(#colorMoisture)"
+                          strokeWidth={3}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </motion.div>
+            )}
           </div>
         )}
 

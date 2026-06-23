@@ -14,7 +14,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; requires2FA?: boolean; mfaToken?: string }>;
+  verify2FALogin: (mfaToken: string, token: string) => Promise<boolean>;
   register: (data: RegisterRequest) => Promise<boolean>;
   logout: () => void;
 }
@@ -53,19 +54,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string): Promise<boolean> => {
+    async (email: string, password: string) => {
       console.log("🔐 [Auth] Attempting login for:", email);
       try {
         const response = await authAPI.login({ email, password });
         console.log("✅ [Auth] Login API Success:", response.data);
 
+        // Check if 2FA is required
+        if (response.data?.requires2FA) {
+          return {
+            success: false,
+            requires2FA: true,
+            mfaToken: response.data.tempToken || response.data.mfaToken,
+          };
+        }
+
         // Extract from backend structure: { accessToken, data: { user } }
         const { accessToken, data: responseData } = response.data;
-        const user = responseData.user;
+        const user = responseData?.user;
 
         if (!accessToken || !user) {
           console.error(
             "❌ [Auth] Missing user or token in response structure:",
+            response.data,
+          );
+          return { success: false };
+        }
+
+        setUser(user);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+        localStorage.setItem(TOKEN_KEY, accessToken);
+
+        return { success: true };
+      } catch (error: any) {
+        console.error(
+          "❌ [Auth] Login Failed:",
+          error.response?.data || error.message,
+        );
+        return { success: false };
+      }
+    },
+    [],
+  );
+
+  const verify2FALogin = useCallback(
+    async (mfaToken: string, token: string): Promise<boolean> => {
+      console.log("🔐 [Auth] Verifying 2FA login token");
+      try {
+        const response = await authAPI.verify2FALogin(mfaToken, token);
+        console.log("✅ [Auth] 2FA Login Verification Success:", response.data);
+
+        const { accessToken, data: responseData } = response.data;
+        const user = responseData?.user;
+
+        if (!accessToken || !user) {
+          console.error(
+            "❌ [Auth] Missing user or token in 2FA verification response:",
             response.data,
           );
           return false;
@@ -78,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return true;
       } catch (error: any) {
         console.error(
-          "❌ [Auth] Login Failed:",
+          "❌ [Auth] 2FA Login Verification Failed:",
           error.response?.data || error.message,
         );
         return false;
@@ -120,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         user,
         login,
+        verify2FALogin,
         register,
         logout,
       }}

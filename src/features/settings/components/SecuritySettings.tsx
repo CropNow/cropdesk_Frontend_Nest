@@ -4,6 +4,10 @@ import { SecuritySettingsState, SessionState } from "./SettingsLayout";
 import { authAPI } from "@features/auth/api/auth.api";
 import { parseUserAgent, formatTimeAgo } from "@shared/utils/formatUtils";
 import { useToast } from "@app/providers/ToastContext";
+import { AlertTriangle } from "lucide-react";
+import { useAuth } from "@app/providers/AuthContext";
+import { userAPI } from "@features/settings/api/user.api";
+
 
 interface SecuritySettingsProps {
   values: SecuritySettingsState;
@@ -58,6 +62,7 @@ export function SecuritySettings({
   isSaving,
 }: SecuritySettingsProps) {
   const { addToast } = useToast();
+  const { logout } = useAuth();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -72,6 +77,84 @@ export function SecuritySettings({
     null,
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
+  const [isGenerating2FA, setIsGenerating2FA] = useState(false);
+  const [twoFactorSecret, setTwoFactorSecret] = useState("");
+  const [twoFactorQrCode, setTwoFactorQrCode] = useState("");
+  const [setupCode, setSetupCode] = useState("");
+  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      await userAPI.deleteAccount();
+      addToast({
+        message: "Account deleted successfully.",
+        type: "success",
+      });
+      setIsDeleteModalOpen(false);
+      setDeleteConfirmationText("");
+      logout();
+    } catch (err: any) {
+      console.error("Failed to delete account:", err);
+      const errMsg = err.response?.data?.message || err.message || "Failed to delete account. Please try again.";
+      addToast({
+        message: errMsg,
+        type: "error",
+      });
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
+  const handleToggle2FA = async () => {
+    if (values.twoFactorEnabled) {
+      onChange({ twoFactorEnabled: false });
+      addToast({ message: "Two-factor authentication disabled.", type: "info" });
+      return;
+    }
+
+    setIs2FAModalOpen(true);
+    setIsGenerating2FA(true);
+    setSetupCode("");
+    try {
+      const response = await authAPI.generate2FA();
+      const data = response.data?.data || response.data;
+      setTwoFactorSecret(data.secret || "");
+      setTwoFactorQrCode(data.qrCode || data.qrCodeUrl || "");
+    } catch (err: any) {
+      console.error("Failed to generate 2FA secret:", err);
+      addToast({ message: "Failed to initiate 2FA setup. Please try again.", type: "error" });
+      setIs2FAModalOpen(false);
+    } finally {
+      setIsGenerating2FA(false);
+    }
+  };
+
+  const handleVerify2FA = async () => {
+    if (setupCode.length !== 6) {
+      addToast({ message: "Please enter a valid 6-digit code.", type: "error" });
+      return;
+    }
+    setIsVerifying2FA(true);
+    try {
+      await authAPI.enable2FA(setupCode);
+      onChange({ twoFactorEnabled: true });
+      setIs2FAModalOpen(false);
+      addToast({ message: "Two-factor authentication enabled successfully!", type: "success" });
+    } catch (err: any) {
+      console.error("Failed to verify 2FA code:", err);
+      const errMsg = err.response?.data?.message || err.message || "Invalid code. Please try again.";
+      addToast({ message: errMsg, type: "error" });
+    } finally {
+      setIsVerifying2FA(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -226,9 +309,7 @@ export function SecuritySettings({
         <span className="text-sm text-textBody">Two-factor authentication</span>
         <ToggleSwitch
           checked={values.twoFactorEnabled}
-          onToggle={() =>
-            onChange({ twoFactorEnabled: !values.twoFactorEnabled })
-          }
+          onToggle={handleToggle2FA}
         />
       </div>
 
@@ -317,6 +398,24 @@ export function SecuritySettings({
         {isSaving || isChangingPassword ? "Saving..." : "Save Changes"}
       </motion.button>
 
+      {/* Danger Zone Section */}
+      <div className="mt-8 rounded-2xl border border-red-500/20 bg-red-500/5 p-5 backdrop-blur-xl">
+        <div className="flex items-center gap-3 mb-3">
+          <AlertTriangle className="h-6 w-6 text-red-400" />
+          <h4 className="text-base font-bold text-red-400">Danger Zone</h4>
+        </div>
+        <p className="text-sm text-textSecondary mb-4 leading-relaxed">
+          Deleting your account is permanent. This action will permanently erase your profile, farms, fields, devices, and all historical telemetry data. This cannot be undone.
+        </p>
+        <button
+          type="button"
+          onClick={() => setIsDeleteModalOpen(true)}
+          className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/25 active:scale-98"
+        >
+          Delete Account
+        </button>
+      </div>
+
       <AnimatePresence>
         {isModalOpen && sessionToLogout && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
@@ -357,6 +456,171 @@ export function SecuritySettings({
                   className="rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-600"
                 >
                   Logout
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                if (!isDeletingAccount) {
+                  setIsDeleteModalOpen(false);
+                  setDeleteConfirmationText("");
+                }
+              }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-red-500/20 bg-bgSidebar p-6 shadow-2xl z-10 space-y-4"
+            >
+              <div className="flex items-center gap-3 text-red-400">
+                <AlertTriangle className="h-6 w-6" />
+                <h3 className="text-lg font-bold">Delete Account permanently?</h3>
+              </div>
+              <p className="text-sm text-textSecondary leading-relaxed">
+                Warning: Account deletion is permanent and destructive. All data associated with your profile, including active devices, field boundaries, and historical reports will be lost forever.
+              </p>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-textMuted uppercase tracking-wider block">
+                  Type <span className="text-red-400 font-bold">DELETE</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  placeholder="DELETE"
+                  disabled={isDeletingAccount}
+                  value={deleteConfirmationText}
+                  onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                  className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2.5 text-sm text-textHeading outline-none focus:border-red-500/40"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isDeletingAccount}
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setDeleteConfirmationText("");
+                  }}
+                  className="rounded-xl border border-cardBorder bg-bgInput px-4 py-2.5 text-sm font-semibold text-textBody transition hover:bg-bgCardHover"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deleteConfirmationText !== "DELETE" || isDeletingAccount}
+                  onClick={handleDeleteAccount}
+                  className="rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isDeletingAccount ? "Deleting..." : "Delete Account"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {is2FAModalOpen && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                if (!isVerifying2FA) {
+                  setIs2FAModalOpen(false);
+                }
+              }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-cardBorder bg-bgSidebar p-6 shadow-2xl z-10 space-y-5"
+            >
+              <h3 className="text-lg font-bold text-textPrimary">
+                Enable Two-Factor Authentication
+              </h3>
+
+              {isGenerating2FA ? (
+                <div className="flex flex-col items-center justify-center py-8 space-y-3">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-accentPrimary border-t-transparent" />
+                  <p className="text-sm text-textSecondary">Generating secure keys...</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-textSecondary leading-relaxed">
+                    Scan the QR code below using your authenticator app (e.g. Google Authenticator, Authy).
+                  </p>
+
+                  <div className="flex flex-col items-center justify-center bg-white p-4 rounded-xl">
+                    {twoFactorQrCode ? (
+                      <img
+                        src={twoFactorQrCode}
+                        alt="2FA QR Code"
+                        className="h-44 w-44 object-contain"
+                      />
+                    ) : (
+                      <div className="h-44 w-44 flex items-center justify-center text-xs text-slate-400">
+                        QR Code not available
+                      </div>
+                    )}
+                  </div>
+
+                  {twoFactorSecret && (
+                    <div className="rounded-xl bg-bgInput p-3 border border-cardBorder">
+                      <span className="text-xs font-semibold text-textMuted uppercase tracking-wider block mb-1">
+                        Manual Entry Secret Key
+                      </span>
+                      <code className="text-sm text-accentPrimary font-mono break-all selection:bg-accentPrimary/20">
+                        {twoFactorSecret}
+                      </code>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-textMuted uppercase tracking-wider block">
+                      Enter the 6-digit code
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="000000"
+                      maxLength={6}
+                      disabled={isVerifying2FA}
+                      value={setupCode}
+                      onChange={(e) => setSetupCode(e.target.value.replace(/\D/g, ""))}
+                      className="w-full text-center tracking-[0.5em] font-mono rounded-xl border border-cardBorder bg-bgInput px-3 py-2.5 text-base text-textHeading outline-none focus:border-accentPrimary/50"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isVerifying2FA}
+                  onClick={() => setIs2FAModalOpen(false)}
+                  className="rounded-xl border border-cardBorder bg-bgInput px-4 py-2.5 text-sm font-semibold text-textBody transition hover:bg-bgCardHover"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isGenerating2FA || isVerifying2FA || setupCode.length !== 6}
+                  onClick={handleVerify2FA}
+                  className="rounded-xl bg-accentPrimary text-slate-900 px-4 py-2.5 text-sm font-bold transition hover:bg-accentPrimary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isVerifying2FA ? "Activating..." : "Verify & Activate"}
                 </button>
               </div>
             </motion.div>
