@@ -212,7 +212,7 @@ export function LoginPage() {
             {show2FAInput ? (
               <div className="space-y-4">
                 <p className="text-sm text-textSecondary leading-relaxed">
-                  Two-factor authentication is enabled on your account. Please enter the 6-digit verification code from your authenticator app to complete sign-in.
+                  Two-factor authentication is enabled on your account. Please enter the 6-digit verification code sent to your email to complete sign-in.
                 </p>
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-textLabel">

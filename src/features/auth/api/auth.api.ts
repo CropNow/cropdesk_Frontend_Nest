@@ -86,4 +86,10 @@ export const authAPI = {
    */
   verify2FALogin: (tempToken: string, token: string) =>
     apiClient.post("/auth/2fa/verify-login", { tempToken, token }),
+
+  /**
+   * Disable 2FA
+   */
+  disable2FA: () => apiClient.post("/auth/2fa/disable"),
 };
+

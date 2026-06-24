@@ -50,4 +50,10 @@ export const dashboardAPI = {
    */
   getSensorDashboardContext: (sensorId: string) =>
     apiClient.get(`/sensors/${sensorId}/dashboard-context`),
+
+  /**
+   * Export predictions CSV and optionally email it to the user
+   */
+  exportPredictions: (params: { range: string; email?: boolean; farmId?: string; sensorId?: string }) =>
+    apiClient.get("/predictions/export", { params }),
 };

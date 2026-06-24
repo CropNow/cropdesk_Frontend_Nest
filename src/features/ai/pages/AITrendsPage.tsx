@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
   BrainCircuit,
@@ -8,6 +8,9 @@ import {
   Newspaper,
   WifiOff,
   Clock,
+  Download,
+  Mail,
+  FileSpreadsheet,
 } from "lucide-react";
 import { DashboardLayout } from "@app/layouts/DashboardLayout";
 import { useOnlineStatus } from "@app/providers/OnlineStatusContext";
@@ -15,6 +18,7 @@ import { OfflineFallback } from "@shared/components/OfflineFallback";
 import { dashboardAPI } from "@features/dashboard/api/dashboard.api";
 import { newsAPI, NewsArticle } from "@services/api/news.api";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@app/providers/ToastContext";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -80,6 +84,50 @@ const SkeletonLoader = () => (
 export function AITrendsPage() {
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
+  const { addToast } = useToast();
+
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportRange, setExportRange] = useState("30d");
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async (email: boolean) => {
+    setIsExporting(true);
+    try {
+      if (email) {
+        await dashboardAPI.exportPredictions({ range: exportRange, email: true });
+        addToast({
+          message: "CSV Report has been successfully sent to your email!",
+          type: "success",
+        });
+        setIsExportModalOpen(false);
+      } else {
+        const response = await dashboardAPI.exportPredictions({ range: exportRange });
+        const blob = new Blob([response.data as any], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `predictions-report-${exportRange}-${Date.now()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        addToast({
+          message: "CSV Report downloaded successfully!",
+          type: "success",
+        });
+        setIsExportModalOpen(false);
+      }
+    } catch (err: any) {
+      console.error("Failed to export report:", err);
+      const errMsg = err.response?.data?.message || err.message || "Failed to export report. Please try again.";
+      addToast({
+        message: errMsg,
+        type: "error",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const [location, setLocation] = useState<{
     district?: string;
     state?: string;
@@ -295,6 +343,13 @@ export function AITrendsPage() {
                 <button className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-cardBorder bg-cardBg px-4 text-sm font-semibold text-textPrimary transition hover:bg-cardBg/80">
                   <Filter className="h-4 w-4" />
                   <span>Filters</span>
+                </button>
+                <button 
+                  onClick={() => setIsExportModalOpen(true)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#00FF9C]/40 bg-[#00FF9C]/10 px-4 text-sm font-semibold text-[#00FF9C] transition hover:bg-[#00FF9C]/25 active:scale-98"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  <span>Export Report</span>
                 </button>
               </div>
             </div>
@@ -584,6 +639,100 @@ export function AITrendsPage() {
             </div>
           )}
         </motion.div>
+        
+        <AnimatePresence>
+          {isExportModalOpen && (
+            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => {
+                  if (!isExporting) setIsExportModalOpen(false);
+                }}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-cardBorder bg-bgSidebar p-6 shadow-2xl z-10 space-y-6"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="rounded-2xl bg-accentPrimary/10 p-3 text-accentPrimary">
+                    <FileSpreadsheet className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-xl font-bold text-textPrimary">
+                    Export Prediction Report
+                  </h3>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-textMuted uppercase tracking-wider block">
+                      Select Date Range
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: "7 Days", value: "7d" },
+                        { label: "15 Days", value: "15d" },
+                        { label: "30 Days", value: "30d" },
+                      ].map((r) => (
+                        <button
+                          key={r.value}
+                          type="button"
+                          disabled={isExporting}
+                          onClick={() => setExportRange(r.value)}
+                          className={[
+                            "rounded-xl py-2.5 text-sm font-semibold border transition-all duration-200",
+                            exportRange === r.value
+                              ? "bg-accentPrimary border-accentPrimary text-slate-900 font-bold"
+                              : "bg-bgInput border-cardBorder text-textSecondary hover:bg-bgCardHover",
+                          ].join(" ")}
+                        >
+                          {r.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-xs leading-relaxed text-textSecondary">
+                    Choose whether you want to download the CSV report directly to your machine or send it directly as an email attachment to your registered email address.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button
+                    type="button"
+                    disabled={isExporting}
+                    onClick={() => setIsExportModalOpen(false)}
+                    className="flex-1 rounded-xl border border-cardBorder bg-bgInput py-3 text-sm font-semibold text-textBody transition hover:bg-bgCardHover"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isExporting}
+                    onClick={() => handleExport(false)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-cardBorder bg-cardBg py-3 text-sm font-semibold text-textPrimary transition hover:bg-cardBg/80 disabled:opacity-50"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>Download</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isExporting}
+                    onClick={() => handleExport(true)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-accentPrimary py-3 text-sm font-bold text-slate-900 transition hover:bg-accentPrimary/90 disabled:opacity-50"
+                  >
+                    <Mail className="h-4 w-4" />
+                    <span>Email Report</span>
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </DashboardLayout>
   );

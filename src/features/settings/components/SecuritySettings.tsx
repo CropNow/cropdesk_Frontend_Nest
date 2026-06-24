@@ -114,8 +114,15 @@ export function SecuritySettings({
 
   const handleToggle2FA = async () => {
     if (values.twoFactorEnabled) {
-      onChange({ twoFactorEnabled: false });
-      addToast({ message: "Two-factor authentication disabled.", type: "info" });
+      try {
+        await authAPI.disable2FA();
+        onChange({ twoFactorEnabled: false });
+        addToast({ message: "Two-factor authentication disabled successfully!", type: "success" });
+      } catch (err: any) {
+        console.error("Failed to disable 2FA:", err);
+        const errMsg = err.response?.data?.message || err.message || "Failed to disable 2FA. Please try again.";
+        addToast({ message: errMsg, type: "error" });
+      }
       return;
     }
 
@@ -123,10 +130,8 @@ export function SecuritySettings({
     setIsGenerating2FA(true);
     setSetupCode("");
     try {
-      const response = await authAPI.generate2FA();
-      const data = response.data?.data || response.data;
-      setTwoFactorSecret(data.secret || "");
-      setTwoFactorQrCode(data.qrCode || data.qrCodeUrl || "");
+      await authAPI.generate2FA();
+      addToast({ message: "A verification code has been sent to your email.", type: "success" });
     } catch (err: any) {
       console.error("Failed to generate 2FA secret:", err);
       addToast({ message: "Failed to initiate 2FA setup. Please try again.", type: "error" });
@@ -157,6 +162,18 @@ export function SecuritySettings({
   };
 
   useEffect(() => {
+    const fetchSecurityState = async () => {
+      try {
+        const response = await userAPI.getMe();
+        const profile = response.data;
+        onChange({ twoFactorEnabled: !!profile?.isTwoFactorEnabled });
+      } catch (err) {
+        console.error("Failed to fetch user security profile:", err);
+      }
+    };
+
+    fetchSecurityState();
+
     const fetchSessions = async () => {
       try {
         setIsLoadingSessions(true);
@@ -555,38 +572,13 @@ export function SecuritySettings({
               {isGenerating2FA ? (
                 <div className="flex flex-col items-center justify-center py-8 space-y-3">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-accentPrimary border-t-transparent" />
-                  <p className="text-sm text-textSecondary">Generating secure keys...</p>
+                  <p className="text-sm text-textSecondary">Sending verification code...</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <p className="text-sm text-textSecondary leading-relaxed">
-                    Scan the QR code below using your authenticator app (e.g. Google Authenticator, Authy).
+                    A 6-digit verification code has been sent to your email address. Please enter the code below to complete the setup.
                   </p>
-
-                  <div className="flex flex-col items-center justify-center bg-white p-4 rounded-xl">
-                    {twoFactorQrCode ? (
-                      <img
-                        src={twoFactorQrCode}
-                        alt="2FA QR Code"
-                        className="h-44 w-44 object-contain"
-                      />
-                    ) : (
-                      <div className="h-44 w-44 flex items-center justify-center text-xs text-slate-400">
-                        QR Code not available
-                      </div>
-                    )}
-                  </div>
-
-                  {twoFactorSecret && (
-                    <div className="rounded-xl bg-bgInput p-3 border border-cardBorder">
-                      <span className="text-xs font-semibold text-textMuted uppercase tracking-wider block mb-1">
-                        Manual Entry Secret Key
-                      </span>
-                      <code className="text-sm text-accentPrimary font-mono break-all selection:bg-accentPrimary/20">
-                        {twoFactorSecret}
-                      </code>
-                    </div>
-                  )}
 
                   <div className="space-y-2">
                     <label className="text-xs font-semibold text-textMuted uppercase tracking-wider block">
@@ -626,6 +618,8 @@ export function SecuritySettings({
             </motion.div>
           </div>
         )}
+
+
       </AnimatePresence>
     </div>
   );
