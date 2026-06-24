@@ -54,6 +54,7 @@ export function DashboardPage() {
     backendDevices,
     lastFetchTime,
     isCached,
+    selectedFarmId,
   } = useDashboardState();
 
   const showEmptyDashboard =
@@ -110,7 +111,11 @@ export function DashboardPage() {
           />
         </Suspense>
         <Suspense fallback={<SectionFallback />}>
-          <FISAlertSection data={dashboardData?.alerts} />
+          <FISAlertSection
+            data={dashboardData?.alerts}
+            farmId={selectedFarmId || undefined}
+            sensorId={dashboardData?.sensors?.sensorId || currentDevice?.id || currentDevice?._id || undefined}
+          />
         </Suspense>
       </section>
 
