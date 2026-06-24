@@ -188,11 +188,16 @@ export function useFarmData({
         };
         addDevices(devicesRes);
         addDevices(sensorsRes);
-        setBackendDevices(devices);
 
-        const hasDevices = devices.length > 0;
+        // Filter devices matching the selected device type
+        const filteredDevices = devices.filter(
+          (d: any) => String(d.type).toUpperCase() === selectedDeviceType.toUpperCase()
+        );
+        setBackendDevices(filteredDevices);
+
+        const hasDevices = filteredDevices.length > 0;
         const primaryDevice =
-          devices[currentDeviceIndex % (devices.length || 1)] || devices[0];
+          filteredDevices[currentDeviceIndex % (filteredDevices.length || 1)] || filteredDevices[0];
         const deviceId = primaryDevice?.id || primaryDevice?._id;
         const serialNumber =
           primaryDevice?.serialNumber || primaryDevice?.deviceId;
@@ -373,7 +378,7 @@ export function useFarmData({
             isComplete: overviewRes?.data?.isComplete ?? true,
             hasSensor:
               overviewRes?.data?.hasSensor ??
-              (devices.length > 0 || backendDevices.length > 0),
+              (filteredDevices.length > 0 || backendDevices.length > 0),
           },
           farm:
             farms.find((f) => (f.id || f._id) === selectedFarmId) ||
@@ -725,7 +730,7 @@ export function useFarmData({
           selectedDeviceType,
           currentDeviceIndex,
           finalDashboardData,
-          devices,
+          filteredDevices,
         );
         console.log(
           `[Cache Saved] Saved dashboard data to cache for farm: ${selectedFarmId}, deviceType: ${selectedDeviceType}, index: ${currentDeviceIndex}`,

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { dashboardAPI } from "@features/dashboard/api/dashboard.api";
 import { fieldsAPI } from "@services/api/fields.api";
+import { Trash2 } from "lucide-react";
 
 export function FieldDetailsPanel() {
   const [farms, setFarms] = useState<any[]>([]);
@@ -120,6 +121,47 @@ export function FieldDetailsPanel() {
       );
     } catch (err: any) {
       setError("Failed to update field details.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedFieldId) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this field? All crops and sensors belonging to this field will be soft-deleted.",
+      )
+    ) {
+      return;
+    }
+    try {
+      setIsSaving(true);
+      setError("");
+      setSuccessMsg("");
+      await fieldsAPI.deleteField(selectedFieldId);
+
+      const updatedFields = fields.filter(
+        (f) => (f.id || f._id) !== selectedFieldId,
+      );
+      setFields(updatedFields);
+
+      if (updatedFields.length > 0) {
+        handleSelectField(updatedFields[0]);
+      } else {
+        setSelectedFieldId(null);
+        setFormData({
+          name: "",
+          area: "",
+          boundaryType: "Polygon",
+          soilType: "Loamy",
+          irrigationType: "Drip",
+        });
+      }
+      setSuccessMsg("Field deleted successfully.");
+    } catch (err: any) {
+      console.error(err);
+      setError("Failed to delete field.");
     } finally {
       setIsSaving(false);
     }
@@ -282,16 +324,32 @@ export function FieldDetailsPanel() {
             <p className="text-sm text-emerald-400">{successMsg}</p>
           )}
 
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleSave}
-            disabled={isSaving}
-            className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60 mt-4"
-          >
-            {isSaving ? "Saving..." : "Save Changes"}
-          </motion.button>
+          <div className="flex justify-between items-center mt-4">
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSave}
+              disabled={isSaving}
+              className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </motion.button>
+
+            {selectedFieldId && (
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleDelete}
+                disabled={isSaving}
+                className="flex items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-500/20 transition disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Field
+              </motion.button>
+            )}
+          </div>
         </div>
       ) : (
         <p className="text-textSecondary text-sm pt-4 border-t border-cardBorder">

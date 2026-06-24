@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { dashboardAPI } from "@features/dashboard/api/dashboard.api";
 import { farmsAPI } from "@services/api/farms.api";
+import { Trash2 } from "lucide-react";
 
 export function FarmDetailsPanel() {
   const [farms, setFarms] = useState<any[]>([]);
@@ -15,7 +16,7 @@ export function FarmDetailsPanel() {
     zipcode: "",
     soilType: "Loamy",
     irrigationType: "Drip",
-    farmingType: "Conventional",
+    farmingType: "conventional",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -53,7 +54,7 @@ export function FarmDetailsPanel() {
       zipcode: farm.location?.zipCode || "",
       soilType: farm.soilType || "Loamy",
       irrigationType: farm.irrigationType || "Drip",
-      farmingType: farm.farmingType || "Conventional",
+      farmingType: farm.farmingType || "conventional",
     });
     setError("");
     setSuccessMsg("");
@@ -102,6 +103,51 @@ export function FarmDetailsPanel() {
       );
     } catch (err: any) {
       setError("Failed to update farm details.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedFarmId) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this farm? All fields, crops, and telemetry data for this farm will be permanently deleted.",
+      )
+    ) {
+      return;
+    }
+    try {
+      setIsSaving(true);
+      setError("");
+      setSuccessMsg("");
+      await farmsAPI.deleteFarm(selectedFarmId);
+
+      const updatedFarms = farms.filter(
+        (f) => (f.id || f._id) !== selectedFarmId,
+      );
+      setFarms(updatedFarms);
+
+      if (updatedFarms.length > 0) {
+        handleSelectFarm(updatedFarms[0]);
+      } else {
+        setSelectedFarmId(null);
+        setFormData({
+          name: "",
+          addressLine: "",
+          city: "",
+          state: "",
+          country: "India",
+          zipcode: "",
+          soilType: "Loamy",
+          irrigationType: "Drip",
+          farmingType: "conventional",
+        });
+      }
+      setSuccessMsg("Farm deleted successfully.");
+    } catch (err: any) {
+      console.error(err);
+      setError("Failed to delete farm.");
     } finally {
       setIsSaving(false);
     }
@@ -268,9 +314,9 @@ export function FarmDetailsPanel() {
                 }
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               >
-                <option value="Conventional">Conventional</option>
-                <option value="Organic">Organic</option>
-                <option value="Mixed">Mixed</option>
+                <option value="conventional">Conventional</option>
+                <option value="organic">Organic</option>
+                <option value="mixed">Mixed</option>
               </select>
             </label>
           </div>
@@ -280,16 +326,32 @@ export function FarmDetailsPanel() {
             <p className="text-sm text-emerald-400">{successMsg}</p>
           )}
 
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleSave}
-            disabled={isSaving}
-            className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60 mt-4"
-          >
-            {isSaving ? "Saving..." : "Save Changes"}
-          </motion.button>
+          <div className="flex justify-between items-center mt-4">
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSave}
+              disabled={isSaving}
+              className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </motion.button>
+
+            {selectedFarmId && (
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleDelete}
+                disabled={isSaving}
+                className="flex items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-500/20 transition disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Farm
+              </motion.button>
+            )}
+          </div>
         </div>
       ) : (
         <p className="text-textSecondary text-sm">No farms found.</p>

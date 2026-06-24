@@ -19,4 +19,9 @@ export const fieldsAPI = {
    */
   updateField: (id: string, data: any) =>
     apiClient.patch(`/fields/${id}`, data),
+
+  /**
+   * Delete field
+   */
+  deleteField: (id: string) => apiClient.delete(`/fields/${id}`),
 };

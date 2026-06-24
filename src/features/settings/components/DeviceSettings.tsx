@@ -339,7 +339,7 @@ export function DeviceSettings({
     state: "",
     country: "India",
     zipCode: "",
-    farmingType: "Conventional",
+    farmingType: "conventional",
     installDate: new Date().toLocaleDateString("en-US"),
     installer: "CropNow Team",
     notes: "",
@@ -380,7 +380,7 @@ export function DeviceSettings({
       state: "",
       country: "India",
       zipCode: "",
-      farmingType: "Conventional",
+      farmingType: "conventional",
       installDate: new Date().toLocaleDateString("en-US"),
       installer: "CropNow Team",
       notes: "",
@@ -1260,9 +1260,9 @@ export function DeviceSettings({
                       }
                       className="w-full rounded-xl border border-cardBorder bg-bgInput px-4 py-3 text-lg text-textHeading outline-none"
                     >
-                      <option value="Conventional">Conventional</option>
+                      <option value="conventional">Conventional</option>
                       <option value="organic">Organic</option>
-                      <option value="Mixed">Mixed</option>
+                      <option value="mixed">Mixed</option>
                     </select>
                   </div>
                 </div>

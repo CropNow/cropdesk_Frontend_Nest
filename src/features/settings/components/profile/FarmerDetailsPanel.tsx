@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { dashboardAPI } from "@features/dashboard/api/dashboard.api";
 import { farmersAPI } from "@services/api/farmers.api";
+import { Trash2 } from "lucide-react";
 
 export function FarmerDetailsPanel() {
   const [formData, setFormData] = useState({
@@ -29,9 +30,11 @@ export function FarmerDetailsPanel() {
         if (Array.isArray(farmsList) && farmsList.length > 0) {
           const farm = farmsList[0];
           const fid =
-            farm.farmerId ||
+            (farm.farmerId && typeof farm.farmerId === "object"
+              ? (farm.farmerId._id || farm.farmerId.id)
+              : farm.farmerId) ||
             (farm.farmer && (farm.farmer.id || farm.farmer._id));
-          if (fid) {
+          if (fid && typeof fid === "string") {
             setFarmerId(fid);
             const farmerRes = await farmersAPI.getFarmer(fid);
             const farmerData = farmerRes.data?.data || farmerRes.data;
@@ -97,6 +100,38 @@ export function FarmerDetailsPanel() {
       }
     } catch (err: any) {
       setError("Failed to save farmer details.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!farmerId) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this farmer profile? This will permanently delete the farmer record.",
+      )
+    ) {
+      return;
+    }
+    try {
+      setIsSaving(true);
+      setError("");
+      setSuccessMsg("");
+      await farmersAPI.deleteFarmer(farmerId);
+      setFarmerId(null);
+      setFormData({
+        name: "",
+        phone: "",
+        email: "",
+        village: "",
+        district: "",
+        state: "",
+      });
+      setSuccessMsg("Farmer profile deleted successfully.");
+    } catch (err: any) {
+      console.error(err);
+      setError("Failed to delete farmer profile.");
     } finally {
       setIsSaving(false);
     }
@@ -200,16 +235,32 @@ export function FarmerDetailsPanel() {
       {error && <p className="text-sm text-rose-300">{error}</p>}
       {successMsg && <p className="text-sm text-emerald-400">{successMsg}</p>}
 
-      <motion.button
-        type="button"
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={handleSave}
-        disabled={isSaving}
-        className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60 mt-4"
-      >
-        {isSaving ? "Saving..." : "Save Changes"}
-      </motion.button>
+      <div className="flex justify-between items-center mt-4">
+        <motion.button
+          type="button"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleSave}
+          disabled={isSaving}
+          className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isSaving ? "Saving..." : "Save Changes"}
+        </motion.button>
+
+        {farmerId && (
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleDelete}
+            disabled={isSaving}
+            className="flex items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-500/20 transition disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete Farmer
+          </motion.button>
+        )}
+      </div>
     </div>
   );
 }

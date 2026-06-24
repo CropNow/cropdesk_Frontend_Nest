@@ -19,4 +19,9 @@ export const farmersAPI = {
    */
   updateFarmer: (id: string, data: any) =>
     apiClient.patch(`/farmers/${id}`, data),
+
+  /**
+   * Delete farmer
+   */
+  deleteFarmer: (id: string) => apiClient.delete(`/farmers/${id}`),
 };

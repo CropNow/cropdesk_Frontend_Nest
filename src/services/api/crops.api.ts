@@ -18,4 +18,9 @@ export const cropsAPI = {
    * Update crop
    */
   updateCrop: (id: string, data: any) => apiClient.patch(`/crops/${id}`, data),
+
+  /**
+   * Delete crop
+   */
+  deleteCrop: (id: string) => apiClient.delete(`/crops/${id}`),
 };
