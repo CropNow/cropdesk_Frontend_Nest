@@ -1,16 +1,27 @@
-import { isValidElement, useState, useEffect } from "react";
+import { isValidElement, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Activity } from "lucide-react";
-import { X } from "lucide-react";
+import { Activity, X, Download, Mail, ChevronDown, Loader2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { FIS_CARDS } from "@shared/constants/alertConstants";
 import { alertsAPI } from "@features/alerts/api/alerts.api";
+import { dashboardAPI } from "@features/dashboard/api/dashboard.api";
 import { useTheme } from "@app/providers/ThemeContext";
 import { useToast } from "@app/providers/ToastContext";
+
+interface FISAlertSectionProps {
+  data?: any;
+  farmId?: string;
+  sensorId?: string;
+}
 
 /**
  * FISAlertSection - Field Intelligence System alerts (V2 design with linear progress bars)
  */
-export function FISAlertSection({ data }: { data?: any }) {
+export function FISAlertSection({
+  data,
+  farmId: propFarmId,
+  sensorId: propSensorId,
+}: FISAlertSectionProps) {
   const cards = Array.isArray(data?.cards) ? data.cards : FIS_CARDS;
   const suggestion = data?.suggestion || {
     title: "Suggestion",
@@ -23,6 +34,113 @@ export function FISAlertSection({ data }: { data?: any }) {
   const [selectedCard, setSelectedCard] = useState<any | null>(null);
   const { theme } = useTheme();
   const { addToast } = useToast();
+
+  const [searchParams] = useSearchParams();
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isEmailing, setIsEmailing] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const farmId = propFarmId || searchParams.get("farmId") || undefined;
+  const sensorId = propSensorId || searchParams.get("sensorId") || searchParams.get("deviceId") || undefined;
+  const startDate = searchParams.get("startDate") || undefined;
+  const endDate = searchParams.get("endDate") || undefined;
+  const range = searchParams.get("range") || undefined;
+
+  const getParams = (customRange?: string) => {
+    const p: any = {};
+    // Temporarily disabled for debugging
+    // if (farmId) p.farmId = farmId;
+    // if (sensorId) p.sensorId = sensorId;
+    // if (startDate) p.startDate = startDate;
+    // if (endDate) p.endDate = endDate;
+    p.range = customRange || range || "7d";
+    return p;
+  };
+
+  const handleExportCSV = async (customRange?: string) => {
+    if (isExporting || isEmailing) return;
+    setIsExporting(true);
+    setShowExportMenu(false);
+    try {
+      const response = await dashboardAPI.exportPredictions(getParams(customRange));
+      const blob = new Blob([response.data], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `predictions-export-${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      addToast({
+        message: "CSV download started successfully.",
+        type: "success",
+      });
+    } catch (err: any) {
+      console.error("CSV Export Failed:", err);
+      let errorMessage = "Failed to export predictions CSV. Please try again.";
+
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          console.error("Backend Error Blob Content:", text);
+          const json = JSON.parse(text);
+          if (json.message) {
+            errorMessage = json.message;
+          }
+        } catch (parseErr) {
+          console.error("Failed to parse error blob:", parseErr);
+        }
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+
+      addToast({
+        message: errorMessage,
+        type: "error",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleEmailReport = async (customRange?: string) => {
+    if (isEmailing || isExporting) return;
+    setIsEmailing(true);
+    setShowExportMenu(false);
+    try {
+      const response = await dashboardAPI.emailPredictions(getParams(customRange));
+      const msg = response.data?.message || "CSV successfully emailed to your email address.";
+      addToast({
+        message: msg,
+        type: "success",
+      });
+    } catch (err: any) {
+      console.error("Email report failed:", err);
+      addToast({
+        message: err.response?.data?.message || "Failed to email predictions report. Please try again.",
+        type: "error",
+      });
+    } finally {
+      setIsEmailing(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    if (showExportMenu) {
+      document.addEventListener("mousedown", handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [showExportMenu]);
 
   useEffect(() => {
     const checkAcknowledgment = () => {
@@ -105,11 +223,61 @@ export function FISAlertSection({ data }: { data?: any }) {
             Intelligence Core Active
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-accentPrimary/20 bg-accentPrimary/10 px-4 py-2 shadow-sm">
-          <div className="h-2 w-2 animate-pulse rounded-full bg-accentPrimary" />
-          <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-accentPrimary">
-            Live Monitor
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-full border border-accentPrimary/20 bg-accentPrimary/10 px-4 py-2 shadow-sm">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-accentPrimary" />
+            <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-accentPrimary">
+              Live Monitor
+            </span>
+          </div>
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              disabled={isExporting}
+              className="flex items-center gap-2 rounded-full border border-borderColor bg-bgCard px-4 py-2 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-textSecondary transition hover:border-accentPrimary/40 hover:text-accentPrimary disabled:opacity-50"
+            >
+              {isExporting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              <span>Export Data</span>
+              <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showExportMenu ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence>
+              {showExportMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute right-0 mt-2 w-48 rounded-2xl border border-borderColor bg-bgCard p-2.5 shadow-2xl z-50 backdrop-blur-xl"
+                >
+                  <div className="text-xs font-semibold text-textSecondary mb-2 px-2 pt-1">
+                    Select Range
+                  </div>
+                  <button
+                    onClick={() => handleExportCSV("7d")}
+                    className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-bgCardHover text-textPrimary"
+                  >
+                    Last 7 Days
+                  </button>
+                  <button
+                    onClick={() => handleExportCSV("15d")}
+                    className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-bgCardHover text-textPrimary"
+                  >
+                    Last 15 Days
+                  </button>
+                  <button
+                    onClick={() => handleExportCSV("30d")}
+                    className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-bgCardHover text-textPrimary"
+                  >
+                    Last 30 Days
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
