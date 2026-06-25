@@ -56,11 +56,11 @@
 
     /* Typography */
     --font-body: ui-sans-serif, system-ui, sans-serif;
-    --font-mono: ui-monospace, 'SFMono-Regular', monospace;
+    --font-mono: ui-monospace, "SFMono-Regular", monospace;
   }
 
   /* Dark mode */
-  [data-theme='dark'] {
+  [data-theme="dark"] {
     --bg-primary: 14 14 27; /* slate-950 */
     --bg-secondary: 26 26 46; /* slate-900 */
     --bg-tertiary: 38 38 66; /* slate-800 */

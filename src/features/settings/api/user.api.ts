@@ -51,8 +51,7 @@ export const userAPI = {
   /**
    * Request password reset
    */
-  requestPasswordReset: (email: string) =>
-    apiClient.post("/users/forgot-password", { email }),
+  requestPasswordReset: (email: string) => apiClient.post("/users/forgot-password", { email }),
 
   /**
    * Reset password with token
@@ -63,6 +62,5 @@ export const userAPI = {
   /**
    * Delete account
    */
-  deleteAccount: () =>
-    apiClient.delete("/users/me/account"),
+  deleteAccount: () => apiClient.delete("/users/me/account"),
 };

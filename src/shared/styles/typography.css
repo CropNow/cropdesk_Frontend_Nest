@@ -9,25 +9,28 @@
  * ========================================================================== */
 
 @font-face {
-  font-family: 'General Sans';
-  src: url('../assets/fonts/GeneralSans-Regular.woff2') format('woff2'),
-       url('../assets/fonts/GeneralSans-Regular.woff')  format('woff');
+  font-family: "General Sans";
+  src:
+    url("../assets/fonts/GeneralSans-Regular.woff2") format("woff2"),
+    url("../assets/fonts/GeneralSans-Regular.woff") format("woff");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'General Sans';
-  src: url('../assets/fonts/GeneralSans-Medium.woff2') format('woff2'),
-       url('../assets/fonts/GeneralSans-Medium.woff')  format('woff');
+  font-family: "General Sans";
+  src:
+    url("../assets/fonts/GeneralSans-Medium.woff2") format("woff2"),
+    url("../assets/fonts/GeneralSans-Medium.woff") format("woff");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'General Sans';
-  src: url('../assets/fonts/GeneralSans-Semibold.woff2') format('woff2'),
-       url('../assets/fonts/GeneralSans-Semibold.woff')  format('woff');
+  font-family: "General Sans";
+  src:
+    url("../assets/fonts/GeneralSans-Semibold.woff2") format("woff2"),
+    url("../assets/fonts/GeneralSans-Semibold.woff") format("woff");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -36,7 +39,9 @@
 /* --- Tokens --------------------------------------------------------------- */
 :root {
   /* Family */
-  --font-sans: 'General Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans:
+    "General Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
 
   /* Weights — only these three are loaded */
   --fw-regular: 400;
@@ -47,16 +52,16 @@
   --font-scale: 1;
 
   /* Sizes — multiplied by --font-scale at usage sites */
-  --fs-display: calc(2rem    * var(--font-scale));   /* 32px */
-  --fs-h1:      calc(1.5rem  * var(--font-scale));   /* 24px */
-  --fs-h2:      calc(1.25rem * var(--font-scale));   /* 20px */
-  --fs-h3:      calc(1.125rem* var(--font-scale));   /* 18px */
-  --fs-card:    calc(1rem    * var(--font-scale));   /* 16px */
-  --fs-body:    calc(0.9375rem * var(--font-scale)); /* 15px */
-  --fs-label:   calc(0.875rem  * var(--font-scale)); /* 14px */
+  --fs-display: calc(2rem * var(--font-scale)); /* 32px */
+  --fs-h1: calc(1.5rem * var(--font-scale)); /* 24px */
+  --fs-h2: calc(1.25rem * var(--font-scale)); /* 20px */
+  --fs-h3: calc(1.125rem * var(--font-scale)); /* 18px */
+  --fs-card: calc(1rem * var(--font-scale)); /* 16px */
+  --fs-body: calc(0.9375rem * var(--font-scale)); /* 15px */
+  --fs-label: calc(0.875rem * var(--font-scale)); /* 14px */
   --fs-caption: calc(0.8125rem * var(--font-scale)); /* 13px */
-  --fs-micro:   calc(0.75rem   * var(--font-scale)); /* 12px */
-  --fs-tiny:    calc(0.6875rem * var(--font-scale)); /* 11px */
+  --fs-micro: calc(0.75rem * var(--font-scale)); /* 12px */
+  --fs-tiny: calc(0.6875rem * var(--font-scale)); /* 11px */
 
   /* Line heights */
   --lh-tight: 1.15;

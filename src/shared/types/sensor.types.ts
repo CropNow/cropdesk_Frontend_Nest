@@ -10,7 +10,7 @@ export interface SensorReading {
   value: number;
   unit: string;
   timestamp: string;
-  status: 'normal' | 'warning' | 'alert';
+  status: "normal" | "warning" | "alert";
 }
 
 export interface SensorCategory {
@@ -35,7 +35,7 @@ export interface Sensor {
 export interface SensorHistory {
   timestamp: string;
   value: number;
-  status: 'normal' | 'warning' | 'alert';
+  status: "normal" | "warning" | "alert";
 }
 
 export interface SensorCalibration {

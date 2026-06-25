@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Download, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import { Download, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function PWAInstallButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -15,15 +15,15 @@ export function PWAInstallButton() {
       setIsVisible(true);
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener("beforeinstallprompt", handler);
 
     // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsVisible(false);
     }
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
 
@@ -55,10 +55,12 @@ export function PWAInstallButton() {
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accentPrimary/20 text-accentPrimary">
             <Download className="h-5 w-5" />
           </div>
-          
+
           <div className="flex flex-col">
             <p className="text-sm font-bold text-textPrimary">Install CropDesk</p>
-            <p className="text-[0.65rem] font-medium text-textSecondary">Add to home screen for quick access</p>
+            <p className="text-[0.65rem] font-medium text-textSecondary">
+              Add to home screen for quick access
+            </p>
           </div>
 
           <div className="flex items-center gap-2">

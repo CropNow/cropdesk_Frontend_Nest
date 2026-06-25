@@ -48,9 +48,7 @@ export function CropDetailsPanel() {
       try {
         const res = await dashboardAPI.getFarmDevices(selectedFarmId);
         const data =
-          res.data?.data ||
-          res.data?.devices ||
-          (Array.isArray(res.data) ? res.data : []);
+          res.data?.data || res.data?.devices || (Array.isArray(res.data) ? res.data : []);
         const extractedCrops: any[] = [];
         if (Array.isArray(data)) {
           data.forEach((d) => {
@@ -59,8 +57,7 @@ export function CropDetailsPanel() {
                 if (
                   c &&
                   !extractedCrops.some(
-                    (existing) =>
-                      (existing.id || existing._id) === (c.id || c._id),
+                    (existing) => (existing.id || existing._id) === (c.id || c._id),
                   )
                 ) {
                   extractedCrops.push(c);
@@ -75,8 +72,7 @@ export function CropDetailsPanel() {
         } else {
           setSelectedCropId(null);
         }
-      } catch (err) {
-      }
+      } catch (err) {}
     };
     fetchCrops();
   }, [selectedFarmId]);
@@ -129,9 +125,7 @@ export function CropDetailsPanel() {
   const handleDelete = async () => {
     if (!selectedCropId) return;
     if (
-      !window.confirm(
-        "Are you sure you want to delete this crop? This action cannot be undone.",
-      )
+      !window.confirm("Are you sure you want to delete this crop? This action cannot be undone.")
     ) {
       return;
     }
@@ -141,9 +135,7 @@ export function CropDetailsPanel() {
       setSuccessMsg("");
       await cropsAPI.deleteCrop(selectedCropId);
 
-      const updatedCrops = crops.filter(
-        (c) => (c.id || c._id) !== selectedCropId,
-      );
+      const updatedCrops = crops.filter((c) => (c.id || c._id) !== selectedCropId);
       setCrops(updatedCrops);
 
       if (updatedCrops.length > 0) {
@@ -165,8 +157,7 @@ export function CropDetailsPanel() {
     }
   };
 
-  if (isLoading)
-    return <div className="p-4 text-textSecondary">Loading...</div>;
+  if (isLoading) return <div className="p-4 text-textSecondary">Loading...</div>;
 
   return (
     <div className="space-y-6">
@@ -174,9 +165,7 @@ export function CropDetailsPanel() {
 
       {farms.length > 0 && (
         <label className="space-y-2 block">
-          <span className="text-sm font-semibold text-textMuted uppercase">
-            Select Farm
-          </span>
+          <span className="text-sm font-semibold text-textMuted uppercase">Select Farm</span>
           <select
             value={selectedFarmId || ""}
             onChange={(e) => setSelectedFarmId(e.target.value)}
@@ -194,15 +183,11 @@ export function CropDetailsPanel() {
       {crops.length > 0 ? (
         <div className="space-y-4 pt-4 border-t border-cardBorder">
           <label className="space-y-2 block">
-            <span className="text-sm font-semibold text-textMuted uppercase">
-              Select Crop
-            </span>
+            <span className="text-sm font-semibold text-textMuted uppercase">Select Crop</span>
             <select
               value={selectedCropId || ""}
               onChange={(e) => {
-                const crop = crops.find(
-                  (c) => (c.id || c._id) === e.target.value,
-                );
+                const crop = crops.find((c) => (c.id || c._id) === e.target.value);
                 if (crop) handleSelectCrop(crop);
               }}
               className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
@@ -217,15 +202,11 @@ export function CropDetailsPanel() {
 
           <div className="grid gap-4 sm:grid-cols-1">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                Crop Name *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">Crop Name *</span>
               <input
                 placeholder="e.g. Wheat, Corn"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
@@ -240,14 +221,10 @@ export function CropDetailsPanel() {
                 type="date"
                 value={
                   formData.plantingDate
-                    ? new Date(formData.plantingDate)
-                        .toISOString()
-                        .split("T")[0]
+                    ? new Date(formData.plantingDate).toISOString().split("T")[0]
                     : ""
                 }
-                onChange={(e) =>
-                  setFormData({ ...formData, plantingDate: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, plantingDate: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
@@ -259,14 +236,10 @@ export function CropDetailsPanel() {
                 type="date"
                 value={
                   formData.expectedHarvest
-                    ? new Date(formData.expectedHarvest)
-                        .toISOString()
-                        .split("T")[0]
+                    ? new Date(formData.expectedHarvest).toISOString().split("T")[0]
                     : ""
                 }
-                onChange={(e) =>
-                  setFormData({ ...formData, expectedHarvest: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, expectedHarvest: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
@@ -281,18 +254,14 @@ export function CropDetailsPanel() {
                 placeholder="Area in acres"
                 type="number"
                 value={formData.area}
-                onChange={(e) =>
-                  setFormData({ ...formData, area: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, area: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
           </div>
 
           {error && <p className="text-sm text-rose-300">{error}</p>}
-          {successMsg && (
-            <p className="text-sm text-emerald-400">{successMsg}</p>
-          )}
+          {successMsg && <p className="text-sm text-emerald-400">{successMsg}</p>}
 
           <div className="flex justify-between items-center mt-4">
             <motion.button

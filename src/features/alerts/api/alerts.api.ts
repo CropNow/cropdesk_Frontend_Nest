@@ -20,14 +20,12 @@ export const alertsAPI = {
   /**
    * Mark alert as read
    */
-  markAlertAsRead: (alertId: string) =>
-    apiClient.patch(`/alerts/${alertId}/read`),
+  markAlertAsRead: (alertId: string) => apiClient.patch(`/alerts/${alertId}/read`),
 
   /**
    * Mark alert as resolved
    */
-  markAlertAsResolved: (alertId: string) =>
-    apiClient.patch(`/alerts/${alertId}/resolve`),
+  markAlertAsResolved: (alertId: string) => apiClient.patch(`/alerts/${alertId}/resolve`),
 
   /**
    * Get alert history

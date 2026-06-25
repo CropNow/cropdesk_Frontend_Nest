@@ -1,8 +1,8 @@
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 
 export function LoadingPage() {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -14,7 +14,6 @@ export function LoadingPage() {
 
       {/* Main Content Container */}
       <div className="relative z-10 flex flex-col items-center max-w-sm w-[90%]">
-        
         {/* Breathing Logo */}
         <motion.div
           animate={{ scale: [0.98, 1.02, 0.98], opacity: [0.85, 1, 0.85] }}
@@ -22,9 +21,9 @@ export function LoadingPage() {
           className="mb-12 w-56 h-auto flex items-center justify-center"
         >
           {/* Using the actual CropNow logo */}
-          <img 
-            src="/CropNow_Logo_1-D3AGwrH0.png" 
-            alt="CropNow Logo" 
+          <img
+            src="/CropNow_Logo_1-D3AGwrH0.png"
+            alt="CropNow Logo"
             className="w-full h-auto object-contain drop-shadow-sm dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.05)]"
           />
         </motion.div>
@@ -33,13 +32,13 @@ export function LoadingPage() {
         <div className="w-48 h-[2px] bg-[var(--border-color)] dark:bg-[var(--border-subtle)] rounded-full overflow-hidden relative">
           <motion.div
             className="absolute top-0 bottom-0 left-0 bg-[var(--accent-primary)] rounded-full w-[40%]"
-            animate={{ 
-              x: ["-100%", "250%"] 
+            animate={{
+              x: ["-100%", "250%"],
             }}
             transition={{
               duration: 1.5,
               repeat: Infinity,
-              ease: "easeInOut"
+              ease: "easeInOut",
             }}
           />
         </div>

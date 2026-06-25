@@ -38,8 +38,7 @@ export const farmersAPI = {
   /**
    * Update farmer
    */
-  updateFarmer: (id: string, data: UpdateFarmerData) =>
-    apiClient.patch(`/farmers/${id}`, data),
+  updateFarmer: (id: string, data: UpdateFarmerData) => apiClient.patch(`/farmers/${id}`, data),
 
   /**
    * Delete farmer

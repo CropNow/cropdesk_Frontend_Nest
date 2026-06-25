@@ -26,6 +26,4 @@ export const DEVICE_LABELS: Record<DeviceType, string> = {
   aero: "Aero Drone",
 };
 
-export const DEVICE_NAV_LINKS = [
-  { label: "NEST", to: "/dashboard?device=nest" },
-];
+export const DEVICE_NAV_LINKS = [{ label: "NEST", to: "/dashboard?device=nest" }];

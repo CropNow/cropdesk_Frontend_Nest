@@ -12,8 +12,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
     insights = data;
   } else if (data && typeof data === "object") {
     if (Array.isArray(data.data) && data.data.length > 0) insights = data.data;
-    else if (Array.isArray(data.insights) && data.insights.length > 0)
-      insights = data.insights;
+    else if (Array.isArray(data.insights) && data.insights.length > 0) insights = data.insights;
   }
 
   return (
@@ -28,9 +27,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
 
       <div className="mb-6 flex items-center justify-between px-2">
         <div className="flex flex-col gap-0.5">
-          <h3 className="text-3xl font-extrabold tracking-tight text-textPrimary">
-            AI Insights
-          </h3>
+          <h3 className="text-3xl font-extrabold tracking-tight text-textPrimary">AI Insights</h3>
           <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-textMuted">
             Real-time Farm Analysis
           </p>
@@ -71,8 +68,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
                     className="flex flex-col transition-all duration-300"
                   >
                     <p className="text-[0.85rem] font-medium leading-relaxed text-textSecondary line-clamp-1 group-hover:line-clamp-none">
-                      {typeof item.description === "object" &&
-                      item.description !== null
+                      {typeof item.description === "object" && item.description !== null
                         ? JSON.stringify(item.description)
                         : item.description}
                     </p>
@@ -104,9 +100,7 @@ export function AIInsightsSection({ data }: { data?: any }) {
 
       {insights.length === 0 && (
         <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-borderColor">
-          <p className="text-sm font-medium text-textMuted">
-            Analyzing data for insights...
-          </p>
+          <p className="text-sm font-medium text-textMuted">Analyzing data for insights...</p>
         </div>
       )}
     </motion.div>

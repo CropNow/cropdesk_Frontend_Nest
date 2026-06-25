@@ -117,7 +117,8 @@ export function AITrendsPage() {
         setIsExportModalOpen(false);
       }
     } catch (err: any) {
-      const errMsg = err.response?.data?.message || err.message || "Failed to export report. Please try again.";
+      const errMsg =
+        err.response?.data?.message || err.message || "Failed to export report. Please try again.";
       addToast({
         message: errMsg,
         type: "error",
@@ -275,9 +276,7 @@ export function AITrendsPage() {
         const timePassed = now - parseInt(cachedTimestamp, 10);
         if (timePassed < cacheExpiry || !isOnline) {
           setNews(JSON.parse(cachedData));
-          setLastUpdated(
-            new Date(parseInt(cachedTimestamp, 10)).toLocaleTimeString(),
-          );
+          setLastUpdated(new Date(parseInt(cachedTimestamp, 10)).toLocaleTimeString());
           setIsLoadingNews(false);
           return;
         }
@@ -326,8 +325,7 @@ export function AITrendsPage() {
                   AI Trends & Analytics
                 </h1>
                 <p className="mt-1 text-sm text-textSecondary sm:text-base">
-                  Predictive insights and historical performance analysis for
-                  your farm.
+                  Predictive insights and historical performance analysis for your farm.
                 </p>
               </div>
 
@@ -340,7 +338,7 @@ export function AITrendsPage() {
                   <Filter className="h-4 w-4" />
                   <span>Filters</span>
                 </button>
-                <button 
+                <button
                   onClick={() => setIsExportModalOpen(true)}
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#00FF9C]/40 bg-[#00FF9C]/10 px-4 text-sm font-semibold text-[#00FF9C] transition hover:bg-[#00FF9C]/25 active:scale-98"
                 >
@@ -372,19 +370,13 @@ export function AITrendsPage() {
                     <div className="rounded-2xl bg-accentPrimary/10 p-3">
                       <BrainCircuit className="h-6 w-6 text-accentPrimary" />
                     </div>
-                    <span className="text-sm font-bold text-accentPrimary">
-                      {getYieldChange()}
-                    </span>
+                    <span className="text-sm font-bold text-accentPrimary">{getYieldChange()}</span>
                   </div>
-                  <h3 className="text-lg font-bold text-textHeading">
-                    Yield Prediction
-                  </h3>
+                  <h3 className="text-lg font-bold text-textHeading">Yield Prediction</h3>
                   <p className="mt-1 text-sm text-textSecondary">
                     Estimated harvest volume based on current growth trends.
                   </p>
-                  <div className="mt-4 text-3xl font-bold text-textHeading">
-                    {getYieldVal()}
-                  </div>
+                  <div className="mt-4 text-3xl font-bold text-textHeading">{getYieldVal()}</div>
                 </motion.div>
 
                 <motion.div
@@ -397,19 +389,13 @@ export function AITrendsPage() {
                     <div className="rounded-2xl bg-blue-500/10 p-3">
                       <TrendingUp className="h-6 w-6 text-blue-400" />
                     </div>
-                    <span className="text-sm font-bold text-blue-400">
-                      {getWaterChange()}
-                    </span>
+                    <span className="text-sm font-bold text-blue-400">{getWaterChange()}</span>
                   </div>
-                  <h3 className="text-lg font-bold text-textHeading">
-                    Water Efficiency
-                  </h3>
+                  <h3 className="text-lg font-bold text-textHeading">Water Efficiency</h3>
                   <p className="mt-1 text-sm text-textSecondary">
                     Usage optimization score compared to previous season.
                   </p>
-                  <div className="mt-4 text-3xl font-bold text-textHeading">
-                    {getWaterVal()}
-                  </div>
+                  <div className="mt-4 text-3xl font-bold text-textHeading">{getWaterVal()}</div>
                 </motion.div>
 
                 <motion.div
@@ -422,19 +408,13 @@ export function AITrendsPage() {
                     <div className="rounded-2xl bg-orange-500/10 p-3">
                       <Calendar className="h-6 w-6 text-orange-400" />
                     </div>
-                    <span className="text-sm font-bold text-orange-400">
-                      {getSoilStatus()}
-                    </span>
+                    <span className="text-sm font-bold text-orange-400">{getSoilStatus()}</span>
                   </div>
-                  <h3 className="text-lg font-bold text-textHeading">
-                    Soil Health Index
-                  </h3>
+                  <h3 className="text-lg font-bold text-textHeading">Soil Health Index</h3>
                   <p className="mt-1 text-sm text-textSecondary">
                     Consolidated nutrient and moisture consistency score.
                   </p>
-                  <div className="mt-4 text-3xl font-bold text-textHeading">
-                    {getSoilVal()}
-                  </div>
+                  <div className="mt-4 text-3xl font-bold text-textHeading">{getSoilVal()}</div>
                 </motion.div>
               </div>
             )}
@@ -477,11 +457,14 @@ export function AITrendsPage() {
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="relative mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 text-red-400">
                       <TrendingUp className="h-8 w-8 opacity-60" />
-                      <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">!</span>
+                      <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                        !
+                      </span>
                     </div>
                     <h4 className="text-lg font-bold text-textHeading">No Active Telemetry Data</h4>
                     <p className="mt-2 max-w-sm text-sm text-textSecondary leading-relaxed">
-                      Connect a telemetry device (NEST, Seed, or Drone) to begin tracking real-time environmental metrics and harvest predictions.
+                      Connect a telemetry device (NEST, Seed, or Drone) to begin tracking real-time
+                      environmental metrics and harvest predictions.
                     </p>
                     <button
                       type="button"
@@ -564,9 +547,7 @@ export function AITrendsPage() {
                 <Newspaper className="h-5 w-5" />
               </span>
               <div>
-                <h2 className="text-2xl font-bold text-textHeading">
-                  Agricultural News
-                </h2>
+                <h2 className="text-2xl font-bold text-textHeading">Agricultural News</h2>
                 <p className="text-sm text-textSecondary">
                   {location && location.district && location.state
                     ? `Latest updates for ${location.district}, ${location.state}`
@@ -620,14 +601,12 @@ export function AITrendsPage() {
                   </div>
 
                   <div className="mt-6 flex items-center justify-between border-t border-cardBorder/50 pt-4 text-xs text-textMuted">
-                    <span className="font-semibold text-textSecondary">
-                      {item.source}
-                    </span>
+                    <span className="font-semibold text-textSecondary">{item.source}</span>
                     <span>
-                      {new Date(item.publishedAt).toLocaleDateString(
-                        undefined,
-                        { month: "short", day: "numeric" },
-                      )}
+                      {new Date(item.publishedAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
                     </span>
                   </div>
                 </motion.div>
@@ -635,7 +614,7 @@ export function AITrendsPage() {
             </div>
           )}
         </motion.div>
-        
+
         <AnimatePresence>
           {isExportModalOpen && (
             <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
@@ -658,9 +637,7 @@ export function AITrendsPage() {
                   <div className="rounded-2xl bg-accentPrimary/10 p-3 text-accentPrimary">
                     <FileSpreadsheet className="h-6 w-6" />
                   </div>
-                  <h3 className="text-xl font-bold text-textPrimary">
-                    Export Prediction Report
-                  </h3>
+                  <h3 className="text-xl font-bold text-textPrimary">Export Prediction Report</h3>
                 </div>
 
                 <div className="space-y-4">
@@ -693,7 +670,8 @@ export function AITrendsPage() {
                   </div>
 
                   <p className="text-xs leading-relaxed text-textSecondary">
-                    Choose whether you want to download the CSV report directly to your machine or send it directly as an email attachment to your registered email address.
+                    Choose whether you want to download the CSV report directly to your machine or
+                    send it directly as an email attachment to your registered email address.
                   </p>
                 </div>
 

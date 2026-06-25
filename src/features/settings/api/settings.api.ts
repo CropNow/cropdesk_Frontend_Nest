@@ -70,9 +70,7 @@ export const notificationsAPI = {
    * Update alertTypes and/or channels (partial updates supported).
    */
   updatePreferences: (data: {
-    alertTypes?: Partial<
-      Record<"pest" | "fungal" | "irrigation" | "weather", boolean>
-    >;
+    alertTypes?: Partial<Record<"pest" | "fungal" | "irrigation" | "weather", boolean>>;
     channels?: Partial<Record<"sms" | "email" | "push", boolean>>;
   }) => apiClient.put("/notifications/preferences", data),
 
@@ -80,8 +78,7 @@ export const notificationsAPI = {
    * POST /api/v1/notifications/device-token
    * Register a mobile/web push notification token for the current user.
    */
-  registerDeviceToken: (token: string) =>
-    apiClient.post("/notifications/device-token", { token }),
+  registerDeviceToken: (token: string) => apiClient.post("/notifications/device-token", { token }),
 
   /**
    * POST /api/v1/notifications/test

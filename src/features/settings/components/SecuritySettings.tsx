@@ -8,7 +8,6 @@ import { AlertTriangle } from "lucide-react";
 import { useAuth } from "@app/providers/AuthContext";
 import { userAPI } from "@features/settings/api/user.api";
 
-
 interface SecuritySettingsProps {
   values: SecuritySettingsState;
   onChange: (patch: Partial<SecuritySettingsState>) => void;
@@ -45,9 +44,7 @@ function ToggleSwitch({
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
         className={[
           "absolute left-0 top-[3px] h-4 w-4 rounded-full transition-colors duration-300",
-          checked
-            ? "bg-accentPrimary shadow-[0_0_6px_rgba(0,255,156,0.5)]"
-            : "bg-textMuted",
+          checked ? "bg-accentPrimary shadow-[0_0_6px_rgba(0,255,156,0.5)]" : "bg-textMuted",
         ].join(" ")}
       />
     </button>
@@ -66,16 +63,10 @@ export function SecuritySettings({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [sessions, setSessions] = useState<SessionState[]>(
-    values.activeSessions || [],
-  );
+  const [sessions, setSessions] = useState<SessionState[]>(values.activeSessions || []);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
-  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(
-    null,
-  );
-  const [sessionToLogout, setSessionToLogout] = useState<SessionState | null>(
-    null,
-  );
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [sessionToLogout, setSessionToLogout] = useState<SessionState | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -101,7 +92,8 @@ export function SecuritySettings({
       setDeleteConfirmationText("");
       logout();
     } catch (err: any) {
-      const errMsg = err.response?.data?.message || err.message || "Failed to delete account. Please try again.";
+      const errMsg =
+        err.response?.data?.message || err.message || "Failed to delete account. Please try again.";
       addToast({
         message: errMsg,
         type: "error",
@@ -118,7 +110,8 @@ export function SecuritySettings({
         onChange({ twoFactorEnabled: false });
         addToast({ message: "Two-factor authentication disabled successfully!", type: "success" });
       } catch (err: any) {
-        const errMsg = err.response?.data?.message || err.message || "Failed to disable 2FA. Please try again.";
+        const errMsg =
+          err.response?.data?.message || err.message || "Failed to disable 2FA. Please try again.";
         addToast({ message: errMsg, type: "error" });
       }
       return;
@@ -150,7 +143,8 @@ export function SecuritySettings({
       setIs2FAModalOpen(false);
       addToast({ message: "Two-factor authentication enabled successfully!", type: "success" });
     } catch (err: any) {
-      const errMsg = err.response?.data?.message || err.message || "Invalid code. Please try again.";
+      const errMsg =
+        err.response?.data?.message || err.message || "Invalid code. Please try again.";
       addToast({ message: errMsg, type: "error" });
     } finally {
       setIsVerifying2FA(false);
@@ -163,8 +157,7 @@ export function SecuritySettings({
         const response = await userAPI.getMe();
         const profile = response.data;
         onChange({ twoFactorEnabled: !!profile?.isTwoFactorEnabled });
-      } catch (err) {
-      }
+      } catch (err) {}
     };
 
     fetchSecurityState();
@@ -189,11 +182,7 @@ export function SecuritySettings({
     setError("");
     setSuccess("");
 
-    if (
-      values.newPassword ||
-      values.confirmPassword ||
-      values.currentPassword
-    ) {
+    if (values.newPassword || values.confirmPassword || values.currentPassword) {
       if (!values.currentPassword) {
         setError("Current password is required to set a new password.");
         return;
@@ -219,10 +208,7 @@ export function SecuritySettings({
         setSuccess("Password changed successfully.");
         onChange({ currentPassword: "", newPassword: "", confirmPassword: "" });
       } catch (err: any) {
-        setError(
-          err.response?.data?.message ||
-            "Failed to change password. Please try again.",
-        );
+        setError(err.response?.data?.message || "Failed to change password. Please try again.");
         return; // Return early so we don't show generic success toast if this failed
       } finally {
         setIsChangingPassword(false);
@@ -243,8 +229,7 @@ export function SecuritySettings({
       onLogoutAll();
     } catch (err: any) {
       setError(
-        err.response?.data?.message ||
-          "Failed to logout from other devices. Please try again.",
+        err.response?.data?.message || "Failed to logout from other devices. Please try again.",
       );
     } finally {
       setIsLoadingSessions(false);
@@ -261,9 +246,7 @@ export function SecuritySettings({
 
     try {
       await authAPI.deleteSession(targetSessionId);
-      setSessions((prev) =>
-        prev.filter((s) => (s.id || (s as any)._id) !== targetSessionId),
-      );
+      setSessions((prev) => prev.filter((s) => (s.id || (s as any)._id) !== targetSessionId));
       addToast({ message: "Device logged out successfully.", type: "success" });
     } catch (err: any) {
       addToast({
@@ -284,9 +267,7 @@ export function SecuritySettings({
           <input
             type="password"
             value={values.currentPassword}
-            onChange={(event) =>
-              onChange({ currentPassword: event.target.value })
-            }
+            onChange={(event) => onChange({ currentPassword: event.target.value })}
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none"
           />
         </label>
@@ -306,9 +287,7 @@ export function SecuritySettings({
           <input
             type="password"
             value={values.confirmPassword}
-            onChange={(event) =>
-              onChange({ confirmPassword: event.target.value })
-            }
+            onChange={(event) => onChange({ confirmPassword: event.target.value })}
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none"
           />
         </label>
@@ -316,10 +295,7 @@ export function SecuritySettings({
 
       <div className="flex items-center justify-between rounded-2xl border border-cardBorder bg-bgInput px-4 py-3">
         <span className="text-sm text-textBody">Two-factor authentication</span>
-        <ToggleSwitch
-          checked={values.twoFactorEnabled}
-          onToggle={handleToggle2FA}
-        />
+        <ToggleSwitch checked={values.twoFactorEnabled} onToggle={handleToggle2FA} />
       </div>
 
       <div className="rounded-2xl border border-cardBorder bg-bgInput p-4">
@@ -344,9 +320,7 @@ export function SecuritySettings({
             {sessions.map((session: any) => {
               const sessionId = session.id || session._id;
               const isCurrent =
-                session.isCurrent ||
-                session.current ||
-                session.lastActive === "Now";
+                session.isCurrent || session.current || session.lastActive === "Now";
               const isDeleting = deletingSessionId === sessionId;
               return (
                 <div
@@ -357,9 +331,7 @@ export function SecuritySettings({
                     <div className="flex-1">
                       <div className="flex items-center flex-wrap gap-2">
                         <p className="text-sm font-semibold text-textBody">
-                          {session.device ||
-                            session.deviceName ||
-                            "Unknown Device"}
+                          {session.device || session.deviceName || "Unknown Device"}
                         </p>
                         {isCurrent && (
                           <span className="rounded-full bg-accentPrimary/15 px-2.5 py-0.5 text-[10px] font-bold text-accentPrimary uppercase tracking-wider">
@@ -369,9 +341,7 @@ export function SecuritySettings({
                       </div>
                       <p className="text-xs text-textMuted mt-1">
                         {session.location || session.ip || "Unknown Location"} •{" "}
-                        {formatTimeAgo(
-                          session.lastActive || session.createdAt || "",
-                        )}
+                        {formatTimeAgo(session.lastActive || session.createdAt || "")}
                       </p>
                     </div>
                     <button
@@ -414,7 +384,8 @@ export function SecuritySettings({
           <h4 className="text-base font-bold text-red-400">Danger Zone</h4>
         </div>
         <p className="text-sm text-textSecondary mb-4 leading-relaxed">
-          Deleting your account is permanent. This action will permanently erase your profile, farms, fields, devices, and all historical telemetry data. This cannot be undone.
+          Deleting your account is permanent. This action will permanently erase your profile,
+          farms, fields, devices, and all historical telemetry data. This cannot be undone.
         </p>
         <button
           type="button"
@@ -441,15 +412,13 @@ export function SecuritySettings({
               exit={{ scale: 0.95, opacity: 0 }}
               className="relative w-full max-w-md overflow-hidden rounded-2xl border border-cardBorder bg-bgSidebar p-6 shadow-2xl z-10"
             >
-              <h3 className="text-lg font-bold text-textPrimary mb-2">
-                Logout Device?
-              </h3>
+              <h3 className="text-lg font-bold text-textPrimary mb-2">Logout Device?</h3>
               <p className="text-sm text-textSecondary mb-6 leading-relaxed">
                 Are you sure you want to log out this device?
                 <br />
                 <br />
-                This session will be terminated immediately and the user will
-                need to sign in again to access CropDesk.
+                This session will be terminated immediately and the user will need to sign in again
+                to access CropDesk.
               </p>
               <div className="flex justify-end gap-3">
                 <button
@@ -496,7 +465,9 @@ export function SecuritySettings({
                 <h3 className="text-lg font-bold">Delete Account permanently?</h3>
               </div>
               <p className="text-sm text-textSecondary leading-relaxed">
-                Warning: Account deletion is permanent and destructive. All data associated with your profile, including active devices, field boundaries, and historical reports will be lost forever.
+                Warning: Account deletion is permanent and destructive. All data associated with
+                your profile, including active devices, field boundaries, and historical reports
+                will be lost forever.
               </p>
 
               <div className="space-y-2">
@@ -569,7 +540,8 @@ export function SecuritySettings({
               ) : (
                 <div className="space-y-4">
                   <p className="text-sm text-textSecondary leading-relaxed">
-                    A 6-digit verification code has been sent to your email address. Please enter the code below to complete the setup.
+                    A 6-digit verification code has been sent to your email address. Please enter
+                    the code below to complete the setup.
                   </p>
 
                   <div className="space-y-2">
@@ -610,8 +582,6 @@ export function SecuritySettings({
             </motion.div>
           </div>
         )}
-
-
       </AnimatePresence>
     </div>
   );

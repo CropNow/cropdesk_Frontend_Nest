@@ -49,9 +49,7 @@ function ToggleSwitch({
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
         className={[
           "absolute left-0 top-[3px] h-4 w-4 rounded-full transition-colors duration-300",
-          checked
-            ? "bg-accentPrimary shadow-[0_0_6px_rgba(0,255,156,0.5)]"
-            : "bg-textMuted",
+          checked ? "bg-accentPrimary shadow-[0_0_6px_rgba(0,255,156,0.5)]" : "bg-textMuted",
         ].join(" ")}
       />
     </button>
@@ -89,8 +87,7 @@ const ALERT_TYPE_CONFIGS: AlertTypeConfig[] = [
   {
     key: "irrigation",
     label: "Irrigation Alerts",
-    description:
-      "Alerts for water stress, leaks or irrigation schedule changes",
+    description: "Alerts for water stress, leaks or irrigation schedule changes",
     icon: <Droplets className="h-4 w-4" />,
     color: "text-blue-400",
     bgColor: "bg-blue-500/10 border-blue-500/20",
@@ -164,18 +161,14 @@ export function NotificationSettings() {
   const [deviceToken, setDeviceToken] = useState("");
   const [tokenInputFocused, setTokenInputFocused] = useState(false);
 
-  const handleAlertTypeToggle = (
-    key: keyof NotificationPreferences["alertTypes"],
-  ) => {
+  const handleAlertTypeToggle = (key: keyof NotificationPreferences["alertTypes"]) => {
     setPreferences((prev) => ({
       ...prev,
       alertTypes: { ...prev.alertTypes, [key]: !prev.alertTypes[key] },
     }));
   };
 
-  const handleChannelToggle = (
-    key: keyof NotificationPreferences["channels"],
-  ) => {
+  const handleChannelToggle = (key: keyof NotificationPreferences["channels"]) => {
     setPreferences((prev) => ({
       ...prev,
       channels: { ...prev.channels, [key]: !prev.channels[key] },
@@ -219,9 +212,7 @@ export function NotificationSettings() {
             className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3"
           >
             <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-400" />
-            <span className="text-sm font-medium text-emerald-300">
-              {successMessage}
-            </span>
+            <span className="text-sm font-medium text-emerald-300">{successMessage}</span>
           </motion.div>
         )}
         {error && (
@@ -273,9 +264,7 @@ export function NotificationSettings() {
       {/* ── Notification Channels ──────────────────────────────────── */}
       <div className="rounded-2xl border border-cardBorder bg-bgInput p-5">
         <div className="mb-4">
-          <p className="text-sm font-semibold text-textHeading">
-            Notification Channels
-          </p>
+          <p className="text-sm font-semibold text-textHeading">Notification Channels</p>
           <p className="mt-0.5 text-xs text-textMuted">
             Select how you want to receive your alerts
           </p>
@@ -312,12 +301,10 @@ export function NotificationSettings() {
             <Smartphone className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-textHeading">
-              Register Device Token
-            </p>
+            <p className="text-sm font-semibold text-textHeading">Register Device Token</p>
             <p className="mt-0.5 text-xs text-textMuted">
-              Register an Expo, FCM, or APNs push token to enable mobile
-              notifications on this device
+              Register an Expo, FCM, or APNs push token to enable mobile notifications on this
+              device
             </p>
           </div>
         </div>
@@ -361,18 +348,14 @@ export function NotificationSettings() {
         {/* Registered tokens list */}
         {preferences.pushTokens.length > 0 && (
           <div className="mt-4 space-y-2">
-            <p className="text-xs font-medium text-textMuted">
-              Registered tokens
-            </p>
+            <p className="text-xs font-medium text-textMuted">Registered tokens</p>
             {preferences.pushTokens.map((token, idx) => (
               <div
                 key={idx}
                 className="flex items-center gap-2 rounded-lg border border-cardBorder bg-cardBg/50 px-3 py-2"
               >
                 <div className="h-2 w-2 rounded-full bg-accentPrimary" />
-                <span className="truncate font-mono text-xs text-textSecondary">
-                  {token}
-                </span>
+                <span className="truncate font-mono text-xs text-textSecondary">{token}</span>
               </div>
             ))}
           </div>
@@ -407,11 +390,7 @@ export function NotificationSettings() {
           disabled={isAnyBusy}
           className="flex items-center justify-center gap-2 rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-5 py-2.5 text-sm font-semibold text-accentPrimary shadow-[0_0_16px_rgba(0,255,156,0.08)] transition hover:border-accentPrimary/60 hover:bg-accentPrimary/20 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSaving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Zap className="h-4 w-4" />
-          )}
+          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
           {isSaving ? "Saving…" : "Save Preferences"}
         </motion.button>
       </div>

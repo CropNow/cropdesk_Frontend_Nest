@@ -1,17 +1,17 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback } from "react";
+import type { ReactNode } from "react";
 
 /* ─── Types ─── */
 export interface Toast {
   id: string;
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: "success" | "error" | "info";
   duration?: number;
 }
 
 interface ToastContextType {
   toasts: Toast[];
-  addToast: (toast: Omit<Toast, 'id'>) => void;
+  addToast: (toast: Omit<Toast, "id">) => void;
   removeToast: (id: string) => void;
 }
 
@@ -27,7 +27,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToast = useCallback(
-    (toast: Omit<Toast, 'id'>) => {
+    (toast: Omit<Toast, "id">) => {
       const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       const duration = toast.duration ?? 4000;
       setToasts((prev) => [...prev, { ...toast, id }]);
@@ -46,6 +46,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 /* ─── Hook ─── */
 export function useToast(): ToastContextType {
   const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast must be used within ToastProvider');
+  if (!ctx) throw new Error("useToast must be used within ToastProvider");
   return ctx;
 }

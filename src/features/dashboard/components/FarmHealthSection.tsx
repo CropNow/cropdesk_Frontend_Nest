@@ -1,10 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { CircularGauge } from "@shared/components/CircularGauge";
-import {
-  FARM_STATUS_METRICS,
-  FarmStatusMetric,
-} from "@shared/constants/farmConstants";
+import { FARM_STATUS_METRICS, FarmStatusMetric } from "@shared/constants/farmConstants";
 
 interface FarmHealthData {
   overallHealth?: number;
@@ -25,11 +22,7 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
   const roundDisplayValue = (value: unknown): string | number => {
     const numericValue = Number(value);
     if (Number.isFinite(numericValue)) {
-      if (
-        numericValue > 0 &&
-        numericValue < 10 &&
-        !Number.isInteger(numericValue)
-      ) {
+      if (numericValue > 0 && numericValue < 10 && !Number.isInteger(numericValue)) {
         return Number(numericValue.toFixed(2));
       }
       return Math.round(numericValue);
@@ -80,9 +73,7 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
       const IconComp = raw as React.ComponentType<{ className?: string }>;
       icon = <IconComp className={compact ? "h-4 w-4" : "h-5 w-5"} />;
     } else {
-      const fallback = FARM_STATUS_METRICS.find(
-        (m) => m.id === metric.id,
-      )?.icon;
+      const fallback = FARM_STATUS_METRICS.find((m) => m.id === metric.id)?.icon;
       icon = React.isValidElement(fallback)
         ? React.cloneElement(fallback as React.ReactElement, {
             className: compact ? "h-4 w-4" : "h-5 w-5",
@@ -111,16 +102,12 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
             {displayValue}
           </span>
           {metric.unit && (
-            <span
-              className={`${compact ? "text-sm" : "text-base"} font-medium text-textSecondary`}
-            >
+            <span className={`${compact ? "text-sm" : "text-base"} font-medium text-textSecondary`}>
               {metric.unit}
             </span>
           )}
         </div>
-        <p
-          className={`mt-1 font-medium text-textSecondary ${compact ? "text-[10px]" : "text-xs"}`}
-        >
+        <p className={`mt-1 font-medium text-textSecondary ${compact ? "text-[10px]" : "text-xs"}`}>
           {metric.label}
         </p>
       </div>
@@ -138,9 +125,7 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
       <div className="hidden sm:block">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <h3 className="text-3xl font-bold text-textHeading">
-              Overall Farm Status
-            </h3>
+            <h3 className="text-3xl font-bold text-textHeading">Overall Farm Status</h3>
             {condition && condition !== "UNKNOWN" && (
               <span
                 className={`mt-2 inline-block rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider ${getConditionColor(condition)}`}
@@ -160,11 +145,7 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
               const label = key.replace("_stress", "").toUpperCase();
               const numValue = Number(value) || 0;
               const colorClass =
-                numValue > 50
-                  ? "bg-red-500"
-                  : numValue > 20
-                    ? "bg-amber-500"
-                    : "bg-emerald-500";
+                numValue > 50 ? "bg-red-500" : numValue > 20 ? "bg-amber-500" : "bg-emerald-500";
               return (
                 <div
                   key={key}
@@ -203,9 +184,7 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
       <div className="flex flex-col sm:hidden">
         <div className="mb-4 flex items-center justify-between gap-4">
           <div>
-            <h3 className="text-2xl font-bold text-textHeading">
-              Overall Farm Status
-            </h3>
+            <h3 className="text-2xl font-bold text-textHeading">Overall Farm Status</h3>
             {condition && condition !== "UNKNOWN" && (
               <span
                 className={`mt-2 inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getConditionColor(condition)}`}
@@ -225,11 +204,7 @@ export function FarmHealthSection({ data }: { data?: FarmHealthData }) {
               const label = key.replace("_stress", "").toUpperCase();
               const numValue = Number(value) || 0;
               const colorClass =
-                numValue > 50
-                  ? "bg-red-500"
-                  : numValue > 20
-                    ? "bg-amber-500"
-                    : "bg-emerald-500";
+                numValue > 50 ? "bg-red-500" : numValue > 20 ? "bg-amber-500" : "bg-emerald-500";
               return (
                 <div
                   key={key}

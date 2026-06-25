@@ -31,11 +31,11 @@ export interface CreateSensorData {
   manufacturer?: string;
 }
 
-export type UpdateSensorData = Partial<Pick<CreateSensorData, "name" | "type" | "unit" | "serialNumber" | "manufacturer">>;
-
-export type UpdateCalibrationData = Partial<
-  Pick<SensorCalibration, "offset" | "scale" | "notes">
+export type UpdateSensorData = Partial<
+  Pick<CreateSensorData, "name" | "type" | "unit" | "serialNumber" | "manufacturer">
 >;
+
+export type UpdateCalibrationData = Partial<Pick<SensorCalibration, "offset" | "scale" | "notes">>;
 
 export interface ExportDataParams {
   sensorId: string;
@@ -48,8 +48,7 @@ export const sensorsAPI = {
   /**
    * Get all sensors
    */
-  getSensors: (params?: GetSensorsParams) =>
-    apiClient.get("/sensors", { params }),
+  getSensors: (params?: GetSensorsParams) => apiClient.get("/sensors", { params }),
 
   /**
    * Get all sensors
@@ -70,8 +69,7 @@ export const sensorsAPI = {
   /**
    * Get historical readings (supports filters)
    */
-  getHistoricalData: (params?: HistoricalDataParams) =>
-    apiClient.get("/sensor-data", { params }),
+  getHistoricalData: (params?: HistoricalDataParams) => apiClient.get("/sensor-data", { params }),
 
   /**
    * Get the most recent reading for all sensors
@@ -87,8 +85,7 @@ export const sensorsAPI = {
   /**
    * Get the latest reading for a specific sensor
    */
-  getLatestReading: (sensorId: string) =>
-    apiClient.get(`/sensor-data/sensors/${sensorId}/latest`),
+  getLatestReading: (sensorId: string) => apiClient.get(`/sensor-data/sensors/${sensorId}/latest`),
 
   /**
    * Get min/max/avg over time
@@ -99,8 +96,7 @@ export const sensorsAPI = {
   /**
    * Get device logs
    */
-  getDeviceLogs: (sensorId: string) =>
-    apiClient.get(`/sensors/${sensorId}/device-logs`),
+  getDeviceLogs: (sensorId: string) => apiClient.get(`/sensors/${sensorId}/device-logs`),
 
   /**
    * Update sensor calibration
@@ -116,8 +112,7 @@ export const sensorsAPI = {
   /**
    * Export sensor data
    */
-  exportData: (params: ExportDataParams) =>
-    apiClient.get("/sensor-data/export", { params }),
+  exportData: (params: ExportDataParams) => apiClient.get("/sensor-data/export", { params }),
 
   /**
    * Update a sensor

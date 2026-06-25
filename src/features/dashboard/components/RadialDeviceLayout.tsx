@@ -63,8 +63,7 @@ export function RadialDeviceLayout({
     {
       label: "Area",
       value:
-        typeof deviceView.area === "number" ||
-        typeof deviceView.area === "string"
+        typeof deviceView.area === "number" || typeof deviceView.area === "string"
           ? deviceView.area
           : deviceView.field?.area || "120",
       icon: (
@@ -122,9 +121,7 @@ export function RadialDeviceLayout({
       value:
         (deviceView.crops || [])
           .map((crop: string | { name?: string; scientificName?: string }) =>
-            typeof crop === "string"
-              ? crop
-              : crop.name || crop.scientificName || "Crop",
+            typeof crop === "string" ? crop : crop.name || crop.scientificName || "Crop",
           )
           .join(", ") || "N/A",
       icon: <Leaf className="h-3 w-3" />,
@@ -158,22 +155,13 @@ export function RadialDeviceLayout({
           <div
             className="pointer-events-none absolute h-52 w-52 rounded-full sm:h-72 sm:w-72 md:h-80 md:w-80"
             style={{
-              background:
-                "radial-gradient(circle, rgba(0,255,156,0.15), transparent 70%)",
+              background: "radial-gradient(circle, rgba(0,255,156,0.15), transparent 70%)",
             }}
           />
           {(() => {
-            const type = (
-              deviceView.deviceType ||
-              deviceView.type ||
-              "nest"
-            ).toLowerCase();
+            const type = (deviceView.deviceType || deviceView.type || "nest").toLowerCase();
             const fallbackImage =
-              type === "seed"
-                ? "/seed.png"
-                : type === "aero"
-                  ? "/kaptor_drone.png"
-                  : "/NEST.png";
+              type === "seed" ? "/seed.png" : type === "aero" ? "/kaptor_drone.png" : "/NEST.png";
             const displayImage = device.image || fallbackImage;
 
             return (

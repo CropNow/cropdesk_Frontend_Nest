@@ -69,9 +69,7 @@ export function App() {
 
   return (
     <>
-      <AnimatePresence>
-        {showSplash && <LoadingPage key="splash" />}
-      </AnimatePresence>
+      <AnimatePresence>{showSplash && <LoadingPage key="splash" />}</AnimatePresence>
 
       <div className="min-h-screen w-full bg-bgMain text-textPrimary font-sans transition-colors duration-300">
         <OfflineBanner />

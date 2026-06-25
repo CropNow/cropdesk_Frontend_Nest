@@ -38,8 +38,7 @@ export const fieldsAPI = {
   /**
    * Update field
    */
-  updateField: (id: string, data: UpdateFieldData) =>
-    apiClient.patch(`/fields/${id}`, data),
+  updateField: (id: string, data: UpdateFieldData) => apiClient.patch(`/fields/${id}`, data),
 
   /**
    * Delete field

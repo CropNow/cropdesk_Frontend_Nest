@@ -68,8 +68,7 @@ export function useDeviceCarousel({
     return device
       ? {
           ...device,
-          isOnline:
-            device.raw?.status === "online" || device.raw?.status === "active",
+          isOnline: device.raw?.status === "online" || device.raw?.status === "active",
         }
       : null;
   }, [deviceList, currentDeviceIndex, dashboardData]);

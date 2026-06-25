@@ -5,18 +5,9 @@ import { motion } from "framer-motion";
  * WaterSavingsSection - Displays water savings metrics
  */
 export function WaterSavingsSection({ data }: { data?: any }) {
-  const percent =
-    data?.percentage !== undefined
-      ? `${data.percentage}%`
-      : data?.percent || "0.0%";
-  const total =
-    data?.totalSaved !== undefined
-      ? `${data.totalSaved} L`
-      : data?.total || "0 L";
-  const daily =
-    data?.dailyAverage !== undefined
-      ? `${data.dailyAverage} L`
-      : data?.daily || "0 L";
+  const percent = data?.percentage !== undefined ? `${data.percentage}%` : data?.percent || "0.0%";
+  const total = data?.totalSaved !== undefined ? `${data.totalSaved} L` : data?.total || "0 L";
+  const daily = data?.dailyAverage !== undefined ? `${data.dailyAverage} L` : data?.daily || "0 L";
 
   return (
     <motion.div
@@ -34,9 +25,7 @@ export function WaterSavingsSection({ data }: { data?: any }) {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
         <div className="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/20 to-transparent p-4">
-          <p className="text-sm font-semibold uppercase tracking-wide text-cyan-200">
-            Total Saved
-          </p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-cyan-200">Total Saved</p>
           <p className="mt-2 text-5xl font-bold text-cyan-300">{total}</p>
           <p className="text-sm text-textLabel">This Month</p>
         </div>

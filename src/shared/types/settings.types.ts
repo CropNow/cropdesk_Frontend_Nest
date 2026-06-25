@@ -33,7 +33,7 @@ export interface NotificationPreferences {
 export interface NotificationSettings {
   emailNotifications: boolean;
   pushNotifications: boolean;
-  alertFrequency: 'immediate' | 'hourly' | 'daily' | 'weekly';
+  alertFrequency: "immediate" | "hourly" | "daily" | "weekly";
   criticalOnly: boolean;
   notificationTypes: {
     sensors: boolean;
@@ -45,16 +45,16 @@ export interface NotificationSettings {
 }
 
 export interface AppearanceSettings {
-  theme: 'light' | 'dark' | 'auto';
+  theme: "light" | "dark" | "auto";
   language: string;
   dateFormat: string;
-  timeFormat: '12h' | '24h';
-  densityMode: 'compact' | 'normal' | 'spacious';
+  timeFormat: "12h" | "24h";
+  densityMode: "compact" | "normal" | "spacious";
 }
 
 export interface SecuritySettings {
   twoFactorEnabled: boolean;
-  twoFactorMethod: 'email' | 'sms' | 'authenticator';
+  twoFactorMethod: "email" | "sms" | "authenticator";
   sessionTimeout: number; // minutes
   loginAlerts: boolean;
   deviceVerification: boolean;

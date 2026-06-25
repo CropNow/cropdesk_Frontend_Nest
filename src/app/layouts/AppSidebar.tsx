@@ -45,8 +45,7 @@ export function AppSidebar() {
 
   const isDevicesSectionActive = useMemo(() => {
     return (
-      (location.pathname === "/dashboard" &&
-        location.search.includes("device=")) ||
+      (location.pathname === "/dashboard" && location.search.includes("device=")) ||
       location.pathname === "/device-logs"
     );
   }, [location.pathname, location.search]);
@@ -112,9 +111,7 @@ export function AppSidebar() {
                 />
               </span>
               {isExpanded ? (
-                <span className="text-lg font-bold tracking-tight text-textHeading">
-                  CROPNOW
-                </span>
+                <span className="text-lg font-bold tracking-tight text-textHeading">CROPNOW</span>
               ) : null}
             </Link>
 
@@ -147,12 +144,7 @@ export function AppSidebar() {
             </NavLink>
 
             <div
-              className={[
-                "rounded-2xl",
-                isDevicesSectionActive
-                  ? "bg-bgCardHover"
-                  : "",
-              ].join(" ")}
+              className={["rounded-2xl", isDevicesSectionActive ? "bg-bgCardHover" : ""].join(" ")}
             >
               <div
                 className={[
@@ -161,17 +153,14 @@ export function AppSidebar() {
                 ].join(" ")}
               >
                 <div
-                  className={[
-                    "flex items-center",
-                    isExpanded ? "gap-3" : "justify-center",
-                  ].join(" ")}
+                  className={["flex items-center", isExpanded ? "gap-3" : "justify-center"].join(
+                    " ",
+                  )}
                 >
                   <ScanLine className="h-4.5 w-4.5 shrink-0" />
                   {isExpanded ? <span>Devices</span> : null}
                 </div>
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 text-textSecondary" />
-                ) : null}
+                {isExpanded ? <ChevronDown className="h-4 w-4 text-textSecondary" /> : null}
               </div>
 
               {isExpanded ? (

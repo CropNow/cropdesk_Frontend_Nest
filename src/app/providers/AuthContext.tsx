@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import { authAPI } from "@features/auth/api/auth.api";
 import { User, RegisterRequest } from "@shared/types/auth.types";
@@ -14,7 +8,10 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: User | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; requires2FA?: boolean; mfaToken?: string }>;
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<{ success: boolean; requires2FA?: boolean; mfaToken?: string }>;
   verify2FALogin: (mfaToken: string, token: string) => Promise<boolean>;
   register: (data: RegisterRequest) => Promise<boolean>;
   logout: () => void;
@@ -52,75 +49,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hydrate();
   }, []);
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      try {
-        const response = await authAPI.login({ email, password });
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      const response = await authAPI.login({ email, password });
 
-        // Check if 2FA is required
-        if (response.data?.requires2FA) {
-          return {
-            success: false,
-            requires2FA: true,
-            mfaToken: response.data.tempToken || response.data.mfaToken,
-          };
-        }
+      // Check if 2FA is required
+      if (response.data?.requires2FA) {
+        return {
+          success: false,
+          requires2FA: true,
+          mfaToken: response.data.tempToken || response.data.mfaToken,
+        };
+      }
 
-        // Extract from backend structure: { accessToken, data: { user } }
-        const { accessToken, data: responseData } = response.data;
-        const user = responseData?.user;
+      // Extract from backend structure: { accessToken, data: { user } }
+      const { accessToken, data: responseData } = response.data;
+      const user = responseData?.user;
 
-        if (!accessToken || !user) {
-          return { success: false };
-        }
-
-        setUser(user);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-        localStorage.setItem(TOKEN_KEY, accessToken);
-
-        return { success: true };
-      } catch {
+      if (!accessToken || !user) {
         return { success: false };
       }
-    },
-    [],
-  );
 
-  const verify2FALogin = useCallback(
-    async (mfaToken: string, token: string): Promise<boolean> => {
-      try {
-        const response = await authAPI.verify2FALogin(mfaToken, token);
+      setUser(user);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      localStorage.setItem(TOKEN_KEY, accessToken);
 
-        const { accessToken, data: responseData } = response.data;
-        const user = responseData?.user;
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  }, []);
 
-        if (!accessToken || !user) {
-          return false;
-        }
+  const verify2FALogin = useCallback(async (mfaToken: string, token: string): Promise<boolean> => {
+    try {
+      const response = await authAPI.verify2FALogin(mfaToken, token);
 
-        setUser(user);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-        localStorage.setItem(TOKEN_KEY, accessToken);
+      const { accessToken, data: responseData } = response.data;
+      const user = responseData?.user;
 
-        return true;
-      } catch {
+      if (!accessToken || !user) {
         return false;
       }
-    },
-    [],
-  );
 
-  const register = useCallback(
-    async (data: RegisterRequest): Promise<boolean> => {
-      try {
-        await authAPI.register(data);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    [],
-  );
+      setUser(user);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      localStorage.setItem(TOKEN_KEY, accessToken);
+
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const register = useCallback(async (data: RegisterRequest): Promise<boolean> => {
+    try {
+      await authAPI.register(data);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
 
   const logout = useCallback(() => {
     setUser(null);

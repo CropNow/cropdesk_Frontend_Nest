@@ -5,9 +5,7 @@
 import apiClient from "@services/api/apiClient";
 import { Device } from "@shared/types/device.types";
 
-export type UpdateDeviceData = Partial<
-  Pick<Device, "name" | "type" | "location" | "status">
->;
+export type UpdateDeviceData = Partial<Pick<Device, "name" | "type" | "location" | "status">>;
 
 export type AddDeviceData = Pick<Device, "name" | "type" | "location"> &
   Partial<Pick<Device, "batteryLevel" | "signalStrength">>;
@@ -32,8 +30,7 @@ export const devicesAPI = {
   /**
    * Get device status and health
    */
-  getDeviceStatus: (deviceId: string) =>
-    apiClient.get(`/devices/${deviceId}/status`),
+  getDeviceStatus: (deviceId: string) => apiClient.get(`/devices/${deviceId}/status`),
 
   /**
    * Delete a device

@@ -50,8 +50,7 @@ export function SensorCategoriesSection({
   const activeSensorsCount = data?.activeSensorsCount ?? 12;
   const isAnySensorModalOpen = showNestDetails;
   // The deviceId used for nest-device API (serialNumber like "01")
-  const nestDeviceId =
-    data?.serialNumber || data?.deviceId || data?.latestData?.deviceId;
+  const nestDeviceId = data?.serialNumber || data?.deviceId || data?.latestData?.deviceId;
 
   const handleExport = async (range: string) => {
     setShowExportMenu(false);
@@ -81,9 +80,7 @@ export function SensorCategoriesSection({
       });
     } catch (error: any) {
       addToast({
-        message:
-          error.response?.data?.message ||
-          "Failed to export data. Please try again.",
+        message: error.response?.data?.message || "Failed to export data. Please try again.",
         type: "error",
       });
     } finally {
@@ -154,10 +151,17 @@ export function SensorCategoriesSection({
                     Last Sync
                   </p>
                   <p className="text-2xl font-bold tracking-tight text-textPrimary">
-                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--:--"}
+                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime())
+                      ? new Date(data.timestamp).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "--:--"}
                   </p>
                   <p className="text-[0.75rem] font-medium text-textSecondary">
-                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleDateString() : "N/A"}
+                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime())
+                      ? new Date(data.timestamp).toLocaleDateString()
+                      : "N/A"}
                   </p>
                 </div>
 
@@ -166,10 +170,17 @@ export function SensorCategoriesSection({
                     Last Fetch
                   </p>
                   <p className="text-2xl font-bold tracking-tight text-textPrimary">
-                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--:--"}
+                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime())
+                      ? new Date(lastFetchTime).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "--:--"}
                   </p>
                   <p className="text-[0.75rem] font-medium text-textSecondary">
-                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleDateString() : "N/A"}
+                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime())
+                      ? new Date(lastFetchTime).toLocaleDateString()
+                      : "N/A"}
                   </p>
                 </div>
               </div>
@@ -364,9 +375,7 @@ function RealDataChart({
 
   if (data && data.length > 0) {
     data.forEach((realPoint) => {
-      const realTime = new Date(
-        realPoint.timestamp || realPoint._id || realPoint.time,
-      ).getTime();
+      const realTime = new Date(realPoint.timestamp || realPoint._id || realPoint.time).getTime();
       let closestIdx = -1;
       let minDiff = Infinity;
 
@@ -430,21 +439,15 @@ function RealDataChart({
     return null;
   };
 
-  const isWindDirection = metricKey === "wind_direction" || metricKey === "wind_dir" || unit === "°";
+  const isWindDirection =
+    metricKey === "wind_direction" || metricKey === "wind_dir" || unit === "°";
 
   if (chartType === "line") {
     return (
       <div className="h-full w-full p-2">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={chartData}
-            margin={{ top: 15, right: 30, left: 10, bottom: 10 }}
-          >
-            <CartesianGrid
-              vertical={false}
-              stroke="var(--border-color)"
-              strokeOpacity={0.4}
-            />
+          <LineChart data={chartData} margin={{ top: 15, right: 30, left: 10, bottom: 10 }}>
+            <CartesianGrid vertical={false} stroke="var(--border-color)" strokeOpacity={0.4} />
             <XAxis
               dataKey="timestamp"
               tickFormatter={formatXAxis}
@@ -476,8 +479,18 @@ function RealDataChart({
               dataKey={metricKey}
               stroke="var(--accent-primary)"
               strokeWidth={3}
-              dot={{ fill: "var(--accent-primary)", r: 4, stroke: "var(--accent-primary)", strokeWidth: 0 }}
-              activeDot={{ r: 6, stroke: "var(--accent-primary)", strokeWidth: 2, fill: "var(--bg-card)" }}
+              dot={{
+                fill: "var(--accent-primary)",
+                r: 4,
+                stroke: "var(--accent-primary)",
+                strokeWidth: 0,
+              }}
+              activeDot={{
+                r: 6,
+                stroke: "var(--accent-primary)",
+                strokeWidth: 2,
+                fill: "var(--bg-card)",
+              }}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -488,15 +501,8 @@ function RealDataChart({
   return (
     <div className="h-full w-full p-2">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={chartData}
-          margin={{ top: 15, right: 30, left: 10, bottom: 10 }}
-        >
-          <CartesianGrid
-            vertical={false}
-            stroke="var(--border-color)"
-            strokeOpacity={0.4}
-          />
+        <BarChart data={chartData} margin={{ top: 15, right: 30, left: 10, bottom: 10 }}>
+          <CartesianGrid vertical={false} stroke="var(--border-color)" strokeOpacity={0.4} />
           <XAxis
             dataKey="timestamp"
             tickFormatter={formatXAxis}
@@ -518,10 +524,7 @@ function RealDataChart({
             tickFormatter={(v) => `${v.toFixed(v > 10 ? 0 : 1)}${unit}`}
             dx={-5}
           />
-          <RechartsTooltip
-            content={<CustomTooltip />}
-            cursor={{ fill: "var(--border-subtle)" }}
-          />
+          <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: "var(--border-subtle)" }} />
           <Bar
             dataKey={metricKey}
             fill="var(--accent-primary)"
@@ -591,14 +594,9 @@ function SoilSensorDetail({
           setChartData([]);
           return;
         }
-        const rawData = await fetchNestChartData(
-          sensorId,
-          selectedRange,
-          metric,
-        );
+        const rawData = await fetchNestChartData(sensorId, selectedRange, metric);
         setChartData(rawData);
-      } catch (err) {
-      }
+      } catch (err) {}
     };
 
     fetchHistory();
@@ -638,11 +636,7 @@ function SoilSensorDetail({
               className="w-full appearance-none cursor-pointer rounded-full border border-borderColor bg-bgInput px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider text-accentPrimary outline-none"
             >
               {ranges.map((range) => (
-                <option
-                  key={range}
-                  value={range}
-                  className="bg-bgMain uppercase text-textHeading"
-                >
+                <option key={range} value={range} className="bg-bgMain uppercase text-textHeading">
                   {range}
                 </option>
               ))}
@@ -683,9 +677,7 @@ function SoilSensorDetail({
           unit={sensor.unit}
           selectedRange={selectedRange}
           metricKey={getMetricKey(sensor.title)}
-          chartType={
-            sensor?.title?.toLowerCase()?.includes("wind") ? "line" : "bar"
-          }
+          chartType={sensor?.title?.toLowerCase()?.includes("wind") ? "line" : "bar"}
         />
       </div>
     </div>
@@ -749,14 +741,9 @@ function AirSensorDetail({
           setChartData([]);
           return;
         }
-        const rawData = await fetchNestChartData(
-          sensorId,
-          selectedRange,
-          metric,
-        );
+        const rawData = await fetchNestChartData(sensorId, selectedRange, metric);
         setChartData(rawData);
-      } catch (err) {
-      }
+      } catch (err) {}
     };
 
     fetchHistory();
@@ -768,14 +755,10 @@ function AirSensorDetail({
     <div className="relative w-full overflow-hidden rounded-[2rem] border border-borderColor bg-bgCard p-6 backdrop-blur-2xl md:p-8">
       <div className="mb-4 flex items-center justify-between md:hidden">
         <div className="flex items-center gap-4">
-          <h3 className="text-xl font-black tracking-tight text-textPrimary">
-            {sensor.title}
-          </h3>
+          <h3 className="text-xl font-black tracking-tight text-textPrimary">{sensor.title}</h3>
           <p className="text-xl font-black leading-none tracking-tighter text-accentPrimary">
             {sensor.value}
-            <span className="ml-0.5 text-[0.7rem] font-bold uppercase">
-              .{sensor.unit}
-            </span>
+            <span className="ml-0.5 text-[0.7rem] font-bold uppercase">.{sensor.unit}</span>
           </p>
         </div>
         <button
@@ -827,11 +810,7 @@ function AirSensorDetail({
             className="w-full appearance-none cursor-pointer rounded-xl border border-borderColor bg-bgInput px-4 py-3 text-[0.75rem] font-black uppercase tracking-wider text-accentPrimary outline-none transition-colors hover:bg-bgCardHover md:px-5"
           >
             {ranges.map((range) => (
-              <option
-                key={range}
-                value={range}
-                className="bg-bgCard text-textPrimary uppercase"
-              >
+              <option key={range} value={range} className="bg-bgCard text-textPrimary uppercase">
                 {range}
               </option>
             ))}
@@ -848,9 +827,7 @@ function AirSensorDetail({
           unit={sensor.unit}
           selectedRange={selectedRange}
           metricKey={getMetricKey(sensor.title)}
-          chartType={
-            sensor?.title?.toLowerCase()?.includes("wind") ? "line" : "bar"
-          }
+          chartType={sensor?.title?.toLowerCase()?.includes("wind") ? "line" : "bar"}
         />
       </div>
     </div>
@@ -1077,14 +1054,8 @@ function NestSensorsModal({
               </div>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 transition-opacity hover:opacity-50"
-          >
-            <X
-              className="h-5 w-5 text-red-500 md:h-6 md:w-6"
-              strokeWidth={2.5}
-            />
+          <button onClick={onClose} className="p-2 transition-opacity hover:opacity-50">
+            <X className="h-5 w-5 text-red-500 md:h-6 md:w-6" strokeWidth={2.5} />
           </button>
         </div>
 
@@ -1103,10 +1074,7 @@ function NestSensorsModal({
                           className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
                           style={{ backgroundColor: `${sensor.color}1A` }}
                         >
-                          <sensor.icon
-                            className="h-6 w-6"
-                            style={{ color: sensor.color }}
-                          />
+                          <sensor.icon className="h-6 w-6" style={{ color: sensor.color }} />
                         </div>
                         <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-textSecondary md:text-[0.7rem]">
                           {sensor.title}
@@ -1151,12 +1119,7 @@ function NestSensorsModal({
                         >
                           <AirSensorDetail
                             sensor={sensor}
-                            sensorId={
-                              data?.sensorId ||
-                              data?._id ||
-                              data?.id ||
-                              data?.deviceId
-                            }
+                            sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId}
                             onClose={() => setActiveSensor(null)}
                           />
                         </motion.div>
@@ -1176,12 +1139,7 @@ function NestSensorsModal({
                   >
                     <AirSensorDetail
                       sensor={activeSensorData}
-                      sensorId={
-                        data?.sensorId ||
-                        data?._id ||
-                        data?.id ||
-                        data?.deviceId
-                      }
+                      sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId}
                       onClose={() => setActiveSensor(null)}
                     />
                   </motion.div>
@@ -1200,18 +1158,12 @@ function NestSensorsModal({
               <p
                 className={`text-[0.75rem] font-extrabold uppercase leading-none tracking-wider ${isOnline ? "text-[#00FF9C]" : "text-red-500"} md:text-[0.85rem]`}
               >
-                {isOnline
-                  ? "All sensors are operational"
-                  : "Device connectivity issues detected"}
+                {isOnline ? "All sensors are operational" : "Device connectivity issues detected"}
               </p>
             </div>
             <p className="ml-4.5 text-[0.6rem] font-medium tracking-tight text-textHint md:text-[0.7rem]">
-              {data?.isHistorical
-                ? "Showing last valid readings from: "
-                : "Last updated: "}
-              {data?.timestamp
-                ? new Date(data.timestamp).toLocaleString()
-                : "N/A"}
+              {data?.isHistorical ? "Showing last valid readings from: " : "Last updated: "}
+              {data?.timestamp ? new Date(data.timestamp).toLocaleString() : "N/A"}
             </p>
           </div>
         </div>

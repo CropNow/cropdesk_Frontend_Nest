@@ -42,7 +42,8 @@ export function FISAlertSection({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const farmId = propFarmId || searchParams.get("farmId") || undefined;
-  const sensorId = propSensorId || searchParams.get("sensorId") || searchParams.get("deviceId") || undefined;
+  const sensorId =
+    propSensorId || searchParams.get("sensorId") || searchParams.get("deviceId") || undefined;
   const startDate = searchParams.get("startDate") || undefined;
   const endDate = searchParams.get("endDate") || undefined;
   const range = searchParams.get("range") || undefined;
@@ -88,8 +89,7 @@ export function FISAlertSection({
           if (json.message) {
             errorMessage = json.message;
           }
-        } catch (parseErr) {
-        }
+        } catch (parseErr) {}
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       }
@@ -116,7 +116,8 @@ export function FISAlertSection({
       });
     } catch (err: any) {
       addToast({
-        message: err.response?.data?.message || "Failed to email predictions report. Please try again.",
+        message:
+          err.response?.data?.message || "Failed to email predictions report. Please try again.",
         type: "error",
       });
     } finally {
@@ -237,7 +238,9 @@ export function FISAlertSection({
                 <Download className="h-3.5 w-3.5" />
               )}
               <span>Export Data</span>
-              <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showExportMenu ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`h-3 w-3 transition-transform duration-200 ${showExportMenu ? "rotate-180" : ""}`}
+              />
             </button>
 
             <AnimatePresence>
@@ -285,16 +288,12 @@ export function FISAlertSection({
           const isElement = isValidElement(rawIcon);
           const IconComponent = isComponent
             ? rawIcon
-            : FIS_CARDS.find((c: any) => c.title === card.title)?.icon ||
-              Activity;
+            : FIS_CARDS.find((c: any) => c.title === card.title)?.icon || Activity;
 
           const statusColors = {
-            Optimal:
-              "from-emerald-500/20 to-emerald-500/5 text-emerald-400 border-emerald-500/20",
-            Warning:
-              "from-amber-500/20 to-amber-500/5 text-amber-400 border-amber-500/20",
-            Critical:
-              "from-rose-500/20 to-rose-500/5 text-rose-400 border-rose-500/20",
+            Optimal: "from-emerald-500/20 to-emerald-500/5 text-emerald-400 border-emerald-500/20",
+            Warning: "from-amber-500/20 to-amber-500/5 text-amber-400 border-amber-500/20",
+            Critical: "from-rose-500/20 to-rose-500/5 text-rose-400 border-rose-500/20",
           };
 
           const barColors = {
@@ -321,9 +320,7 @@ export function FISAlertSection({
                     <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-bgCardHover border border-borderColor">
                       {isElement
                         ? rawIcon
-                        : IconComponent && (
-                            <IconComponent className="h-4 w-4 text-accentPrimary" />
-                          )}
+                        : IconComponent && <IconComponent className="h-4 w-4 text-accentPrimary" />}
                     </div>
                     <h4 className="text-lg font-bold tracking-tight text-textPrimary leading-tight pt-0.5">
                       {card.title}
@@ -364,7 +361,7 @@ export function FISAlertSection({
                 {isViewableCard && (
                   <button
                     onClick={() => setSelectedCard(card)}
-                    aria-label={`View more details for ${card.title || 'alert'}`}
+                    aria-label={`View more details for ${card.title || "alert"}`}
                     className="w-full rounded-lg border border-borderColor bg-bgCardHover/60 px-3 py-2 text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-textSecondary transition-all hover:bg-bgCardHover hover:text-textPrimary hover:border-borderColor"
                   >
                     View More
@@ -385,10 +382,7 @@ export function FISAlertSection({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] flex items-center justify-center"
           >
-            <div
-              className="absolute inset-0 bg-black/80"
-              onClick={() => setSelectedCard(null)}
-            />
+            <div className="absolute inset-0 bg-black/80" onClick={() => setSelectedCard(null)} />
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -431,9 +425,7 @@ export function FISAlertSection({
                         Rainfall (mm)
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
-                        {selectedCard.rainfall_mm ??
-                          selectedCard.rainfall ??
-                          "N/A"}
+                        {selectedCard.rainfall_mm ?? selectedCard.rainfall ?? "N/A"}
                       </p>
                     </div>
                     <div>
@@ -441,9 +433,7 @@ export function FISAlertSection({
                         Recommendation
                       </h4>
                       <p className="mt-1 text-base md:text-lg text-textMuted">
-                        {selectedCard.recommendation ??
-                          selectedCard.body ??
-                          "N/A"}
+                        {selectedCard.recommendation ?? selectedCard.body ?? "N/A"}
                       </p>
                     </div>
                     <div>
@@ -464,9 +454,7 @@ export function FISAlertSection({
                         Confidence
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
-                        {selectedCard.confidence ??
-                          data?.suggestion?.confidence ??
-                          "N/A"}
+                        {selectedCard.confidence ?? data?.suggestion?.confidence ?? "N/A"}
                       </p>
                     </div>
                     <div>
@@ -497,9 +485,7 @@ export function FISAlertSection({
                         Activity Level
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
-                        {selectedCard.activity_level ??
-                          selectedCard.activity ??
-                          "N/A"}
+                        {selectedCard.activity_level ?? selectedCard.activity ?? "N/A"}
                       </p>
                     </div>
                     <div>
@@ -515,9 +501,7 @@ export function FISAlertSection({
                         Leaf Wetness
                       </h4>
                       <p className="mt-1 text-xl md:text-2xl font-bold">
-                        {selectedCard.leaf_wetness_pct ??
-                          selectedCard.leaf ??
-                          "N/A"}
+                        {selectedCard.leaf_wetness_pct ?? selectedCard.leaf ?? "N/A"}
                       </p>
                     </div>
                     <div>
@@ -533,9 +517,7 @@ export function FISAlertSection({
                         Recommendation
                       </h4>
                       <p className="mt-1 text-base md:text-lg text-textMuted">
-                        {selectedCard.recommendation ??
-                          selectedCard.body ??
-                          "N/A"}
+                        {selectedCard.recommendation ?? selectedCard.body ?? "N/A"}
                       </p>
                     </div>
                   </div>
@@ -619,11 +601,7 @@ export function FISAlertSection({
                 : "bg-accentPrimary text-black dark:text-black hover:bg-accentSecondary"
             }`}
           >
-            {isAcknowledged
-              ? "Acknowledged"
-              : isSubmitting
-                ? "Acknowledge"
-                : "Acknowledge"}
+            {isAcknowledged ? "Acknowledged" : isSubmitting ? "Acknowledge" : "Acknowledge"}
           </button>
         </div>
       </div>

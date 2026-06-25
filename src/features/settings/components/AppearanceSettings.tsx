@@ -44,8 +44,7 @@ export function AppearanceSettings({
             value={values.density}
             onChange={(event) =>
               onChange({
-                density: event.target
-                  .value as AppearanceSettingsState["density"],
+                density: event.target.value as AppearanceSettingsState["density"],
               })
             }
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textPrimary outline-none"
@@ -55,7 +54,6 @@ export function AppearanceSettings({
           </select>
         </label>
       </div>
-
 
       <motion.button
         type="button"

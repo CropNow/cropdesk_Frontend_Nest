@@ -1,15 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Activity,
-  Radio,
-  WifiOff,
-  Clock,
-  Search,
-  Server,
-  Power,
-  AlertCircle,
-} from "lucide-react";
+import { Activity, Radio, WifiOff, Clock, Search, Server, Power, AlertCircle } from "lucide-react";
 import { sensorsAPI } from "@features/sensors/api/sensors.api";
 import { DashboardLayout } from "@app/layouts/DashboardLayout";
 import { LoadingSkeleton } from "@shared/components/LoadingSkeleton";
@@ -43,10 +34,7 @@ export function DeviceLogsPage() {
   const fetchDeviceLogs = async () => {
     setIsLoading(true);
     try {
-      const todayDate = new Date()
-        .toISOString()
-        .split("T")[0]
-        .replace(/-/g, "/"); // format YYYY/MM/DD
+      const todayDate = new Date().toISOString().split("T")[0].replace(/-/g, "/"); // format YYYY/MM/DD
 
       const res = await sensorsAPI.getSensors();
       const rawSensors = Array.isArray(res.data?.data)
@@ -55,9 +43,7 @@ export function DeviceLogsPage() {
           ? res.data
           : [];
 
-      const nestSensors = rawSensors.filter(
-        (s: any) => s.type === "NEST" || s.serialNumber,
-      );
+      const nestSensors = rawSensors.filter((s: any) => s.type === "NEST" || s.serialNumber);
 
       const logsData: DeviceLog[] = await Promise.all(
         nestSensors.map(async (sensor: any) => {
@@ -73,12 +59,8 @@ export function DeviceLogsPage() {
             const logsRes = await sensorsAPI.getDeviceLogs(sensorId);
             const logsArray = logsRes.data?.data || [];
 
-            const offlineLog = logsArray.find(
-              (log: any) => log.event === "offline",
-            );
-            const onlineLog = logsArray.find(
-              (log: any) => log.event === "online",
-            );
+            const offlineLog = logsArray.find((log: any) => log.event === "offline");
+            const onlineLog = logsArray.find((log: any) => log.event === "online");
 
             if (offlineLog) {
               lastOffline = offlineLog.timestamp;
@@ -88,10 +70,7 @@ export function DeviceLogsPage() {
             }
 
             if (sensor.serialNumber) {
-              const nestRes = await sensorsAPI.getNestDeviceData(
-                sensor.serialNumber,
-                todayDate,
-              );
+              const nestRes = await sensorsAPI.getNestDeviceData(sensor.serialNumber, todayDate);
               const data = nestRes.data;
 
               if (data?.status === "online") {
@@ -103,8 +82,7 @@ export function DeviceLogsPage() {
 
                 // Fallback to old behavior if API doesn't return anything
                 if (!lastOffline) {
-                  lastOffline =
-                    data?.lastValidTimestamp || sensor.updatedAt || null;
+                  lastOffline = data?.lastValidTimestamp || sensor.updatedAt || null;
                 }
               }
             } else {
@@ -117,9 +95,7 @@ export function DeviceLogsPage() {
               const diff = Date.now() - new Date(lastOffline).getTime();
               if (diff > 0) {
                 const hours = Math.floor(diff / (1000 * 60 * 60));
-                const mins = Math.floor(
-                  (diff % (1000 * 60 * 60)) / (1000 * 60),
-                );
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                 offlineDurationStr = `${hours}h ${mins}m`;
               }
             }
@@ -135,8 +111,7 @@ export function DeviceLogsPage() {
             type: sensor.type || "NEST",
             serialNumber: sensor.serialNumber || "N/A",
             isOnline,
-            installationDate:
-              sensor.createdAt || sensor.installationDate || null,
+            installationDate: sensor.createdAt || sensor.installationDate || null,
             lastOfflineTiming: lastOffline,
             lastOnlineTiming: lastOnline,
             offlineDuration: offlineDurationStr,
@@ -185,12 +160,9 @@ export function DeviceLogsPage() {
         <>
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-textHeading">
-                Device Logs
-              </h1>
+              <h1 className="text-3xl font-bold text-textHeading">Device Logs</h1>
               <p className="mt-1 text-sm text-textSecondary">
-                Real-time connectivity and operational history for all deployed
-                devices.
+                Real-time connectivity and operational history for all deployed devices.
               </p>
             </div>
 
@@ -215,9 +187,7 @@ export function DeviceLogsPage() {
                   <Radio className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-textSecondary">
-                    Online Devices
-                  </p>
+                  <p className="text-sm font-medium text-textSecondary">Online Devices</p>
                   <h3 className="text-2xl font-bold text-textHeading">
                     {logs.filter((l) => l.isOnline).length}
                   </h3>
@@ -230,9 +200,7 @@ export function DeviceLogsPage() {
                   <WifiOff className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-textSecondary">
-                    Offline Devices
-                  </p>
+                  <p className="text-sm font-medium text-textSecondary">Offline Devices</p>
                   <h3 className="text-2xl font-bold text-textHeading">
                     {logs.filter((l) => !l.isOnline).length}
                   </h3>
@@ -245,12 +213,8 @@ export function DeviceLogsPage() {
                   <Server className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-textSecondary">
-                    Total Devices
-                  </p>
-                  <h3 className="text-2xl font-bold text-textHeading">
-                    {logs.length}
-                  </h3>
+                  <p className="text-sm font-medium text-textSecondary">Total Devices</p>
+                  <h3 className="text-2xl font-bold text-textHeading">{logs.length}</h3>
                 </div>
               </div>
             </div>
@@ -303,9 +267,7 @@ export function DeviceLogsPage() {
                               )}
                             </div>
                             <div>
-                              <p className="font-semibold text-textHeading">
-                                {log.name}
-                              </p>
+                              <p className="font-semibold text-textHeading">{log.name}</p>
                               <p className="text-xs text-textMuted font-mono">
                                 SN: {log.serialNumber}
                               </p>
@@ -372,9 +334,7 @@ export function DeviceLogsPage() {
               {filteredLogs.length === 0 && (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
                   <Server className="h-12 w-12 text-textMuted opacity-50 mb-4" />
-                  <p className="text-lg font-medium text-textHeading">
-                    No devices found
-                  </p>
+                  <p className="text-lg font-medium text-textHeading">No devices found</p>
                   <p className="text-sm text-textSecondary mt-1">
                     Try adjusting your search criteria.
                   </p>

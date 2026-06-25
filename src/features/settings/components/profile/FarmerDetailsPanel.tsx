@@ -25,13 +25,12 @@ export function FarmerDetailsPanel() {
         setIsLoading(true);
         // Try to get farmer from farms list
         const res = await dashboardAPI.getFarms();
-        const farmsList =
-          res.data?.data?.farms || res.data?.data || res.data || [];
+        const farmsList = res.data?.data?.farms || res.data?.data || res.data || [];
         if (Array.isArray(farmsList) && farmsList.length > 0) {
           const farm = farmsList[0];
           const fid =
             (farm.farmerId && typeof farm.farmerId === "object"
-              ? (farm.farmerId._id || farm.farmerId.id)
+              ? farm.farmerId._id || farm.farmerId.id
               : farm.farmerId) ||
             (farm.farmer && (farm.farmer.id || farm.farmer._id));
           if (fid && typeof fid === "string") {
@@ -43,10 +42,8 @@ export function FarmerDetailsPanel() {
                 name: farmerData.name || "",
                 phone: farmerData.phone || "",
                 email: farmerData.email || "",
-                village:
-                  farmerData.address?.village || farmerData.village || "",
-                district:
-                  farmerData.address?.district || farmerData.district || "",
+                village: farmerData.address?.village || farmerData.village || "",
+                district: farmerData.address?.district || farmerData.district || "",
                 state: farmerData.address?.state || farmerData.state || "",
               });
             }
@@ -61,11 +58,7 @@ export function FarmerDetailsPanel() {
   }, []);
 
   const handleSave = async () => {
-    if (
-      !formData.name.trim() ||
-      !formData.phone.trim() ||
-      !formData.email.trim()
-    ) {
+    if (!formData.name.trim() || !formData.phone.trim() || !formData.email.trim()) {
       setError("Full Name, Phone Number, and Email Address are required.");
       return;
     }
@@ -135,20 +128,15 @@ export function FarmerDetailsPanel() {
     }
   };
 
-  if (isLoading)
-    return <div className="p-4 text-textSecondary">Loading...</div>;
+  if (isLoading) return <div className="p-4 text-textSecondary">Loading...</div>;
 
   return (
     <div className="space-y-6">
-      <h3 className="mb-4 text-xl font-bold text-textHeading">
-        Farmer Details
-      </h3>
+      <h3 className="mb-4 text-xl font-bold text-textHeading">Farmer Details</h3>
 
       <div className="grid gap-4 sm:grid-cols-1">
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-textMuted uppercase">
-            Full Name *
-          </span>
+          <span className="text-sm font-semibold text-textMuted uppercase">Full Name *</span>
           <input
             placeholder="Full Name"
             value={formData.name}
@@ -160,29 +148,21 @@ export function FarmerDetailsPanel() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-textMuted uppercase">
-            Phone Number *
-          </span>
+          <span className="text-sm font-semibold text-textMuted uppercase">Phone Number *</span>
           <input
             placeholder="Phone Number"
             value={formData.phone}
-            onChange={(e) =>
-              setFormData({ ...formData, phone: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
           />
         </label>
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-textMuted uppercase">
-            Email Address *
-          </span>
+          <span className="text-sm font-semibold text-textMuted uppercase">Email Address *</span>
           <input
             placeholder="Email Address"
             type="email"
             value={formData.email}
-            onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
           />
         </label>
@@ -190,41 +170,29 @@ export function FarmerDetailsPanel() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-textMuted uppercase">
-            Village *
-          </span>
+          <span className="text-sm font-semibold text-textMuted uppercase">Village *</span>
           <input
             placeholder="Village"
             value={formData.village}
-            onChange={(e) =>
-              setFormData({ ...formData, village: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, village: e.target.value })}
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
           />
         </label>
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-textMuted uppercase">
-            District *
-          </span>
+          <span className="text-sm font-semibold text-textMuted uppercase">District *</span>
           <input
             placeholder="District"
             value={formData.district}
-            onChange={(e) =>
-              setFormData({ ...formData, district: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, district: e.target.value })}
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
           />
         </label>
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-textMuted uppercase">
-            State *
-          </span>
+          <span className="text-sm font-semibold text-textMuted uppercase">State *</span>
           <input
             placeholder="State"
             value={formData.state}
-            onChange={(e) =>
-              setFormData({ ...formData, state: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
           />
         </label>

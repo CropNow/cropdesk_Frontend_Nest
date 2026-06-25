@@ -1,13 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  MessageSquare,
-  Send,
-  User,
-  Bot,
-  Sparkles,
-  WifiOff,
-} from "lucide-react";
+import { MessageSquare, Send, User, Bot, Sparkles, WifiOff } from "lucide-react";
 import { DashboardLayout } from "@app/layouts/DashboardLayout";
 import { useOnlineStatus } from "@app/providers/OnlineStatusContext";
 
@@ -122,9 +115,7 @@ export function ChatbotPage() {
             {!isOnline && (
               <div className="mb-3 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs font-semibold text-red-400">
                 <WifiOff className="h-4 w-4" />
-                <span>
-                  You are currently offline. Chatbot features are disabled.
-                </span>
+                <span>You are currently offline. Chatbot features are disabled.</span>
               </div>
             )}
             <form onSubmit={handleSend} className="relative flex gap-2">
@@ -134,9 +125,7 @@ export function ChatbotPage() {
                 onChange={(e) => setInput(e.target.value)}
                 disabled={!isOnline}
                 placeholder={
-                  isOnline
-                    ? "Ask me about your farm..."
-                    : "Offline - please reconnect to chat"
+                  isOnline ? "Ask me about your farm..." : "Offline - please reconnect to chat"
                 }
                 className="flex-1 rounded-xl border border-cardBorder bg-bgSidebar/50 px-4 py-3 text-sm text-textPrimary outline-none transition focus:border-accentPrimary/50 focus:ring-1 focus:ring-accentPrimary/50 disabled:opacity-50 disabled:cursor-not-allowed"
               />

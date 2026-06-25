@@ -61,9 +61,7 @@ export function RegisterPage() {
     if (success) {
       navigate("/verify-otp", { state: { email } });
     } else {
-      setError(
-        "Registration failed. Please try again or use a different email.",
-      );
+      setError("Registration failed. Please try again or use a different email.");
     }
     setIsLoading(false);
   };
@@ -165,9 +163,7 @@ export function RegisterPage() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          <h2 className="text-2xl font-bold text-textHeading">
-            Create Account
-          </h2>
+          <h2 className="text-2xl font-bold text-textHeading">Create Account</h2>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">
             Enter your personal data to create your account.
           </p>
@@ -234,9 +230,7 @@ export function RegisterPage() {
                 />
               </div>
               <div className="flex-1">
-                <label className="mb-1.5 block text-xs font-medium text-textLabel">
-                  Last Name
-                </label>
+                <label className="mb-1.5 block text-xs font-medium text-textLabel">Last Name</label>
                 <input
                   type="text"
                   placeholder="eg. Francisco"
@@ -250,9 +244,7 @@ export function RegisterPage() {
 
             {/* Email */}
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-textLabel">
-                Email
-              </label>
+              <label className="mb-1.5 block text-xs font-medium text-textLabel">Email</label>
               <input
                 type="email"
                 placeholder="eg. johnfrans@gmail.com"
@@ -280,9 +272,7 @@ export function RegisterPage() {
 
             {/* Password */}
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-textLabel">
-                Password
-              </label>
+              <label className="mb-1.5 block text-xs font-medium text-textLabel">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -298,16 +288,10 @@ export function RegisterPage() {
                   onClick={() => setShowPassword((p) => !p)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-textHint transition hover:text-textSecondary"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              <p className="mt-1.5 text-[11px] text-textHint">
-                Must be at least 8 characters.
-              </p>
+              <p className="mt-1.5 text-[11px] text-textHint">Must be at least 8 characters.</p>
             </div>
 
             {/* Confirm Password */}

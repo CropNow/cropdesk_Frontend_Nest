@@ -35,10 +35,7 @@ export function ToastContainer() {
               className="pointer-events-auto flex items-center gap-3 rounded-xl border border-borderSubtle bg-bgCard px-4 py-3 shadow-xl shadow-black/40 backdrop-blur-xl"
               style={{ borderLeft: `3px solid ${accent}` }}
             >
-              <Icon
-                className="h-4.5 w-4.5 shrink-0"
-                style={{ color: accent }}
-              />
+              <Icon className="h-4.5 w-4.5 shrink-0" style={{ color: accent }} />
               <span className="text-sm font-medium text-[var(--text-primary)]">
                 {toast.message}
               </span>

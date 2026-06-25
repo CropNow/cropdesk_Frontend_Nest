@@ -13,16 +13,10 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
   pushTokens: [],
 };
 
-export type NotificationStatus =
-  | "idle"
-  | "loading"
-  | "saving"
-  | "testing"
-  | "registering";
+export type NotificationStatus = "idle" | "loading" | "saving" | "testing" | "registering";
 
 export const useNotificationSettings = () => {
-  const [preferences, setPreferences] =
-    useState<NotificationPreferences>(DEFAULT_PREFERENCES);
+  const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
   const [status, setStatus] = useState<NotificationStatus>("loading");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -40,10 +34,7 @@ export const useNotificationSettings = () => {
       const data = res.data?.data ?? res.data;
       if (data) setPreferences(data);
     } catch (err: any) {
-      setError(
-        err?.response?.data?.message ??
-          "Failed to load notification preferences",
-      );
+      setError(err?.response?.data?.message ?? "Failed to load notification preferences");
     } finally {
       setStatus("idle");
     }
@@ -86,9 +77,7 @@ export const useNotificationSettings = () => {
       await notificationsAPI.registerDeviceToken(token.trim());
       showSuccess("Device token registered successfully");
     } catch (err: any) {
-      setError(
-        err?.response?.data?.message ?? "Failed to register device token",
-      );
+      setError(err?.response?.data?.message ?? "Failed to register device token");
       throw err;
     } finally {
       setStatus("idle");
@@ -102,9 +91,7 @@ export const useNotificationSettings = () => {
       await notificationsAPI.sendTestNotification();
       showSuccess("Test notification triggered successfully!");
     } catch (err: any) {
-      setError(
-        err?.response?.data?.message ?? "Failed to send test notification",
-      );
+      setError(err?.response?.data?.message ?? "Failed to send test notification");
       throw err;
     } finally {
       setStatus("idle");
