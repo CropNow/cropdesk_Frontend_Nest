@@ -611,7 +611,10 @@ export function AITrendsPage() {
                     >
                       {item.category}
                     </span>
-                    <h3 className="text-lg font-bold text-textHeading leading-snug line-clamp-2 hover:text-accentPrimary transition-colors cursor-pointer">
+                    <h3
+                      onClick={() => item.url && window.open(item.url, "_blank", "noopener,noreferrer")}
+                      className="text-lg font-bold text-textHeading leading-snug line-clamp-2 hover:text-accentPrimary transition-colors cursor-pointer"
+                    >
                       {item.title}
                     </h3>
                     <p className="text-sm text-textSecondary leading-relaxed line-clamp-3">

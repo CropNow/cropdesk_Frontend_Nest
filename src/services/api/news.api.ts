@@ -18,6 +18,7 @@ export interface NewsArticle {
     | "Crop Advisory"
     | "Irrigation"
     | "Research";
+  url?: string;
 }
 
 export const newsAPI = {
@@ -43,6 +44,48 @@ export const newsAPI = {
       }
       throw new Error("Invalid response format");
     } catch (error) {
+      console.warn(
+        "Backend news API failed or not implemented. Attempting live RSS news fallback.",
+        error,
+      );
+      try {
+        const searchTerms = [];
+        if (location.district) searchTerms.push(`Farming in ${location.district}`);
+        if (location.state) searchTerms.push(`Agriculture in ${location.state}`);
+        if (searchTerms.length === 0) searchTerms.push("Agriculture India");
+
+        const query = searchTerms.join(" OR ");
+        const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=en-IN&gl=IN&ceid=IN:en`;
+        const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+        
+        const rssResponse = await fetch(proxyUrl);
+        const rssData = await rssResponse.json();
+        
+        if (rssData.status === "ok" && Array.isArray(rssData.items) && rssData.items.length > 0) {
+          const categories: Array<NewsArticle["category"]> = [
+            "Crop Advisory", "Market", "Pest Alert", "Government Scheme", "Irrigation", "Research", "Weather"
+          ];
+          
+          return rssData.items.map((item: any, idx: number): NewsArticle => {
+            const cleanSummary = (item.description || item.content || "")
+              .replace(/<[^>]*>/g, "") // Strip HTML tags
+              .trim();
+
+            return {
+              id: item.guid || `live-news-${idx}-${Date.now()}`,
+              title: item.title?.split(" - ")[0] || "Agricultural News Update",
+              summary: cleanSummary || "No summary available.",
+              source: item.title?.split(" - ")[1] || item.author || "Google News",
+              publishedAt: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
+              category: categories[idx % categories.length],
+              url: item.link || undefined,
+            };
+          });
+        }
+      } catch (rssError) {
+        console.error("Live RSS fallback failed, using local mock news:", rssError);
+      }
+
       return newsAPI.generateFallbackNews(location.district, location.state);
     }
   },
@@ -62,6 +105,7 @@ export const newsAPI = {
         source: "Krishi Jagran",
         publishedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
         category: "Market",
+        url: "https://krishijagran.com",
       },
       {
         id: "n2",
@@ -70,6 +114,7 @@ export const newsAPI = {
         source: "IMD Weather Desk",
         publishedAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
         category: "Weather",
+        url: "https://mausam.imd.gov.in",
       },
       {
         id: "n3",
@@ -78,6 +123,7 @@ export const newsAPI = {
         source: "State Crop Advisory Board",
         publishedAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
         category: "Government Scheme",
+        url: "https://agricoop.nic.in",
       },
       {
         id: "n4",
@@ -86,6 +132,7 @@ export const newsAPI = {
         source: "State Crop Protection Dept",
         publishedAt: new Date(Date.now() - 36 * 3600 * 1000).toISOString(),
         category: "Pest Alert",
+        url: "https://www.ippc.int",
       },
       {
         id: "n5",
@@ -94,6 +141,7 @@ export const newsAPI = {
         source: "National Agri Research Journal",
         publishedAt: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
         category: "Research",
+        url: "https://icar.org.in",
       },
       {
         id: "n6",
@@ -102,6 +150,7 @@ export const newsAPI = {
         source: "Agri Extension Services",
         publishedAt: new Date(Date.now() - 72 * 3600 * 1000).toISOString(),
         category: "Crop Advisory",
+        url: "https://www.fao.org",
       },
       {
         id: "n7",
@@ -110,6 +159,7 @@ export const newsAPI = {
         source: "Irrigation & Drainage Board",
         publishedAt: new Date(Date.now() - 96 * 3600 * 1000).toISOString(),
         category: "Irrigation",
+        url: "https://www.unwater.org",
       },
     ];
   },
