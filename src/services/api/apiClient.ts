@@ -6,13 +6,7 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from "ax
 
 // API Client instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_BASE_URL ||
-    (() => {
-      throw new Error(
-        "VITE_API_BASE_URL is not set. Create a .env file with VITE_API_BASE_URL=https://apis.cropdesk.in/api/v1",
-      );
-    })(),
+  baseURL: import.meta.env.VITE_API_BASE_URL || "https://apis.cropdesk.in/api/v1",
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
