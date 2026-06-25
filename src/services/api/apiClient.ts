@@ -22,6 +22,7 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    console.log(`🚀 [API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data || "");
     const token = localStorage.getItem("authToken");
     const isAuthRoute =
       config.url?.includes("login") ||
@@ -41,9 +42,11 @@ apiClient.interceptors.request.use(
 // Response interceptor
 apiClient.interceptors.response.use(
   (response) => {
+    console.log(`✅ [API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
     return response;
   },
   (error: AxiosError) => {
+    console.error(`❌ [API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url}`, error.response?.data || error.message);
     const isAuthRoute =
       error.config?.url?.includes("login") ||
       error.config?.url?.includes("register") ||
