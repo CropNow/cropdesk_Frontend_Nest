@@ -25,8 +25,7 @@ export const dashboardAPI = {
   /**
    * Fetch farm statistics
    */
-  getFarmStatistics: (farmId: string) =>
-    apiClient.get(`/farms/${farmId}/statistics`),
+  getFarmStatistics: (farmId: string) => apiClient.get(`/farms/${farmId}/statistics`),
 
   /**
    * Fetch farm devices
@@ -36,8 +35,7 @@ export const dashboardAPI = {
   /**
    * Fetch all alerts for the user
    */
-  getAlerts: (limit?: number) =>
-    apiClient.get("/alerts", { params: { limit } }),
+  getAlerts: (limit?: number) => apiClient.get("/alerts", { params: { limit } }),
 
   /**
    * Fetch AI insights/predictions for a farm and optionally specific device
@@ -83,6 +81,10 @@ export const dashboardAPI = {
   /**
    * Export predictions CSV and optionally email it to the user
    */
-  exportPredictions: (params: { range: string; email?: boolean; farmId?: string; sensorId?: string }) =>
-    apiClient.get("/predictions/export", { params }),
+  exportPredictions: (params: {
+    range: string;
+    email?: boolean;
+    farmId?: string;
+    sensorId?: string;
+  }) => apiClient.get("/predictions/export", { params }),
 };

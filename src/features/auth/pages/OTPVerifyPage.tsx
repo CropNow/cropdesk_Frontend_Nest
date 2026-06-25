@@ -44,10 +44,7 @@ export function OTPVerifyPage() {
     }
   };
 
-  const handleKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    index: number,
-  ) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
     if (e.key === "Backspace") {
       if (!otp[index] && e.currentTarget.previousSibling) {
         (e.currentTarget.previousSibling as HTMLInputElement).focus();
@@ -104,9 +101,7 @@ export function OTPVerifyPage() {
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-accentPrimary/10">
             <ShieldCheck className="h-8 w-8 text-accentPrimary" />
           </div>
-          <h2 className="text-2xl font-bold text-textHeading">
-            Verify Your Account
-          </h2>
+          <h2 className="text-2xl font-bold text-textHeading">Verify Your Account</h2>
           <p className="mt-2 text-sm text-textSecondary text-balance">
             We've sent a 6-digit verification code to{" "}
             <span className="font-semibold text-textHeading">{email}</span>
@@ -143,11 +138,7 @@ export function OTPVerifyPage() {
             disabled={isLoading}
             className="w-full rounded-xl bg-slate-900 dark:bg-white py-3 text-sm font-semibold text-white dark:text-slate-900 transition hover:bg-slate-800 dark:hover:bg-white/90 disabled:opacity-50"
           >
-            {isLoading ? (
-              <RefreshCw className="mx-auto h-5 w-5 animate-spin" />
-            ) : (
-              "Verify Account"
-            )}
+            {isLoading ? <RefreshCw className="mx-auto h-5 w-5 animate-spin" /> : "Verify Account"}
           </button>
         </form>
 

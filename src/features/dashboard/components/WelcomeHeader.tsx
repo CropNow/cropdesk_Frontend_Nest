@@ -14,10 +14,7 @@ interface WelcomeHeaderProps {
   userName?: string;
 }
 
-export function WelcomeHeader({
-  currentTime,
-  userName = "User",
-}: WelcomeHeaderProps) {
+export function WelcomeHeader({ currentTime, userName = "User" }: WelcomeHeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const [isTrayOpen, setIsTrayOpen] = useState(false);
   const trayRef = useRef<HTMLDivElement | null>(null);
@@ -91,11 +88,7 @@ export function WelcomeHeader({
                 className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cardBorder bg-cardBg text-textSecondary transition hover:border-accentPrimary/40 hover:text-accentPrimary"
                 aria-label="Toggle theme"
               >
-                {theme === "dark" ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
               <button
                 type="button"
@@ -123,9 +116,7 @@ export function WelcomeHeader({
               {isTrayOpen ? (
                 <div className="absolute right-0 top-12 z-50 w-[320px] rounded-2xl border border-cardBorder bg-bgSidebar p-3 shadow-2xl">
                   <div className="mb-2 flex items-center justify-between border-b border-cardBorder pb-2">
-                    <p className="text-sm font-semibold text-textHeading">
-                      Notifications
-                    </p>
+                    <p className="text-sm font-semibold text-textHeading">Notifications</p>
                     <span className="rounded-full bg-accentPrimary/20 px-2 py-0.5 text-[11px] font-semibold text-accentPrimary">
                       {unreadCount} new
                     </span>
@@ -139,16 +130,10 @@ export function WelcomeHeader({
                           className="rounded-xl border border-cardBorder bg-cardBg p-2.5 transition hover:border-accentPrimary/30"
                         >
                           <div className="mb-1 flex items-start justify-between gap-2">
-                            <p className="text-xs font-semibold text-textHeading">
-                              {item.title}
-                            </p>
-                            <span className="shrink-0 text-[10px] text-textHint">
-                              {item.time}
-                            </span>
+                            <p className="text-xs font-semibold text-textHeading">{item.title}</p>
+                            <span className="shrink-0 text-[10px] text-textHint">{item.time}</span>
                           </div>
-                          <p className="text-[11px] text-textSecondary">
-                            {item.description}
-                          </p>
+                          <p className="text-[11px] text-textSecondary">{item.description}</p>
                           {item.unread ? (
                             <span className="mt-1 block text-[10px] font-semibold text-accentPrimary">
                               New notification
@@ -158,9 +143,7 @@ export function WelcomeHeader({
                       ))
                     ) : (
                       <div className="py-8 text-center">
-                        <p className="text-xs font-medium text-textHint">
-                          All caught up!
-                        </p>
+                        <p className="text-xs font-medium text-textHint">All caught up!</p>
                       </div>
                     )}
                   </div>

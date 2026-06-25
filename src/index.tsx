@@ -8,9 +8,7 @@ import { ToastProvider } from "@app/providers/ToastContext";
 import { ToastContainer } from "@shared/components/ToastContainer";
 import { OnlineStatusProvider } from "@app/providers/OnlineStatusContext";
 
-const root = ReactDOM.createRoot(
-  document.getElementById("root") as HTMLElement,
-);
+const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
 root.render(
   <BrowserRouter>
     <ThemeProvider>

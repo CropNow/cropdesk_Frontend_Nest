@@ -13,7 +13,7 @@ export interface FarmHealth {
 }
 
 export interface WaterSavingsData {
-  period: 'day' | 'week' | 'month';
+  period: "day" | "week" | "month";
   savedVolume: number; // liters
   savedCost: number; // currency
   efficiency: number; // percentage
@@ -32,7 +32,7 @@ export interface AIInsight {
   id: string;
   title: string;
   description: string;
-  impact: 'low' | 'medium' | 'high';
+  impact: "low" | "medium" | "high";
   category: string;
   actionable: boolean;
   recommendation?: string;
@@ -45,9 +45,9 @@ export interface AIRecommendation {
   title: string;
   description: string;
   category: string;
-  priority: 'low' | 'medium' | 'high';
+  priority: "low" | "medium" | "high";
   expectedImpact: string;
   estimatedTimeToImplement: number; // hours
-  status: 'pending' | 'accepted' | 'dismissed';
+  status: "pending" | "accepted" | "dismissed";
   createdAt: string;
 }

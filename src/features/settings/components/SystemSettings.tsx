@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { SystemSettingsState } from './SettingsLayout';
+import { motion } from "framer-motion";
+import { SystemSettingsState } from "./SettingsLayout";
 
 interface SystemSettingsProps {
   values: SystemSettingsState;
@@ -9,10 +9,16 @@ interface SystemSettingsProps {
   isSaving: boolean;
 }
 
-const LANGUAGES = ['English', 'Hindi', 'Tamil', 'Telugu'];
-const TIME_ZONES = ['Asia/Kolkata', 'UTC', 'America/New_York', 'Europe/London'];
+const LANGUAGES = ["English", "Hindi", "Tamil", "Telugu"];
+const TIME_ZONES = ["Asia/Kolkata", "UTC", "America/New_York", "Europe/London"];
 
-export function SystemSettings({ values, onChange, onReset, onSave, isSaving }: SystemSettingsProps) {
+export function SystemSettings({
+  values,
+  onChange,
+  onReset,
+  onSave,
+  isSaving,
+}: SystemSettingsProps) {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
@@ -20,7 +26,9 @@ export function SystemSettings({ values, onChange, onReset, onSave, isSaving }: 
           <span className="text-sm text-textLabel">Units</span>
           <select
             value={values.units}
-            onChange={(event) => onChange({ units: event.target.value as SystemSettingsState['units'] })}
+            onChange={(event) =>
+              onChange({ units: event.target.value as SystemSettingsState["units"] })
+            }
             className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none"
           >
             <option value="Metric">Metric</option>
@@ -76,7 +84,7 @@ export function SystemSettings({ values, onChange, onReset, onSave, isSaving }: 
           disabled={isSaving}
           className="rounded-xl border border-accentPrimary/40 bg-accentPrimary/15 px-4 py-2 text-sm font-semibold text-accentPrimary transition disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSaving ? 'Saving...' : 'Save Changes'}
+          {isSaving ? "Saving..." : "Save Changes"}
         </motion.button>
       </div>
     </div>

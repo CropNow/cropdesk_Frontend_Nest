@@ -15,20 +15,17 @@ export const authAPI = {
   /**
    * User login
    */
-  login: (credentials: LoginRequest) =>
-    apiClient.post<AuthResponse>("/auth/login", credentials),
+  login: (credentials: LoginRequest) => apiClient.post<AuthResponse>("/auth/login", credentials),
 
   /**
    * User registration
    */
-  register: (data: RegisterRequest) =>
-    apiClient.post<AuthResponse>("/auth/register", data),
+  register: (data: RegisterRequest) => apiClient.post<AuthResponse>("/auth/register", data),
 
   /**
    * Verify OTP
    */
-  verifyOTP: (data: VerifyOTPRequest) =>
-    apiClient.post("/auth/verify-otp", data),
+  verifyOTP: (data: VerifyOTPRequest) => apiClient.post("/auth/verify-otp", data),
 
   /**
    * Resend OTP
@@ -53,8 +50,7 @@ export const authAPI = {
   /**
    * Change user password
    */
-  changePassword: (data: ChangePasswordRequest) =>
-    apiClient.post("/auth/change-password", data),
+  changePassword: (data: ChangePasswordRequest) => apiClient.post("/auth/change-password", data),
 
   /**
    * Get all active sessions
@@ -92,4 +88,3 @@ export const authAPI = {
    */
   disable2FA: () => apiClient.post("/auth/2fa/disable"),
 };
-

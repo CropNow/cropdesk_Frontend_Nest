@@ -44,8 +44,7 @@ export const farmsAPI = {
   /**
    * Update farm
    */
-  updateFarm: (id: string, data: UpdateFarmData) =>
-    apiClient.patch(`/farms/${id}`, data),
+  updateFarm: (id: string, data: UpdateFarmData) => apiClient.patch(`/farms/${id}`, data),
 
   /**
    * Delete farm

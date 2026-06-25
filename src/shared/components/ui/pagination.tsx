@@ -13,19 +13,13 @@ export const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
 }) => (
   <div className="flex justify-center gap-2 mt-4">
-    <Button
-      onClick={() => onPageChange(currentPage - 1)}
-      disabled={currentPage === 1}
-    >
+    <Button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
       Previous
     </Button>
     <span className="px-4 py-2">
       {currentPage} of {totalPages}
     </span>
-    <Button
-      onClick={() => onPageChange(currentPage + 1)}
-      disabled={currentPage === totalPages}
-    >
+    <Button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>
       Next
     </Button>
   </div>

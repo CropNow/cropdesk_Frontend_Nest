@@ -154,9 +154,7 @@ export function SettingsLayout() {
   const [toastMessage, setToastMessage] = useState("");
 
   const activeTabLabel = useMemo(() => {
-    return (
-      SETTINGS_TABS.find((tab) => tab.id === activeTab)?.label ?? "Settings"
-    );
+    return SETTINGS_TABS.find((tab) => tab.id === activeTab)?.label ?? "Settings";
   }, [activeTab]);
 
   useEffect(() => {
@@ -176,8 +174,7 @@ export function SettingsLayout() {
 
     window.setTimeout(() => {
       setSavingTab(null);
-      const label =
-        SETTINGS_TABS.find((item) => item.id === tab)?.label ?? "Settings";
+      const label = SETTINGS_TABS.find((item) => item.id === tab)?.label ?? "Settings";
       setToastMessage(label + " saved successfully");
     }, 650);
   };
@@ -197,9 +194,7 @@ export function SettingsLayout() {
   return (
     <div className="space-y-5">
       <Card variant="glass" className="p-4 sm:p-6">
-        <h1 className="text-2xl font-bold text-textHeading sm:text-3xl">
-          Settings
-        </h1>
+        <h1 className="text-2xl font-bold text-textHeading sm:text-3xl">Settings</h1>
         <p className="mt-1 text-sm text-textSecondary sm:text-base">
           Manage your system preferences
         </p>

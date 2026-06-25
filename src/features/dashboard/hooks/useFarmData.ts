@@ -35,13 +35,10 @@ export function useFarmData({
   useEffect(() => {
     const initFarms = async () => {
       if (!isOnline || !navigator.onLine) {
-        const { farms: cachedFarms, selectedFarmId: cachedFarmId } =
-          loadFarmsCache();
+        const { farms: cachedFarms, selectedFarmId: cachedFarmId } = loadFarmsCache();
         if (cachedFarms.length > 0) {
           setFarms(cachedFarms);
-          setSelectedFarmId(
-            cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id,
-          );
+          setSelectedFarmId(cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id);
           setIsCached(true);
         } else {
           setIsLoading(false);
@@ -54,12 +51,7 @@ export function useFarmData({
         const res = await dashboardAPI.getFarms();
         const data = res.data?.data;
         const farmsList =
-          data?.farms ||
-          (Array.isArray(data)
-            ? data
-            : Array.isArray(res.data)
-              ? res.data
-              : []);
+          data?.farms || (Array.isArray(data) ? data : Array.isArray(res.data) ? res.data : []);
 
         setFarms(farmsList);
 
@@ -72,13 +64,10 @@ export function useFarmData({
           setIsLoading(false);
         }
       } catch (err: any) {
-        const { farms: cachedFarms, selectedFarmId: cachedFarmId } =
-          loadFarmsCache();
+        const { farms: cachedFarms, selectedFarmId: cachedFarmId } = loadFarmsCache();
         if (cachedFarms.length > 0) {
           setFarms(cachedFarms);
-          setSelectedFarmId(
-            cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id,
-          );
+          setSelectedFarmId(cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id);
           setIsCached(true);
           setError(null);
         } else {
@@ -98,20 +87,12 @@ export function useFarmData({
       setIsLoading(true);
 
       if (!isOnline || !navigator.onLine) {
-        const cached = loadDashboardCache(
-          selectedFarmId,
-          selectedDeviceType,
-          currentDeviceIndex,
-        );
+        const cached = loadDashboardCache(selectedFarmId, selectedDeviceType, currentDeviceIndex);
         if (cached) {
           setDashboardData(cached.dashboardData);
           setBackendDevices(cached.backendDevices);
           const syncTimestamp = getLastSyncTimestamp();
-          setLastFetchTime(
-            syncTimestamp
-              ? new Date(syncTimestamp)
-              : new Date(cached.timestamp),
-          );
+          setLastFetchTime(syncTimestamp ? new Date(syncTimestamp) : new Date(cached.timestamp));
           setIsCached(true);
           setError(null);
         } else {
@@ -126,9 +107,7 @@ export function useFarmData({
 
       try {
         const [devicesRes, sensorsRes] = await Promise.all([
-          dashboardAPI
-            .getFarmDevices(selectedFarmId)
-            .catch(() => ({ data: null })),
+          dashboardAPI.getFarmDevices(selectedFarmId).catch(() => ({ data: null })),
           sensorsAPI
             .getSensors({ type: selectedDeviceType.toUpperCase() })
             .catch(() => ({ data: null })),
@@ -142,17 +121,12 @@ export function useFarmData({
         const addDevices = (res: any) => {
           if (!res || !res.data) return;
           const data =
-            res.data?.data ||
-            res.data?.devices ||
-            (Array.isArray(res.data) ? res.data : []);
+            res.data?.data || res.data?.devices || (Array.isArray(res.data) ? res.data : []);
           if (Array.isArray(data)) {
             data.forEach((d: any) => {
               if (
                 d &&
-                !devices.some(
-                  (existing: any) =>
-                    (existing.id || existing._id) === (d.id || d._id),
-                )
+                !devices.some((existing: any) => (existing.id || existing._id) === (d.id || d._id))
               ) {
                 devices.push(d);
               }
@@ -164,7 +138,7 @@ export function useFarmData({
 
         // Filter devices matching the selected device type
         const filteredDevices = devices.filter(
-          (d: any) => String(d.type).toUpperCase() === selectedDeviceType.toUpperCase()
+          (d: any) => String(d.type).toUpperCase() === selectedDeviceType.toUpperCase(),
         );
         setBackendDevices(filteredDevices);
 
@@ -172,8 +146,7 @@ export function useFarmData({
         const primaryDevice =
           filteredDevices[currentDeviceIndex % (filteredDevices.length || 1)] || filteredDevices[0];
         const deviceId = primaryDevice?.id || primaryDevice?._id;
-        const serialNumber =
-          primaryDevice?.serialNumber || primaryDevice?.deviceId;
+        const serialNumber = primaryDevice?.serialNumber || primaryDevice?.deviceId;
 
         const now = new Date();
         const todayDate = [
@@ -182,30 +155,21 @@ export function useFarmData({
           String(now.getDate()).padStart(2, "0"),
         ].join("/");
 
-        const [overviewRes, alertsRes, statsRes, latestRes, aiRes] =
-          await Promise.all([
-            dashboardAPI.getDashboardOverview().catch(() => ({ data: null })),
-            dashboardAPI.getAlerts().catch(() => ({ data: null })),
-            hasDevices
-              ? dashboardAPI
-                  .getFarmStatistics(selectedFarmId)
-                  .catch(() => ({ data: null }))
+        const [overviewRes, alertsRes, statsRes, latestRes, aiRes] = await Promise.all([
+          dashboardAPI.getDashboardOverview().catch(() => ({ data: null })),
+          dashboardAPI.getAlerts().catch(() => ({ data: null })),
+          hasDevices
+            ? dashboardAPI.getFarmStatistics(selectedFarmId).catch(() => ({ data: null }))
+            : Promise.resolve({ data: null }),
+          serialNumber
+            ? sensorsAPI.getNestDeviceData(serialNumber, todayDate).catch(() => ({ data: null }))
+            : Promise.resolve({ data: null }),
+          deviceId
+            ? dashboardAPI.getAIInsights(selectedFarmId, deviceId).catch(() => ({ data: null }))
+            : hasDevices
+              ? dashboardAPI.getAIInsights(selectedFarmId).catch(() => ({ data: null }))
               : Promise.resolve({ data: null }),
-            serialNumber
-              ? sensorsAPI
-                  .getNestDeviceData(serialNumber, todayDate)
-                  .catch(() => ({ data: null }))
-              : Promise.resolve({ data: null }),
-            deviceId
-              ? dashboardAPI
-                  .getAIInsights(selectedFarmId, deviceId)
-                  .catch(() => ({ data: null }))
-              : hasDevices
-                ? dashboardAPI
-                    .getAIInsights(selectedFarmId)
-                    .catch(() => ({ data: null }))
-                : Promise.resolve({ data: null }),
-          ]);
+        ]);
 
         const overview = overviewRes?.data?.overview;
         const stats = statsRes?.data?.data || statsRes?.data;
@@ -214,13 +178,11 @@ export function useFarmData({
         let actualSensorId = null;
         try {
           const allSensorsRes = await sensorsAPI.getSensors();
-          const allSensors =
-            allSensorsRes.data?.data || allSensorsRes.data || [];
+          const allSensors = allSensorsRes.data?.data || allSensorsRes.data || [];
           if (allSensors.length > 0) {
             actualSensorId = allSensors[0]._id || allSensors[0].id;
           }
-        } catch (err) {
-        }
+        } catch (err) {}
 
         let sensorLatestData = null;
         const nestResponse = latestRes?.data;
@@ -243,8 +205,7 @@ export function useFarmData({
           };
         }
 
-        const aiDataRaw =
-          aiRes?.data?.data || aiRes?.data?.insights || aiRes?.data;
+        const aiDataRaw = aiRes?.data?.data || aiRes?.data?.insights || aiRes?.data;
         const aiData = Array.isArray(aiDataRaw)
           ? aiDataRaw
           : typeof aiDataRaw === "object" && aiDataRaw !== null
@@ -256,11 +217,7 @@ export function useFarmData({
         if (!sensorLatestData) {
           sensorLatestData = {
             deviceId:
-              serialNumber ||
-              primaryDevice?.id ||
-              primaryDevice?._id ||
-              actualSensorId ||
-              "none",
+              serialNumber || primaryDevice?.id || primaryDevice?._id || actualSensorId || "none",
             sensorId: actualSensorId || "none",
             isOnline: isDeviceOnline,
             timestamp: apiTimestamp,
@@ -286,21 +243,14 @@ export function useFarmData({
         }
 
         const mappedMetrics = FARM_STATUS_METRICS.map((m) => {
-          const liveSolarRadiation =
-            sensorLatestData?.values?.solar_radiation ?? 0;
+          const liveSolarRadiation = sensorLatestData?.values?.solar_radiation ?? 0;
           const liveTemp =
-            sensorLatestData?.values?.temperature ||
-            sensorLatestData?.values?.temperature2 ||
-            0;
+            sensorLatestData?.values?.temperature || sensorLatestData?.values?.temperature2 || 0;
           const liveHumidity =
-            sensorLatestData?.values?.humidity ||
-            sensorLatestData?.values?.humidity2 ||
-            0;
+            sensorLatestData?.values?.humidity || sensorLatestData?.values?.humidity2 || 0;
           const liveWindSpeed = sensorLatestData?.values?.wind_speed;
           const liveLeafWetness =
-            sensorLatestData?.values?.leaf ??
-            aiRes?.data?.raw?.pest?.leaf_wetness_pct ??
-            0;
+            sensorLatestData?.values?.leaf ?? aiRes?.data?.raw?.pest?.leaf_wetness_pct ?? 0;
           const liveO3 = sensorLatestData?.values?.o3 ?? 0;
 
           if (m.id === "solar-radiation") {
@@ -337,9 +287,7 @@ export function useFarmData({
           }
           if (m.id === "leaf-wetness") {
             const val =
-              liveLeafWetness !== undefined && liveLeafWetness !== null
-                ? liveLeafWetness
-                : 0;
+              liveLeafWetness !== undefined && liveLeafWetness !== null ? liveLeafWetness : 0;
             if (val !== undefined && val !== null) return { ...m, value: val };
           }
           return m;
@@ -382,10 +330,7 @@ export function useFarmData({
             totalSensorsCount: 22,
             latestData: hasNoIncomingData ? null : sensorLatestData,
             deviceId:
-              serialNumber ||
-              primaryDevice?.id ||
-              primaryDevice?._id ||
-              sensorLatestData?.deviceId,
+              serialNumber || primaryDevice?.id || primaryDevice?._id || sensorLatestData?.deviceId,
             sensorId:
               actualSensorId ||
               sensorLatestData?.sensorId ||
@@ -405,15 +350,11 @@ export function useFarmData({
                       ? [
                           {
                             title: "Pest Analysis",
-                            value: Math.round(
-                              aiRes.data.raw.pest.pest_risk_score || 0,
-                            ),
+                            value: Math.round(aiRes.data.raw.pest.pest_risk_score || 0),
                             status:
-                              aiRes.data.raw.pest.pest_risk_level?.toUpperCase() ===
-                              "LOW"
+                              aiRes.data.raw.pest.pest_risk_level?.toUpperCase() === "LOW"
                                 ? "Optimal"
-                                : aiRes.data.raw.pest.pest_risk_level?.toUpperCase() ===
-                                    "MODERATE"
+                                : aiRes.data.raw.pest.pest_risk_level?.toUpperCase() === "MODERATE"
                                   ? "Warning"
                                   : "Critical",
                             body:
@@ -427,12 +368,9 @@ export function useFarmData({
                       ? [
                           {
                             title: "Fungal Activity",
-                            value: Math.round(
-                              aiRes.data.raw.fungal_disease.risk_score || 0,
-                            ),
+                            value: Math.round(aiRes.data.raw.fungal_disease.risk_score || 0),
                             status:
-                              aiRes.data.raw.fungal_disease.activity_level?.toUpperCase() ===
-                              "LOW"
+                              aiRes.data.raw.fungal_disease.activity_level?.toUpperCase() === "LOW"
                                 ? "Optimal"
                                 : aiRes.data.raw.fungal_disease.activity_level?.toUpperCase() ===
                                     "MODERATE"
@@ -451,29 +389,23 @@ export function useFarmData({
                           {
                             title: "Irrigation Analysis",
                             value: aiRes.data.raw.irrigation.confidence
-                              ? Math.round(
-                                  aiRes.data.raw.irrigation.confidence * 100,
-                                )
-                              : aiRes.data.raw.irrigation.decision ===
-                                  "no_irrigation"
+                              ? Math.round(aiRes.data.raw.irrigation.confidence * 100)
+                              : aiRes.data.raw.irrigation.decision === "no_irrigation"
                                 ? 100
                                 : Math.max(
                                     0,
                                     100 -
                                       Math.round(
-                                        (aiRes.data.raw.irrigation
-                                          .water_requirement_mm || 0) * 2,
+                                        (aiRes.data.raw.irrigation.water_requirement_mm || 0) * 2,
                                       ),
                                   ),
                             status:
-                              aiRes.data.raw.irrigation.decision ===
-                              "no_irrigation"
+                              aiRes.data.raw.irrigation.decision === "no_irrigation"
                                 ? "Optimal"
                                 : "Warning",
                             body:
                               aiRes.data.raw.irrigation.advisory ||
-                              (aiRes.data.raw.irrigation.decision ===
-                              "no_irrigation"
+                              (aiRes.data.raw.irrigation.decision === "no_irrigation"
                                 ? "Soil moisture is optimal. No irrigation needed."
                                 : `Irrigation recommended: ${aiRes.data.raw.irrigation.water_requirement_mm}mm required.`),
                             icon: "Droplets",
@@ -501,10 +433,7 @@ export function useFarmData({
                 ? (aiRes.data.raw.pest ? 1 : 0) +
                   (aiRes.data.raw.fungal_disease ? 1 : 0) +
                   (aiRes.data.raw.irrigation ? 1 : 0)
-                : aiRes?.data?.cards?.length ||
-                  overview?.activeAlerts ||
-                  alertsData.length ||
-                  0,
+                : aiRes?.data?.cards?.length || overview?.activeAlerts || alertsData.length || 0,
             suggestion: hasNoIncomingData
               ? {
                   title: "No Data",
@@ -530,8 +459,7 @@ export function useFarmData({
               if (!irrigation || hasNoIncomingData)
                 return { percent: "0.0%", total: "0 L", daily: "0 L" };
               const req = irrigation.water_requirement_mm || 0;
-              const areaAcres =
-                parseFloat(primaryDevice?.field?.area || "1") || 1;
+              const areaAcres = parseFloat(primaryDevice?.field?.area || "1") || 1;
               const litres = Math.round(req * 4.047 * areaAcres);
               const dailyLitres = Math.round(litres / 1);
               const saved =
@@ -575,13 +503,11 @@ export function useFarmData({
                           title: "Irrigation",
                           description:
                             aiRes.data.raw.irrigation.advisory ||
-                            (aiRes.data.raw.irrigation.decision ===
-                            "no_irrigation"
+                            (aiRes.data.raw.irrigation.decision === "no_irrigation"
                               ? "No irrigation needed."
                               : `Requires ${aiRes.data.raw.irrigation.water_requirement_mm}mm of water.`),
                           level:
-                            aiRes.data.raw.irrigation.decision ===
-                            "no_irrigation"
+                            aiRes.data.raw.irrigation.decision === "no_irrigation"
                               ? "good"
                               : "warn",
                         },
@@ -596,8 +522,7 @@ export function useFarmData({
                             aiRes.data.raw.fungal_disease.likely_disease ||
                             "Monitor closely for fungal pressure.",
                           level:
-                            aiRes.data.raw.fungal_disease.activity_level?.toLowerCase() ===
-                            "low"
+                            aiRes.data.raw.fungal_disease.activity_level?.toLowerCase() === "low"
                               ? "good"
                               : "warn",
                         },
@@ -611,8 +536,7 @@ export function useFarmData({
                             aiRes.data.raw.pest.recommendation ||
                             `Risk Level: ${aiRes.data.raw.pest.pest_risk_level}. Leaf wetness: ${aiRes.data.raw.pest.leaf_wetness_pct}%.`,
                           level:
-                            aiRes.data.raw.pest.pest_risk_level?.toLowerCase() ===
-                            "low"
+                            aiRes.data.raw.pest.pest_risk_level?.toLowerCase() === "low"
                               ? "good"
                               : "warn",
                         },
@@ -624,10 +548,8 @@ export function useFarmData({
                           title: "Air Quality",
                           description: `AQI: ${Math.round(aiRes.data.raw.aqi.aqi || 0)}${aiRes.data.raw.aqi.dominant_pollutant ? `. Dominant Pollutant: ${aiRes.data.raw.aqi.dominant_pollutant.toUpperCase().replace("_", ".")}` : ""}`,
                           level:
-                            aiRes.data.raw.aqi.aqi_category?.toLowerCase() ===
-                              "low stress" ||
-                            aiRes.data.raw.aqi.aqi_category?.toLowerCase() ===
-                              "optimal"
+                            aiRes.data.raw.aqi.aqi_category?.toLowerCase() === "low stress" ||
+                            aiRes.data.raw.aqi.aqi_category?.toLowerCase() === "optimal"
                               ? "good"
                               : "warn",
                           farmer_advisory: aiRes.data.raw.aqi.farmer_advisory,
@@ -638,10 +560,7 @@ export function useFarmData({
                 ]
               : aiRes?.data?.cards && Array.isArray(aiRes.data.cards)
                 ? aiRes.data.cards
-                    .filter(
-                      (c: any) =>
-                        !c.title?.toLowerCase().includes("farm status"),
-                    )
+                    .filter((c: any) => !c.title?.toLowerCase().includes("farm status"))
                     .map((c: any) => ({
                       title: c.title,
                       description: c.body,
@@ -662,27 +581,17 @@ export function useFarmData({
                 serialNumber: primaryDevice.serialNumber,
                 deviceType: primaryDevice.type?.toLowerCase() || "nest",
                 subtitle: "IoT Field Intelligence Tower",
-                image:
-                  primaryDevice.type?.toLowerCase() === "seed"
-                    ? "/seed.png"
-                    : "/NEST.png",
+                image: primaryDevice.type?.toLowerCase() === "seed" ? "/seed.png" : "/NEST.png",
                 soilType:
-                  primaryDevice.field?.soil?.type ||
-                  primaryDevice.field?.soilType
-                    ? String(
-                        primaryDevice.field?.soil?.type ||
-                          primaryDevice.field?.soilType,
-                      )
+                  primaryDevice.field?.soil?.type || primaryDevice.field?.soilType
+                    ? String(primaryDevice.field?.soil?.type || primaryDevice.field?.soilType)
                         .replace(/_/g, " ")
                         .replace(/\b\w/g, (l) => l.toUpperCase())
                     : "N/A",
-                area: primaryDevice.field?.area
-                  ? `${primaryDevice.field.area} acres`
-                  : "N/A",
+                area: primaryDevice.field?.area ? `${primaryDevice.field.area} acres` : "N/A",
                 location: primaryDevice.farm?.name || "N/A",
                 irrigationType:
-                  primaryDevice.field?.irrigation?.type ||
-                  primaryDevice.field?.irrigationType
+                  primaryDevice.field?.irrigation?.type || primaryDevice.field?.irrigationType
                     ? String(
                         primaryDevice.field?.irrigation?.type ||
                           primaryDevice.field?.irrigationType,
@@ -708,20 +617,12 @@ export function useFarmData({
         setIsCached(false);
         setError(null);
       } catch (err: any) {
-        const cached = loadDashboardCache(
-          selectedFarmId,
-          selectedDeviceType,
-          currentDeviceIndex,
-        );
+        const cached = loadDashboardCache(selectedFarmId, selectedDeviceType, currentDeviceIndex);
         if (cached) {
           setDashboardData(cached.dashboardData);
           setBackendDevices(cached.backendDevices);
           const syncTimestamp = getLastSyncTimestamp();
-          setLastFetchTime(
-            syncTimestamp
-              ? new Date(syncTimestamp)
-              : new Date(cached.timestamp),
-          );
+          setLastFetchTime(syncTimestamp ? new Date(syncTimestamp) : new Date(cached.timestamp));
           setIsCached(true);
           setError(null);
         } else {

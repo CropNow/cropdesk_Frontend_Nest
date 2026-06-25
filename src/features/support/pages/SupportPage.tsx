@@ -107,8 +107,7 @@ export function SupportPage() {
       setFormState({ subject: "", category: "Technical", message: "" });
     } catch (error: any) {
       const errorMsg =
-        error.response?.data?.message ||
-        "Failed to submit support ticket. Please try again.";
+        error.response?.data?.message || "Failed to submit support ticket. Please try again.";
       addToast({ message: errorMsg, type: "error" });
     } finally {
       setIsSubmitting(false);
@@ -136,8 +135,7 @@ export function SupportPage() {
                 Support <span className="text-[#00FF9C] dark:text-accentPrimary">Center</span>
               </h1>
               <p className="max-w-2xl text-lg text-textSecondary">
-                Find answers, troubleshoot your devices, or get in touch with
-                our expert team.
+                Find answers, troubleshoot your devices, or get in touch with our expert team.
               </p>
             </motion.div>
           </div>
@@ -147,20 +145,17 @@ export function SupportPage() {
               {/* Quick Help Section */}
               <section className="space-y-4">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-textPrimary">
-                  <BookOpen className="h-5 w-5 text-accentPrimary" /> Quick Help
-                  Guides
+                  <BookOpen className="h-5 w-5 text-accentPrimary" /> Quick Help Guides
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-3">
                   {TROUBLESHOOTING_GUIDES.map((guide, idx) => (
                     <motion.div
-                       key={guide.title}
-                       initial={{ y: 20, opacity: 0 }}
-                       animate={{ y: 0, opacity: 1 }}
-                       transition={{ delay: idx * 0.1 }}
-                       onClick={() =>
-                         setActiveGuide(activeGuide === idx ? null : idx)
-                       }
-                       className="group cursor-pointer rounded-2xl border border-borderColor bg-bgCard overflow-hidden transition-all hover:border-accentPrimary/50 hover:bg-bgCardHover"
+                      key={guide.title}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: idx * 0.1 }}
+                      onClick={() => setActiveGuide(activeGuide === idx ? null : idx)}
+                      className="group cursor-pointer rounded-2xl border border-borderColor bg-bgCard overflow-hidden transition-all hover:border-accentPrimary/50 hover:bg-bgCardHover"
                     >
                       <div className="p-6">
                         <div className="flex items-center justify-between mb-4">
@@ -171,12 +166,8 @@ export function SupportPage() {
                             className={`h-5 w-5 text-textMuted transition-transform ${activeGuide === idx ? "rotate-180" : ""}`}
                           />
                         </div>
-                        <h3 className="mb-1 font-bold text-textPrimary">
-                          {guide.title}
-                        </h3>
-                        <p className="text-sm text-textSecondary">
-                          {guide.description}
-                        </p>
+                        <h3 className="mb-1 font-bold text-textPrimary">{guide.title}</h3>
+                        <p className="text-sm text-textSecondary">{guide.description}</p>
                       </div>
                       <AnimatePresence>
                         {activeGuide === idx && (
@@ -202,8 +193,7 @@ export function SupportPage() {
               {/* FAQ Section */}
               <section className="space-y-4">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-textPrimary">
-                  <MessageSquare className="h-5 w-5 text-cyan-500" /> Frequently
-                  Asked Questions
+                  <MessageSquare className="h-5 w-5 text-cyan-500" /> Frequently Asked Questions
                 </h2>
                 <div className="space-y-3">
                   {FAQ_DATA.map((faq, idx) => (
@@ -212,14 +202,10 @@ export function SupportPage() {
                       className="overflow-hidden rounded-2xl border border-borderColor bg-bgCard"
                     >
                       <button
-                        onClick={() =>
-                          setActiveFaq(activeFaq === idx ? null : idx)
-                        }
+                        onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
                         className="flex w-full items-center justify-between p-5 text-left transition-colors hover:bg-bgCardHover"
                       >
-                        <span className="font-semibold text-textPrimary">
-                          {faq.question}
-                        </span>
+                        <span className="font-semibold text-textPrimary">{faq.question}</span>
                         <ChevronDown
                           className={`h-5 w-5 text-textMuted transition-transform ${activeFaq === idx ? "rotate-180" : ""}`}
                         />
@@ -250,9 +236,7 @@ export function SupportPage() {
                 className="rounded-3xl border border-borderColor bg-bgCard p-8 backdrop-blur-xl"
               >
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-textPrimary">
-                    Report an Issue
-                  </h2>
+                  <h2 className="text-2xl font-bold text-textPrimary">Report an Issue</h2>
                   <p className="text-sm text-textSecondary">
                     Submit a ticket and we'll get back to you.
                   </p>
@@ -267,9 +251,7 @@ export function SupportPage() {
                     <div className="mb-4 rounded-full bg-[#00FF9C]/20 p-4">
                       <CheckCircle2 className="h-10 w-10 text-[#00FF9C]" />
                     </div>
-                    <h3 className="text-xl font-bold text-textPrimary">
-                      Ticket Submitted!
-                    </h3>
+                    <h3 className="text-xl font-bold text-textPrimary">Ticket Submitted!</h3>
                     <p className="mt-2 text-sm text-textSecondary">
                       Your reference ID is #CN-
                       {Math.floor(Math.random() * 9000) + 1000}
@@ -286,10 +268,7 @@ export function SupportPage() {
                     {!isOnline && (
                       <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs font-semibold text-red-400">
                         <WifiOff className="h-4 w-4" />
-                        <span>
-                          You are currently offline. Ticket submission is
-                          unavailable.
-                        </span>
+                        <span>You are currently offline. Ticket submission is unavailable.</span>
                       </div>
                     )}
                     <div className="space-y-2">
@@ -322,9 +301,7 @@ export function SupportPage() {
                         required
                         disabled={!isOnline}
                         placeholder={
-                          isOnline
-                             ? "E.g. NEST Sensor offline"
-                             : "Offline - please reconnect"
+                          isOnline ? "E.g. NEST Sensor offline" : "Offline - please reconnect"
                         }
                         className="w-full rounded-xl border border-borderColor bg-bgInput p-3 text-sm text-textPrimary placeholder:text-textHint focus:border-accentPrimary/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         value={formState.subject}
@@ -381,16 +358,12 @@ export function SupportPage() {
                 <div className="rounded-2xl border border-borderColor bg-bgCard p-6">
                   <Mail className="mb-3 h-5 w-5 text-cyan-500" />
                   <h4 className="text-sm font-bold text-textPrimary">Email Us</h4>
-                  <p className="text-xs text-textSecondary">
-                    support@cropnow.in
-                  </p>
+                  <p className="text-xs text-textSecondary">support@cropnow.in</p>
                 </div>
                 <div className="rounded-2xl border border-borderColor bg-bgCard p-6">
                   <Phone className="mb-3 h-5 w-5 text-accentPrimary" />
                   <h4 className="text-sm font-bold text-textPrimary">Call Us</h4>
-                  <p className="text-xs text-textSecondary">
-                    +1 (800) 123-4567
-                  </p>
+                  <p className="text-xs text-textSecondary">+1 (800) 123-4567</p>
                 </div>
               </div>
             </div>

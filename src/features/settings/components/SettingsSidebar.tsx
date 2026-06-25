@@ -1,13 +1,6 @@
 import { motion } from "framer-motion";
 import { Card } from "@shared/components/ui/card";
-import {
-  Bell,
-  Lock,
-  Palette,
-  Server,
-  Settings as SettingsIcon,
-  User,
-} from "lucide-react";
+import { Bell, Lock, Palette, Server, Settings as SettingsIcon, User } from "lucide-react";
 import { SETTINGS_TABS, SettingsTab } from "./SettingsLayout";
 
 interface SettingsSidebarProps {
@@ -15,10 +8,7 @@ interface SettingsSidebarProps {
   onTabChange: (tab: SettingsTab) => void;
 }
 
-const TAB_ICONS: Record<
-  SettingsTab,
-  React.ComponentType<{ className?: string }>
-> = {
+const TAB_ICONS: Record<SettingsTab, React.ComponentType<{ className?: string }>> = {
   profile: User,
 
   devices: SettingsIcon,
@@ -28,10 +18,7 @@ const TAB_ICONS: Record<
   system: Server,
 };
 
-export function SettingsSidebar({
-  activeTab,
-  onTabChange,
-}: SettingsSidebarProps) {
+export function SettingsSidebar({ activeTab, onTabChange }: SettingsSidebarProps) {
   return (
     <Card variant="glass" className="p-3 sm:p-4">
       <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-[0.14em] text-textHint">

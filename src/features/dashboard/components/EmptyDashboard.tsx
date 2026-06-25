@@ -26,9 +26,7 @@ export function EmptyDashboard({ currentTime }: EmptyDashboardProps) {
       className={`flex flex-col items-center justify-center rounded-[2.5rem] border border-cardBorder bg-cardBg/40 p-8 text-center backdrop-blur-md ${className}`}
     >
       {children}
-      <h3 className="mt-4 text-2xl font-bold text-textHeading tracking-tight">
-        {title}
-      </h3>
+      <h3 className="mt-4 text-2xl font-bold text-textHeading tracking-tight">{title}</h3>
       <p className="mt-2 text-base text-textSecondary/80">{description}</p>
     </motion.div>
   );

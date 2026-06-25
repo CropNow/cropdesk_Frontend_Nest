@@ -30,9 +30,7 @@ export function SettingsContent({
   return (
     <section className="rounded-2xl border border-cardBorder bg-cardBg p-4 backdrop-blur-xl sm:p-6">
       <div className="mb-4 flex items-center justify-between border-b border-cardBorder pb-3">
-        <h2 className="text-lg font-semibold text-textHeading sm:text-xl">
-          {activeTabLabel}
-        </h2>
+        <h2 className="text-lg font-semibold text-textHeading sm:text-xl">{activeTabLabel}</h2>
       </div>
 
       <AnimatePresence mode="wait">
@@ -101,10 +99,7 @@ export function SettingsContent({
                     device.id === id
                       ? {
                           ...device,
-                          status:
-                            device.status === "Connected"
-                              ? "Offline"
-                              : "Connected",
+                          status: device.status === "Connected" ? "Offline" : "Connected",
                         }
                       : device,
                   ),
@@ -118,9 +113,7 @@ export function SettingsContent({
                   ),
                 }))
               }
-              onDevicesLoad={(devices) =>
-                setSettings((prev) => ({ ...prev, devices }))
-              }
+              onDevicesLoad={(devices) => setSettings((prev) => ({ ...prev, devices }))}
               onSave={() => onSave("devices")}
               isSaving={isSaving}
             />

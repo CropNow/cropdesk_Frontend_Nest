@@ -1,7 +1,7 @@
-import { createContext, useContext, useLayoutEffect, useState, useCallback } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useLayoutEffect, useState, useCallback } from "react";
+import type { ReactNode } from "react";
 
-type Theme = 'light' | 'dark';
+type Theme = "light" | "dark";
 
 interface ThemeContextType {
   theme: Theme;
@@ -9,24 +9,24 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
-const STORAGE_KEY = 'cropdesk_theme';
+const STORAGE_KEY = "cropdesk_theme";
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
 function getStoredTheme(): Theme {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark') return stored;
+    if (stored === "light" || stored === "dark") return stored;
   } catch {}
-  return 'dark';
+  return "dark";
 }
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
-  if (theme === 'dark') {
-    root.classList.add('dark');
+  if (theme === "dark") {
+    root.classList.add("dark");
   } else {
-    root.classList.remove('dark');
+    root.classList.remove("dark");
   }
 }
 
@@ -43,7 +43,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
   return (
@@ -55,6 +55,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useTheme() {
   const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
+  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
   return ctx;
 }

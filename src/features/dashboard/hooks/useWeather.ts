@@ -7,12 +7,7 @@ interface UseWeatherProps {
   isCached: boolean;
 }
 
-export function useWeather({
-  farms,
-  selectedFarmId,
-  isOnline,
-  isCached,
-}: UseWeatherProps) {
+export function useWeather({ farms, selectedFarmId, isOnline, isCached }: UseWeatherProps) {
   const [weatherData, setWeatherData] = useState<any>(null);
   const [locationName, setLocationName] = useState<string>("");
 
@@ -26,13 +21,8 @@ export function useWeather({
         let lon = 77.2;
         let name = "New Delhi, IN";
 
-        const selectedFarm = farms.find(
-          (f) => (f?.id || f?._id) === selectedFarmId,
-        );
-        if (
-          selectedFarm?.location?.latitude &&
-          selectedFarm?.location?.longitude
-        ) {
+        const selectedFarm = farms.find((f) => (f?.id || f?._id) === selectedFarmId);
+        if (selectedFarm?.location?.latitude && selectedFarm?.location?.longitude) {
           lat = parseFloat(selectedFarm.location.latitude);
           lon = parseFloat(selectedFarm.location.longitude);
           name = selectedFarm.location.city
@@ -52,12 +42,8 @@ export function useWeather({
               `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`,
             );
             const geoData = await geoRes.json();
-            name =
-              geoData.city ||
-              geoData.locality ||
-              `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
-          } catch (geoErr) {
-          }
+            name = geoData.city || geoData.locality || `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+          } catch (geoErr) {}
         }
 
         setLocationName(name);
@@ -67,8 +53,7 @@ export function useWeather({
         );
         const weather = await weatherRes.json();
         setWeatherData(weather);
-      } catch (err) {
-      }
+      } catch (err) {}
     };
 
     if (isOnline && navigator.onLine && !isCached && farms.length > 0) {
@@ -95,8 +80,7 @@ export function useWeather({
     }
 
     const farm = farms && farms.length > 0 ? farms[0] : null;
-    const city =
-      farm?.location?.city || farm?.location?.district || farm?.name || "N/A";
+    const city = farm?.location?.city || farm?.location?.district || farm?.name || "N/A";
     const country = farm?.location?.country || "IN";
     return {
       city: city !== "N/A" ? `${city}, ${country}` : "N/A",

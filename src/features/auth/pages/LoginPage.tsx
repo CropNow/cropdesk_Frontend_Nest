@@ -155,7 +155,9 @@ export function LoginPage() {
             {show2FAInput ? "Two-Factor Verification" : "Sign In"}
           </h2>
           <p className="mt-2 text-sm text-textSecondary">
-            {show2FAInput ? "Enter the verification code to secure your account." : "Enter your credentials to access your account."}
+            {show2FAInput
+              ? "Enter the verification code to secure your account."
+              : "Enter your credentials to access your account."}
           </p>
 
           {/* Divider */}
@@ -172,7 +174,8 @@ export function LoginPage() {
             {show2FAInput ? (
               <div className="space-y-4">
                 <p className="text-sm text-textSecondary leading-relaxed">
-                  Two-factor authentication is enabled on your account. Please enter the 6-digit verification code sent to your email to complete sign-in.
+                  Two-factor authentication is enabled on your account. Please enter the 6-digit
+                  verification code sent to your email to complete sign-in.
                 </p>
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-textLabel">
@@ -194,9 +197,7 @@ export function LoginPage() {
               <>
                 {/* Email */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-textLabel">
-                    Email
-                  </label>
+                  <label className="mb-1.5 block text-xs font-medium text-textLabel">Email</label>
                   <input
                     type="email"
                     placeholder="eg. john@example.com"
@@ -227,11 +228,7 @@ export function LoginPage() {
                       onClick={() => setShowPassword((p) => !p)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-textHint transition hover:text-textSecondary"
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
@@ -267,7 +264,13 @@ export function LoginPage() {
                 disabled={isLoading}
                 className="w-full rounded-xl bg-slate-900 dark:bg-white py-3 text-sm font-semibold text-white dark:text-slate-900 transition hover:bg-slate-800 dark:hover:bg-white/90 disabled:opacity-50"
               >
-                {isLoading ? (show2FAInput ? "Verifying..." : "Signing in...") : (show2FAInput ? "Verify & Sign In" : "Sign In")}
+                {isLoading
+                  ? show2FAInput
+                    ? "Verifying..."
+                    : "Signing in..."
+                  : show2FAInput
+                    ? "Verify & Sign In"
+                    : "Sign In"}
               </button>
 
               {show2FAInput && (

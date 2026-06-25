@@ -8,9 +8,9 @@ export interface Alert {
   deviceId?: string;
   title: string;
   description: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  status: 'pending' | 'resolved' | 'dismissed';
-  type: 'sensor_anomaly' | 'device_offline' | 'weather_warning' | 'fis_alert' | 'custom';
+  severity: "low" | "medium" | "high" | "critical";
+  status: "pending" | "resolved" | "dismissed";
+  type: "sensor_anomaly" | "device_offline" | "weather_warning" | "fis_alert" | "custom";
   actionRequired?: boolean;
   metadata?: Record<string, any>;
   createdAt: string;
@@ -23,7 +23,7 @@ export interface FISAlert {
   farmId: string;
   cropType: string;
   disease: string;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  riskLevel: "low" | "medium" | "high" | "critical";
   recommendation: string;
   weatherData: Record<string, any>;
   createdAt: string;

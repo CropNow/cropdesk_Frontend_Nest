@@ -21,9 +21,7 @@ export const getWeatherSummary = () => {
 /**
  * Get status color based on FIS status type
  */
-export const getStatusColor = (
-  status: "Optimal" | "Warning" | "Critical",
-): string => {
+export const getStatusColor = (status: "Optimal" | "Warning" | "Critical"): string => {
   const colors = {
     Optimal: "#00FF9C",
     Warning: "#F59E0B",

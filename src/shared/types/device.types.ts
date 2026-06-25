@@ -6,8 +6,8 @@ export interface Device {
   id: string;
   farmId: string;
   name: string;
-  type: 'weather_station' | 'soil_sensor' | 'camera' | 'irrigation_controller';
-  status: 'active' | 'inactive' | 'error';
+  type: "weather_station" | "soil_sensor" | "camera" | "irrigation_controller";
+  status: "active" | "inactive" | "error";
   location: {
     latitude: number;
     longitude: number;
@@ -22,7 +22,7 @@ export interface Device {
 
 export interface DeviceStatus {
   deviceId: string;
-  status: 'online' | 'offline';
+  status: "online" | "offline";
   lastSync: string;
   batteryLevel?: number;
   signalStrength?: number;

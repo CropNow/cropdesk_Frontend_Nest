@@ -17,17 +17,8 @@ interface ProfileSettingsProps {
 
 type ProfileTab = "user" | "farmer" | "farm" | "field" | "crop";
 
-export function ProfileSettings({
-  values,
-  onChange,
-  onSave,
-  isSaving,
-}: ProfileSettingsProps) {
-  const {
-    fetchProfile,
-    updateProfile,
-    isLoading: isUpdating,
-  } = useProfileSettings();
+export function ProfileSettings({ values, onChange, onSave, isSaving }: ProfileSettingsProps) {
+  const { fetchProfile, updateProfile, isLoading: isUpdating } = useProfileSettings();
   const [activeTab, setActiveTab] = useState<ProfileTab>("user");
 
   useEffect(() => {
@@ -42,8 +33,7 @@ export function ProfileSettings({
             phone: profile.phone || values.phone,
           });
         }
-      } catch (err) {
-      }
+      } catch (err) {}
     };
     loadProfile();
   }, []);

@@ -123,9 +123,7 @@ export function FarmDetailsPanel() {
       setSuccessMsg("");
       await farmsAPI.deleteFarm(selectedFarmId);
 
-      const updatedFarms = farms.filter(
-        (f) => (f.id || f._id) !== selectedFarmId,
-      );
+      const updatedFarms = farms.filter((f) => (f.id || f._id) !== selectedFarmId);
       setFarms(updatedFarms);
 
       if (updatedFarms.length > 0) {
@@ -152,8 +150,7 @@ export function FarmDetailsPanel() {
     }
   };
 
-  if (isLoading)
-    return <div className="p-4 text-textSecondary">Loading farms...</div>;
+  if (isLoading) return <div className="p-4 text-textSecondary">Loading farms...</div>;
 
   return (
     <div className="space-y-6">
@@ -162,15 +159,11 @@ export function FarmDetailsPanel() {
       {farms.length > 0 ? (
         <div className="space-y-4">
           <label className="space-y-2 block">
-            <span className="text-sm font-semibold text-textMuted uppercase">
-              Select Farm
-            </span>
+            <span className="text-sm font-semibold text-textMuted uppercase">Select Farm</span>
             <select
               value={selectedFarmId || ""}
               onChange={(e) => {
-                const farm = farms.find(
-                  (f) => (f.id || f._id) === e.target.value,
-                );
+                const farm = farms.find((f) => (f.id || f._id) === e.target.value);
                 if (farm) handleSelectFarm(farm);
               }}
               className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
@@ -185,26 +178,18 @@ export function FarmDetailsPanel() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                Name *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">Name *</span>
               <input
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                Address Line *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">Address Line *</span>
               <input
                 value={formData.addressLine}
-                onChange={(e) =>
-                  setFormData({ ...formData, addressLine: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, addressLine: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
@@ -212,38 +197,26 @@ export function FarmDetailsPanel() {
 
           <div className="grid gap-4 sm:grid-cols-3">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                City *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">City *</span>
               <input
                 value={formData.city}
-                onChange={(e) =>
-                  setFormData({ ...formData, city: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                State *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">State *</span>
               <input
                 value={formData.state}
-                onChange={(e) =>
-                  setFormData({ ...formData, state: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                Country *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">Country *</span>
               <input
                 value={formData.country}
-                onChange={(e) =>
-                  setFormData({ ...formData, country: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
@@ -251,26 +224,18 @@ export function FarmDetailsPanel() {
 
           <div className="grid gap-4 sm:grid-cols-3">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                Zipcode *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">Zipcode *</span>
               <input
                 value={formData.zipcode}
-                onChange={(e) =>
-                  setFormData({ ...formData, zipcode: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, zipcode: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                Soil Type *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">Soil Type *</span>
               <select
                 value={formData.soilType}
-                onChange={(e) =>
-                  setFormData({ ...formData, soilType: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, soilType: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               >
                 <option value="red_soil">Red Soil</option>
@@ -288,9 +253,7 @@ export function FarmDetailsPanel() {
               </span>
               <select
                 value={formData.irrigationType}
-                onChange={(e) =>
-                  setFormData({ ...formData, irrigationType: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, irrigationType: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               >
                 <option value="Drip">Drip</option>
@@ -303,14 +266,10 @@ export function FarmDetailsPanel() {
 
           <div className="grid gap-4 sm:grid-cols-1">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                Farming Type *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">Farming Type *</span>
               <select
                 value={formData.farmingType}
-                onChange={(e) =>
-                  setFormData({ ...formData, farmingType: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, farmingType: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               >
                 <option value="conventional">Conventional</option>
@@ -321,9 +280,7 @@ export function FarmDetailsPanel() {
           </div>
 
           {error && <p className="text-sm text-rose-300">{error}</p>}
-          {successMsg && (
-            <p className="text-sm text-emerald-400">{successMsg}</p>
-          )}
+          {successMsg && <p className="text-sm text-emerald-400">{successMsg}</p>}
 
           <div className="flex justify-between items-center mt-4">
             <motion.button

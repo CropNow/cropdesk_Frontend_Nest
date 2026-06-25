@@ -1,4 +1,4 @@
-import { WifiOff, RefreshCw } from 'lucide-react';
+import { WifiOff, RefreshCw } from "lucide-react";
 
 interface OfflineFallbackProps {
   title?: string;
@@ -7,9 +7,9 @@ interface OfflineFallbackProps {
 }
 
 export function OfflineFallback({
-  title = 'Connection Lost',
-  description = 'You are currently offline. Please check your internet connection and try again.',
-  onRetry
+  title = "Connection Lost",
+  description = "You are currently offline. Please check your internet connection and try again.",
+  onRetry,
 }: OfflineFallbackProps) {
   const handleRetry = () => {
     if (onRetry) {
@@ -31,9 +31,7 @@ export function OfflineFallback({
       <h3 className="mb-2 text-xl font-bold tracking-tight text-textHeading sm:text-2xl">
         {title}
       </h3>
-      <p className="mb-8 max-w-md text-sm text-textSecondary">
-        {description}
-      </p>
+      <p className="mb-8 max-w-md text-sm text-textSecondary">{description}</p>
       <button
         onClick={handleRetry}
         className="inline-flex items-center gap-2 rounded-xl bg-accentPrimary px-6 py-3 text-sm font-semibold text-black transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"

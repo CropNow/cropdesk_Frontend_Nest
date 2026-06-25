@@ -11,11 +11,9 @@ import { CachedDataBadge } from "@shared/components/CachedDataBadge";
 // Defer below-the-fold sections so above-the-fold (Welcome + Device + FarmHealth)
 // can paint without waiting for these chunks.
 const SensorCategoriesSection = lazy(() =>
-  import("@features/dashboard/components/SensorCategoriesSection").then(
-    (m) => ({
-      default: m.SensorCategoriesSection,
-    }),
-  ),
+  import("@features/dashboard/components/SensorCategoriesSection").then((m) => ({
+    default: m.SensorCategoriesSection,
+  })),
 );
 const FISAlertSection = lazy(() =>
   import("@features/dashboard/components/FISAlertSection").then((m) => ({
@@ -57,8 +55,7 @@ export function DashboardPage() {
     selectedFarmId,
   } = useDashboardState();
 
-  const showEmptyDashboard =
-    !isLoading && (!farms?.length || !backendDevices?.length);
+  const showEmptyDashboard = !isLoading && (!farms?.length || !backendDevices?.length);
 
   if (isLoading) {
     return <LoadingSkeleton />;
@@ -105,16 +102,18 @@ export function DashboardPage() {
 
       <section className="grid gap-6 xl:grid-cols-5">
         <Suspense fallback={<SectionFallback />}>
-          <SensorCategoriesSection
-            data={dashboardData?.sensors}
-            lastFetchTime={lastFetchTime}
-          />
+          <SensorCategoriesSection data={dashboardData?.sensors} lastFetchTime={lastFetchTime} />
         </Suspense>
         <Suspense fallback={<SectionFallback />}>
           <FISAlertSection
             data={dashboardData?.alerts}
             farmId={selectedFarmId || undefined}
-            sensorId={dashboardData?.sensors?.sensorId || currentDevice?.id || currentDevice?._id || undefined}
+            sensorId={
+              dashboardData?.sensors?.sensorId ||
+              currentDevice?.id ||
+              currentDevice?._id ||
+              undefined
+            }
           />
         </Suspense>
       </section>

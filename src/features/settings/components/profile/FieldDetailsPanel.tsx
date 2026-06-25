@@ -51,17 +51,13 @@ export function FieldDetailsPanel() {
       try {
         const res = await dashboardAPI.getFarmDevices(selectedFarmId);
         const data =
-          res.data?.data ||
-          res.data?.devices ||
-          (Array.isArray(res.data) ? res.data : []);
+          res.data?.data || res.data?.devices || (Array.isArray(res.data) ? res.data : []);
         const extractedFields: any[] = [];
         if (Array.isArray(data)) {
           data.forEach((d) => {
             if (
               d.field &&
-              !extractedFields.some(
-                (f) => (f.id || f._id) === (d.field.id || d.field._id),
-              )
+              !extractedFields.some((f) => (f.id || f._id) === (d.field.id || d.field._id))
             ) {
               extractedFields.push(d.field);
             }
@@ -73,8 +69,7 @@ export function FieldDetailsPanel() {
         } else {
           setSelectedFieldId(null);
         }
-      } catch (err) {
-      }
+      } catch (err) {}
     };
     fetchFields();
   }, [selectedFarmId]);
@@ -140,9 +135,7 @@ export function FieldDetailsPanel() {
       setSuccessMsg("");
       await fieldsAPI.deleteField(selectedFieldId);
 
-      const updatedFields = fields.filter(
-        (f) => (f.id || f._id) !== selectedFieldId,
-      );
+      const updatedFields = fields.filter((f) => (f.id || f._id) !== selectedFieldId);
       setFields(updatedFields);
 
       if (updatedFields.length > 0) {
@@ -165,8 +158,7 @@ export function FieldDetailsPanel() {
     }
   };
 
-  if (isLoading)
-    return <div className="p-4 text-textSecondary">Loading...</div>;
+  if (isLoading) return <div className="p-4 text-textSecondary">Loading...</div>;
 
   return (
     <div className="space-y-6">
@@ -174,9 +166,7 @@ export function FieldDetailsPanel() {
 
       {farms.length > 0 && (
         <label className="space-y-2 block">
-          <span className="text-sm font-semibold text-textMuted uppercase">
-            Select Farm
-          </span>
+          <span className="text-sm font-semibold text-textMuted uppercase">Select Farm</span>
           <select
             value={selectedFarmId || ""}
             onChange={(e) => setSelectedFarmId(e.target.value)}
@@ -194,24 +184,17 @@ export function FieldDetailsPanel() {
       {fields.length > 0 ? (
         <div className="space-y-4 pt-4 border-t border-cardBorder">
           <label className="space-y-2 block">
-            <span className="text-sm font-semibold text-textMuted uppercase">
-              Select Field
-            </span>
+            <span className="text-sm font-semibold text-textMuted uppercase">Select Field</span>
             <select
               value={selectedFieldId || ""}
               onChange={(e) => {
-                const field = fields.find(
-                  (f) => (f.id || f._id) === e.target.value,
-                );
+                const field = fields.find((f) => (f.id || f._id) === e.target.value);
                 if (field) handleSelectField(field);
               }}
               className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
             >
               {fields.map((field) => (
-                <option
-                  key={field.id || field._id}
-                  value={field.id || field._id}
-                >
+                <option key={field.id || field._id} value={field.id || field._id}>
                   {field.name || `Field ${field.id || field._id}`}
                 </option>
               ))}
@@ -220,14 +203,10 @@ export function FieldDetailsPanel() {
 
           <div className="grid gap-4 sm:grid-cols-1">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                Field Name *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">Field Name *</span>
               <input
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
@@ -235,16 +214,12 @@ export function FieldDetailsPanel() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                Area *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">Area *</span>
               <input
                 placeholder="Area (e.g. 5)"
                 type="number"
                 value={formData.area}
-                onChange={(e) =>
-                  setFormData({ ...formData, area: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, area: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               />
             </label>
@@ -254,9 +229,7 @@ export function FieldDetailsPanel() {
               </span>
               <select
                 value={formData.boundaryType}
-                onChange={(e) =>
-                  setFormData({ ...formData, boundaryType: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, boundaryType: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               >
                 <option value="Polygon">Polygon</option>
@@ -271,22 +244,17 @@ export function FieldDetailsPanel() {
                 Field Location (Draw Shape) *
               </span>
               <div className="h-64 w-full rounded-xl border border-cardBorder bg-cardBg/50 flex items-center justify-center text-textSecondary text-sm">
-                Map View: Field boundaries are edited in the main Dashboard map
-                view.
+                Map View: Field boundaries are edited in the main Dashboard map view.
               </div>
             </label>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-textMuted uppercase">
-                Soil Type *
-              </span>
+              <span className="text-sm font-semibold text-textMuted uppercase">Soil Type *</span>
               <select
                 value={formData.soilType}
-                onChange={(e) =>
-                  setFormData({ ...formData, soilType: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, soilType: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               >
                 <option value="red_soil">Red Soil</option>
@@ -304,9 +272,7 @@ export function FieldDetailsPanel() {
               </span>
               <select
                 value={formData.irrigationType}
-                onChange={(e) =>
-                  setFormData({ ...formData, irrigationType: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, irrigationType: e.target.value })}
                 className="w-full rounded-xl border border-cardBorder bg-bgInput px-3 py-2 text-sm text-textHeading outline-none transition focus:border-accentPrimary/60"
               >
                 <option value="Drip">Drip</option>
@@ -318,9 +284,7 @@ export function FieldDetailsPanel() {
           </div>
 
           {error && <p className="text-sm text-rose-300">{error}</p>}
-          {successMsg && (
-            <p className="text-sm text-emerald-400">{successMsg}</p>
-          )}
+          {successMsg && <p className="text-sm text-emerald-400">{successMsg}</p>}
 
           <div className="flex justify-between items-center mt-4">
             <motion.button

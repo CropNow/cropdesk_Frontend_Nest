@@ -12,12 +12,9 @@ export function useDashboardState() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const deviceFromQuery = searchParams.get("device");
-  const initialType: DeviceType = isDeviceType(deviceFromQuery)
-    ? deviceFromQuery
-    : "nest";
+  const initialType: DeviceType = isDeviceType(deviceFromQuery) ? deviceFromQuery : "nest";
 
-  const [selectedDeviceType, setSelectedDeviceType] =
-    useState<DeviceType>(initialType);
+  const [selectedDeviceType, setSelectedDeviceType] = useState<DeviceType>(initialType);
   const [currentDeviceIndex, setCurrentDeviceIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
 
