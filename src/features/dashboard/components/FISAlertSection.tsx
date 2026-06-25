@@ -79,19 +79,16 @@ export function FISAlertSection({
         type: "success",
       });
     } catch (err: any) {
-      console.error("CSV Export Failed:", err);
       let errorMessage = "Failed to export predictions CSV. Please try again.";
 
       if (err.response?.data instanceof Blob) {
         try {
           const text = await err.response.data.text();
-          console.error("Backend Error Blob Content:", text);
           const json = JSON.parse(text);
           if (json.message) {
             errorMessage = json.message;
           }
         } catch (parseErr) {
-          console.error("Failed to parse error blob:", parseErr);
         }
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
@@ -118,7 +115,6 @@ export function FISAlertSection({
         type: "success",
       });
     } catch (err: any) {
-      console.error("Email report failed:", err);
       addToast({
         message: err.response?.data?.message || "Failed to email predictions report. Please try again.",
         type: "error",
@@ -198,7 +194,6 @@ export function FISAlertSection({
         30 * 60 * 1000,
       );
     } catch (error) {
-      console.error("Failed to acknowledge alert:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -369,6 +364,7 @@ export function FISAlertSection({
                 {isViewableCard && (
                   <button
                     onClick={() => setSelectedCard(card)}
+                    aria-label={`View more details for ${card.title || 'alert'}`}
                     className="w-full rounded-lg border border-borderColor bg-bgCardHover/60 px-3 py-2 text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-textSecondary transition-all hover:bg-bgCardHover hover:text-textPrimary hover:border-borderColor"
                   >
                     View More

@@ -6,7 +6,6 @@ import {
   Palette,
   Server,
   Settings as SettingsIcon,
-  Tractor,
   User,
 } from "lucide-react";
 import { SETTINGS_TABS, SettingsTab } from "./SettingsLayout";

@@ -35,23 +35,15 @@ export function useFarmData({
   useEffect(() => {
     const initFarms = async () => {
       if (!isOnline || !navigator.onLine) {
-        console.log(
-          "[Offline Mode Active] Initial load: getting farms from cache",
-        );
         const { farms: cachedFarms, selectedFarmId: cachedFarmId } =
           loadFarmsCache();
         if (cachedFarms.length > 0) {
-          console.log(
-            "[Cache Loaded] Loaded cached farms. Setting selectedFarmId to:",
-            cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id,
-          );
           setFarms(cachedFarms);
           setSelectedFarmId(
             cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id,
           );
           setIsCached(true);
         } else {
-          console.log("[Offline Mode Active] No cached farms found.");
           setIsLoading(false);
         }
         return;
@@ -76,22 +68,13 @@ export function useFarmData({
           const firstFarmId = firstFarm.id || firstFarm._id;
           setSelectedFarmId(firstFarmId);
           saveFarmsCache(farmsList, firstFarmId);
-          console.log("[Cache Saved] Saved farms list to cache.");
         } else {
           setIsLoading(false);
         }
       } catch (err: any) {
-        console.error("Farms Fetch Error, attempting cache fallback:", err);
-        console.log(
-          "[Offline Mode Active] Farms Fetch Error. Using cache fallback...",
-        );
         const { farms: cachedFarms, selectedFarmId: cachedFarmId } =
           loadFarmsCache();
         if (cachedFarms.length > 0) {
-          console.log(
-            "[Cache Loaded] Loaded cached farms. Setting selectedFarmId to:",
-            cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id,
-          );
           setFarms(cachedFarms);
           setSelectedFarmId(
             cachedFarmId || cachedFarms[0].id || cachedFarms[0]._id,
@@ -115,19 +98,12 @@ export function useFarmData({
       setIsLoading(true);
 
       if (!isOnline || !navigator.onLine) {
-        console.log(
-          `[Offline Mode Active] Fetching farm data from cache for farm: ${selectedFarmId}, deviceType: ${selectedDeviceType}, index: ${currentDeviceIndex}`,
-        );
         const cached = loadDashboardCache(
           selectedFarmId,
           selectedDeviceType,
           currentDeviceIndex,
         );
         if (cached) {
-          console.log("[Cache Loaded] Using cached dashboard data.");
-          console.log(
-            "[Using cached dashboard data] Successfully loaded dashboard state.",
-          );
           setDashboardData(cached.dashboardData);
           setBackendDevices(cached.backendDevices);
           const syncTimestamp = getLastSyncTimestamp();
@@ -139,9 +115,6 @@ export function useFarmData({
           setIsCached(true);
           setError(null);
         } else {
-          console.log(
-            "[Offline Mode Active] No cached dashboard data found. Falling back to Empty Dashboard.",
-          );
           setDashboardData(null);
           setBackendDevices([]);
           setLastFetchTime(null);
@@ -247,7 +220,6 @@ export function useFarmData({
             actualSensorId = allSensors[0]._id || allSensors[0].id;
           }
         } catch (err) {
-          console.error("Failed to fetch sensors", err);
         }
 
         let sensorLatestData = null;
@@ -732,30 +704,16 @@ export function useFarmData({
           finalDashboardData,
           filteredDevices,
         );
-        console.log(
-          `[Cache Saved] Saved dashboard data to cache for farm: ${selectedFarmId}, deviceType: ${selectedDeviceType}, index: ${currentDeviceIndex}`,
-        );
         setLastFetchTime(new Date());
         setIsCached(false);
         setError(null);
       } catch (err: any) {
-        console.error(
-          "Dashboard Data Fetch Error, attempting cache fallback:",
-          err,
-        );
-        console.log(
-          "[Offline Mode Active] Dashboard Data Fetch Error. Using cache fallback...",
-        );
         const cached = loadDashboardCache(
           selectedFarmId,
           selectedDeviceType,
           currentDeviceIndex,
         );
         if (cached) {
-          console.log("[Cache Loaded] Using cached dashboard data.");
-          console.log(
-            "[Using cached dashboard data] Successfully loaded dashboard state.",
-          );
           setDashboardData(cached.dashboardData);
           setBackendDevices(cached.backendDevices);
           const syncTimestamp = getLastSyncTimestamp();

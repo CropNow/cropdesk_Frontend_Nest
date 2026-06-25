@@ -101,7 +101,6 @@ export function SecuritySettings({
       setDeleteConfirmationText("");
       logout();
     } catch (err: any) {
-      console.error("Failed to delete account:", err);
       const errMsg = err.response?.data?.message || err.message || "Failed to delete account. Please try again.";
       addToast({
         message: errMsg,
@@ -119,7 +118,6 @@ export function SecuritySettings({
         onChange({ twoFactorEnabled: false });
         addToast({ message: "Two-factor authentication disabled successfully!", type: "success" });
       } catch (err: any) {
-        console.error("Failed to disable 2FA:", err);
         const errMsg = err.response?.data?.message || err.message || "Failed to disable 2FA. Please try again.";
         addToast({ message: errMsg, type: "error" });
       }
@@ -133,7 +131,6 @@ export function SecuritySettings({
       await authAPI.generate2FA();
       addToast({ message: "A verification code has been sent to your email.", type: "success" });
     } catch (err: any) {
-      console.error("Failed to generate 2FA secret:", err);
       addToast({ message: "Failed to initiate 2FA setup. Please try again.", type: "error" });
       setIs2FAModalOpen(false);
     } finally {
@@ -153,7 +150,6 @@ export function SecuritySettings({
       setIs2FAModalOpen(false);
       addToast({ message: "Two-factor authentication enabled successfully!", type: "success" });
     } catch (err: any) {
-      console.error("Failed to verify 2FA code:", err);
       const errMsg = err.response?.data?.message || err.message || "Invalid code. Please try again.";
       addToast({ message: errMsg, type: "error" });
     } finally {
@@ -168,7 +164,6 @@ export function SecuritySettings({
         const profile = response.data;
         onChange({ twoFactorEnabled: !!profile?.isTwoFactorEnabled });
       } catch (err) {
-        console.error("Failed to fetch user security profile:", err);
       }
     };
 
@@ -183,7 +178,6 @@ export function SecuritySettings({
           setSessions(data);
         }
       } catch (err) {
-        console.error("Failed to fetch active sessions:", err);
       } finally {
         setIsLoadingSessions(false);
       }
@@ -248,7 +242,6 @@ export function SecuritySettings({
       setSuccess("All other sessions terminated successfully.");
       onLogoutAll();
     } catch (err: any) {
-      console.error("Failed to logout all devices:", err);
       setError(
         err.response?.data?.message ||
           "Failed to logout from other devices. Please try again.",
@@ -273,7 +266,6 @@ export function SecuritySettings({
       );
       addToast({ message: "Device logged out successfully.", type: "success" });
     } catch (err: any) {
-      console.error("Failed to log out device:", err);
       addToast({
         message: "Failed to log out device. Please try again.",
         type: "error",

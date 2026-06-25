@@ -146,7 +146,6 @@ export function FarmDetailsPanel() {
       }
       setSuccessMsg("Farm deleted successfully.");
     } catch (err: any) {
-      console.error(err);
       setError("Failed to delete farm.");
     } finally {
       setIsSaving(false);

@@ -148,7 +148,6 @@ export function DeviceLogsPage() {
 
       setLogs(logsData);
     } catch (error) {
-      console.error("Failed to fetch device logs:", error);
     } finally {
       setIsLoading(false);
     }

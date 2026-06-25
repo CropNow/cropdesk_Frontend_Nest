@@ -76,7 +76,6 @@ export function CropDetailsPanel() {
           setSelectedCropId(null);
         }
       } catch (err) {
-        console.error("Failed to fetch crops", err);
       }
     };
     fetchCrops();
@@ -160,7 +159,6 @@ export function CropDetailsPanel() {
       }
       setSuccessMsg("Crop deleted successfully.");
     } catch (err: any) {
-      console.error(err);
       setError("Failed to delete crop.");
     } finally {
       setIsSaving(false);

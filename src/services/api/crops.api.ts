@@ -3,11 +3,26 @@
  */
 import apiClient from "./apiClient";
 
+export interface CreateCropData {
+  fieldId: string;
+  name: string;
+  plantingDate: string;
+  expectedHarvestDate: string;
+  area: number;
+}
+
+export interface UpdateCropData {
+  name?: string;
+  plantingDate?: string;
+  expectedHarvestDate?: string;
+  area?: number;
+}
+
 export const cropsAPI = {
   /**
    * Create a new crop
    */
-  createCrop: (data: any) => apiClient.post("/crops", data),
+  createCrop: (data: CreateCropData) => apiClient.post("/crops", data),
 
   /**
    * Get crop by ID
@@ -17,7 +32,8 @@ export const cropsAPI = {
   /**
    * Update crop
    */
-  updateCrop: (id: string, data: any) => apiClient.patch(`/crops/${id}`, data),
+  updateCrop: (id: string, data: UpdateCropData) =>
+    apiClient.patch(`/crops/${id}`, data),
 
   /**
    * Delete crop

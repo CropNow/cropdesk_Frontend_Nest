@@ -12,6 +12,21 @@ dist
 dist-ssr
 *.local
 
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Secrets and keys
+*.pem
+*.key
+*.p12
+secrets/
+
+# Build/scratch artifacts
+scratch/
+graphify-out/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

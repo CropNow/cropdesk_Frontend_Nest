@@ -152,7 +152,6 @@ const MapUIControls = ({
           );
         },
         (err) => {
-          console.error("Geolocation error:", err);
           let errorMsg = "Unable to get location.";
           if (err.code === 1)
             errorMsg =
@@ -305,7 +304,6 @@ export function DeviceSettings({
         onDevicesLoad(mappedDevices);
       }
     } catch (err) {
-      console.error("Failed to load devices:", err);
     }
   };
 
@@ -550,7 +548,6 @@ export function DeviceSettings({
       }
     } catch (err) {
       setError("Failed to save data. Please try again.");
-      console.error("Wizard error:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -586,8 +583,6 @@ export function DeviceSettings({
         manufacturer: wizardData.manufacturer.trim() || "GGSPL",
       };
 
-      console.log("Final Sensor Payload:", JSON.stringify(payload, null, 2));
-
       await sensorsAPI.createSensor(payload);
 
       onAdd({
@@ -612,7 +607,6 @@ export function DeviceSettings({
       }, 1500);
     } catch (err) {
       setError("Failed to create device. Please try again.");
-      console.error("Submit wizard error:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -651,7 +645,6 @@ export function DeviceSettings({
       setError(
         "Failed to save changes. Please check your connection and try again.",
       );
-      console.error("Save error:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -679,7 +672,6 @@ export function DeviceSettings({
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {
       setError("Failed to delete device. Please try again.");
-      console.error("Delete error:", err);
     } finally {
       setIsSubmitting(false);
     }

@@ -8,6 +8,12 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <main className="relative min-h-screen overflow-hidden bg-bgMain px-4 pb-10 pt-8 text-textHeading sm:px-6 lg:pl-28 lg:pr-10">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-lg focus:bg-accentPrimary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black"
+      >
+        Skip to content
+      </a>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -18,7 +24,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl" />
       </motion.div>
 
-      <div className="relative z-10 mx-auto max-w-[1500px] space-y-6">
+      <div id="main-content" className="relative z-10 mx-auto max-w-[1500px] space-y-6">
         {children}
       </div>
     </main>

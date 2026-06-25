@@ -43,10 +43,6 @@ export const newsAPI = {
       }
       throw new Error("Invalid response format");
     } catch (error) {
-      console.warn(
-        "Backend news API failed or not implemented. Falling back to localized news generation.",
-        error,
-      );
       return newsAPI.generateFallbackNews(location.district, location.state);
     }
   },

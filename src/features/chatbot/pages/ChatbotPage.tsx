@@ -44,16 +44,13 @@ export function ChatbotPage() {
     setMessages([...messages, userMessage]);
     setInput("");
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: messages.length + 2,
-        text: "I'm currently processing that request. I can help you analyze soil moisture trends, pest risks, or irrigation schedules. Which would you like to dive into?",
-        sender: "bot",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-    }, 1000);
+    const botMessage: Message = {
+      id: messages.length + 2,
+      text: "The AI backend is not connected yet. This is a placeholder interface. Farm analytics integration coming soon.",
+      sender: "bot",
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, botMessage]);
   };
 
   return (
@@ -146,6 +143,7 @@ export function ChatbotPage() {
               <button
                 type="submit"
                 disabled={!input.trim() || !isOnline}
+                aria-label="Send message"
                 className="inline-flex h-[46px] w-[46px] items-center justify-center rounded-xl bg-accentPrimary text-black transition hover:bg-accentPrimary/80 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="h-5 w-5" />

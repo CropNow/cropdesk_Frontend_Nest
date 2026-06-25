@@ -19,9 +19,6 @@ export function useWeather({
   useEffect(() => {
     const fetchWeather = async () => {
       if (!isOnline || !navigator.onLine || isCached) {
-        console.log(
-          "[Offline Mode Active] Skipping weather fetch while offline/using cache.",
-        );
         return;
       }
       try {
@@ -60,7 +57,6 @@ export function useWeather({
               geoData.locality ||
               `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
           } catch (geoErr) {
-            console.warn("Geolocation failed, using default", geoErr);
           }
         }
 
@@ -72,7 +68,6 @@ export function useWeather({
         const weather = await weatherRes.json();
         setWeatherData(weather);
       } catch (err) {
-        console.error("Weather Fetch Error:", err);
       }
     };
 

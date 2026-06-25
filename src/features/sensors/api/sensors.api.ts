@@ -3,12 +3,53 @@
  */
 
 import apiClient from "@services/api/apiClient";
+import type { SensorCalibration } from "@shared/types/sensor.types";
+
+export interface GetSensorsParams {
+  fieldId?: string;
+}
+
+export interface HistoricalDataParams {
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AggregatedDataParams {
+  range?: string;
+  aggregation?: string;
+  metric?: string;
+}
+
+export interface CreateSensorData {
+  name: string;
+  type: string;
+  fieldId: string;
+  unit: string;
+  serialNumber: string;
+  manufacturer?: string;
+}
+
+export type UpdateSensorData = Partial<Pick<CreateSensorData, "name" | "type" | "unit" | "serialNumber" | "manufacturer">>;
+
+export type UpdateCalibrationData = Partial<
+  Pick<SensorCalibration, "offset" | "scale" | "notes">
+>;
+
+export interface ExportDataParams {
+  sensorId: string;
+  format: string;
+  range?: string;
+  email?: boolean;
+}
 
 export const sensorsAPI = {
   /**
    * Get all sensors
    */
-  getSensors: (params?: any) => apiClient.get("/sensors", { params }),
+  getSensors: (params?: GetSensorsParams) =>
+    apiClient.get("/sensors", { params }),
 
   /**
    * Get all sensors
@@ -29,7 +70,7 @@ export const sensorsAPI = {
   /**
    * Get historical readings (supports filters)
    */
-  getHistoricalData: (params?: any) =>
+  getHistoricalData: (params?: HistoricalDataParams) =>
     apiClient.get("/sensor-data", { params }),
 
   /**
@@ -40,7 +81,7 @@ export const sensorsAPI = {
   /**
    * Get historical data for a specific sensor
    */
-  getSensorData: (sensorId: string, params?: any) =>
+  getSensorData: (sensorId: string, params?: HistoricalDataParams) =>
     apiClient.get(`/sensor-data/sensors/${sensorId}`, { params }),
 
   /**
@@ -52,7 +93,7 @@ export const sensorsAPI = {
   /**
    * Get min/max/avg over time
    */
-  getAggregatedData: (sensorId: string, params?: any) =>
+  getAggregatedData: (sensorId: string, params?: AggregatedDataParams) =>
     apiClient.get(`/sensor-data/sensors/${sensorId}/aggregate`, { params }),
 
   /**
@@ -64,23 +105,24 @@ export const sensorsAPI = {
   /**
    * Update sensor calibration
    */
-  updateSensorCalibration: (deviceId: string, data: any) =>
+  updateSensorCalibration: (deviceId: string, data: UpdateCalibrationData) =>
     apiClient.patch(`/sensors/${deviceId}/calibration`, data),
 
   /**
    * Create a new sensor
    */
-  createSensor: (data: any) => apiClient.post("/sensors", data),
+  createSensor: (data: CreateSensorData) => apiClient.post("/sensors", data),
 
   /**
    * Export sensor data
    */
-  exportData: (params: any) => apiClient.get("/sensor-data/export", { params }),
+  exportData: (params: ExportDataParams) =>
+    apiClient.get("/sensor-data/export", { params }),
 
   /**
    * Update a sensor
    */
-  updateSensor: (sensorId: string, data: any) =>
+  updateSensor: (sensorId: string, data: UpdateSensorData) =>
     apiClient.patch(`/sensors/${sensorId}`, data),
 
   /**

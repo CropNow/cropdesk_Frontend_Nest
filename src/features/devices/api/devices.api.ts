@@ -3,6 +3,14 @@
  */
 
 import apiClient from "@services/api/apiClient";
+import { Device } from "@shared/types/device.types";
+
+export type UpdateDeviceData = Partial<
+  Pick<Device, "name" | "type" | "location" | "status">
+>;
+
+export type AddDeviceData = Pick<Device, "name" | "type" | "location"> &
+  Partial<Pick<Device, "batteryLevel" | "signalStrength">>;
 
 export const devicesAPI = {
   /**
@@ -18,7 +26,7 @@ export const devicesAPI = {
   /**
    * Update device configuration
    */
-  updateDevice: (deviceId: string, data: any) =>
+  updateDevice: (deviceId: string, data: UpdateDeviceData) =>
     apiClient.patch(`/devices/${deviceId}`, data),
 
   /**
@@ -35,6 +43,6 @@ export const devicesAPI = {
   /**
    * Add new device to farm
    */
-  addDevice: (farmId: string, data: any) =>
+  addDevice: (farmId: string, data: AddDeviceData) =>
     apiClient.post(`/devices/farm/${farmId}`, data),
 };

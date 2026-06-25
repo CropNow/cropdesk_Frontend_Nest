@@ -4,6 +4,11 @@
  */
 
 import apiClient from "@services/api/apiClient";
+import type { AppearanceSettings, SecuritySettings } from "@shared/types/settings.types";
+
+export interface IntegrationCredentials {
+  [key: string]: unknown;
+}
 
 export const settingsAPI = {
   /**
@@ -14,7 +19,7 @@ export const settingsAPI = {
   /**
    * Update appearance settings (theme, language, etc.)
    */
-  updateAppearanceSettings: (data: any) =>
+  updateAppearanceSettings: (data: Partial<AppearanceSettings>) =>
     apiClient.patch("/settings/appearance", data),
 
   /**
@@ -25,7 +30,7 @@ export const settingsAPI = {
   /**
    * Update security settings
    */
-  updateSecuritySettings: (data: any) =>
+  updateSecuritySettings: (data: Partial<SecuritySettings>) =>
     apiClient.patch("/settings/security", data),
 
   /**
@@ -41,7 +46,7 @@ export const settingsAPI = {
   /**
    * Connect external integration
    */
-  connectIntegration: (integrationType: string, credentials: any) =>
+  connectIntegration: (integrationType: string, credentials: IntegrationCredentials) =>
     apiClient.post(`/settings/integrations/${integrationType}`, credentials),
 
   /**

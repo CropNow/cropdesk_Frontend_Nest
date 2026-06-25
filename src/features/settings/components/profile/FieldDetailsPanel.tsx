@@ -74,7 +74,6 @@ export function FieldDetailsPanel() {
           setSelectedFieldId(null);
         }
       } catch (err) {
-        console.error("Failed to fetch fields", err);
       }
     };
     fetchFields();
@@ -160,7 +159,6 @@ export function FieldDetailsPanel() {
       }
       setSuccessMsg("Field deleted successfully.");
     } catch (err: any) {
-      console.error(err);
       setError("Failed to delete field.");
     } finally {
       setIsSaving(false);

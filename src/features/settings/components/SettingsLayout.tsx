@@ -9,8 +9,6 @@ export type SettingsTab =
   | "profile"
   | "devices"
   | "notifications"
-  | "ai"
-  | "integrations"
   | "appearance"
   | "security"
   | "system";
@@ -48,21 +46,6 @@ export interface NotificationSettingsState {
   push: boolean;
 }
 
-export interface AISettingsState {
-  sensitivity: "Low" | "Medium" | "High";
-  autoSuggestions: boolean;
-  confidenceThreshold: number;
-  enableRecommendations: boolean;
-}
-
-export interface IntegrationSettingsState {
-  apiKey: string;
-  weatherApiConnected: boolean;
-  mapsConnected: boolean;
-  exportFormat: "CSV" | "JSON";
-  syncFrequency: "15 min" | "30 min" | "1 hour" | "6 hours" | "24 hours";
-}
-
 export interface AppearanceSettingsState {
   theme: "Dark" | "Light";
   accentColor: string;
@@ -94,8 +77,6 @@ export interface SettingsState {
   profile: ProfileSettingsState;
   devices: DeviceSettingsState[];
   notifications: NotificationSettingsState;
-  ai: AISettingsState;
-  integrations: IntegrationSettingsState;
   appearance: AppearanceSettingsState;
   security: SecuritySettingsState;
   system: SystemSettingsState;
@@ -128,19 +109,6 @@ const INITIAL_SETTINGS: SettingsState = {
     sms: false,
     email: true,
     push: true,
-  },
-  ai: {
-    sensitivity: "Medium",
-    autoSuggestions: true,
-    confidenceThreshold: 85,
-    enableRecommendations: true,
-  },
-  integrations: {
-    apiKey: "cn_live_xxxxxxx",
-    weatherApiConnected: true,
-    mapsConnected: true,
-    exportFormat: "CSV",
-    syncFrequency: "1 hour",
   },
   appearance: {
     theme: "Dark",

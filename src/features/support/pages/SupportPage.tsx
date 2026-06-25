@@ -106,7 +106,6 @@ export function SupportPage() {
       setSubmitted(true);
       setFormState({ subject: "", category: "Technical", message: "" });
     } catch (error: any) {
-      console.error("Failed to submit ticket:", error);
       const errorMsg =
         error.response?.data?.message ||
         "Failed to submit support ticket. Please try again.";

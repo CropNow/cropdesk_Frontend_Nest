@@ -43,7 +43,6 @@ export function ProfileSettings({
           });
         }
       } catch (err) {
-        console.error("Failed to load profile:", err);
       }
     };
     loadProfile();
@@ -59,7 +58,6 @@ export function ProfileSettings({
       });
       onSave(); // Trigger toast
     } catch (err) {
-      console.error(err);
       throw err;
     }
   };

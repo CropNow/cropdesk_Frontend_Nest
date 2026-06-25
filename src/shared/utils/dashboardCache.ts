@@ -21,7 +21,6 @@ export function saveDashboardCache(
     localStorage.setItem(key, JSON.stringify(payload));
     localStorage.setItem('cropdesk_last_sync_timestamp', Date.now().toString());
   } catch (e) {
-    console.error('Failed to save dashboard cache:', e);
   }
 }
 
@@ -36,7 +35,6 @@ export function loadDashboardCache(
     if (!data) return null;
     return JSON.parse(data);
   } catch (e) {
-    console.error('Failed to load dashboard cache:', e);
     return null;
   }
 }
@@ -48,7 +46,6 @@ export function saveFarmsCache(farms: any[], selectedFarmId: string | null): voi
       localStorage.setItem('cropdesk_cached_selected_farm_id', selectedFarmId);
     }
   } catch (e) {
-    console.error('Failed to save farms cache:', e);
   }
 }
 
@@ -59,7 +56,6 @@ export function loadFarmsCache(): { farms: any[]; selectedFarmId: string | null 
     const farms = farmsStr ? JSON.parse(farmsStr) : [];
     return { farms, selectedFarmId };
   } catch (e) {
-    console.error('Failed to load farms cache:', e);
     return { farms: [], selectedFarmId: null };
   }
 }

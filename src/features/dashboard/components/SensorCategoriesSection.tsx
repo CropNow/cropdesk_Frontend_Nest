@@ -80,7 +80,6 @@ export function SensorCategoriesSection({
         type: "success",
       });
     } catch (error: any) {
-      console.error("Export Error:", error);
       addToast({
         message:
           error.response?.data?.message ||
@@ -326,7 +325,6 @@ async function fetchNestChartData(
     }
     return [];
   } catch (error) {
-    console.error("Failed to fetch aggregated data:", error);
     return [];
   }
 }
@@ -344,8 +342,6 @@ function RealDataChart({
   selectedRange?: string;
   metricKey?: string;
 }) {
-  console.log("RealDataChart received data:", data);
-
   // Pad data to ensure a full timeline is always shown across the X-axis
   const now = new Date();
   const isDay = selectedRange === "24 Hours";
@@ -602,7 +598,6 @@ function SoilSensorDetail({
         );
         setChartData(rawData);
       } catch (err) {
-        console.error("Failed to fetch chart data:", err);
       }
     };
 
@@ -761,7 +756,6 @@ function AirSensorDetail({
         );
         setChartData(rawData);
       } catch (err) {
-        console.error("Failed to fetch chart data:", err);
       }
     };
 

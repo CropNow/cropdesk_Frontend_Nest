@@ -117,7 +117,6 @@ export function AITrendsPage() {
         setIsExportModalOpen(false);
       }
     } catch (err: any) {
-      console.error("Failed to export report:", err);
       const errMsg = err.response?.data?.message || err.message || "Failed to export report. Please try again.";
       addToast({
         message: errMsg,
@@ -221,7 +220,6 @@ export function AITrendsPage() {
         setAnalyticsData(res.data?.data || res.data);
         setAnalyticsError(null);
       } catch (err: any) {
-        console.error("Failed to fetch dashboard analytics", err);
         setAnalyticsError(err.message || "Failed to load analytics");
       } finally {
         setIsLoadingAnalytics(false);
@@ -250,7 +248,6 @@ export function AITrendsPage() {
           });
         }
       } catch (err) {
-        console.error("Failed to fetch location for news", err);
         setLocation({
           district: "",
           state: "",
@@ -299,7 +296,6 @@ export function AITrendsPage() {
         localStorage.setItem(timestampKey, now.toString());
         setLastUpdated(new Date(now).toLocaleTimeString());
       } catch (err) {
-        console.error("Failed to load agricultural news", err);
         // On API error, fallback to cached news if available
         if (cachedData) {
           setNews(JSON.parse(cachedData));

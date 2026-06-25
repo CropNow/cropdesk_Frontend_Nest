@@ -53,7 +53,6 @@ export function FarmerDetailsPanel() {
           }
         }
       } catch (err: any) {
-        console.error("Failed to fetch farmer details", err);
       } finally {
         setIsLoading(false);
       }
@@ -130,7 +129,6 @@ export function FarmerDetailsPanel() {
       });
       setSuccessMsg("Farmer profile deleted successfully.");
     } catch (err: any) {
-      console.error(err);
       setError("Failed to delete farmer profile.");
     } finally {
       setIsSaving(false);

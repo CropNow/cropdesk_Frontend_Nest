@@ -4,6 +4,11 @@
  */
 
 import apiClient from "@services/api/apiClient";
+import type { ProfileSettings } from "@shared/types/settings.types";
+
+export type UpdateProfileData = Partial<
+  Pick<ProfileSettings, "firstName" | "lastName" | "email" | "phone" | "avatar" | "bio">
+>;
 
 export const userAPI = {
   /**
@@ -19,7 +24,7 @@ export const userAPI = {
   /**
    * Update user profile
    */
-  updateProfile: (data: any) => apiClient.patch("/users/me", data),
+  updateProfile: (data: UpdateProfileData) => apiClient.patch("/users/me", data),
 
   /**
    * Upload user avatar
