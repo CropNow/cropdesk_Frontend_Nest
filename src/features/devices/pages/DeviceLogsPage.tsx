@@ -6,6 +6,7 @@ import { DashboardLayout } from "@app/layouts/DashboardLayout";
 import { LoadingSkeleton } from "@shared/components/LoadingSkeleton";
 import { useOnlineStatus } from "@app/providers/OnlineStatusContext";
 import { OfflineFallback } from "@shared/components/OfflineFallback";
+import { Heading, Text } from "@shared/components/ui/typography";
 
 type DeviceLog = {
   id: string;
@@ -160,10 +161,10 @@ export function DeviceLogsPage() {
         <>
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-textHeading">Device Logs</h1>
-              <p className="mt-1 text-sm text-textSecondary">
+              <Heading level={1} className="text-3xl">Device Logs</Heading>
+              <Text variant="description" color="secondary" className="mt-1">
                 Real-time connectivity and operational history for all deployed devices.
-              </p>
+              </Text>
             </div>
 
             <div className="relative max-w-sm flex-1">
@@ -187,10 +188,10 @@ export function DeviceLogsPage() {
                   <Radio className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-textSecondary">Online Devices</p>
-                  <h3 className="text-2xl font-bold text-textHeading">
+                  <Text variant="description" color="secondary" className="font-medium">Online Devices</Text>
+                  <Heading level={3} className="text-2xl">
                     {logs.filter((l) => l.isOnline).length}
-                  </h3>
+                  </Heading>
                 </div>
               </div>
             </div>
@@ -200,10 +201,10 @@ export function DeviceLogsPage() {
                   <WifiOff className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-textSecondary">Offline Devices</p>
-                  <h3 className="text-2xl font-bold text-textHeading">
+                  <Text variant="description" color="secondary" className="font-medium">Offline Devices</Text>
+                  <Heading level={3} className="text-2xl">
                     {logs.filter((l) => !l.isOnline).length}
-                  </h3>
+                  </Heading>
                 </div>
               </div>
             </div>
@@ -213,8 +214,8 @@ export function DeviceLogsPage() {
                   <Server className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-textSecondary">Total Devices</p>
-                  <h3 className="text-2xl font-bold text-textHeading">{logs.length}</h3>
+                  <Text variant="description" color="secondary" className="font-medium">Total Devices</Text>
+                  <Heading level={3} className="text-2xl">{logs.length}</Heading>
                 </div>
               </div>
             </div>
@@ -225,23 +226,23 @@ export function DeviceLogsPage() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-cardBorder bg-bgCardHover/50">
                   <tr>
-                    <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">
-                      Device Name
+                    <th className="whitespace-nowrap px-6 py-4">
+                      <Text as="span" variant="description" color="secondary" className="font-semibold">Device Name</Text>
                     </th>
-                    <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">
-                      Status
+                    <th className="whitespace-nowrap px-6 py-4">
+                      <Text as="span" variant="description" color="secondary" className="font-semibold">Status</Text>
                     </th>
-                    <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">
-                      Installation Date
+                    <th className="whitespace-nowrap px-6 py-4">
+                      <Text as="span" variant="description" color="secondary" className="font-semibold">Installation Date</Text>
                     </th>
-                    <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">
-                      Last Online Timing
+                    <th className="whitespace-nowrap px-6 py-4">
+                      <Text as="span" variant="description" color="secondary" className="font-semibold">Last Online Timing</Text>
                     </th>
-                    <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">
-                      Last Offline Timing
+                    <th className="whitespace-nowrap px-6 py-4">
+                      <Text as="span" variant="description" color="secondary" className="font-semibold">Last Offline Timing</Text>
                     </th>
-                    <th className="whitespace-nowrap px-6 py-4 font-semibold text-textSecondary">
-                      Offline Duration
+                    <th className="whitespace-nowrap px-6 py-4">
+                      <Text as="span" variant="description" color="secondary" className="font-semibold">Offline Duration</Text>
                     </th>
                   </tr>
                 </thead>
@@ -267,10 +268,10 @@ export function DeviceLogsPage() {
                               )}
                             </div>
                             <div>
-                              <p className="font-semibold text-textHeading">{log.name}</p>
-                              <p className="text-xs text-textMuted font-mono">
+                              <Text color="heading" className="font-semibold">{log.name}</Text>
+                              <Text variant="caption" color="muted" className="font-mono">
                                 SN: {log.serialNumber}
-                              </p>
+                              </Text>
                             </div>
                           </div>
                         </td>
@@ -283,9 +284,9 @@ export function DeviceLogsPage() {
                             />
                             {log.isOnline ? "ONLINE" : "OFFLINE"}
                           </span>
-                          <p className="mt-1 text-[10px] text-textMuted uppercase tracking-wider">
+                          <Text color="muted" className="mt-1 text-[10px] uppercase tracking-wider">
                             {log.statusText}
-                          </p>
+                          </Text>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2 text-textSecondary">

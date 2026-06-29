@@ -1,15 +1,12 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LifeBuoy,
-  Search,
   ChevronDown,
   Mail,
   Phone,
   MessageSquare,
   AlertCircle,
   CheckCircle2,
-  ExternalLink,
   BookOpen,
   Wifi,
   WifiOff,
@@ -18,6 +15,7 @@ import {
 } from "lucide-react";
 import { DashboardLayout } from "@app/layouts/DashboardLayout";
 import { useOnlineStatus } from "@app/providers/OnlineStatusContext";
+import { Heading, Text, Label } from "@shared/components/ui/typography";
 import { useToast } from "@app/providers/ToastContext";
 import { supportAPI } from "@services/api/support.api";
 
@@ -126,17 +124,17 @@ export function SupportPage() {
         <div className="relative z-10 space-y-10">
           {/* Header Section */}
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <motion.div
+             <motion.div
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               className="space-y-2"
             >
-              <h1 className="text-3xl font-extrabold tracking-tight text-textPrimary sm:text-5xl">
+              <Heading level={1} className="text-3xl font-extrabold tracking-tight sm:text-5xl">
                 Support <span className="text-[#00FF9C] dark:text-accentPrimary">Center</span>
-              </h1>
-              <p className="max-w-2xl text-lg text-textSecondary">
+              </Heading>
+              <Text variant="body" color="secondary" className="max-w-2xl text-lg">
                 Find answers, troubleshoot your devices, or get in touch with our expert team.
-              </p>
+              </Text>
             </motion.div>
           </div>
 
@@ -144,9 +142,9 @@ export function SupportPage() {
             <div className="space-y-10">
               {/* Quick Help Section */}
               <section className="space-y-4">
-                <h2 className="flex items-center gap-2 text-xl font-bold text-textPrimary">
+                <Heading level={2} className="flex items-center gap-2 text-xl font-bold">
                   <BookOpen className="h-5 w-5 text-accentPrimary" /> Quick Help Guides
-                </h2>
+                </Heading>
                 <div className="grid gap-4 sm:grid-cols-3">
                   {TROUBLESHOOTING_GUIDES.map((guide, idx) => (
                     <motion.div
@@ -166,8 +164,8 @@ export function SupportPage() {
                             className={`h-5 w-5 text-textMuted transition-transform ${activeGuide === idx ? "rotate-180" : ""}`}
                           />
                         </div>
-                        <h3 className="mb-1 font-bold text-textPrimary">{guide.title}</h3>
-                        <p className="text-sm text-textSecondary">{guide.description}</p>
+                        <Heading level={3} className="mb-1 font-bold">{guide.title}</Heading>
+                        <Text variant="description" color="secondary">{guide.description}</Text>
                       </div>
                       <AnimatePresence>
                         {activeGuide === idx && (
@@ -192,9 +190,9 @@ export function SupportPage() {
 
               {/* FAQ Section */}
               <section className="space-y-4">
-                <h2 className="flex items-center gap-2 text-xl font-bold text-textPrimary">
+                <Heading level={2} className="flex items-center gap-2 text-xl font-bold">
                   <MessageSquare className="h-5 w-5 text-cyan-500" /> Frequently Asked Questions
-                </h2>
+                </Heading>
                 <div className="space-y-3">
                   {FAQ_DATA.map((faq, idx) => (
                     <div
@@ -205,7 +203,7 @@ export function SupportPage() {
                         onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
                         className="flex w-full items-center justify-between p-5 text-left transition-colors hover:bg-bgCardHover"
                       >
-                        <span className="font-semibold text-textPrimary">{faq.question}</span>
+                        <Text as="span" className="font-semibold">{faq.question}</Text>
                         <ChevronDown
                           className={`h-5 w-5 text-textMuted transition-transform ${activeFaq === idx ? "rotate-180" : ""}`}
                         />
@@ -236,10 +234,10 @@ export function SupportPage() {
                 className="rounded-3xl border border-borderColor bg-bgCard p-8 backdrop-blur-xl"
               >
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-textPrimary">Report an Issue</h2>
-                  <p className="text-sm text-textSecondary">
+                  <Heading level={2} className="text-2xl font-bold">Report an Issue</Heading>
+                  <Text variant="description" color="secondary">
                     Submit a ticket and we'll get back to you.
-                  </p>
+                  </Text>
                 </div>
 
                 {submitted ? (
@@ -251,11 +249,11 @@ export function SupportPage() {
                     <div className="mb-4 rounded-full bg-[#00FF9C]/20 p-4">
                       <CheckCircle2 className="h-10 w-10 text-[#00FF9C]" />
                     </div>
-                    <h3 className="text-xl font-bold text-textPrimary">Ticket Submitted!</h3>
-                    <p className="mt-2 text-sm text-textSecondary">
+                    <Heading level={3} className="text-xl font-bold">Ticket Submitted!</Heading>
+                    <Text variant="description" color="secondary" className="mt-2">
                       Your reference ID is #CN-
                       {Math.floor(Math.random() * 9000) + 1000}
-                    </p>
+                    </Text>
                     <button
                       onClick={() => setSubmitted(false)}
                       className="mt-6 text-sm font-bold text-accentPrimary hover:underline"
@@ -272,9 +270,9 @@ export function SupportPage() {
                       </div>
                     )}
                     <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-widest text-textMuted">
+                      <Label color="muted" className="text-xs font-bold uppercase tracking-widest">
                         Category
-                      </label>
+                      </Label>
                       <select
                         disabled={!isOnline}
                         className="w-full rounded-xl border border-borderColor bg-bgInput p-3 text-sm text-textPrimary focus:border-accentPrimary/50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
@@ -293,9 +291,9 @@ export function SupportPage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-widest text-textMuted">
+                      <Label color="muted" className="text-xs font-bold uppercase tracking-widest">
                         Subject
-                      </label>
+                      </Label>
                       <input
                         type="text"
                         required
@@ -314,9 +312,9 @@ export function SupportPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-widest text-textMuted">
+                      <Label color="muted" className="text-xs font-bold uppercase tracking-widest">
                         Message
-                      </label>
+                      </Label>
                       <textarea
                         required
                         rows={4}
@@ -339,7 +337,7 @@ export function SupportPage() {
                     <button
                       type="submit"
                       disabled={isSubmitting || !isOnline}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-accentPrimary py-4 font-bold text-black dark:text-black transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-accentPrimary py-4 font-bold text-black dark:text-black transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     >
                       {isSubmitting ? (
                         "Sending..."
@@ -357,13 +355,13 @@ export function SupportPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border border-borderColor bg-bgCard p-6">
                   <Mail className="mb-3 h-5 w-5 text-cyan-500" />
-                  <h4 className="text-sm font-bold text-textPrimary">Email Us</h4>
-                  <p className="text-xs text-textSecondary">support@cropnow.in</p>
+                  <Heading level={4} className="text-sm font-bold">Email Us</Heading>
+                  <Text variant="caption" color="secondary">support@cropnow.in</Text>
                 </div>
                 <div className="rounded-2xl border border-borderColor bg-bgCard p-6">
                   <Phone className="mb-3 h-5 w-5 text-accentPrimary" />
-                  <h4 className="text-sm font-bold text-textPrimary">Call Us</h4>
-                  <p className="text-xs text-textSecondary">+1 (800) 123-4567</p>
+                  <Heading level={4} className="text-sm font-bold">Call Us</Heading>
+                  <Text variant="caption" color="secondary">+1 (800) 123-4567</Text>
                 </div>
               </div>
             </div>

@@ -7,6 +7,7 @@ import type { SensorCalibration } from "@shared/types/sensor.types";
 
 export interface GetSensorsParams {
   fieldId?: string;
+  type?: string;
 }
 
 export interface HistoricalDataParams {

@@ -39,10 +39,17 @@ export interface ChangePasswordRequest {
 }
 
 export interface AuthResponse {
-  user: User;
-  token: string;
+  user?: User;
+  token?: string;
   refreshToken?: string;
-  expiresIn: number;
+  expiresIn?: number;
+  accessToken?: string;
+  data?: {
+    user: User;
+  };
+  requires2FA?: boolean;
+  tempToken?: string;
+  mfaToken?: string;
 }
 
 export interface AuthContextType {

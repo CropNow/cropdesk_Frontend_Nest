@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
   ChevronDown,
@@ -9,58 +10,39 @@ import {
   Download,
   Gauge,
   Leaf,
-  Mail,
   Sun,
   Thermometer,
   Wind,
   X,
-} from "lucide-react";
-import { useToast } from "@app/providers/ToastContext";
-import { SENSOR_CARDS } from "@shared/constants/sensorConstants";
-import { useLockBodyScroll } from "@shared/hooks/useLockBodyScroll";
-import { sensorsAPI } from "@features/sensors/api/sensors.api";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-} from "recharts";
+} from 'lucide-react';
+import { useToast } from '@app/providers/ToastContext';
+import { SENSOR_CARDS } from '@shared/constants/sensorConstants';
+import { useLockBodyScroll } from '@shared/hooks/useLockBodyScroll';
+import { Dropdown } from '@shared/components/ui/dropdown';
+import { sensorsAPI } from '@features/sensors/api/sensors.api';
+import { StatusBadge } from '@shared/components/StatusBadge';
 
 /**
- * SensorCategoriesSection - DashboardV2Page-equivalent interactive sensor insights
+ * SensorCategoriesSection - Interactive sensor insights
  */
 
-export function SensorCategoriesSection({
-  data,
-  lastFetchTime,
-}: {
-  data?: any;
-  lastFetchTime?: Date | null;
-}) {
+export function SensorCategoriesSection({ data, lastFetchTime }: { data?: any, lastFetchTime?: Date | null }) {
   const { addToast } = useToast();
   const [showNestDetails, setShowNestDetails] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const activeSensorsCount = data?.activeSensorsCount ?? 12;
   const isAnySensorModalOpen = showNestDetails;
-  // The deviceId used for nest-device API (serialNumber like "01")
   const nestDeviceId = data?.serialNumber || data?.deviceId || data?.latestData?.deviceId;
 
   const handleExport = async (range: string) => {
-    setShowExportMenu(false);
     try {
       const sensorId = data?.latestData?.sensorId || data?.latestData?.deviceId;
 
       if (!sensorId) {
         addToast({
-          message: "No sensor ID found for export.",
-          type: "error",
+          message: 'No sensor ID found for export.',
+          type: 'error'
         });
         return;
       }
@@ -69,19 +51,20 @@ export function SensorCategoriesSection({
 
       await sensorsAPI.exportData({
         sensorId,
-        format: "csv",
+        format: 'csv',
         range,
-        email: true,
+        email: true
       });
 
       addToast({
-        message: "Data export request sent. You will receive an email shortly.",
-        type: "success",
+        message: 'Data export request sent. You will receive an email shortly.',
+        type: 'success'
       });
     } catch (error: any) {
+      console.error('Export Error:', error);
       addToast({
-        message: error.response?.data?.message || "Failed to export data. Please try again.",
-        type: "error",
+        message: error.response?.data?.message || 'Failed to export data. Please try again.',
+        type: 'error'
       });
     } finally {
       setIsExporting(false);
@@ -96,178 +79,156 @@ export function SensorCategoriesSection({
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-3xl border border-borderColor bg-bgCard p-5 backdrop-blur-xl xl:col-span-1"
+        className="rounded-xl border border-cardBorder bg-cardBg p-6 shadow-card xl:col-span-1"
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-3xl font-bold text-textPrimary">Sensor Insights</h3>
+        <div className="mb-6">
+          <h3 className="text-scale-section font-bold text-textHeading">Sensor Insights</h3>
         </div>
 
-        {/* Smoother Compact Stacked Layout */}
         <div className="flex flex-col gap-4">
-          {/* Connectivity Hub Card */}
-          <motion.div className="group relative overflow-hidden rounded-[2rem] border border-borderColor bg-bgCardHover/30 p-3 sm:p-4 backdrop-blur-xl transition-all max-w-[420px]">
-            {/* Soft Status Glow */}
-            <div
-              className={`absolute -right-8 -top-8 h-32 w-32 rounded-full blur-[50px] transition-colors duration-700 ${data?.isOnline ? "bg-emerald-500/12" : "bg-red-500/12"}`}
-            />
-
-            <div className="relative z-10 flex flex-col gap-3">
-              {/* System Status */}
-              <div className="flex items-center gap-1.5">
-                <div
-                  className={`h-2 w-2 rounded-full ${data?.isOnline ? "animate-pulse bg-emerald-500" : "bg-red-500"}`}
-                />
-                <span
-                  className={`text-[0.65rem] font-bold uppercase tracking-[0.15em] ${data?.isOnline ? "text-emerald-500/80 dark:text-emerald-400/80" : "text-red-500/80 dark:text-red-400/80"}`}
-                >
-                  {data?.isOnline ? "System Online" : "System Offline"}
+          {/* Mobile Connectivity Hub - 2x2 grid of 4 cards */}
+          <div className="grid grid-cols-2 gap-3 sm:hidden max-w-[420px]">
+            {/* Active Sensors Card */}
+            <div className="rounded-lg border border-borderColor bg-bgInput p-4 shadow-sm flex flex-col justify-between h-28">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+                  <Activity className="h-4 w-4" />
                 </span>
+                <span className="text-scale-card font-extrabold text-textHeading">{activeSensorsCount}</span>
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-textSecondary mt-2">Active</p>
+            </div>
+
+            {/* Offline Sensors Card */}
+            <div className="rounded-lg border border-borderColor bg-bgInput p-4 shadow-sm flex flex-col justify-between h-28">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                  <Cloud className="h-4 w-4" />
+                </span>
+                <span className="text-scale-card font-extrabold text-textHeading">
+                  {Math.max(0, (data?.totalSensorsCount || 16) - activeSensorsCount)}
+                </span>
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-textSecondary mt-2">Offline</p>
+            </div>
+
+            {/* Total Sensors Card */}
+            <div className="rounded-lg border border-borderColor bg-bgInput p-4 shadow-sm flex flex-col justify-between h-28">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500">
+                  <Gauge className="h-4 w-4" />
+                </span>
+                <span className="text-scale-card font-extrabold text-textHeading">{data?.totalSensorsCount || 16}</span>
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-textSecondary mt-2">AI Sensors</p>
+            </div>
+
+            {/* Warnings/Alerts Card */}
+            <div className="rounded-lg border border-borderColor bg-bgInput p-4 shadow-sm flex flex-col justify-between h-28">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+                  <Activity className="h-4 w-4" />
+                </span>
+                <span className="text-scale-card font-extrabold text-textHeading">{data?.warningsCount || 0}</span>
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-textSecondary mt-2">Warnings</p>
+            </div>
+          </div>
+
+          {/* Desktop Connectivity Hub Card */}
+          <div className="hidden sm:block group relative overflow-hidden rounded-lg border border-borderColor bg-bgInput p-5 max-w-[420px]">
+            <div className="relative z-10 flex flex-col gap-4">
+              {/* System Status */}
+              <div>
+                <StatusBadge
+                  label={data?.isOnline ? 'System Online' : 'System Offline'}
+                  variant={data?.isOnline ? 'success' : 'danger'}
+                  size="sm"
+                />
               </div>
 
               {/* Title */}
-              <h4 className="text-lg font-bold tracking-tight text-textPrimary">
-                Connectivity Hub
-              </h4>
+              <h4 className="text-scale-body font-semibold tracking-tight text-textHeading">Connectivity Hub</h4>
 
               {/* Active Sensors */}
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-textPrimary">
-                    {activeSensorsCount}
-                  </span>
-                  <span className="text-sm font-bold text-textSecondary">
-                    / {data?.totalSensorsCount || 16}
-                  </span>
+                  <span className="text-scale-metric font-extrabold text-textHeading">{activeSensorsCount}</span>
+                  <span className="text-scale-body font-bold text-textSecondary">/ {data?.totalSensorsCount || 16}</span>
                 </div>
-                <p className="text-[0.7rem] font-bold uppercase tracking-widest text-textMuted">
-                  ACTIVE SENSORS
-                </p>
+                <p className="text-scale-caption font-bold uppercase tracking-wider text-textSecondary">ACTIVE SENSORS</p>
               </div>
 
-              {/* Last Sync and Last Fetch - Vertical */}
-              <div className="space-y-2.5">
+              {/* Last Sync and Last Fetch Grid */}
+              <div className="grid grid-cols-2 gap-4 mt-1 pt-4 border-t border-borderColor">
                 <div>
-                  <p className="text-[0.7rem] font-bold uppercase tracking-widest text-textMuted">
-                    Last Sync
+                  <p className="text-scale-caption font-bold uppercase tracking-wider text-textMuted">Last Sync</p>
+                  <p className="text-scale-body font-bold tracking-tight text-textHeading">
+                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </p>
-                  <p className="text-2xl font-bold tracking-tight text-textPrimary">
-                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime())
-                      ? new Date(data.timestamp).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "--:--"}
-                  </p>
-                  <p className="text-[0.75rem] font-medium text-textSecondary">
-                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime())
-                      ? new Date(data.timestamp).toLocaleDateString()
-                      : "N/A"}
+                  <p className="text-scale-caption font-medium text-textSecondary">
+                    {data?.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-[0.7rem] font-bold uppercase tracking-widest text-textMuted">
-                    Last Fetch
+                  <p className="text-scale-caption font-bold uppercase tracking-wider text-textMuted">Last Fetch</p>
+                  <p className="text-scale-body font-bold tracking-tight text-textHeading">
+                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </p>
-                  <p className="text-2xl font-bold tracking-tight text-textPrimary">
-                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime())
-                      ? new Date(lastFetchTime).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "--:--"}
-                  </p>
-                  <p className="text-[0.75rem] font-medium text-textSecondary">
-                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime())
-                      ? new Date(lastFetchTime).toLocaleDateString()
-                      : "N/A"}
+                  <p className="text-scale-caption font-medium text-textSecondary">
+                    {lastFetchTime && !isNaN(new Date(lastFetchTime).getTime()) ? new Date(lastFetchTime).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Interactive Sensor Entry Cards */}
           {SENSOR_CARDS.map((card) => {
-            const isNest = card.title === "Nest Device Sensors";
+            const isNest = card.title === 'Nest Device Sensors';
             return (
               <React.Fragment key={card.title}>
-                <motion.div
-                  onClick={() => {
-                    if (isNest) setShowNestDetails(true);
-                  }}
-                  className={`group relative cursor-pointer overflow-hidden rounded-[2rem] border border-[#00FF9C]/10 bg-gradient-to-br ${card.accent} ${isNest ? "p-3 sm:p-4 max-w-[420px]" : "p-4 sm:p-6"} backdrop-blur-xl transition-all`}
+                <div
+                  onClick={() => { if (isNest) setShowNestDetails(true); }}
+                  className="group relative cursor-pointer overflow-hidden rounded-lg border border-borderColor bg-bgInput p-5 transition-all hover:border-accentPrimary hover:bg-bgCard shadow-sm max-w-[420px]"
                 >
-                  <div className="relative z-10 flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xl font-bold tracking-tight text-textPrimary">
-                        {card.title}
-                      </h4>
-                      <div className="ml-3">
-                        <ChevronDown className="h-5 w-5 -rotate-90 text-accentPrimary" />
-                      </div>
-                    </div>
-
-                    {/* Subtitle removed for compactness */}
+                  <div className="relative z-10 flex items-center justify-between">
+                    <h4 className="text-scale-card font-bold tracking-tight text-textHeading">{card.title}</h4>
+                    <ChevronDown className="h-5 w-5 -rotate-90 text-textSecondary group-hover:text-accentPrimary transition-colors" />
                   </div>
-
-                  {/* Subtle Decorative Accent */}
-                  <div className="absolute -bottom-12 -right-12 h-32 w-32 rounded-full bg-[#00FF9C]/3 blur-[60px]" />
-                </motion.div>
+                </div>
 
                 {isNest && (
-                  <div className="mt-2">
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowExportMenu(!showExportMenu)}
-                        disabled={isExporting}
-                        className="group flex w-full items-center justify-center gap-2 rounded-xl border border-accentPrimary/20 bg-accentPrimary/10 px-4 py-2.5 text-sm font-bold text-accentPrimary transition-all hover:bg-accentPrimary/20 disabled:opacity-50"
-                        title="Export data to email"
-                      >
-                        {isExporting ? (
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-accentPrimary border-t-transparent" />
-                        ) : (
-                          <Download className="h-4 w-4" />
-                        )}
-                        <span>Export Data</span>
-                        <ChevronDown
-                          className={`h-4 w-4 transition-transform ${showExportMenu ? "rotate-180" : ""}`}
-                        />
-                      </button>
-
-                      <AnimatePresence>
-                        {showExportMenu && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            className="absolute right-0 bottom-full mb-2 w-56 rounded-lg border border-borderColor bg-bgCard p-2 shadow-lg z-60 backdrop-blur-0"
-                          >
-                            <div className="text-xs font-semibold text-textSecondary mb-2 px-2 pt-1">
-                              Select Range
-                            </div>
-                            <button
-                              onClick={() => handleExport("7d")}
-                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-bgCardHover text-textPrimary"
-                            >
-                              Last 7 Days
-                            </button>
-                            <button
-                              onClick={() => handleExport("15d")}
-                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-bgCardHover text-textPrimary"
-                            >
-                              Last 15 Days
-                            </button>
-                            <button
-                              onClick={() => handleExport("30d")}
-                              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-bgCardHover text-textPrimary"
-                            >
-                              Last 30 Days
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                  <div className="mt-2 max-w-[420px]">
+                    <Dropdown
+                      direction="up"
+                      align="right"
+                      title="Select Range"
+                      className="w-full"
+                      menuClassName="w-full"
+                      items={[
+                        { label: "Last 7 Days", onClick: () => handleExport("7d") },
+                        { label: "Last 15 Days", onClick: () => handleExport("15d") },
+                        { label: "Last 30 Days", onClick: () => handleExport("30d") },
+                      ]}
+                      trigger={(isOpen, toggle) => (
+                        <button
+                          onClick={toggle}
+                          disabled={isExporting}
+                          className="group flex w-full items-center justify-center gap-2 rounded-lg border border-accentPrimary/20 bg-accentPrimary/10 px-4 py-2.5 text-scale-caption font-bold text-accentPrimary transition-all hover:bg-accentPrimary/20 disabled:opacity-50"
+                          title="Export data to email"
+                        >
+                          {isExporting ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-accentPrimary border-t-transparent" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
+                          <span>Export Data</span>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                      )}
+                    />
                   </div>
                 )}
               </React.Fragment>
@@ -281,15 +242,7 @@ export function SensorCategoriesSection({
           <NestSensorsModal
             isOpen={showNestDetails}
             onClose={() => setShowNestDetails(false)}
-            data={{
-              ...(data?.latestData || {}),
-              deviceId: nestDeviceId,
-              sensorId:
-                data?.sensorId ||
-                data?.latestData?.sensorId ||
-                data?.latestData?._id ||
-                data?.latestData?.id,
-            }}
+            data={{ ...(data?.latestData || {}), deviceId: nestDeviceId, sensorId: data?.sensorId || data?.latestData?.sensorId || data?.latestData?._id || data?.latestData?.id }}
           />
         )}
       </AnimatePresence>
@@ -300,28 +253,24 @@ export function SensorCategoriesSection({
 /**
  * Fetches chart data from the aggregation API for a given metric and range.
  */
-async function fetchNestChartData(
-  sensorId: string,
-  selectedRange: string,
-  metric: string,
-): Promise<any[]> {
+async function fetchNestChartData(sensorId: string, selectedRange: string, metric: string): Promise<any[]> {
   if (!sensorId || !metric) return [];
 
   const rangeMap: Record<string, string> = {
-    "24 Hours": "24h",
-    "7 Days": "7d",
-    "1 Month": "30d",
+    '24 Hours': '24h',
+    '7 Days': '7d',
+    '1 Month': '30d',
   };
 
   const aggMap: Record<string, string> = {
-    "24 Hours": "hour",
-    "7 Days": "day",
-    "1 Month": "day",
+    '24 Hours': 'hour',
+    '7 Days': 'day',
+    '1 Month': 'day',
   };
 
   const params = {
-    range: rangeMap[selectedRange] || "7d",
-    aggregation: aggMap[selectedRange] || "day",
+    range: rangeMap[selectedRange] || '7d',
+    aggregation: aggMap[selectedRange] || 'day',
     metric: metric,
   };
 
@@ -336,28 +285,18 @@ async function fetchNestChartData(
     }
     return [];
   } catch (error) {
+    console.error('Failed to fetch aggregated data:', error);
     return [];
   }
 }
 
-function RealDataChart({
-  data,
-  chartType = "bar",
-  unit = "",
-  selectedRange = "24 Hours",
-  metricKey = "",
-}: {
-  data: any[];
-  chartType?: "bar" | "line";
-  unit?: string;
-  selectedRange?: string;
-  metricKey?: string;
-}) {
-  // Pad data to ensure a full timeline is always shown across the X-axis
+function RealDataChart({ data, chartType = 'bar', unit = '', selectedRange = '24 Hours', metricKey = '' }: { data: any[]; chartType?: 'bar' | 'line'; unit?: string; selectedRange?: string; metricKey?: string }) {
+  const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
+
   const now = new Date();
-  const isDay = selectedRange === "24 Hours";
-  const isWeek = selectedRange === "7 Days";
-  const pointsCount = isDay ? 24 : isWeek ? 7 : 30;
+  const isDay = selectedRange === '24 Hours';
+  const isWeek = selectedRange === '7 Days';
+  const pointsCount = isDay ? 24 : (isWeek ? 7 : 30);
   const intervalMs = isDay ? 3600000 : 86400000;
 
   const timeline = Array.from({ length: pointsCount }, (_, i) => {
@@ -369,12 +308,12 @@ function RealDataChart({
       timestamp: time.toISOString(),
       [metricKey]: 0,
       average: 0,
-      isPlaceholder: true,
+      isPlaceholder: true
     };
   });
 
   if (data && data.length > 0) {
-    data.forEach((realPoint) => {
+    data.forEach(realPoint => {
       const realTime = new Date(realPoint.timestamp || realPoint._id || realPoint.time).getTime();
       let closestIdx = -1;
       let minDiff = Infinity;
@@ -392,7 +331,7 @@ function RealDataChart({
           ...timeline[closestIdx],
           ...realPoint,
           isPlaceholder: false,
-          [metricKey]: realPoint[metricKey] ?? realPoint.average ?? 0,
+          [metricKey]: realPoint[metricKey] ?? realPoint.average ?? 0
         };
       }
     });
@@ -400,187 +339,302 @@ function RealDataChart({
 
   const chartData = timeline;
 
-  const formatXAxis = (tickItem: string) => {
-    try {
-      const date = new Date(tickItem);
-      if (isNaN(date.getTime())) return "";
+  const points = chartData.map((d: any) => {
+    let val: number | undefined;
 
-      if (selectedRange === "24 Hours") {
-        return date.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        });
-      } else if (selectedRange === "7 Days") {
-        return date.toLocaleDateString([], { weekday: "short" });
-      } else if (selectedRange === "1 Month") {
+    if (metricKey && d[metricKey] !== undefined && d[metricKey] !== null) {
+      const num = Number(d[metricKey]);
+      if (!isNaN(num)) val = num;
+    }
+
+    if (val === undefined) {
+      const possibleKeys = ['value', 'avg', 'average', 'reading', 'val'];
+      for (const key of possibleKeys) {
+        if (d[key] !== undefined && d[key] !== null) {
+          const num = Number(d[key]);
+          if (!isNaN(num)) {
+            val = num;
+            break;
+          }
+        }
+      }
+    }
+
+    if (val === undefined) {
+      for (const key in d) {
+        const keyLower = key.toLowerCase();
+        if (keyLower.includes('id') || keyLower.includes('time') || keyLower.includes('date') || keyLower.includes('created') || keyLower.includes('updated')) {
+          continue;
+        }
+        const num = Number(d[key]);
+        if (d[key] !== null && d[key] !== '' && typeof d[key] !== 'boolean' && !isNaN(num)) {
+          val = num;
+          break;
+        }
+      }
+    }
+
+    return val !== undefined ? val : 0;
+  });
+
+  const maxVal = Math.max(...points, 1);
+  const minVal = Math.min(...points, 0);
+  const range = maxVal - minVal;
+
+  const displayMin = range === 0 ? minVal - 1 : minVal;
+  const displayMax = range === 0 ? maxVal + 1 : maxVal;
+  const displayRange = displayMax - displayMin;
+
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const width = isMobile ? 400 : 800;
+  const height = 200;
+  const paddingLeft = isMobile ? 52 : 70;
+  const paddingRight = isMobile ? 12 : 30;
+  const paddingTop = 15;
+  const paddingBottom = 35;
+
+  const getX = (index: number) => {
+    return paddingLeft + (index / (points.length - 1 || 1)) * (width - paddingLeft - paddingRight);
+  };
+
+  const getY = (val: number) => {
+    return height - paddingBottom - ((val - displayMin) / (displayRange || 1)) * (height - paddingTop - paddingBottom);
+  };
+
+  const svgPoints = points.map((val, i) => `${getX(i)},${getY(val)}`).join(' ');
+
+  const barCount = points.length;
+  const step = (width - paddingLeft - paddingRight) / (barCount || 1);
+  const currentBarWidth = barCount > 1 ? Math.max(step * 0.7, 4) : 40;
+
+  const bars = points.map((val, i) => {
+    const x = barCount > 1
+      ? paddingLeft + i * step + (step - currentBarWidth) / 2
+      : paddingLeft + (width - paddingLeft - paddingRight) / 2 - currentBarWidth / 2;
+    const barHeight = ((val - displayMin) / (displayRange || 1)) * (height - paddingTop - paddingBottom);
+    const y = height - paddingBottom - Math.max(barHeight, 4);
+
+    return (
+      <rect
+        key={i}
+        x={x}
+        y={y}
+        width={currentBarWidth}
+        height={Math.max(barHeight, 4)}
+        fill="var(--accent-primary)"
+        fillOpacity={selectedPoint === i ? 1 : 0.8}
+        rx={Math.min(currentBarWidth / 4, 8)}
+        className="cursor-pointer transition-all hover:fillOpacity-100"
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedPoint(selectedPoint === i ? null : i);
+        }}
+      />
+    );
+  });
+
+  const getFormattedLabel = (d: any) => {
+    if (!d) return '';
+    const timeKey = ['timestamp', 'createdAt', 'time', 'date', 'updatedAt', 'created_at', 'updated_at', 'ts'].find(k => d[k]);
+    if (!timeKey) return '';
+
+    try {
+      const date = new Date(d[timeKey]);
+      if (isNaN(date.getTime())) return '';
+
+      if (selectedRange === '24 Hours') {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      } else if (selectedRange === '7 Days') {
+        return date.toLocaleDateString([], { weekday: 'short' });
+      } else if (selectedRange === '1 Month') {
         return date.getDate().toString();
       } else {
-        return date.toLocaleDateString([], { month: "short", day: "numeric" });
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
       }
     } catch (e) {
-      return "";
+      return '';
     }
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const val = Number(payload[0].value);
-      return (
-        <div className="relative rounded-lg bg-[#00FF9C] px-3 py-1.5 shadow-[0_0_15px_rgba(0,255,156,0.5)]">
-          <p className="text-xs font-black text-[#0A0E14] select-none tabular-nums">
-            {val.toFixed(1)}
-            {unit}
-          </p>
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-x-4 border-x-transparent border-t-4 border-t-[#00FF9C]" />
-        </div>
-      );
+  const labelsWithIndices = chartData.map((d: any, i: number) => ({
+    label: getFormattedLabel(d),
+    index: i
+  })).filter(l => l.label !== '');
+
+  const uniqueLabels = labelsWithIndices.filter((item, pos, self) =>
+    self.findIndex(v => v.label === item.label) === pos
+  );
+
+  const finalLabelCount = Math.min(6, uniqueLabels.length);
+  const finalLabels = [];
+  if (uniqueLabels.length > 0) {
+    for (let i = 0; i < finalLabelCount; i++) {
+      const idx = Math.floor((i * (uniqueLabels.length - 1)) / (finalLabelCount - 1 || 1));
+      finalLabels.push(uniqueLabels[idx]);
     }
-    return null;
-  };
-
-  const isWindDirection =
-    metricKey === "wind_direction" || metricKey === "wind_dir" || unit === "°";
-
-  if (chartType === "line") {
-    return (
-      <div className="h-full w-full p-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 15, right: 30, left: 10, bottom: 10 }}>
-            <CartesianGrid vertical={false} stroke="var(--border-color)" strokeOpacity={0.4} />
-            <XAxis
-              dataKey="timestamp"
-              tickFormatter={formatXAxis}
-              stroke="var(--text-muted)"
-              strokeOpacity={0.8}
-              fontSize={11}
-              fontWeight={900}
-              tickLine={false}
-              axisLine={false}
-              dy={10}
-            />
-            <YAxis
-              stroke="var(--text-muted)"
-              strokeOpacity={0.8}
-              fontSize={11}
-              fontWeight={900}
-              tickLine={false}
-              axisLine={false}
-              domain={isWindDirection ? [0, 360] : ["auto", "auto"]}
-              tickFormatter={(v) => `${v.toFixed(v > 10 ? 0 : 1)}${unit}`}
-              dx={-5}
-            />
-            <RechartsTooltip
-              content={<CustomTooltip />}
-              cursor={{ stroke: "var(--border-color)", strokeWidth: 1 }}
-            />
-            <Line
-              type="monotone"
-              dataKey={metricKey}
-              stroke="var(--accent-primary)"
-              strokeWidth={3}
-              dot={{
-                fill: "var(--accent-primary)",
-                r: 4,
-                stroke: "var(--accent-primary)",
-                strokeWidth: 0,
-              }}
-              activeDot={{
-                r: 6,
-                stroke: "var(--accent-primary)",
-                strokeWidth: 2,
-                fill: "var(--bg-card)",
-              }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    );
   }
 
   return (
-    <div className="h-full w-full p-2">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 15, right: 30, left: 10, bottom: 10 }}>
-          <CartesianGrid vertical={false} stroke="var(--border-color)" strokeOpacity={0.4} />
-          <XAxis
-            dataKey="timestamp"
-            tickFormatter={formatXAxis}
-            stroke="var(--text-muted)"
-            strokeOpacity={0.8}
-            fontSize={11}
-            fontWeight={900}
-            tickLine={false}
-            axisLine={false}
-            dy={10}
-          />
-          <YAxis
-            stroke="var(--text-muted)"
-            strokeOpacity={0.8}
-            fontSize={11}
-            fontWeight={900}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v) => `${v.toFixed(v > 10 ? 0 : 1)}${unit}`}
-            dx={-5}
-          />
-          <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: "var(--border-subtle)" }} />
-          <Bar
-            dataKey={metricKey}
+    <svg className="h-full w-full overflow-visible" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+      {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
+        const val = displayMin + ratio * displayRange;
+        const y = getY(val);
+        return (
+          <g key={`y-${idx}`}>
+            <line 
+              x1={paddingLeft} 
+              y1={y} 
+              x2={width - paddingRight} 
+              y2={y} 
+              stroke="var(--border-color)" 
+              strokeOpacity={idx === 0 ? "0.3" : "0.15"} 
+              strokeWidth={idx === 0 ? 2 : 1} 
+            />
+            <text 
+              x={paddingLeft - 12} 
+              y={y + 4} 
+              fill="var(--text-secondary)" 
+              fontSize="12" 
+              fontWeight="600"
+              textAnchor="end"
+              className="select-none tabular-nums"
+            >
+              {val.toFixed(val > 10 ? 0 : 1)}{unit}
+            </text>
+          </g>
+        );
+      })}
+
+      {finalLabels.map((l, i) => (
+        <text
+          key={`x-${i}`}
+          x={getX(l.index)}
+          y={height - 10}
+          fill="var(--text-secondary)"
+          fontSize="12" 
+          fontWeight="600"
+          textAnchor="middle"
+          className="select-none"
+        >
+          {l.label}
+        </text>
+      ))}
+
+      {chartType === 'line' ? (
+        <g>
+          {points.length > 1 ? (
+            <polyline fill="none" stroke="var(--accent-primary)" strokeWidth="3" points={svgPoints} />
+          ) : null}
+          {points.map((val, i) => (
+            <circle
+              key={`dot-${i}`}
+              cx={getX(i)}
+              cy={getY(val)}
+              r={selectedPoint === i ? 7 : 5}
+              fill="var(--accent-primary)"
+              fillOpacity={selectedPoint === i ? 1 : 0.6}
+              stroke="var(--accent-primary)"
+              strokeWidth={selectedPoint === i ? 2 : 0}
+              className="cursor-pointer transition-all hover:fillOpacity-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedPoint(selectedPoint === i ? null : i);
+              }}
+            />
+          ))}
+        </g>
+      ) : (
+        <g
+          onClick={() => setSelectedPoint(null)}
+          className="h-full w-full"
+        >
+          {bars}
+        </g>
+      )}
+
+      {/* Value Label Overlay (Tooltip) */}
+      {selectedPoint !== null && points[selectedPoint] !== undefined && (
+        <g>
+          <rect
+            x={getX(selectedPoint) - 35}
+            y={getY(points[selectedPoint]) - 40}
+            width="70"
+            height="30"
+            rx="8"
             fill="var(--accent-primary)"
-            radius={[4, 4, 0, 0]}
-            maxBarSize={40}
           />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+          <path
+            d={`M ${getX(selectedPoint) - 6} ${getY(points[selectedPoint]) - 10} L ${getX(selectedPoint)} ${getY(points[selectedPoint]) - 2} L ${getX(selectedPoint) + 6} ${getY(points[selectedPoint]) - 10} Z`}
+            fill="var(--accent-primary)"
+          />
+          <text
+            x={getX(selectedPoint)}
+            y={getY(points[selectedPoint]) - 20}
+            fill="white"
+            fontSize="12"
+            fontWeight="bold"
+            textAnchor="middle"
+            className="select-none tabular-nums"
+          >
+            {points[selectedPoint].toFixed(1)}{unit}
+          </text>
+        </g>
+      )}
+    </svg>
   );
 }
 
-function SoilSensorDetail({
-  sensor,
-  sensorId,
-  onClose,
-}: {
-  sensor: any;
-  sensorId?: string;
-  onClose: () => void;
-}) {
-  const [selectedRange, setSelectedRange] = useState("24 Hours");
+function SoilSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?: string; onClose: () => void }) {
+  const [selectedRange, setSelectedRange] = useState('24 Hours');
   const [chartData, setChartData] = useState<any[]>([]);
-  const ranges = ["24 Hours", "7 Days", "1 Month"];
+  const ranges = ['24 Hours', '7 Days', '1 Month'];
 
   const getMetricKey = (title: string) => {
     const map: Record<string, string | null> = {
-      Nitrogen: "nitrogen",
-      "Organic Carbon": "organicCarbon",
-      "Soil Temperature at Surface": "soil_temperature",
-      Phosphorus: "phosphorus",
-      Potassium: "potassium",
-      "PH Level": "ph",
-      "Soil Moisture at Surface": "soil_moisture_1",
-      "Wind Direction": "wind_direction",
-      "Wind Speed": "wind_speed",
-      "Rain Fall": "rainfall",
-      "Solar Radiation": "solar_radiation",
-      "PM 2.5": "pm2_5",
-      "PM 10": "pm10",
-      CO2: "co2",
-      "Air Temperature": "temperature",
-      VOC: "voc",
-      CH2O: "ch2o",
-      CO: "co",
-      "PM 1.0": "pm1_0",
-      "Temperature 1": "temperature",
-      "Temperature 2": "soil_temperature",
-      "Humidity 1": "humidity",
-      "Humidity 2": "soil_moisture_1",
-      "Leaf Wetness": "leaf_wetness",
-      Humidity: "humidity",
-      "Air Pressure": "pressure",
-      SO2: "so2",
-      NO2: "no2",
-      O3: "o3",
+      'Nitrogen': 'nitrogen',
+      'Organic Carbon': 'organicCarbon',
+      'Soil Temperature at Surface': 'soil_temperature',
+      'Phosphorus': 'phosphorus',
+      'Potassium': 'potassium',
+      'PH Level': 'ph',
+      'Soil Moisture at Surface': 'soil_moisture_1',
+      'Wind Direction': 'wind_direction',
+      'Wind Speed': 'wind_speed',
+      'Rain Fall': 'rainfall',
+      'Solar Radiation': 'solar_radiation',
+      'PM 2.5': 'pm2_5',
+      'PM 10': 'pm10',
+      'CO2': 'co2',
+      'Air Temperature': 'temperature',
+      'VOC': 'voc',
+      'CH2O': 'ch2o',
+      'CO': 'co',
+      'PM 1.0': 'pm1_0',
+      'Temperature 1': 'temperature',
+      'Temperature 2': 'soil_temperature',
+      'Humidity 1': 'humidity',
+      'Humidity 2': 'soil_moisture_1',
+      'Leaf Wetness': 'leaf_wetness',
+      'Humidity': 'humidity',
+      'Air Pressure': 'pressure',
+      'SO2': 'so2',
+      'NO2': 'no2',
+      'O3': 'o3',
+      'Soil Moisture 1': 'soil_moisture_1',
+      'Soil Moisture 2': 'soil_moisture_2',
+      'Soil Temp 1': 'soil_temperature',
+      'Soil Temp 2': 'soil_temperature_2',
+      'Air Humidity': 'humidity',
+      'Pressure': 'pressure'
     };
     return map[title] || null;
   };
@@ -596,7 +650,9 @@ function SoilSensorDetail({
         }
         const rawData = await fetchNestChartData(sensorId, selectedRange, metric);
         setChartData(rawData);
-      } catch (err) {}
+      } catch (err) {
+        console.error('Failed to fetch chart data:', err);
+      }
     };
 
     fetchHistory();
@@ -605,24 +661,20 @@ function SoilSensorDetail({
   }, [sensorId, selectedRange, sensor.title]);
 
   return (
-    <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-borderColor bg-bgCard p-5 md:rounded-[2rem] md:p-6">
+    <div className="relative flex w-full flex-col overflow-hidden rounded-xl border border-borderColor bg-bgCard p-5 shadow-card md:p-6">
       <div className="mb-4 flex w-full items-start justify-between md:mb-5">
         <div className="z-20 flex flex-col items-start gap-3 md:gap-5">
           <div className="text-left">
-            <h3 className="mb-1 text-2xl font-bold leading-none tracking-tight text-textHeading md:mb-1 md:text-xl">
-              {sensor.title}
-            </h3>
-            <p className="text-[0.6rem] font-medium tracking-wide text-textHint md:text-xs">
-              {selectedRange} Trend
-            </p>
+            <h3 className="mb-1 text-scale-card font-bold leading-none tracking-tight text-textHeading">{sensor.title}</h3>
+            <p className="text-scale-caption font-medium tracking-wide text-textSecondary">{selectedRange} Trend</p>
           </div>
 
-          <div className="hidden flex-wrap gap-3 md:flex">
+          <div className="hidden flex-wrap gap-2 md:flex">
             {ranges.map((range) => (
               <button
                 key={range}
                 onClick={() => setSelectedRange(range)}
-                className={`rounded-full px-5 py-1.5 text-xs font-bold transition-all ${selectedRange === range ? "bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/30 shadow-lg" : "text-textHint border border-borderColor/40 hover:border-borderColor"}`}
+                className={`rounded-lg px-4 py-1.5 text-scale-caption font-semibold transition-all ${selectedRange === range ? 'bg-accentPrimary/10 text-accentPrimary border border-accentPrimary/30' : 'text-textSecondary border border-borderColor hover:border-textSecondary'}`}
               >
                 {range}
               </button>
@@ -633,101 +685,83 @@ function SoilSensorDetail({
             <select
               value={selectedRange}
               onChange={(e) => setSelectedRange(e.target.value)}
-              className="w-full appearance-none cursor-pointer rounded-full border border-borderColor bg-bgInput px-5 py-2.5 text-[0.75rem] font-black uppercase tracking-wider text-accentPrimary outline-none"
+              className="w-full appearance-none cursor-pointer rounded-lg border border-borderColor bg-bgInput px-4 py-2.5 text-scale-caption font-bold text-accentPrimary outline-none"
             >
               {ranges.map((range) => (
-                <option key={range} value={range} className="bg-bgMain uppercase text-textHeading">
-                  {range}
-                </option>
+                <option key={range} value={range} className="bg-bgCard text-textPrimary">{range}</option>
               ))}
             </select>
             <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-              <ChevronDown className="h-4 w-4 text-[#00FF9C]/60" />
+              <ChevronDown className="h-4 w-4 text-accentPrimary/60" />
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex flex-col items-end">
-            <p
-              className="text-3xl font-black leading-none tracking-tighter md:text-4xl"
-              style={{ color: sensor.color }}
-            >
+            <p className="text-scale-metric font-bold leading-none tracking-tighter" style={{ color: sensor.color }}>
               {sensor.value}
-              <span
-                className="ml-1 text-[1rem] font-extrabold uppercase"
-                style={{ color: sensor.color }}
-              >
-                {sensor.unit}
-              </span>
+              <span className="ml-1 text-scale-body font-bold uppercase" style={{ color: sensor.color }}>{sensor.unit}</span>
             </p>
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 transition-all hover:bg-red-500/20 active:scale-95 md:h-9 md:w-9"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-borderColor bg-bgInput transition-all hover:bg-borderColor active:scale-95 md:h-9 md:w-9"
           >
-            <X className="h-5 w-5 text-red-500 md:h-4 md:w-4" strokeWidth={3} />
+            <X className="h-4 w-4 text-textSecondary" />
           </button>
         </div>
       </div>
 
-      <div className="relative mt-0 flex h-[200px] w-full items-end justify-center p-0 md:mt-1 md:h-[260px]">
-        <RealDataChart
-          data={chartData}
-          unit={sensor.unit}
-          selectedRange={selectedRange}
-          metricKey={getMetricKey(sensor.title)}
-          chartType={sensor?.title?.toLowerCase()?.includes("wind") ? "line" : "bar"}
-        />
+      <div className="relative mt-2 flex h-[200px] w-full items-end justify-center p-0 md:h-[260px]">
+        <RealDataChart data={chartData} unit={sensor.unit || undefined} selectedRange={selectedRange} metricKey={getMetricKey(sensor.title) || undefined} chartType={sensor?.title?.toLowerCase()?.includes('wind') ? 'line' : 'bar'} />
       </div>
     </div>
   );
 }
 
-function AirSensorDetail({
-  sensor,
-  sensorId,
-  onClose,
-}: {
-  sensor: any;
-  sensorId?: string;
-  onClose: () => void;
-}) {
-  const [selectedRange, setSelectedRange] = useState("24 Hours");
+function AirSensorDetail({ sensor, sensorId, onClose }: { sensor: any; sensorId?: string; onClose: () => void }) {
+  const [selectedRange, setSelectedRange] = useState('24 Hours');
   const [chartData, setChartData] = useState<any[]>([]);
-  const ranges = ["24 Hours", "7 Days", "1 Month"];
+  const ranges = ['24 Hours', '7 Days', '1 Month'];
 
   const getMetricKey = (title: string) => {
     const map: Record<string, string | null> = {
-      Nitrogen: "nitrogen",
-      "Organic Carbon": "organicCarbon",
-      "Soil Temperature at Surface": "soil_temperature",
-      Phosphorus: "phosphorus",
-      Potassium: "potassium",
-      "PH Level": "ph",
-      "Soil Moisture at Surface": "soil_moisture_1",
-      "Wind Direction": "wind_direction",
-      "Wind Speed": "wind_speed",
-      "Rain Fall": "rainfall",
-      "Solar Radiation": "solar_radiation",
-      "PM 2.5": "pm2_5",
-      "PM 10": "pm10",
-      CO2: "co2",
-      "Air Temperature": "temperature",
-      VOC: "voc",
-      CH2O: "ch2o",
-      CO: "co",
-      "PM 1.0": "pm1_0",
-      "Temperature 1": "temperature",
-      "Temperature 2": "soil_temperature",
-      "Humidity 1": "humidity",
-      "Humidity 2": "soil_moisture_1",
-      "Leaf Wetness": "leaf_wetness",
-      Humidity: "humidity",
-      "Air Pressure": "pressure",
-      SO2: "so2",
-      NO2: "no2",
-      O3: "o3",
+      'Nitrogen': 'nitrogen',
+      'Organic Carbon': 'organicCarbon',
+      'Soil Temperature at Surface': 'soil_temperature',
+      'Phosphorus': 'phosphorus',
+      'Potassium': 'potassium',
+      'PH Level': 'ph',
+      'Soil Moisture at Surface': 'soil_moisture_1',
+      'Wind Direction': 'wind_direction',
+      'Wind Speed': 'wind_speed',
+      'Rain Fall': 'rainfall',
+      'Solar Radiation': 'solar_radiation',
+      'PM 2.5': 'pm2_5',
+      'PM 10': 'pm10',
+      'CO2': 'co2',
+      'Air Temperature': 'temperature',
+      'VOC': 'voc',
+      'CH2O': 'ch2o',
+      'CO': 'co',
+      'PM 1.0': 'pm1_0',
+      'Temperature 1': 'temperature',
+      'Temperature 2': 'soil_temperature',
+      'Humidity 1': 'humidity',
+      'Humidity 2': 'soil_moisture_1',
+      'Leaf Wetness': 'leaf_wetness',
+      'Humidity': 'humidity',
+      'Air Pressure': 'pressure',
+      'SO2': 'so2',
+      'NO2': 'no2',
+      'O3': 'o3',
+      'Soil Moisture 1': 'soil_moisture_1',
+      'Soil Moisture 2': 'soil_moisture_2',
+      'Soil Temp 1': 'soil_temperature',
+      'Soil Temp 2': 'soil_temperature_2',
+      'Air Humidity': 'humidity',
+      'Pressure': 'pressure'
     };
     return map[title] || null;
   };
@@ -743,7 +777,9 @@ function AirSensorDetail({
         }
         const rawData = await fetchNestChartData(sensorId, selectedRange, metric);
         setChartData(rawData);
-      } catch (err) {}
+      } catch (err) {
+        console.error('Failed to fetch chart data:', err);
+      }
     };
 
     fetchHistory();
@@ -752,52 +788,41 @@ function AirSensorDetail({
   }, [sensorId, selectedRange, sensor.title]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-[2rem] border border-borderColor bg-bgCard p-6 backdrop-blur-2xl md:p-8">
+    <div className="relative w-full overflow-hidden rounded-xl border border-borderColor bg-bgCard p-5 shadow-card md:p-6">
       <div className="mb-4 flex items-center justify-between md:hidden">
         <div className="flex items-center gap-4">
-          <h3 className="text-xl font-black tracking-tight text-textPrimary">{sensor.title}</h3>
-          <p className="text-xl font-black leading-none tracking-tighter text-accentPrimary">
+          <h3 className="text-scale-card font-bold tracking-tight text-textHeading">{sensor.title}</h3>
+          <p className="text-scale-card font-bold leading-none tracking-tighter text-accentPrimary">
             {sensor.value}
-            <span className="ml-0.5 text-[0.7rem] font-bold uppercase">.{sensor.unit}</span>
+            <span className="ml-1 text-scale-caption font-bold uppercase">{sensor.unit}</span>
           </p>
         </div>
         <button
           onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-borderColor bg-bgCardHover shadow-lg transition-all active:scale-95 group"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-borderColor bg-bgInput transition-all active:scale-95 group"
         >
-          <X className="h-5 w-5 text-accentPrimary" strokeWidth={3} />
+          <X className="h-4 w-4 text-textSecondary" />
         </button>
       </div>
 
-      <p className="mb-4 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-textMuted md:hidden">
-        {selectedRange} Trend
-      </p>
+      <p className="mb-4 text-scale-caption font-bold uppercase tracking-[0.2em] text-textSecondary md:hidden">{selectedRange} Trend</p>
 
       <div className="mb-8 hidden items-start justify-between md:flex">
         <div>
-          <h3 className="mb-1 text-2xl font-bold leading-tight tracking-tight text-textPrimary md:text-[1.75rem]">
-            {sensor.title}
-          </h3>
-          <p className="text-[0.75rem] font-medium uppercase tracking-widest text-textMuted md:text-[0.85rem]">
-            {selectedRange} Trend
-          </p>
+          <h3 className="mb-1 text-scale-section font-bold leading-tight tracking-tight text-textHeading">{sensor.title}</h3>
+          <p className="text-scale-caption font-medium uppercase tracking-widest text-textSecondary">{selectedRange} Trend</p>
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <p className="text-2xl font-black leading-none tracking-tighter text-accentPrimary md:text-[2.25rem]">
+          <p className="text-scale-metric font-bold leading-none tracking-tighter text-accentPrimary">
             {sensor.value}
-            <span className="ml-0.5 text-[0.8rem] font-bold uppercase md:text-[0.9rem]">
-              .{sensor.unit}
-            </span>
+            <span className="ml-1 text-scale-helper font-bold uppercase">{sensor.unit}</span>
           </p>
           <button
             onClick={onClose}
-            className="ml-1 flex h-8 w-8 items-center justify-center rounded-full border border-borderColor bg-bgCardHover shadow-lg transition-all hover:bg-bgCardHover/80 active:scale-95 group md:h-10 md:w-10"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-borderColor bg-bgInput transition-all hover:bg-borderColor active:scale-95 group md:h-10 md:w-10"
           >
-            <X
-              className="h-4 w-4 text-textSecondary group-hover:text-textPrimary"
-              strokeWidth={3}
-            />
+            <X className="h-4 w-4 text-textSecondary" />
           </button>
         </div>
       </div>
@@ -807,7 +832,7 @@ function AirSensorDetail({
           <select
             value={selectedRange}
             onChange={(e) => setSelectedRange(e.target.value)}
-            className="w-full appearance-none cursor-pointer rounded-xl border border-borderColor bg-bgInput px-4 py-3 text-[0.75rem] font-black uppercase tracking-wider text-accentPrimary outline-none transition-colors hover:bg-bgCardHover md:px-5"
+            className="w-full appearance-none cursor-pointer rounded-lg border border-borderColor bg-bgInput px-4 py-2 text-scale-caption font-bold text-accentPrimary outline-none transition-colors hover:bg-borderColor md:px-5 md:py-2.5"
           >
             {ranges.map((range) => (
               <option key={range} value={range} className="bg-bgCard text-textPrimary uppercase">
@@ -821,183 +846,38 @@ function AirSensorDetail({
         </div>
       </div>
 
-      <div className="relative flex h-[220px] w-full items-end justify-center rounded-[1.5rem] border border-borderColor/40 bg-bgCardHover/20 p-0 md:h-[300px]">
-        <RealDataChart
-          data={chartData}
-          unit={sensor.unit}
-          selectedRange={selectedRange}
-          metricKey={getMetricKey(sensor.title)}
-          chartType={sensor?.title?.toLowerCase()?.includes("wind") ? "line" : "bar"}
-        />
+      <div className="relative flex h-[220px] w-full items-end justify-center rounded-lg border border-borderColor bg-bgInput p-2 md:h-[300px]">
+        <RealDataChart data={chartData} unit={sensor.unit || undefined} selectedRange={selectedRange} metricKey={getMetricKey(sensor.title) || undefined} chartType={sensor?.title?.toLowerCase()?.includes('wind') ? 'line' : 'bar'} />
       </div>
     </div>
   );
 }
 
-function NestSensorsModal({
-  isOpen,
-  onClose,
-  data,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  data?: any;
-}) {
+function NestSensorsModal({ isOpen, onClose, data }: { isOpen: boolean; onClose: () => void; data?: any }) {
   const [activeSensor, setActiveSensor] = useState<string | null>(null);
 
   const nestSensors = [
-    {
-      id: "pm1_0",
-      title: "PM 1.0",
-      value: data?.values?.pm1_0 ?? "0",
-      unit: "µg/m³",
-      icon: Activity,
-      color: "#3B82F6",
-    },
-    {
-      id: "pm2_5",
-      title: "PM 2.5",
-      value: data?.values?.pm2_5 ?? "0",
-      unit: "µg/m³",
-      icon: Activity,
-      color: "#3B82F6",
-    },
-    {
-      id: "pm10",
-      title: "PM 10",
-      value: data?.values?.pm10 ?? "0",
-      unit: "µg/m³",
-      icon: Activity,
-      color: "#22D3EE",
-    },
-    {
-      id: "co2",
-      title: "CO2",
-      value: data?.values?.co2 ?? "0",
-      unit: "ppm",
-      icon: Cloud,
-      color: "#E5E7EB",
-    },
-    {
-      id: "voc",
-      title: "VOC",
-      value: data?.values?.voc ?? "0",
-      unit: "ppb",
-      icon: Activity,
-      color: "#A855F7",
-    },
-    {
-      id: "ch2o",
-      title: "CH2O",
-      value: data?.values?.ch2o ?? "0",
-      unit: "mg/m³",
-      icon: Activity,
-      color: "#F87171",
-    },
-    {
-      id: "co",
-      title: "CO",
-      value: data?.values?.co ?? "0",
-      unit: "ppm",
-      icon: Activity,
-      color: "#F59E0B",
-    },
-    {
-      id: "no2",
-      title: "NO2",
-      value: data?.values?.no2 ?? "0",
-      unit: "ppm",
-      icon: Activity,
-      color: "#F97316",
-    },
-    {
-      id: "o3",
-      title: "O3",
-      value: data?.values?.o3 ?? "0",
-      unit: "ppm",
-      icon: Activity,
-      color: "#22C55E",
-    },
-    {
-      id: "temp1",
-      title: "Temperature 1",
-      value: data?.values?.temperature ?? "0",
-      unit: "°C",
-      icon: Thermometer,
-      color: "#F59E0B",
-    },
-    {
-      id: "temp2",
-      title: "Temperature 2",
-      value: data?.values?.temperature2 ?? "0",
-      unit: "°C",
-      icon: Thermometer,
-      color: "#F59E0B",
-    },
-    {
-      id: "hum1",
-      title: "Humidity 1",
-      value: data?.values?.humidity ?? "0",
-      unit: "%",
-      icon: Droplets,
-      color: "#3B82F6",
-    },
-    {
-      id: "hum2",
-      title: "Humidity 2",
-      value: data?.values?.humidity2 ?? "0",
-      unit: "%",
-      icon: Droplets,
-      color: "#3B82F6",
-    },
-    {
-      id: "leaf",
-      title: "Leaf Wetness",
-      value: data?.values?.leaf ?? "0",
-      unit: "%",
-      icon: Leaf,
-      color: "#22C55E",
-    },
-    {
-      id: "wind_speed",
-      title: "Wind Speed",
-      value: data?.values?.wind_speed ?? "0",
-      unit: "m/s",
-      icon: Wind,
-      color: "#60A5FA",
-    },
-    {
-      id: "wind_dir",
-      title: "Wind Direction",
-      value: data?.values?.wind_dir ?? "0",
-      unit: "°",
-      icon: Wind,
-      color: "#60A5FA",
-    },
-    {
-      id: "pressure",
-      title: "Pressure",
-      value: data?.values?.pressure ?? "0",
-      unit: "hPa",
-      icon: Gauge,
-      color: "#8B5CF6",
-    },
-    {
-      id: "solar_radiation",
-      title: "Solar Radiation",
-      value: data?.values?.solar_radiation ?? "0",
-      unit: "W/m²",
-      icon: Sun,
-      color: "#FBBF24",
-    },
-    {
-      id: "rainfall",
-      title: "Rainfall",
-      value: data?.values?.rainfall ?? "0",
-      unit: "mm",
-      icon: CloudRain,
-      color: "#06B6D4",
-    },
+    { id: 'pm1_0', title: 'PM 1.0', value: data?.values?.pm1_0 ?? '0', unit: 'µg/m³', icon: Activity, color: '#3B82F6' },
+    { id: 'pm2_5', title: 'PM 2.5', value: data?.values?.pm2_5 ?? '0', unit: 'µg/m³', icon: Activity, color: '#3B82F6' },
+    { id: 'pm10', title: 'PM 10', value: data?.values?.pm10 ?? '0', unit: 'µg/m³', icon: Activity, color: '#22D3EE' },
+    { id: 'co2', title: 'CO2', value: data?.values?.co2 ?? '0', unit: 'ppm', icon: Cloud, color: '#E5E7EB' },
+    { id: 'voc', title: 'VOC', value: data?.values?.voc ?? '0', unit: 'ppb', icon: Activity, color: '#A855F7' },
+    { id: 'ch2o', title: 'CH2O', value: data?.values?.ch2o ?? '0', unit: 'mg/m³', icon: Activity, color: '#F87171' },
+    { id: 'co', title: 'CO', value: data?.values?.co ?? '0', unit: 'ppm', icon: Activity, color: '#F59E0B' },
+    { id: 'no2', title: 'NO2', value: data?.values?.no2 ?? '0', unit: 'ppm', icon: Activity, color: '#F97316' },
+    { id: 'o3', title: 'O3', value: data?.values?.o3 ?? '0', unit: 'ppm', icon: Activity, color: '#22C55E' },
+    { id: 'temperature', title: 'Air Temperature', value: data?.values?.temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F59E0B' },
+    { id: 'humidity', title: 'Air Humidity', value: data?.values?.humidity ?? '0', unit: '%', icon: Droplets, color: '#3B82F6' },
+    { id: 'soil_temp1', title: 'Soil Temp 1', value: data?.values?.soil_temperature ?? '0', unit: '°C', icon: Thermometer, color: '#F97316' },
+    { id: 'soil_temp2', title: 'Soil Temp 2', value: data?.values?.soil_temperature_2 ?? '0', unit: '°C', icon: Thermometer, color: '#F97316' },
+    { id: 'soil_mois1', title: 'Soil Moisture 1', value: data?.values?.soil_moisture_1 !== undefined ? (Number(data.values.soil_moisture_1) / 100).toFixed(2) : '0', unit: 'v/v', icon: Droplets, color: '#06B6D4' },
+    { id: 'soil_mois2', title: 'Soil Moisture 2', value: data?.values?.soil_moisture_2 !== undefined ? (Number(data.values.soil_moisture_2) / 100).toFixed(2) : '0', unit: 'v/v', icon: Droplets, color: '#06B6D4' },
+    { id: 'leaf', title: 'Leaf Wetness', value: data?.values?.leaf ?? '0', unit: '%', icon: Leaf, color: '#22C55E' },
+    { id: 'wind_speed', title: 'Wind Speed', value: data?.values?.wind_speed ?? '0', unit: 'm/s', icon: Wind, color: '#60A5FA' },
+    { id: 'wind_dir', title: 'Wind Direction', value: data?.values?.wind_dir ?? '0', unit: '°', icon: Wind, color: '#60A5FA' },
+    { id: 'pressure', title: 'Pressure', value: data?.values?.pressure ?? '0', unit: 'hPa', icon: Gauge, color: '#8B5CF6' },
+    { id: 'solar_radiation', title: 'Solar Radiation', value: data?.values?.solar_radiation ?? '0', unit: 'W/m²', icon: Sun, color: '#FBBF24' },
+    { id: 'rainfall', title: 'Rainfall', value: data?.values?.rainfall ?? '0', unit: 'mm', icon: CloudRain, color: '#3B82F6' },
   ];
 
   const gridGroups = [];
@@ -1006,60 +886,51 @@ function NestSensorsModal({
   }
 
   const activeSensorData = nestSensors.find((s) => s.id === activeSensor);
-  const activeSensorIndex = nestSensors.findIndex((s) => s.id === activeSensor);
-
   const toggleSensor = (id: string) => {
     setActiveSensor(activeSensor === id ? null : id);
   };
 
   const isOnline = data?.isOnline ?? true;
 
-  return (
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="flex max-h-[90vh] w-[94vw] flex-col overflow-hidden rounded-[2rem] border border-borderColor bg-bgCard shadow-2xl backdrop-blur-3xl md:max-w-[1280px] md:rounded-[2.5rem]"
+        className="flex max-h-[90vh] w-[94vw] flex-col overflow-hidden rounded-xl border border-borderColor bg-bgCard shadow-elevated md:max-w-[1280px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-borderColor/30 px-6 py-4 md:px-14 md:py-4">
+        <div className="flex items-center justify-between border-b border-borderColor px-6 py-4 md:px-10 md:py-4">
           <div className="flex items-center gap-4 md:gap-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[0.75rem] bg-accentPrimary/10 md:h-14 md:w-14 md:rounded-[1rem]">
-              <Activity className="h-5 w-5 text-accentPrimary md:h-7 md:w-7" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accentPrimary/10 text-accentPrimary md:h-12 md:w-12">
+              <Activity className="h-5 w-5 text-accentPrimary md:h-6 md:w-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold leading-tight tracking-tight text-textHeading md:text-[1.6rem]">
-                Nest Device Sensors
-              </h2>
+              <h2 className="text-scale-card font-bold leading-tight tracking-tight text-textHeading">Nest Device Sensors</h2>
               <div className="flex items-center gap-2 mt-0.5">
-                <span
-                  className={`h-2 w-2 rounded-full ${isOnline ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : "bg-red-500 shadow-[0_0_8px_#ef4444]"}`}
+                <StatusBadge
+                  label={isOnline ? 'Online' : 'Offline'}
+                  variant={isOnline ? 'success' : 'danger'}
+                  size="sm"
                 />
-                <p
-                  className={`text-[0.75rem] font-bold uppercase tracking-wider ${isOnline ? "text-emerald-500" : "text-red-500"}`}
-                >
-                  {isOnline ? "Online" : "Offline"}
-                </p>
-                <span className="text-textMuted">|</span>
-                <p className="text-[0.75rem] font-medium text-textHint md:text-[0.9rem]">
-                  {nestSensors.length} total sensors
-                </p>
+                <span className="text-borderColor">|</span>
+                <p className="text-scale-caption font-medium text-textSecondary">{nestSensors.length} total sensors</p>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 transition-opacity hover:opacity-50">
-            <X className="h-5 w-5 text-red-500 md:h-6 md:w-6" strokeWidth={2.5} />
+          <button onClick={onClose} className="p-2 transition hover:text-red-500">
+            <X className="h-5 w-5 text-textSecondary" />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:px-14 md:py-8">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:px-10 md:py-8">
           {gridGroups.map((group, groupIdx) => (
             <React.Fragment key={groupIdx}>
               <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
@@ -1067,41 +938,35 @@ function NestSensorsModal({
                   <div key={sensor.id} className="w-full">
                     <div
                       onClick={() => toggleSensor(sensor.id)}
-                      className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-[1.5rem] border px-6 py-5 transition-all md:h-[13rem] md:rounded-[2rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? "border-accentPrimary bg-accentPrimary/5 shadow-lg" : "border-borderColor bg-bgCardHover/30 hover:border-accentPrimary/30 hover:bg-bgCardHover active:scale-95"}`}
+                      className={`flex h-[12.5rem] cursor-pointer flex-col justify-between rounded-lg border px-6 py-5 transition-all md:h-[13rem] md:px-8 md:py-6 ${activeSensor === sensor.id ? 'border-accentPrimary bg-accentPrimary/5 shadow-sm' : 'border-borderColor bg-bgInput shadow-sm hover:border-accentPrimary/30 hover:bg-bgCard active:scale-95'}`}
                     >
                       <div>
                         <div
-                          className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl md:mb-6 md:rounded-2xl"
+                          className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg md:mb-6"
                           style={{ backgroundColor: `${sensor.color}1A` }}
                         >
                           <sensor.icon className="h-6 w-6" style={{ color: sensor.color }} />
                         </div>
-                        <p className="mb-1 text-[0.75rem] font-bold uppercase tracking-wider text-textSecondary md:text-[0.7rem]">
+                        <p className="mb-1 text-scale-caption font-bold uppercase tracking-wider text-textSecondary">
                           {sensor.title}
                         </p>
                         <div className="mt-1 flex items-baseline gap-2">
-                          <span className="text-[1.2rem] font-black leading-none tracking-tight text-textPrimary md:text-[1.4rem]">
+                          <span className="text-scale-card font-extrabold leading-none tracking-tight text-textHeading">
                             {sensor.value}
                           </span>
-                          <span className="mb-1 text-[0.6rem] font-extrabold tracking-wider text-textMuted md:text-[0.8rem]">
+                          <span className="mb-0.5 text-scale-caption font-bold tracking-wider text-textSecondary">
                             {sensor.unit}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div
-                            className={`h-1.5 w-1.5 rounded-full ${isOnline ? "bg-accentPrimary shadow-[0_0_10px_rgba(0,255,156,0.5)]" : "bg-textMuted/45"} md:h-2 md:w-2`}
-                          />
-                          <span
-                            className={`text-[0.65rem] font-bold uppercase tracking-widest leading-none ${isOnline ? "text-accentPrimary" : "text-textMuted/60"} md:text-[0.75rem]`}
-                          >
-                            {isOnline ? "Operational" : "No Signal"}
+                          <div className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-accentPrimary' : 'bg-textMuted'} md:h-2 md:w-2`} />
+                          <span className={`text-scale-caption font-bold uppercase tracking-widest leading-none ${isOnline ? 'text-accentPrimary' : 'text-textSecondary'}`}>
+                            {isOnline ? 'Operational' : 'No Signal'}
                           </span>
                         </div>
-                        <ChevronDown
-                          className={`h-4 w-4 text-textMuted transition-transform ${activeSensor === sensor.id ? "rotate-180" : ""}`}
-                        />
+                        <ChevronDown className={`h-4 w-4 text-textSecondary transition-transform ${activeSensor === sensor.id ? 'rotate-180' : ''}`} />
                       </div>
                     </div>
 
@@ -1109,19 +974,11 @@ function NestSensorsModal({
                       {activeSensor === sensor.id && (
                         <motion.div
                           initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                          animate={{
-                            opacity: 1,
-                            height: "auto",
-                            marginTop: 16,
-                          }}
+                          animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
                           exit={{ opacity: 0, height: 0, marginTop: 0 }}
                           className="w-full overflow-hidden lg:hidden"
                         >
-                          <AirSensorDetail
-                            sensor={sensor}
-                            sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId}
-                            onClose={() => setActiveSensor(null)}
-                          />
+                          <AirSensorDetail sensor={sensor} sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId || undefined} onClose={() => setActiveSensor(null)} />
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -1130,18 +987,14 @@ function NestSensorsModal({
               </div>
 
               <AnimatePresence>
-                {activeSensor && group.some((s) => s.id === activeSensor) && (
+                {activeSensor && group.some(s => s.id === activeSensor) && (
                   <motion.div
                     initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                    animate={{ opacity: 1, height: "auto", marginBottom: 24 }}
+                    animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
                     exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                     className="hidden overflow-hidden lg:block"
                   >
-                    <AirSensorDetail
-                      sensor={activeSensorData}
-                      sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId}
-                      onClose={() => setActiveSensor(null)}
-                    />
+                    <AirSensorDetail sensor={activeSensorData} sensorId={data?.sensorId || data?._id || data?.id || data?.deviceId || undefined} onClose={() => setActiveSensor(null)} />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1149,25 +1002,22 @@ function NestSensorsModal({
           ))}
         </div>
 
-        <div className="mt-auto shrink-0 px-6 pb-6 md:px-14 md:pb-8">
-          <div className="flex flex-col gap-1 rounded-[1.25rem] border border-[#00FF9C]/10 bg-[#00FF9C]/5 px-6 py-3 md:rounded-[1.75rem] md:px-8 md:py-4">
+        <div className="mt-auto shrink-0 px-6 pb-6 md:px-10 md:pb-8">
+          <div className="flex flex-col gap-1 rounded-lg border border-borderColor bg-bgInput px-6 py-4 md:px-8">
             <div className="flex items-center gap-3">
-              <div
-                className={`h-1.5 w-1.5 rounded-full ${isOnline ? "bg-[#00FF9C] shadow-[0_0_10px_#00FF9C]" : "bg-red-500 shadow-[0_0_10px_#ef4444]"} md:h-2 md:w-2`}
-              />
-              <p
-                className={`text-[0.75rem] font-extrabold uppercase leading-none tracking-wider ${isOnline ? "text-[#00FF9C]" : "text-red-500"} md:text-[0.85rem]`}
-              >
-                {isOnline ? "All sensors are operational" : "Device connectivity issues detected"}
+              <div className={`h-2 w-2 rounded-full ${isOnline ? 'bg-accentPrimary' : 'bg-danger'}`} />
+              <p className={`text-scale-caption font-extrabold uppercase leading-none tracking-wider ${isOnline ? 'text-accentPrimary' : 'text-danger'}`}>
+                {isOnline ? 'All sensors are operational' : 'Device connectivity issues detected'}
               </p>
             </div>
-            <p className="ml-4.5 text-[0.6rem] font-medium tracking-tight text-textHint md:text-[0.7rem]">
-              {data?.isHistorical ? "Showing last valid readings from: " : "Last updated: "}
-              {data?.timestamp ? new Date(data.timestamp).toLocaleString() : "N/A"}
+            <p className="ml-5 text-scale-caption font-medium tracking-tight text-textSecondary">
+              {data?.isHistorical ? 'Showing last valid readings from: ' : 'Last updated: '}
+              {data?.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A'}
             </p>
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }

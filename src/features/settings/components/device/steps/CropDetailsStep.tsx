@@ -7,7 +7,7 @@ interface CropDetailsStepProps {
     expectedHarvest: string;
     cultivationArea: string;
   };
-  onChange: (fields: Partial<typeof props.wizardData>) => void;
+  onChange: (fields: Partial<CropDetailsStepProps["wizardData"]>) => void;
 }
 
 export function CropDetailsStep({ wizardData, onChange }: CropDetailsStepProps) {

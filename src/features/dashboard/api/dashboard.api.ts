@@ -44,7 +44,7 @@ export const dashboardAPI = {
     apiClient.get(`/predictions/farms/${farmId}`, { params: { deviceId } }),
 
   /**
-   * Export predictions data as CSV
+   * Export predictions data as CSV or send via email
    */
   exportPredictions: (params?: {
     farmId?: string;
@@ -52,10 +52,11 @@ export const dashboardAPI = {
     startDate?: string;
     endDate?: string;
     range?: string;
+    email?: boolean;
   }) =>
     apiClient.get("/predictions/export", {
       params,
-      responseType: "blob",
+      responseType: params?.email ? "json" : "blob",
     }),
 
   /**
@@ -77,14 +78,4 @@ export const dashboardAPI = {
    */
   getSensorDashboardContext: (sensorId: string) =>
     apiClient.get(`/sensors/${sensorId}/dashboard-context`),
-
-  /**
-   * Export predictions CSV and optionally email it to the user
-   */
-  exportPredictions: (params: {
-    range: string;
-    email?: boolean;
-    farmId?: string;
-    sensorId?: string;
-  }) => apiClient.get("/predictions/export", { params }),
 };

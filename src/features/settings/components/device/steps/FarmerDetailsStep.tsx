@@ -9,7 +9,7 @@ interface FarmerDetailsStepProps {
     district: string;
     farmerState: string;
   };
-  onChange: (fields: Partial<typeof props.wizardData>) => void;
+  onChange: (fields: Partial<FarmerDetailsStepProps["wizardData"]>) => void;
 }
 
 export function FarmerDetailsStep({ wizardData, onChange }: FarmerDetailsStepProps) {

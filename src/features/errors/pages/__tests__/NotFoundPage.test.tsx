@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import React from "react";
 import { describe, test, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { NotFoundPage } from "../NotFoundPage";
+import "@testing-library/jest-dom";
 
 describe("NotFoundPage", () => {
   test("renders 404 header and description text", () => {

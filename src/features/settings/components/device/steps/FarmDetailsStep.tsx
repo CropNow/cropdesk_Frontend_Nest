@@ -13,7 +13,7 @@ interface FarmDetailsStepProps {
     farmingType: string;
     area: string;
   };
-  onChange: (fields: Partial<typeof props.wizardData>) => void;
+  onChange: (fields: Partial<FarmDetailsStepProps["wizardData"]>) => void;
 }
 
 export function FarmDetailsStep({ wizardData, onChange }: FarmDetailsStepProps) {

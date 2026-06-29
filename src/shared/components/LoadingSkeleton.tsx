@@ -3,7 +3,7 @@
  */
 export function LoadingSkeleton() {
   return (
-    <main className="min-h-screen bg-bgMain px-4 pb-10 pt-8 text-textHeading sm:px-6 lg:pl-28 lg:pr-10">
+    <main className="min-h-screen bg-bgMain px-4 pb-10 pt-8 text-textHeading sm:px-6 desktop-layout-pl lg:pr-10 lg:pt-2 transition-all duration-300">
       <div className="mx-auto max-w-[1600px] animate-pulse space-y-6">
         <div className="h-28 rounded-3xl bg-cardBg" />
         <div className="h-[400px] rounded-3xl bg-cardBg" />

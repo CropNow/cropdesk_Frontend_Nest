@@ -1,4 +1,5 @@
 import React from "react";
+import { cn } from "../../lib/utils";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "danger";
@@ -16,7 +17,7 @@ export const Button: React.FC<ButtonProps> = ({
   className = "",
   ...props
 }) => {
-  const baseClass = "font-medium rounded transition-colors duration-200 focus-visible:ring-2";
+  const baseClass = "t-button rounded transition-colors duration-200 focus-visible:ring-2 inline-flex items-center justify-center";
   const variantClass = {
     primary: "bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-400",
     secondary: "bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-400",
@@ -31,7 +32,7 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button
       disabled={isLoading || disabled}
-      className={`${baseClass} ${variantClass[variant]} ${sizeClass[size]} ${className}`}
+      className={cn(baseClass, variantClass[variant], sizeClass[size], className)}
       {...props}
     >
       {isLoading ? "Loading..." : children}

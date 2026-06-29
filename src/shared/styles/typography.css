@@ -11,8 +11,8 @@
 @font-face {
   font-family: "General Sans";
   src:
-    url("../assets/fonts/GeneralSans-Regular.woff2") format("woff2"),
-    url("../assets/fonts/GeneralSans-Regular.woff") format("woff");
+    url("../../assets/fonts/GeneralSans/GeneralSans-Regular.woff2") format("woff2"),
+    url("../../assets/fonts/GeneralSans/GeneralSans-Regular.woff") format("woff");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -20,8 +20,8 @@
 @font-face {
   font-family: "General Sans";
   src:
-    url("../assets/fonts/GeneralSans-Medium.woff2") format("woff2"),
-    url("../assets/fonts/GeneralSans-Medium.woff") format("woff");
+    url("../../assets/fonts/GeneralSans/GeneralSans-Medium.woff2") format("woff2"),
+    url("../../assets/fonts/GeneralSans/GeneralSans-Medium.woff") format("woff");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -29,8 +29,8 @@
 @font-face {
   font-family: "General Sans";
   src:
-    url("../assets/fonts/GeneralSans-Semibold.woff2") format("woff2"),
-    url("../assets/fonts/GeneralSans-Semibold.woff") format("woff");
+    url("../../assets/fonts/GeneralSans/GeneralSans-Semibold.woff2") format("woff2"),
+    url("../../assets/fonts/GeneralSans/GeneralSans-Semibold.woff") format("woff");
   font-weight: 600;
   font-style: normal;
   font-display: swap;

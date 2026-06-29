@@ -1,58 +1,84 @@
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './index.html',
-    './src/**/*.{js,ts,jsx,tsx}'
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}"
   ],
-  darkMode: 'class',
+  darkMode: "class",
   theme: {
     extend: {
       fontFamily: {
-        // Match the @import in src/index.css. "Plus Jakarta Sans" was declared here but
-        // only Outfit + JetBrains Mono are actually loaded, so `font-sans` was silently
-        // falling back to the system stack.
-        sans: ['Outfit', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        sans: [
+          "Satoshi-Variable", "Satoshi-Regular", "General Sans",
+          "system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif",
+        ],
+        mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "monospace"],
       },
+
+      /* Sharp, enterprise border radius — max 16px */
+      borderRadius: {
+        btn: "8px",
+        input: "10px",
+        card: "12px",
+        panel: "12px",
+        dialog: "14px",
+        max: "16px",
+      },
+
+      /* Strict spacing scale */
+      spacing: {
+        "1": "4px",
+        "2": "8px",
+        "3": "12px",
+        "4": "16px",
+        "5": "20px",
+        "6": "24px",
+        "8": "32px",
+        "12": "48px",
+      },
+
       colors: {
-        accent: '#00FF00',
-        sage: '#749272',
-        medium: '#498A46',
-        primary: '#41933D',
+        accent: "#16C47F",
+        sage: "#12B372",
 
-        // CSS variable-backed theme colors
-        bgMain: 'var(--bg-main)',
-        bgCard: 'var(--bg-card)',
-        bgCardHover: 'var(--bg-card-hover)',
-        bgSidebar: 'var(--bg-sidebar)',
-        bgInput: 'var(--bg-input)',
+        /* CSS variable-backed theme colors */
+        bgMain: "var(--bg-main)",
+        bgCard: "var(--bg-card)",
+        bgCardHover: "var(--bg-card-hover)",
+        bgSidebar: "var(--bg-sidebar)",
+        bgInput: "var(--bg-input)",
 
-        textPrimary: 'var(--text-primary)',
-        textSecondary: 'var(--text-secondary)',
-        textMuted: 'var(--text-muted)',
-        textHeading: 'var(--text-heading)',
-        textBody: 'var(--text-body)',
-        textLabel: 'var(--text-label)',
-        textHint: 'var(--text-hint)',
+        textPrimary: "var(--text-primary)",
+        textSecondary: "var(--text-secondary)",
+        textMuted: "var(--text-muted)",
+        textHeading: "var(--text-heading)",
+        textBody: "var(--text-body)",
+        textLabel: "var(--text-label)",
+        textHint: "var(--text-hint)",
 
-        borderColor: 'var(--border-color)',
-        borderSubtle: 'var(--border-subtle)',
-        cardBorder: 'var(--card-border)',
-        cardBg: 'var(--card-bg)',
+        borderColor: "var(--border-color)",
+        borderSubtle: "var(--border-subtle)",
+        cardBorder: "var(--card-border)",
+        cardBg: "var(--card-bg)",
 
-        accentPrimary: 'var(--accent-primary)',
-        accentSecondary: 'var(--accent-secondary)',
-        accentGlow: 'var(--accent-glow)',
-        accentCyan: 'var(--accent-cyan)',
-        accentPurple: 'var(--accent-purple)',
-        accentAmber: 'var(--accent-amber)',
-        accentRose: 'var(--accent-rose)',
+        accentPrimary: "var(--accent-primary)",
+        accentHover: "var(--accent-hover)",
+        accentSecondary: "var(--accent-secondary)",
+        accentGlow: "var(--accent-glow)",
 
-        glassBg: 'var(--glass-bg)',
-        glassBorder: 'var(--glass-border)',
-      }
+        success: "var(--success)",
+        warning: "var(--warning)",
+        danger: "var(--danger)",
+
+        glassBg: "var(--glass-bg)",
+        glassBorder: "var(--glass-border)",
+      },
+
+      boxShadow: {
+        card: "var(--shadow-card)",
+        elevated: "var(--shadow-elevated)",
+      },
     },
   },
   plugins: [],
-}
+};

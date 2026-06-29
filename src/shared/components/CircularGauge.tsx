@@ -20,7 +20,13 @@ export function CircularGauge({ value, status = "optimal" }: CircularGaugeProps)
   const color = colors[status];
 
   return (
-    <div className="relative h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16">
+    <div
+      className="relative h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16"
+      style={{
+        transform: "scale(var(--font-scale))",
+        transformOrigin: "center",
+      }}
+    >
       <svg
         className="h-12 w-12 -rotate-90 sm:h-14 sm:w-14 lg:h-16 lg:w-16"
         viewBox="0 0 72 72"

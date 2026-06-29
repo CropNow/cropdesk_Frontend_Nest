@@ -49,24 +49,24 @@ export function PWAInstallButton() {
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}
-        className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0"
+        className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-auto z-[100]"
       >
-        <div className="flex items-center gap-4 rounded-2xl border border-borderColor/50 bg-bgCard/90 p-4 shadow-lg backdrop-blur-xl">
+        <div className="flex items-center gap-3 sm:gap-4 rounded-2xl border border-borderColor/50 bg-bgCard/90 p-3 sm:p-4 shadow-lg backdrop-blur-xl max-w-md mx-auto sm:mx-0">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accentPrimary/20 text-accentPrimary">
             <Download className="h-5 w-5" />
           </div>
 
-          <div className="flex flex-col">
-            <p className="text-sm font-bold text-textPrimary">Install CropDesk</p>
-            <p className="text-[0.65rem] font-medium text-textSecondary">
+          <div className="flex flex-col min-w-0 flex-1">
+            <p className="text-xs sm:text-sm font-bold text-textPrimary truncate">Install CropDesk</p>
+            <p className="text-[0.6rem] sm:text-[0.65rem] font-medium text-textSecondary truncate sm:whitespace-normal">
               Add to home screen for quick access
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={handleInstallClick}
-              className="rounded-lg bg-accentPrimary px-4 py-1.5 text-xs font-bold text-black dark:text-black transition hover:bg-accentSecondary active:scale-95"
+              className="rounded-lg bg-accentPrimary px-3 py-1.5 sm:px-4 text-xs font-bold text-black dark:text-black transition hover:bg-accentSecondary active:scale-95"
             >
               Install
             </button>

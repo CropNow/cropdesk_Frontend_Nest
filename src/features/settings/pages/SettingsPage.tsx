@@ -3,7 +3,7 @@ import { SettingsLayout } from "../components/SettingsLayout";
 
 export function SettingsPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-bgMain px-4 pb-10 pt-8 text-textPrimary sm:px-6 lg:pl-28 lg:pr-10">
+    <main className="relative min-h-screen overflow-hidden bg-bgMain px-4 pb-10 pt-8 text-textPrimary sm:px-6 desktop-layout-pl lg:pr-10 lg:pt-2 transition-all duration-300">
       <div className="absolute inset-0 bg-grid-pattern" />
       <motion.div
         initial={{ opacity: 0 }}

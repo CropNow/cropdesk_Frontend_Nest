@@ -10,7 +10,7 @@ interface FieldDetailsStepProps {
     irrigationType: string;
     boundaryCoordinates: [number, number][];
   };
-  onChange: (fields: Partial<typeof props.wizardData>) => void;
+  onChange: (fields: Partial<FieldDetailsStepProps["wizardData"]>) => void;
 }
 
 export function FieldDetailsStep({ wizardData, onChange }: FieldDetailsStepProps) {

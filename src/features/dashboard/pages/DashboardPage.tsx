@@ -111,7 +111,7 @@ export function DashboardPage() {
             sensorId={
               dashboardData?.sensors?.sensorId ||
               currentDevice?.id ||
-              currentDevice?._id ||
+              (currentDevice as any)?._id ||
               undefined
             }
           />

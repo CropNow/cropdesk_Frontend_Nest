@@ -361,6 +361,7 @@ export function useFarmData({
                               aiRes.data.raw.pest.recommendation ||
                               `Pest risk is ${aiRes.data.raw.pest.pest_risk_level}. Leaf wetness: ${aiRes.data.raw.pest.leaf_wetness_pct}%.`,
                             icon: "Bug",
+                            ...aiRes.data.raw.pest,
                           },
                         ]
                       : []),
@@ -381,6 +382,7 @@ export function useFarmData({
                               aiRes.data.raw.fungal_disease.likely_disease ||
                               "Monitor closely",
                             icon: "ShieldCheck",
+                            ...aiRes.data.raw.fungal_disease,
                           },
                         ]
                       : []),
@@ -409,6 +411,7 @@ export function useFarmData({
                                 ? "Soil moisture is optimal. No irrigation needed."
                                 : `Irrigation recommended: ${aiRes.data.raw.irrigation.water_requirement_mm}mm required.`),
                             icon: "Droplets",
+                            ...aiRes.data.raw.irrigation,
                           },
                         ]
                       : []),

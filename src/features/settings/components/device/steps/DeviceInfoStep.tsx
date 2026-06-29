@@ -10,7 +10,7 @@ interface DeviceInfoStepProps {
     serialNumber: string;
     manufacturer: string;
   };
-  onChange: (fields: Partial<typeof props.wizardData>) => void;
+  onChange: (fields: Partial<DeviceInfoStepProps["wizardData"]>) => void;
 }
 
 export function DeviceInfoStep({ wizardData, onChange }: DeviceInfoStepProps) {
